@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Rules;
+
+use App\Models\Competition;
+use App\Models\CompetitionPartner;
+use Illuminate\Contracts\Validation\DataAwareRule;
+use Illuminate\Contracts\Validation\Rule;
+use App\Models\User;
+use App\Models\CompetitionPartnerDate;
+
+class CheckParticipantRegistrationOpen implements Rule, DataAwareRule
+{
+    protected $message =[];
+    protected $data;
+
+    public function setData($data)
+    {
+        $this->data = $data;
+
+        return $this;
+    }
+
+    /**
+     * Create a new rule instance.
+     *1
+     * @return void
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
+     */
+    public function passes($attribute, $value)
+    {
+        $rowNum = explode(".",$attribute)[1];
+        $todayDate = date('Y-m-d', strtotime('now'));
+
+        $competition = Competition::findOrFail($value);
+        $competition_format = $competition->format;
+        $competitionGlobalEndDate = $competition->global_registration_end_date;
+        $closeDate = $competitionGlobalEndDate;
+
+        switch(auth()->user()->role_id) {
+            case 1 :
+                $userid = CompetitionPartner::findOrFail($this->data['participant'][$rowNum]['competition_partner_id'])->partner()->first()->id;
+                break;
+            case 2 :
+                $userid = auth()->user()->id;
+                break;
+            default:
+                $parent_id = auth()->user()->id;
+                while($parent_id !== null){
+                    $parent_id = User::find($parent_id)->parent_id;
+                    if($parent_id) {
+                        if(User::find($parent_id)->role_id == 2) {
+                            $userid = User::find($parent_id)->id;
+                        }
+                    }
+                }
+        }
+
+        $partnerRegistrationDate = date('Y-m-d', strtotime(CompetitionPartner::where(['competition_id' => $value,'partner_userid' => $userid])->first()->registration_open_date));
+
+        if($competition_format == 0) {
+            $competitionDates = CompetitionPartnerDate::where('competition_partner_id',$this->data['participant'][$rowNum]['competition_partner_id'])->orderBy('competition_date','desc');
+            $competitionDateCount = $competitionDates->count();
+
+            if($competitionDateCount == 0){
+                $this->message = 'Partner competition date not yet assigned, add competition dates before add particitpants';
+                return false;
+            }
+
+            $competitionLastDate = date('Y-m-d', strtotime($competitionDates->first()->competition_date));
+            $closeDate = $competitionLastDate;
+        }
+
+        if($todayDate < $partnerRegistrationDate) {
+            $this->message = 'The registration is yet to open';
+            return false;
+        }
+
+        if($todayDate > $closeDate) {
+            $this->message = 'The registration is closed';
+            return false;
+        }
+
+
+        return true;
+    }
+
+    /**
+     * Get the validation error message.
+     *
+     * @return string
+     */
+    public function message()
+    {
+        return $this->message;
+    }
+}

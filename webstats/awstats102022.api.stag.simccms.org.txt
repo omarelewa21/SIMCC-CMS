@@ -1,0 +1,375 @@
+AWSTATS DATA FILE 7.7 (build 20161204)
+# If you remove this file, all statistics for date 202210 will be lost/reset.
+# Last config file used to build this data file was /etc/awstats/awstats.api.stag.simccms.org.conf.
+
+# Position (offset in bytes) in this file for beginning of each section for
+# direct I/O access. If you made changes somewhere in this file, you should
+# also remove completely the MAP section (AWStats will rewrite it at next
+# update).
+BEGIN_MAP 28
+POS_GENERAL 2003                
+POS_TIME 2699                
+POS_VISITOR 7473                
+POS_DAY 8864                
+POS_DOMAIN 3665                
+POS_LOGIN 3974                
+POS_ROBOT 4129                
+POS_WORMS 4400                
+POS_EMAILSENDER 4531                
+POS_EMAILRECEIVER 4674                
+POS_SESSION 9482                
+POS_SIDER 9691                
+POS_FILETYPES 4809                
+POS_DOWNLOADS 5019                
+POS_OS 5067                
+POS_BROWSER 5197                
+POS_SCREENSIZE 5368                
+POS_UNKNOWNREFERER 5442                
+POS_UNKNOWNREFERERBROWSER 5652                
+POS_ORIGIN 5771                
+POS_SEREFERRALS 5915                
+POS_PAGEREFS 6059                
+POS_SEARCHWORDS 6381                
+POS_KEYWORDS 6533                
+POS_MISC 2362                
+POS_ERRORS 6592                
+POS_CLUSTER 3830                
+POS_SIDER_404 6807                
+END_MAP
+
+# LastLine    = Date of last record processed - Last record line number in last log - Last record offset in last log - Last record signature value
+# FirstTime   = Date of first visit for history file
+# LastTime    = Date of last visit for history file
+# LastUpdate  = Date of last update - Nb of parsed records - Nb of parsed old records - Nb of parsed new records - Nb of parsed corrupted - Nb of parsed dropped
+# TotalVisits = Number of visits
+# TotalUnique = Number of unique visitors
+# MonthHostsKnown   = Number of hosts known
+# MonthHostsUnKnown = Number of hosts unknown
+BEGIN_GENERAL 8
+LastLine 20221101000001 23896 5732617 12477081741021
+FirstTime 20221010080935
+LastTime 20221031184523
+LastUpdate 20221101043943 23896 22054 1621 1 219
+TotalVisits 104                 
+TotalUnique 32                  
+MonthHostsKnown 0                   
+MonthHostsUnknown 32                  
+END_GENERAL
+
+# Misc ID - Pages - Hits - Bandwidth
+BEGIN_MISC 10
+QuickTimeSupport 0 0 0
+JavaEnabled 0 0 0
+JavascriptDisabled 0 0 0
+PDFSupport 0 0 0
+WindowsMediaPlayerSupport 0 0 0
+AddToFavourites 0 13 0
+RealPlayerSupport 0 0 0
+TotalMisc 0 0 0
+DirectorSupport 0 0 0
+FlashSupport 0 0 0
+END_MISC
+
+# Hour - Pages - Hits - Bandwidth - Not viewed Pages - Not viewed Hits - Not viewed Bandwidth
+BEGIN_TIME 24
+0 2 2 107971 602 602 353923200
+1 44 44 440894 649 649 353944839
+2 145 145 988467 780 780 355424558
+3 321 321 1026644 824 824 359763296
+4 186 186 2243681 785 785 364227888
+5 117 117 6555405 735 735 378676900
+6 276 276 15142761 881 881 368071254
+7 496 506 32022570 1183 1188 396443331
+8 318 318 3436060 1091 1092 396690488
+9 745 745 7061886 1374 1374 398043360
+10 332 332 3284335 1063 1064 410547619
+11 131 131 729511 817 817 389362457
+12 101 101 94487 766 766 389315550
+13 52 52 421630 727 728 388212169
+14 232 232 700060 911 911 392269634
+15 181 181 369523 803 803 390224710
+16 48 48 219672 709 709 390105068
+17 49 49 62604 726 726 389327021
+18 49 49 90760 733 734 389978639
+19 37 37 92568 695 699 389360093
+20 15 15 150605 729 729 393759358
+21 142 142 367002 714 715 391056300
+22 11 11 101174 664 664 389315740
+23 0 0 0 660 660 389315520
+END_TIME
+
+# Domain - Pages - Hits - Bandwidth
+# The 10 first Pages must be first (order not required for others)
+BEGIN_DOMAIN 6
+sg 2561 2561 43379791
+eg 1387 1397 32161503
+kh 70 70 119397
+jp 6 6 15262
+us 5 5 28598
+be 1 1 5719
+END_DOMAIN
+
+# Cluster ID - Pages - Hits - Bandwidth
+BEGIN_CLUSTER 0
+END_CLUSTER
+
+# Login - Pages - Hits - Bandwidth - Last visit
+# The 10 first Pages must be first (order not required for others)
+BEGIN_LOGIN 0
+END_LOGIN
+
+# Robot ID - Hits - Bandwidth - Last visit - Hits on robots.txt
+# The 10 first Hits must be first (order not required for others)
+BEGIN_ROBOT 4
+no_user_agent 2 35210 20221018080139 0
+python 1 5720 20221027205744 0
+unknown 1 55 20221019212852 1
+^mozilla\/5\.0$ 1 114 20221021073119 0
+END_ROBOT
+
+# Worm ID - Hits - Bandwidth - Last visit
+# The 5 first Hits must be first (order not required for others)
+BEGIN_WORMS 0
+END_WORMS
+
+# EMail - Hits - Bandwidth - Last visit
+# The 20 first Hits must be first (order not required for others)
+BEGIN_EMAILSENDER 0
+END_EMAILSENDER
+
+# EMail - Hits - Bandwidth - Last visit
+# The 20 first hits must be first (order not required for others)
+BEGIN_EMAILRECEIVER 0
+END_EMAILRECEIVER
+
+# Files type - Hits - Bandwidth - Bandwidth without compression - Bandwidth after compression
+BEGIN_FILETYPES 8
+css 2 1177 0 0
+map 15 16922303 0 0
+png 2 936276 0 0
+html 37 158794 0 0
+ico 2 466144 0 0
+js 4 1578774 0 0
+Unknown 3976 55646385 0 0
+json 2 417 0 0
+END_FILETYPES
+
+# Downloads - Hits - Bandwidth
+BEGIN_DOWNLOADS 0
+END_DOWNLOADS
+
+# OS ID - Hits
+BEGIN_OS ID - Hits - Pages 4
+linuxandroid 17 17
+Unknown 1039 1039
+win10 2965 2955
+linux 19 19
+END_OS
+
+# Browser ID - Hits - Pages
+BEGIN_BROWSER 6
+chrome84.0.4147.105 1 1
+mozilla 4 4
+firefox106.0 6 6
+chrome106.0.0.0 2451 2441
+Unknown 1035 1035
+chrome105.0.0.0 543 543
+END_BROWSER
+
+# Screen size - Hits
+BEGIN_SCREENSIZE 0
+END_SCREENSIZE
+
+# Unknown referer OS - Last visit date
+BEGIN_UNKNOWNREFERER 2
+PostmanRuntime/7.29.2 20221031022703
+Mozilla/5.0_(compatible;_CensysInspect/1.1;__https://about.censys.io/) 20221030191208
+END_UNKNOWNREFERER
+
+# Unknown referer Browser - Last visit date
+BEGIN_UNKNOWNREFERERBROWSER 1
+PostmanRuntime/7.29.2 20221031022703
+END_UNKNOWNREFERERBROWSER
+
+# Origin - Pages - Hits 
+BEGIN_ORIGIN 6
+From0 1079 1079
+From1 0 0
+From2 0 0
+From3 2897 2897
+From4 54 64
+From5 0 0
+END_ORIGIN
+
+# Search engine referers ID - Pages - Hits
+BEGIN_SEREFERRALS 0
+END_SEREFERRALS
+
+# External page referers - Pages - Hits
+# The 10 first Pages must be first (order not required for others)
+BEGIN_PAGEREFS 5
+https://react.stag.simccms.org 1480 1480
+http://localhost:3000 1196 1196
+https://react.stag.simccms.org 153 153
+http://localhost:3000 62 62
+http://react.stag.simccms.org 6 6
+END_PAGEREFS
+
+# Search keyphrases - Number of search
+# The 10 first number of search must be first (order not required for others)
+BEGIN_SEARCHWORDS 0
+END_SEARCHWORDS
+
+# Search keywords - Number of search
+# The 10 first number of search must be first (order not required for others)
+BEGIN_KEYWORDS 0
+END_KEYWORDS
+
+# Errors - Hits - Bandwidth
+BEGIN_ERRORS 11
+204 3198 0
+502 2 142
+400 1 89480
+401 18 562
+302 1 370
+500 16222 9205752724
+405 1 9055
+504 23 439834
+301 1 248
+404 52 304948
+422 98 720530
+END_ERRORS
+
+# URL with 404 errors - Hits - Last URL referrer
+BEGIN_SIDER_404 15
+/api/marking/editundefined 2 http://localhost:3000/
+/participants 3 -
+/api/participant%3Epage=2 1 -
+/task/answers 1 -
+/api/login 5 http://api.stag.simccms.org/
+/api/competition_id=1 2 -
+/tasks 2 -
+/signin 19 -
+/api 2 -
+/schools 3 -
+/api/participant%3E 3 -
+/api/info/setIndexCounterCountryTable 1 -
+/api/report 5 -
+/competition/report 1 -
+/competitions 2 -
+END_SIDER_404
+
+# Host - Pages - Hits - Bandwidth - Last visit date - [Start date of last visit] - [Last page of last visit]
+# [Start date of last visit] and [Last page of last visit] are saved only if session is not finished
+# The 10 first Hits must be first (order not required for others)
+BEGIN_VISITOR 32
+103.4.196.221 2041 2041 41040702 20221031094406
+156.208.161.101 633 633 6126221 20221019113315
+156.208.42.62 332 332 3361192 20221021123759
+156.208.143.44 175 175 2055645 20221027090347
+156.208.225.255 137 147 20122317 20221011075759
+111.65.61.99 132 132 96699 20221012100259
+111.65.61.29 101 101 151614 20221022154820
+156.208.130.163 83 83 445456 20221031101833
+167.179.38.84 70 70 119397 20221031184523
+111.65.62.94 63 63 735356 20221021003721
+45.77.23.96 6 6 15262 20221029025307
+167.248.133.117 2 2 11438 20221019195732
+111.65.37.80 18 18 31577 20221012180256
+111.65.38.3 8 8 164360 20221024052013
+111.65.39.71 7 7 123062 20221020115630
+111.65.75.72 17 17 16663 20221024163710
+111.65.36.154 25 25 59539 20221019012029
+156.208.189.139 19 19 31859 20221012131535
+111.65.72.148 2 2 6145 20221018015827
+111.65.62.20 9 9 16554 20221024163358
+111.65.73.129 6 6 222307 20221022155114
+35.210.151.25 1 1 5719 20221019212852
+65.154.226.109 1 1 5720 20221028190412
+27.125.187.231 1 1 0 20221029055007
+203.125.228.30 9 9 16011 20221030124823
+111.65.50.114 30 30 71325 20221012181756
+111.65.73.242 33 33 145098 20221020145553
+111.65.63.135 16 16 392278 20221024094141
+111.65.38.108 9 9 24164 20221019144933
+103.6.150.199 34 34 66337 20221031042150
+156.196.40.214 8 8 18813 20221020014852
+167.94.138.62 2 2 11440 20221030191208
+END_VISITOR
+
+# Date - Pages - Hits - Bandwidth - Visits
+BEGIN_DAY 22
+20221010 2 2 160 1
+20221011 318 328 20273314 5
+20221012 118 118 169431 11
+20221013 104 104 161439 6
+20221014 479 479 1447670 6
+20221015 231 231 1272478 5
+20221016 17 17 13308 2
+20221017 449 449 2858796 5
+20221018 230 230 208213 2
+20221019 144 144 5959561 8
+20221020 313 313 8036514 10
+20221021 367 367 4218718 6
+20221022 107 107 373921 2
+20221023 5 5 7992 1
+20221024 67 67 611931 6
+20221025 308 308 4164936 4
+20221026 142 142 2152089 3
+20221027 23 23 204821 2
+20221028 153 153 20655048 5
+20221029 7 7 15262 2
+20221030 53 53 1478090 3
+20221031 393 393 1426578 9
+END_DAY
+
+# Session range - Number of visits
+BEGIN_SESSION 7
+1h+ 35
+5mn-15mn 14
+30s-2mn 4
+15mn-30mn 7
+2mn-5mn 5
+0s-30s 23
+30mn-1h 16
+END_SESSION
+
+# URL - Pages - Bandwidth - Entry - Exit
+# The 10 first Pages must be first (order not required for others)
+BEGIN_SIDER 35
+/api/marking/edit 797 1364788 3 14
+/api/marking 570 15322486 13 14
+/api/participant 388 26865879 8 11
+/api/competition 326 1161176 6 7
+/api/tasks 267 204919 8 8
+/api/tag 253 283886 4 7
+/api/marking/preparation 208 1692950 5 1
+/api/collection 168 773428 7 16
+/api/taskdifficultygroup 141 77294 1 0
+/api/school 125 215641 20 3
+/static/js/2.1e048e18.chunk.js.map 5 14621891 0 0
+/ 37 158794 5 4
+/api/info/GenerateCertNum 1 18 0 0
+/signin 1 1337 0 0
+/api/info/roles 62 7392 0 0
+/api/user/logout 6 138 0 0
+/api/organizations 44 249768 2 2
+/api/competition/report 54 5637308 1 2
+/api/marking/compute 102 18538 0 1
+/manifest.json 2 417 0 0
+/api/competition/upload_answers 79 903949 3 3
+/api/competition/difficultyandpoints 31 135492 0 2
+/api/competition/awards 21 14840 0 1
+/api/info/levelCountyParticipantsList 81 34343 0 3
+/api/competition/rounds 6 429 0 0
+/api/info/CreateSchoolForOrganization 1 20 0 1
+/api/user 60 126606 1 2
+/api 1 1337 0 0
+/api/info/setIndexCounterCountryTable 1 11 0 1
+/api/login 56 19219 16 1
+/static/css/main.1b9edd21.chunk.css.map 5 6280 0 0
+/api/info/ConvertCompetitionOrganizationTable 1 28 1 0
+/api/info/languages 62 329096 0 0
+/api/info/countrylist 63 204069 0 0
+/static/js/main.33111f95.chunk.js.map 5 2294132 0 0
+END_SIDER

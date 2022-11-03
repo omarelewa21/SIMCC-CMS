@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Rules;
+
+use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\DataAwareRule;
+use App\Models\School;
+
+class CheckSchoolStatus implements Rule, DataAwareRule
+{
+    /**
+     * All of the data under validation.
+     *
+     * @var array
+     */
+
+    protected $data = [];
+    public $private;
+    public $countryId;
+
+
+    // ...
+
+    /**
+     * Set the data under validation.
+     *
+     * @param  array  $data
+     * @return $this
+     */
+    public function setData($data)
+    {
+        $this->data = $data;
+
+        return $this;
+    }
+
+    /**
+     * Create a new rule instance.
+     *
+     * @return void
+     */
+    public function __construct($private=0,$countryId = null)
+    {
+        $this->private = $private;
+        $this->countryId = $countryId;
+    }
+
+    /**
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
+     */
+    public function passes($attribute, $value)
+    {
+        if($this->countryId == null) {
+            $rowNum = explode(".",$attribute)[1];
+            $countryId =  in_array(auth()->user()->role_id, [2,3,4,5]) ? auth()->user()->country_id : $this->data['participant'][$rowNum]["country_id"];
+        }
+        else{
+            $countryId = $this->countryId;
+        }
+
+        $private = $this->private;
+
+        if($countryId == null) return false;
+
+        $school = School::where([
+            "id" => $value,
+            "country_id" => $countryId,
+            "status" => "active",
+            "private" => $private
+        ])->first();
+
+        if($school) return true;
+
+        return false;
+    }
+
+    /**
+     * Get the validation error message.
+     *
+     * @return string
+     */
+    public function message()
+    {
+        return 'school not found or invalid';
+    }
+}

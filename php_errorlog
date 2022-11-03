@@ -1,0 +1,63 @@
+[21-Oct-2022 06:20:18 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.0.2". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:21:46 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.0.2". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:22:48 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.0.2". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:45:49 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.0.2". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:48:36 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.0.2". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:49:28 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:49:28 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:28 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:37 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:49:37 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:37 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:42 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:49:42 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:42 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:49 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:49:49 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:49 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:54 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:49:54 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:49:54 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:50:25 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:50:25 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:50:25 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:51:05 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:51:05 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:51:05 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:52:40 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:52:40 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:52:40 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:54:23 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:54:23 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:54:23 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:54:37 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:54:37 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:54:37 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:55:40 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:55:40 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:55:40 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:55:47 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:55:47 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:55:47 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:17 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.1.0". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:57:31 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.1.0". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:57:41 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.1.0". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
+[21-Oct-2022 06:57:47 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:57:47 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:47 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:52 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:57:52 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:52 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:56 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:57:56 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:57:56 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:01 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:58:01 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:01 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:05 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:58:05 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:05 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:18 UTC] PHP Parse error:  syntax error, unexpected '|', expecting variable (T_VARIABLE) in /home/customer/www/api.stag.simccms.org/vendor/psr/log/src/LoggerInterface.php on line 30
+[21-Oct-2022 06:58:18 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:58:18 UTC] PHP Fatal error:  Exception thrown without a stack frame in Unknown on line 0
+[21-Oct-2022 06:59:11 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.1.0". You are running 7.4.32. in /home/customer/www/api.stag.simccms.org/vendor/composer/platform_check.php on line 24
