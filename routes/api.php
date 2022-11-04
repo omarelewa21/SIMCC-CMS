@@ -121,7 +121,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
 
     Route::group(["prefix" => "marking"],function () {
         Route::get("/preparation",[CompetitionController::class,"markingGroupsList"])->name('competition.marking.groups.list');
-        Route::post("/preparation",[CompetitionController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
+        Route::post("/preparation",[App\Http\Controllers\api\MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
         Route::patch("/preparation",[CompetitionController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
         Route::get("/",[CompetitionController::class,"markingList"])->name('competition.marking.list');
         Route::patch("/",[CompetitionController::class,"changeComputeStatus"])->name('competition.group.status');

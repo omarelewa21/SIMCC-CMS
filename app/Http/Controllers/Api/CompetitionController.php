@@ -1090,51 +1090,6 @@ class CompetitionController extends Controller
         }
     }
 
-    public function addMarkingGroups (Request $request) {
-
-        $level_id = implode("",$validate = $request->validate([
-            "level_id" => "required|exists:competition_levels,id",
-        ]));
-
-        $levelCountries = CompetitionMarkingGroup::where('competition_level_id',$level_id)->pluck('country_group')->flatten()->toArray();
-
-        $competition = CompetitionLevels::find($level_id)->rounds->competition;
-        $competitionStatus = $competition->status;
-
-        if($competitionStatus === "closed") {
-            throw ValidationException::withMessages(['competition' => 'The selected competition is close for edit']);
-        }
-
-        $countries = Arr::flatten($request->validate([
-            "countries" => "required|array",
-            "countries.*" => ["required","integer","distinct",Rule::exists("all_countries","id"),Rule::notIn($levelCountries)]
-        ]));
-
-        foreach($countries as $country) {
-            if($competition->participants->where('country_id',$country)->count() === 0) {
-                throw ValidationException::withMessages(['Country' => 'The selected country id have no participants']);
-            }
-        }
-
-        try {
-            CompetitionMarkingGroup::create([
-                'competition_level_id' => $level_id,
-                'country_group' => $countries,
-                'created_by_userid' => auth()->user()->id
-            ]);
-
-            return response()->json([
-                "status" => 200,
-                "message" => "add marking group successful"
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "add marking group unsuccessful"
-            ]);
-        }
-    }
-
     public function editMarkingGroups_original (Request $request) { //[71,41,17,221,212]
 
         $group_id = implode("",$validate = $request->validate([
