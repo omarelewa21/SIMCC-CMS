@@ -13,10 +13,10 @@ class Taggable extends Migration
      */
     public function up()
     {
-        Schema::create('taggable', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->morphs('taggable');
-        });
+        // Schema::create('taggable', function (Blueprint $table) {
+        //     $table->bigIncrements('id');
+        //     $table->morphs('taggable');
+        // });
     }
 
     /**

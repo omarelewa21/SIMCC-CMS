@@ -13,12 +13,12 @@ class RecommendedDifficulty extends Migration
      */
     public function up()
     {
-        Schema::create('recommended_difficulty',function ($table) {
-            $table->bigIncrements('id');
-            $table->morphs('recommended_difficulty');
-            $table->string('difficulty',255);
-            $table->TinyInteger('grade')->unsigned();
-        });
+        // Schema::create('recommended_difficulty',function ($table) {
+        //     $table->bigIncrements('id');
+        //     $table->morphs('recommended_difficulty');
+        //     $table->string('difficulty',255);
+        //     $table->TinyInteger('grade')->unsigned();
+        // });
     }
 
     /**

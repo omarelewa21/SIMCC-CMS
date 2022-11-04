@@ -13,16 +13,16 @@ class CreateCompetitionPartnerDate extends Migration
      */
     public function up()
     {
-        Schema::create('competition_partner_date', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('competition_partner_id');
-            $table->unsignedBigInteger('created_by_userid');
-            $table->dateTime('competition_date');
-            $table->timestamps();
+        // Schema::create('competition_partner_date', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->unsignedBigInteger('competition_partner_id');
+        //     $table->unsignedBigInteger('created_by_userid');
+        //     $table->dateTime('competition_date');
+        //     $table->timestamps();
 
-            $table->foreign('competition_partner_id')->references('id')->on('competition_partner');
-            $table->foreign('created_by_userid')->references('id')->on('users')->constrained();
-        });
+        //     $table->foreign('competition_partner_id')->references('id')->on('competition_partner');
+        //     $table->foreign('created_by_userid')->references('id')->on('users')->constrained();
+        // });
     }
 
     /**

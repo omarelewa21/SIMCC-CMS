@@ -13,15 +13,15 @@ class Image extends Migration
      */
     public function up()
     {
-        Schema::create('image', function (Blueprint $table) {
-        $table->bigIncrements ('id');
-        $table->morphs('imageable');
-        $table->longText('image_string');
-        $table->unsignedBigInteger('task_id');
-        $table->unsignedBigInteger('created_by_userid');
-        $table->date('created_at');
-        $table->date('updated_at');
-        });
+        // Schema::create('image', function (Blueprint $table) {
+        // $table->bigIncrements ('id');
+        // $table->morphs('imageable');
+        // $table->longText('image_string');
+        // $table->unsignedBigInteger('task_id');
+        // $table->unsignedBigInteger('created_by_userid');
+        // $table->date('created_at');
+        // $table->date('updated_at');
+        // });
     }
 
     /**
