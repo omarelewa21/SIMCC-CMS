@@ -15,7 +15,7 @@ class Competition extends Base
 
     protected $hidden = ['created_by_userid','last_modified_userid'];
 
-    protected $appends = ['created_by','last_modified_by','award_type_name'];
+    protected $appends = ['created_by','last_modified_by','award_type_name','generate_report_btn'];
 
     private static $whiteListFilter = [
         'id',
@@ -43,8 +43,6 @@ class Competition extends Base
         "default_award_name"
     ];
 
-
-
     public function competitionOrganization()
     {
         return $this->hasMany(CompetitionOrganization::class,"competition_id",'id');
@@ -67,7 +65,6 @@ class Competition extends Base
         return $this->hasMany(CompetitionOverallAwardsGroups::class,'competition_id','id');
     }
 
-
     public function participants () {
         return $this->hasManyThrough(Participants::class,CompetitionOrganization::class,'competition_id','competition_organization_id','id','id');
     }
@@ -78,6 +75,13 @@ class Competition extends Base
 
     public function getAllowedGradesAttribute ($value) {
         return json_decode($value);
+    }
+
+    public function getGenerateReportBtnAttribute () {
+        $levels = $this->rounds->pluck('levels')->flatten()->pluck('id');
+        $found = CompetitionMarkingGroup::whereIn('competition_level_id',$levels)->count() > 0 ?  1 : 0;
+
+        return $found;
     }
 
     public function getAwardTypeNameAttribute () {
