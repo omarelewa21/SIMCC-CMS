@@ -3,26 +3,28 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
 class CompetitionMarkingGroup extends Base
 {
     use HasFactory;
 
     protected $table = "competition_marking_group";
-    protected $guarded = "";
-    protected $appends = [
-        'created_by',
-        'last_modified_by',
-        'total_participants',
-        'school_participants',
-        'private_participants',
-        'school_participants_answers_count',
-        'private_participants_answers_count',
-        'participantsComputed',
-        'particitpants_index_no_list',
-        'country_name'
-    ];
+
+    protected $fillable = ['name', 'competition_id', 'created_by_userid', 'status', 'last_modified_userid'];
+
+    // protected $appends = [
+    //     'created_by',
+    //     'last_modified_by',
+    //     'total_participants',
+    //     'school_participants',
+    //     'private_participants',
+    //     'school_participants_answers_count',
+    //     'private_participants_answers_count',
+    //     'participantsComputed',
+    //     'particitpants_index_no_list',
+    //     'country_name'
+    // ];
+
 
     public function level () {
         return $this->belongsTo(CompetitionLevels::class,'competition_level_id','id');

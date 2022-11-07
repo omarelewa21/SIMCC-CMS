@@ -20,6 +20,7 @@ class AlterTableCompetitionMarkingGroup extends Migration
             $table->id();
             $table->string('name');
             $table->set('status', ['active', 'computed', 'computing'])->default('active');
+            $table->foreignId('competition_id')->constrained('competition');
             $table->foreignId('created_by_userid')->nullable()->constrained('users');
             $table->foreignId('last_modified_userid')->nullable()->constrained('users');
             $table->timestamps();

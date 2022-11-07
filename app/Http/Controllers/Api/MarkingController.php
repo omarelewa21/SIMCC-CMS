@@ -5,49 +5,49 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
-use App\Models\CompetitionLevels;
-use Illuminate\Http\Request;
+use App\Models\Competition;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 
 class MarkingController extends Controller
 {
-    public function addMarkingGroups (StoreCompetitionMarkingGroupRequest $request) {
-        return true;
+    public function addMarkingGroups(StoreCompetitionMarkingGroupRequest $request)
+    {
+        $competition = Competition::find($request->id);
 
-        $competition = CompetitionLevels::find($level_id)->rounds->competition;
-        $competitionStatus = $competition->status;
-
-        if($competitionStatus === "closed") {
+        if($competition->status === "closed") {
             throw ValidationException::withMessages(['competition' => 'The selected competition is close for edit']);
         }
 
-        $countries = Arr::flatten($request->validate([
-            "countries" => "required|array",
-            "countries.*" => ["required","integer","distinct",Rule::exists("all_countries","id"),Rule::notIn($levelCountries)]
-        ]));
-
-        foreach($countries as $country) {
-            if($competition->participants->where('country_id',$country)->count() === 0) {
-                throw ValidationException::withMessages(['Country' => 'The selected country id have no participants']);
-            }
-        }
-
+        DB::beginTransaction();
         try {
-            CompetitionMarkingGroup::create([
-                'competition_level_id' => $level_id,
-                'country_group' => $countries,
-                'created_by_userid' => auth()->user()->id
+            $markingGroup = CompetitionMarkingGroup::create([
+                'competition_id'    => $competition->id,
+                'name'              => $request->name,
+                'created_by_userid' => auth()->id()
             ]);
 
-            return response()->json([
-                "status" => 200,
-                "message" => "add marking group successful"
-            ]);
+            foreach($request->countries as $country_id){
+                DB::table('competition_marking_group_country')->insert([
+                    'marking_group_id'  => $markingGroup->id,
+                    'country_id'        => $country_id,
+                    'created_at'        => now(),
+                    'updated_at'        => now()
+                ]);
+            }
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 "status" => 500,
                 "message" => "add marking group unsuccessful"
             ]);
         }
+
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "add marking group successful"
+        ]);
     }
 }
