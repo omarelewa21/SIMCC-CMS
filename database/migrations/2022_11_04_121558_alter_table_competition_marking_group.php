@@ -27,7 +27,7 @@ class AlterTableCompetitionMarkingGroup extends Migration
         });
 
         Schema::create('competition_marking_group_country', function (Blueprint $table) {
-            $table->unsignedBigInteger('marking_group_id')->unique();
+            $table->unsignedBigInteger('marking_group_id');
             $table->foreign('marking_group_id')->references('id')->on('competition_marking_group');
             $table->unsignedSmallInteger('country_id');
             $table->foreign('country_id')->references('id')->on('all_countries');

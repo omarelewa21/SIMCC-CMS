@@ -33,8 +33,8 @@ class StoreCompetitionMarkingGroupRequest extends FormRequest
         $excludeCountries = CompetitionMarkingGroup::where('competition_id', $this->id)
                             ->join('competition_marking_group_country as cm', 'competition_marking_group.id', '=', 'cm.marking_group_id')
                             ->join('all_countries as al_c', 'al_c.id', '=', 'cm.country_id')
-                            ->select('al_c.id as country_id')->get()->toArray();
-
+                            ->select('al_c.id as country_id')->pluck('country_id')->toArray();
+        
         foreach($this->countries as $key=> $country_id){
             $rules = array_merge($rules, [
                 "countries.". $key     => ['integer', 'distinct', 'exists:all_countries,id', Rule::notIn($excludeCountries)]

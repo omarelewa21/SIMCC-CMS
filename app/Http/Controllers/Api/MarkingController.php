@@ -25,7 +25,7 @@ class MarkingController extends Controller
             $markingGroup = CompetitionMarkingGroup::create([
                 'competition_id'    => $competition->id,
                 'name'              => $request->name,
-                'created_by_userid' => auth()->id()
+                'created_by_userid' => auth()->user()->id
             ]);
 
             foreach($request->countries as $country_id){
