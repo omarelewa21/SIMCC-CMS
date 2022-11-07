@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
