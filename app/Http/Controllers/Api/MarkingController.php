@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 
 class MarkingController extends Controller
@@ -49,5 +52,32 @@ class MarkingController extends Controller
             "status" => 200,
             "message" => "add marking group successful"
         ]);
+    }
+
+
+    public function markingGroupsList(Request $request)
+    {
+        $request->validate([
+            "id" => ["required", Rule::exists("competition","id")->where('status','active')]
+        ]);
+
+        try {
+            $headerData = Competition::whereId($request->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            
+            $data = CompetitionMarkingGroup::where('competition_id', $request->id)
+                        ->with('countries:id,display_name')->get()->append('totalParticipantsCount');
+            
+            return response()->json([
+                "status"        => 200,
+                "message"       => "marking preparation list retrieve successful",
+                'header_data'   => $headerData,
+                'data'          => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => 500,
+                "message" => "marking preparation list retrieve unsuccessful",
+            ]);
+        }
     }
 }

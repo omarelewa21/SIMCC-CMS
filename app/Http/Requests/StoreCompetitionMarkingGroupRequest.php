@@ -27,7 +27,7 @@ class StoreCompetitionMarkingGroupRequest extends FormRequest
     {
         $rules = [
             "name"          => "required|string",
-            "countries"     => "required|array" 
+            "countries.*"   => "required|array" 
         ];
 
         $excludeCountries = CompetitionMarkingGroup::where('competition_id', $this->id)

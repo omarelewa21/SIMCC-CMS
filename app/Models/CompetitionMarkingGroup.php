@@ -12,18 +12,18 @@ class CompetitionMarkingGroup extends Base
 
     protected $fillable = ['name', 'competition_id', 'created_by_userid', 'status', 'last_modified_userid'];
 
-    // protected $appends = [
-    //     'created_by',
-    //     'last_modified_by',
-    //     'total_participants',
-    //     'school_participants',
-    //     'private_participants',
-    //     'school_participants_answers_count',
-    //     'private_participants_answers_count',
-    //     'participantsComputed',
-    //     'particitpants_index_no_list',
-    //     'country_name'
-    // ];
+    protected $appends = [
+        'created_by',
+        'last_modified_by',
+        // 'total_participants',
+        // 'school_participants',
+        // 'private_participants',
+        // 'school_participants_answers_count',
+        // 'private_participants_answers_count',
+        // 'participantsComputed',
+        // 'particitpants_index_no_list',
+        // 'country_name'
+    ];
 
 
     public function level () {
@@ -50,8 +50,8 @@ class CompetitionMarkingGroup extends Base
         $this->attributes['country_group'] = json_encode($value);
     }
 
-    public function getTotalParticipantsAttribute () {
-        return count($this->participants());
+    public function getTotalParticipantsCountAttribute () {
+        return $this->participants()->count();
     }
 
     public function getSchoolParticipantsAttribute () {
@@ -86,13 +86,15 @@ class CompetitionMarkingGroup extends Base
         return $this->participants()->pluck('index_no');
     }
 
-    private function participants() {
-        $countries = $this->getCountryGroupAttribute($this->attributes['country_group']);
-        $competitionLevel = CompetitionLevels::find($this->attributes['competition_level_id']);
-        $competitionLevelGrades = CompetitionLevels::find($this->attributes['competition_level_id'])->grades;
-        $competition =$competitionLevel->rounds->competition;
-        $competitionOrganizationIds = $competition->competitionOrganization->pluck('id')->toArray();
-        $participants = Participants::whereIn('country_id',$countries)->whereIn('competition_organization_id',$competitionOrganizationIds)->whereIn('grade',$competitionLevelGrades)->get();
-        return $participants;
+    public function participants() {
+        return $this->competition->participants()->whereIn('participants.country_id', $this->countries->pluck('id')->toArray());
+    }
+
+    public function competition(){
+        return $this->belongsTo(Competition::class);
+    }
+
+    public function countries() {
+        return $this->belongsToMany(Countries::class, 'competition_marking_group_country', 'marking_group_id', 'country_id');
     }
 }

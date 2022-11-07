@@ -15,7 +15,12 @@ class Competition extends Base
 
     protected $hidden = ['created_by_userid','last_modified_userid'];
 
-    protected $appends = ['created_by','last_modified_by','award_type_name','generate_report_btn'];
+    protected $appends = [
+        'created_by',
+        'last_modified_by',
+        'award_type_name',
+        // 'generate_report_btn'
+    ];
 
     private static $whiteListFilter = [
         'id',
@@ -66,7 +71,7 @@ class Competition extends Base
     }
 
     public function participants () {
-        return $this->hasManyThrough(Participants::class,CompetitionOrganization::class,'competition_id','competition_organization_id','id','id');
+        return $this->hasManyThrough(Participants::class, CompetitionOrganization::class, 'competition_id', 'competition_organization_id', 'id', 'id');
     }
 
     public function setAllowedGradesAttribute ($value) {

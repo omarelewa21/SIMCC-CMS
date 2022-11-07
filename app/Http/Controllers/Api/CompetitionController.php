@@ -1063,33 +1063,6 @@ class CompetitionController extends Controller
         }
     }
 
-    public function markingGroupsList (Request $request) {
-
-        $competition_id = implode("",$validate = $request->validate([
-            "competition_id" => ["required",Rule::exists("competition","id")->where('status','active')],
-        ]));
-        try {
-            $competition = Competition::with(['rounds'=> function ($query) {
-                $query->with(['levels' => function ($query) {
-                    $query->with(['groups' => function ($query) {
-                        $query->select(['id','competition_level_id','country_group']);
-                    }])->select(['id','round_id','name']);
-                }])->select(['id','competition_id','name']);
-            }])->select(['id','name','format'])->find($competition_id)->makeHidden(['created_by','last_modified_by']);
-
-            return response()->json([
-                "status" => 200,
-                "message" => "marking preparation list retrieve successful",
-                "data" => $competition
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "marking preparation list retrieve unsuccessful",
-            ]);
-        }
-    }
-
     public function editMarkingGroups_original (Request $request) { //[71,41,17,221,212]
 
         $group_id = implode("",$validate = $request->validate([
