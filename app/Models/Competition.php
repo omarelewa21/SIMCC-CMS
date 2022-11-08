@@ -97,4 +97,9 @@ class Competition extends Base
                 return 'position';
         }
     }
+
+    public function getActiveParticipantsByCountry($country_id)
+    {   
+        return $this->participants()->where('country_id', $country_id)->get();
+    }
 }

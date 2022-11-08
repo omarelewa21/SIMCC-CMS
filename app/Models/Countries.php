@@ -15,4 +15,9 @@ class Countries extends Model
     public function schools () {
         return $this->hasMany(School::class,"country_id");
     }
+
+    public function participants()
+    {
+        return $this->hasMany(Participants::class, 'country_id');
+    }
 }

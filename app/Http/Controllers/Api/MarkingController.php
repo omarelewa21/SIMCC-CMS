@@ -6,18 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
+use App\Models\Countries;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-
+use App\Http\Requests\getActiveParticipantsByCountryRequest;
+use App\Models\Participants;
 
 class MarkingController extends Controller
 {
-    public function addMarkingGroups(StoreCompetitionMarkingGroupRequest $request)
+    public function addMarkingGroups(StoreCompetitionMarkingGroupRequest $request, Competition $competition)
     {
-        $competition = Competition::find($request->id);
-
         if($competition->status === "closed") {
             throw ValidationException::withMessages(['competition' => 'The selected competition is close for edit']);
         }
@@ -43,7 +41,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "add marking group unsuccessful"
-            ]);
+            ], 500);
         }
 
         DB::commit();
@@ -54,17 +52,13 @@ class MarkingController extends Controller
     }
 
 
-    public function markingGroupsList(Request $request)
+    public function markingGroupsList(Competition $competition)
     {
-        $request->validate([
-            "id" => ["required", Rule::exists("competition","id")->where('status','active')]
-        ]);
-
         try {
-            $headerData = Competition::whereId($request->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
             
-            $data = CompetitionMarkingGroup::where('competition_id', $request->id)
-                        ->with('countries:id,display_name')->get()->append('totalParticipantsCount');
+            $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
+                        ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
             
             return response()->json([
                 "status"        => 200,
@@ -76,7 +70,42 @@ class MarkingController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "marking preparation list retrieve unsuccessful",
+            ], 500);
+        }
+    }
+
+    public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
+    {
+        try {
+            $grades = $competition->participants()->whereIn('participants.country_id', $request->countries)
+                    ->where('participants.status', 'active')->distinct()->pluck('grade')->toArray();
+            
+            $countries = [];
+            $data = [];
+            
+            foreach($request->countries as $country_id){
+                $country = Countries::find($country_id);
+                $countries[] = $country->display_name;
+                foreach($grades as $grade){
+                    $data[$country->display_name][$grade] = 
+                        $competition->participants()->where('participants.country_id', $country_id)
+                        ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
+                }
+            }
+
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Table retrieval was successful",
+                'grades'        => $grades,
+                'countries'     => $countries,
+                'data'          => $data
             ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => 500,
+                "message" => "Table retrieval was unsuccessful",
+            ], 500);
         }
     }
 }
