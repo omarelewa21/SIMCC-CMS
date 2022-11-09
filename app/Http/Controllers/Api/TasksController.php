@@ -288,8 +288,8 @@ class TasksController extends Controller
 
         $validated = $request->validate([
             'id' => 'required|integer|exists:tasks,id',
-            'title' => ['required','string',Rule::unique('task_contents','task_title')->where(function ($query) {
-                return $query->where('task_title', '!=', "2022-DOKA-PAPERP-SECA-Q01");
+            'title' => ['required','string',Rule::unique('task_contents','task_title')->where(function ($query) use ($request){
+                return $query->where('task_title', '!=', $request->title);
             })],
             'identifier' => 'required|regex:/^[\_\w-]*$/',
             'tag_id' => 'array|nullable',
