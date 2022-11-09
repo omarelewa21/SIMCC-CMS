@@ -12,7 +12,6 @@ use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
 use App\Rules\CheckAnswerLabelEqual;
-use App\Rules\CheckEqualGradeDifficulty;
 use App\Rules\CheckMissingGradeDifficulty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -151,14 +150,14 @@ class TasksController extends Controller
     public function list(Request $request)
     {
         $vaildate = $request->validate([
-            'id' => 'integer',
+            'id'         => 'integer',
             'identifier' => 'regex:/^[\_\w-]*$/',
-            'lang_id' => new CheckMultipleVaildIds(new Languages()),
-            'tag_id' => new CheckMultipleVaildIds(new DomainsTags()),
-            'status' => 'string|max:255',
-            'limits' => 'integer',
-            'page' => 'integer',
-            'search' => 'string|max:255'
+            'lang_id'    => new CheckMultipleVaildIds(new Languages()),
+            'tag_id'     => new CheckMultipleVaildIds(new DomainsTags()),
+            'status'     => 'string|max:255',
+            'limits'     => 'integer',
+            'page'       => 'integer',
+            'search'     => 'string|max:255'
         ]);
 
         try {
@@ -185,16 +184,13 @@ class TasksController extends Controller
 
             $taskModel = Tasks::with($eagerload)
                 ->AcceptRequest(['id','status', 'identifier'])
-                ->where('status', '!=', 'deleted');
+                ->where('tasks.status', '!=', 'deleted');
 
             if (!in_array(auth()->user()->role_id,[0,1])) { //if role is not admin, filter by their user respective account
                 $taskModel = $taskModel->where('created_by_userid', '!=', auth()->user()->id);
             }
 
-            $returnFiltered = $taskModel
-                ->filter()
-                ->get()
-                ->makeHidden($hide);
+            $returnFiltered = Tasks::applyFilter($taskModel, $request)->get()->makeHidden($hide);
 
             $taskCollection = collect($returnFiltered);
 
@@ -223,16 +219,17 @@ class TasksController extends Controller
             $availDomainType = $taskCollection->map(function ($item) {
                 $temp = [];
                 foreach($item->toArray()['tags'] as $row) {
-                    if($row['domain_id'] == null && !$row['is_tag']) {
+                    if($row['domain_id'] && !$row['is_tag']) {
                         $temp[] = ["id" => $row['id'], "name" => $row['name']];
                     }
                 }
                 return $temp;
             })->filter()->collapse()->unique()->values();
 
+            
+
             $availTagType = $taskCollection->map(function ($item) {
                 $temp = [];
-
                 foreach($item->toArray()['tags'] as $row) {
                     if($row['is_tag']) {
                         $temp[] = ["id" => $row['id'], "name" => $row['name']];
@@ -281,7 +278,7 @@ class TasksController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve school unsuccessful"
+                "message" => $e->getMessage()
             ]);
         }
 

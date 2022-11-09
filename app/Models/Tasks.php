@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Http\Request;
 
 class Tasks extends Base
 {
@@ -160,6 +161,22 @@ class Tasks extends Base
             ->get()
             ->pluck('image_string')
             ->join('');
+    }
+
+    public static function applyFilter($query, Request $request)
+    {
+        if($request->filled("domains") || $request->filled("tags")){
+            $query->when($request->filled("domains"), function($query)use($request){
+                $query->whereHas('tags', function($query)use($request){
+                    $query->whereIn('domains_tags.id', explode(',', $request->domains));
+                });
+            })->when($request->filled("tags"), function($query)use($request){
+                $query->whereHas('tags', function($query)use($request){
+                    $query->whereIn('domains_tags.id', explode(',', $request->tags));
+                });
+            });
+        }
+        return $query->filter();
     }
 
 }
