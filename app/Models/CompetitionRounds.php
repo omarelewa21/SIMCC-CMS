@@ -12,6 +12,19 @@ class CompetitionRounds extends Model
     Protected $table = 'competition_rounds';
     protected $guarded = [];
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::deleted(function($record) {
+            if($record->competition->rounds()->count() < 2){
+                foreach($record->competition->overallAwardsGroups as $overallAwardsGroup){
+                    $overallAwardsGroup->overallAwards()->delete();
+                    $overallAwardsGroup->delete();
+                }
+            }
+        });
+    }
 
     public function competition () {
         return $this->belongsTo(Competition::class,'competition_id','id');

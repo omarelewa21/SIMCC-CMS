@@ -481,9 +481,14 @@ class CompetitionController extends Controller
         catch(\Exception $e) {
             return response()->json([
                 "status" => 200,
-                "message" => "delete round successful"
+                "message" => "delete round unsuccessful"
             ]);
         }
+
+        return response()->json([
+            "status" => 200,
+            "message" => "delete round successful"
+        ]);
     }
 
     public function addRoundAwards (Request $request) {
