@@ -9,32 +9,32 @@ AWSTATS DATA FILE 7.7 (build 20161204)
 BEGIN_MAP 28
 POS_GENERAL 2003                
 POS_TIME 2685                
-POS_VISITOR 6556                
-POS_DAY 7122                
-POS_DOMAIN 3550                
-POS_LOGIN 3839                
-POS_ROBOT 3994                
-POS_WORMS 4156                
-POS_EMAILSENDER 4287                
-POS_EMAILRECEIVER 4430                
-POS_SESSION 7307                
-POS_SIDER 7513                
-POS_FILETYPES 4565                
-POS_DOWNLOADS 4671                
-POS_OS 4719                
-POS_BROWSER 4837                
-POS_SCREENSIZE 4973                
-POS_UNKNOWNREFERER 5047                
-POS_UNKNOWNREFERERBROWSER 5171                
-POS_ORIGIN 5290                
-POS_SEREFERRALS 5426                
-POS_PAGEREFS 5570                
-POS_SEARCHWORDS 5824                
-POS_KEYWORDS 5976                
+POS_VISITOR 6674                
+POS_DAY 7493                
+POS_DOMAIN 3564                
+POS_LOGIN 3870                
+POS_ROBOT 4025                
+POS_WORMS 4187                
+POS_EMAILSENDER 4318                
+POS_EMAILRECEIVER 4461                
+POS_SESSION 7706                
+POS_SIDER 7913                
+POS_FILETYPES 4596                
+POS_DOWNLOADS 4702                
+POS_OS 4750                
+POS_BROWSER 4868                
+POS_SCREENSIZE 5023                
+POS_UNKNOWNREFERER 5097                
+POS_UNKNOWNREFERERBROWSER 5221                
+POS_ORIGIN 5340                
+POS_SEREFERRALS 5478                
+POS_PAGEREFS 5622                
+POS_SEARCHWORDS 5903                
+POS_KEYWORDS 6055                
 POS_MISC 2349                
-POS_ERRORS 6035                
-POS_CLUSTER 3695                
-POS_SIDER_404 6175                
+POS_ERRORS 6114                
+POS_CLUSTER 3726                
+POS_SIDER_404 6267                
 END_MAP
 
 # LastLine    = Date of last record processed - Last record line number in last log - Last record offset in last log - Last record signature value
@@ -46,14 +46,14 @@ END_MAP
 # MonthHostsKnown   = Number of hosts known
 # MonthHostsUnKnown = Number of hosts unknown
 BEGIN_GENERAL 8
-LastLine 20221107043201 35086 8317987 0
+LastLine 20221109043202 38552 9101354 0
 FirstTime 20221101031505
-LastTime 20221107041327
-LastUpdate 20221107043220 35086 33153 1577 2 354
-TotalVisits 34                  
-TotalUnique 11                  
+LastTime 20221108075332
+LastUpdate 20221109043226 38552 36620 1570 2 360
+TotalVisits 45                  
+TotalUnique 18                  
 MonthHostsKnown 0                   
-MonthHostsUnknown 11                  
+MonthHostsUnknown 18                  
 END_GENERAL
 
 # Misc ID - Pages - Hits - Bandwidth
@@ -63,7 +63,7 @@ JavaEnabled 0 0 0
 JavascriptDisabled 0 0 0
 PDFSupport 0 0 0
 WindowsMediaPlayerSupport 0 0 0
-AddToFavourites 0 0 0
+AddToFavourites 0 1 0
 RealPlayerSupport 0 0 0
 TotalMisc 0 0 0
 DirectorSupport 0 0 0
@@ -72,38 +72,39 @@ END_MISC
 
 # Hour - Pages - Hits - Bandwidth - Not viewed Pages - Not viewed Hits - Not viewed Bandwidth
 BEGIN_TIME 24
-0 0 0 0 420 420 247746240
-1 37 37 128390 472 472 247768818
-2 51 51 90127 484 484 247748162
-3 109 109 198896 535 535 247746369
-4 79 79 193170 479 479 231819696
-5 93 93 133479 454 454 214030304
-6 53 53 122680 414 415 212353975
-7 48 48 152446 429 429 212360683
-8 142 142 354902 513 513 212362827
-9 62 62 342454 421 421 212362202
-10 4 4 9058 364 364 212353920
-11 12 12 56227 372 372 212353920
-12 0 0 0 360 360 212353920
-13 47 47 81016 408 408 212353920
-14 91 91 130660 455 455 212353920
-15 191 191 326482 567 567 212354484
-16 4 4 2869 364 364 212353920
-17 0 0 0 360 360 212353920
-18 0 0 0 360 360 212353920
-19 0 0 0 360 360 212353920
-20 0 0 0 360 360 212353920
-21 0 0 0 360 360 212353920
-22 0 0 0 360 360 212353920
-23 0 0 0 360 360 212353920
+0 0 0 0 540 540 318530880
+1 37 37 128390 592 592 318553458
+2 51 51 90127 604 604 318532802
+3 109 109 198896 655 655 318531009
+4 89 89 266313 609 609 302604336
+5 100 100 203091 581 581 284814944
+6 63 63 177012 546 547 283142570
+7 85 85 270451 629 629 283271750
+8 168 168 445642 658 658 283147467
+9 81 81 457080 565 565 283306021
+10 84 84 204027 573 573 283204755
+11 19 19 96467 500 500 283138723
+12 0 0 0 480 480 283138560
+13 51 51 97186 532 533 283149224
+14 91 91 130660 575 575 283138560
+15 191 191 326482 687 687 283139124
+16 53 53 104142 540 540 283138590
+17 7 7 27839 488 488 283138560
+18 0 0 0 480 480 283138560
+19 0 0 0 480 480 283138560
+20 0 0 0 480 480 283138560
+21 0 0 0 480 480 283138560
+22 0 0 0 480 480 283138560
+23 0 0 0 480 480 283138560
 END_TIME
 
 # Domain - Pages - Hits - Bandwidth
 # The 10 first Pages must be first (order not required for others)
-BEGIN_DOMAIN 5
-kh 599 599 774042
-sg 291 291 863800
-eg 131 131 673574
+BEGIN_DOMAIN 6
+kh 626 626 825956
+sg 353 353 1144878
+eg 269 269 1164333
+jp 29 29 77198
 fi 1 1 5720
 ca 1 1 5720
 END_DOMAIN
@@ -140,8 +141,8 @@ END_EMAILRECEIVER
 
 # Files type - Hits - Bandwidth - Bandwidth without compression - Bandwidth after compression
 BEGIN_FILETYPES 2
-html 2 11440 0 0
-Unknown 1021 2311416 0 0
+html 5 25871 0 0
+Unknown 1274 3197934 0 0
 END_FILETYPES
 
 # Downloads - Hits - Bandwidth
@@ -151,17 +152,18 @@ END_DOWNLOADS
 # OS ID - Hits
 BEGIN_OS ID - Hits - Pages 4
 macosx 402 402
-Unknown 32 32
-win10 584 584
+Unknown 46 46
+win10 826 826
 linux 5 5
 END_OS
 
 # Browser ID - Hits - Pages
-BEGIN_BROWSER 4
+BEGIN_BROWSER 5
 chrome84.0.4147.105 1 1
-chrome106.0.0.0 684 684
-chrome107.0.0.0 306 306
-Unknown 32 32
+chrome106.0.0.0 739 739
+firefox106.0 29 29
+Unknown 46 46
+chrome107.0.0.0 464 464
 END_BROWSER
 
 # Screen size - Hits
@@ -170,21 +172,21 @@ END_SCREENSIZE
 
 # Unknown referer OS - Last visit date
 BEGIN_UNKNOWNREFERER 1
-PostmanRuntime/7.29.2 20221104094922
+PostmanRuntime/7.29.2 20221107114438
 END_UNKNOWNREFERER
 
 # Unknown referer Browser - Last visit date
 BEGIN_UNKNOWNREFERERBROWSER 1
-PostmanRuntime/7.29.2 20221104094922
+PostmanRuntime/7.29.2 20221107114438
 END_UNKNOWNREFERERBROWSER
 
 # Origin - Pages - Hits 
 BEGIN_ORIGIN 6
-From0 34 34
+From0 49 49
 From1 0 0
 From2 0 0
-From3 989 989
-From4 0 0
+From3 1229 1229
+From4 1 1
 From5 0 0
 END_ORIGIN
 
@@ -194,10 +196,11 @@ END_SEREFERRALS
 
 # External page referers - Pages - Hits
 # The 10 first Pages must be first (order not required for others)
-BEGIN_PAGEREFS 3
-https://react.stag.simccms.org 824 824
-http://localhost:3000 101 101
-https://react.stag.simccms.org 64 64
+BEGIN_PAGEREFS 4
+https://react.stag.simccms.org 983 983
+http://localhost:3000 177 177
+http://localhost:3000 40 40
+http://react.stag.simccms.org 29 29
 END_PAGEREFS
 
 # Search keyphrases - Number of search
@@ -211,78 +214,88 @@ BEGIN_KEYWORDS 0
 END_KEYWORDS
 
 # Errors - Hits - Bandwidth
-BEGIN_ERRORS 5
-401 2 60
-204 1068 0
-500 8929 5259222191
-404 8 7102
-422 24 25312
+BEGIN_ERRORS 6
+401 7 243
+302 1 370
+204 1347 0
+500 11813 6958115155
+404 9 8987
+422 57 327883
 END_ERRORS
 
 # URL with 404 errors - Hits - Last URL referrer
-BEGIN_SIDER_404 2
+BEGIN_SIDER_404 3
 /api/competition/rounds 7 -
 /api/task 1 https://react.stag.simccms.org/
+/api/competition/id=1 1 -
 END_SIDER_404
 
 # Host - Pages - Hits - Bandwidth - Last visit date - [Start date of last visit] - [Last page of last visit]
 # [Start date of last visit] and [Last page of last visit] are saved only if session is not finished
 # The 10 first Hits must be first (order not required for others)
-BEGIN_VISITOR 11
+BEGIN_VISITOR 18
 203.189.135.146 372 372 404693 20221102144223
-103.4.196.221 258 258 812163 20221107041327 20221107025813 /api/school
-167.179.38.18 227 227 369349 20221103154716
+103.4.196.221 320 320 1093241 20221107101322
+167.179.38.18 254 254 421263 20221107164135
+156.208.227.67 122 122 329341 20221108075332
 156.208.130.163 47 47 296377 20221101094350
 103.6.150.199 33 33 51637 20221102053910
 156.208.136.254 31 31 122967 20221104083359
+45.77.23.96 29 29 77198 20221107170514
 154.178.179.242 24 24 134108 20221104140655
 156.208.62.152 19 19 59224 20221103095410
+156.196.1.202 2 2 29040 20221107113043
+156.196.61.75 4 4 57980 20221107062558
+156.196.61.81 1 1 148 20221107114438
 41.44.224.241 10 10 60898 20221102085932
 35.217.33.156 1 1 5720 20221101063956
+154.177.163.185 5 5 58080 20221107095853
 205.169.39.63 1 1 5720 20221103082505
+154.178.174.2 4 4 16170 20221107132043
 END_VISITOR
 
 # Date - Pages - Hits - Bandwidth - Visits
-BEGIN_DAY 5
+BEGIN_DAY 6
 20221101 120 120 400840 9
 20221102 449 449 545782 10
 20221103 216 216 396845 8
 20221104 174 174 736605 6
-20221107 64 64 242784 1
+20221107 280 280 1020432 11
+20221108 40 40 123301 1
 END_DAY
 
 # Session range - Number of visits
 BEGIN_SESSION 7
-1h+ 12
-5mn-15mn 4
-0s-30s 8
-30s-2mn 2
+1h+ 15
+5mn-15mn 6
+0s-30s 10
+30s-2mn 5
 2mn-5mn 1
 15mn-30mn 4
-30mn-1h 2
+30mn-1h 4
 END_SESSION
 
 # URL - Pages - Bandwidth - Entry - Exit
 # The 10 first Pages must be first (order not required for others)
 BEGIN_SIDER 20
-/api/tasks 478 369509 8 11
-/api/tag 151 326600 5 7
-/api/competition 126 467497 4 5
-/api/collection 53 358348 0 1
-/api/taskdifficultygroup 37 19766 0 0
-/api/organizations 36 330966 0 2
-/api/school 33 56416 6 1
-/api/info/roles 14 1648 0 0
-/api/info/languages 14 74312 0 0
-/api/info/countrylist 14 45346 0 0
-/api/competition/rounds 3 194 0 0
-/ 2 11440 2 2
+/api/tasks 495 384225 8 11
+/api/competition 219 768747 4 8
+/api/tag 162 350757 5 7
+/api/collection 60 421524 0 3
+/api/school 60 101062 8 2
+/api/organizations 51 467865 1 3
+/api/taskdifficultygroup 44 23700 0 0
+/api/user 33 87514 5 1
+/api/participant 27 45489 0 0
+/api/login 21 2351 7 1
+/api/competition/rounds 6 371 0 0
+/ 5 25871 3 2
 /api/info/GenerateCertNum 1 18 1 0
-/api/user 13 32641 4 0
+/api/info/roles 18 2112 0 0
 /api/info/setIndexCounterCountryTable 1 11 0 0
-/api/marking/preparation 9 200309 0 1
-/api/competition/difficultyandpoints 9 6292 0 0
-/api/login 8 1107 4 0
-/api/info/levelCountyParticipantsList 8 2582 0 3
-/api/participant 13 17854 0 0
+/api/marking/preparation 16 371887 3 1
+/api/competition/difficultyandpoints 11 11769 0 0
+/api/info/levelCountyParticipantsList 13 4686 0 6
+/api/info/languages 18 95544 0 0
+/api/info/countrylist 18 58302 0 0
 END_SIDER
