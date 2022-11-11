@@ -1169,33 +1169,6 @@ class CompetitionController extends Controller
         }
     }
 
-    public function markingList (Request $request) {
-
-        $competition_id = Arr::flatten($request->validate([
-            'competition_id' => ['required','integer',Rule::exists('competition','id')->where('status','active')]
-        ]))[0];
-
-        try {
-
-            $marking = new Marking;
-            $markingList = $marking->markList($competition_id);
-
-            $data = $markingList;
-
-            return response()->json([
-                "status" => 200,
-                "message" => "marking progress list retrieve successful",
-                "data" => $data
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "marking progress list retrieve unsuccessful" .$e,
-            ]);
-        }
-    }
-
     public function changeComputeStatus (Request $request) {
 
         $validate = $request->validate([

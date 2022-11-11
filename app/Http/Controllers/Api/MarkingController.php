@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Custom\Marking;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
@@ -10,7 +11,7 @@ use App\Models\Countries;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
-use App\Models\Participants;
+use Illuminate\Http\Request;
 
 class MarkingController extends Controller
 {
@@ -106,6 +107,24 @@ class MarkingController extends Controller
                 "status" => 500,
                 "message" => "Table retrieval was unsuccessful",
             ], 500);
+        }
+    }
+
+    public function markingList (Competition $competition, Request $request) {
+        try {
+            $markingList = (new Marking())->markList($competition);
+            return response()->json([
+                "status"    => 200,
+                "message"   => "marking progress list retrieve successful",
+                "data"      => $markingList
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "marking progress list retrieve unsuccessful",
+                "error"     => $e->getMessage()
+            ]);
         }
     }
 }

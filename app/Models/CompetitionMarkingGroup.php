@@ -15,13 +15,13 @@ class CompetitionMarkingGroup extends Base
     protected $appends = [
         'created_by',
         'last_modified_by',
-        // 'total_participants',
-        // 'school_participants',
-        // 'private_participants',
-        // 'school_participants_answers_count',
-        // 'private_participants_answers_count',
-        // 'participantsComputed',
-        // 'particitpants_index_no_list',
+        'total_participants_count',
+        'school_participants',
+        'private_participants',
+        'school_participants_answers_count',
+        'private_participants_answers_count',
+        'participants_computed',
+        'particitpants_index_no_list',
         // 'country_name'
     ];
 
@@ -55,16 +55,16 @@ class CompetitionMarkingGroup extends Base
     }
 
     public function getSchoolParticipantsAttribute () {
-        return count($this->participants()->where('tuition_centre_id',null));
+        return $this->participants()->where('tuition_centre_id',null)->count();
     }
 
     public function getSchoolParticipantsAnswersCountAttribute () {
         $competition_group_index = $this->participants()->whereNull('tuition_centre_id')->pluck('index_no')->toArray();
-        return ParticipantsAnswer::whereIn('participant_index',$competition_group_index)->distinct('participant_index')->count();
+        return ParticipantsAnswer::whereIn('participant_index', $competition_group_index)->distinct('participant_index')->count();
     }
 
     public function getPrivateParticipantsAttribute () {
-        return count($this->participants()->where('tuition_centre_id',true));
+        return $this->participants()->where('tuition_centre_id',true)->count();
     }
 
     public function getPrivateParticipantsAnswersCountAttribute () {
@@ -73,11 +73,11 @@ class CompetitionMarkingGroup extends Base
     }
 
     public function getParticipantsComputedAttribute () {
-        $competition_group_index = $this->participants()->pluck('id')->toArray();
-        $participantsUploadedAnswers = ParticipantsAnswer::whereIn('participant_index',$competition_group_index)->distinct('participant_index')->count();
-        $totaTasks = CompetitionLevels::find($this->attributes['competition_level_id'])->collection->sections->pluck('section_task')->flatten()->count();
+        $competition_group_index = $this->participants()->pluck('participants.id')->toArray();
+        $participantsUploadedAnswers = ParticipantsAnswer::whereIn('participant_index', $competition_group_index)->distinct('participant_index')->count();
+        $totalTasks = $this->competition->totalTasksCount();
         $totalParticipants = $this->getPrivateParticipantsAttribute()  + $this->getSchoolParticipantsAttribute();
-        $totalAnswers = $totaTasks * $totalParticipants;
+        $totalAnswers = $totalTasks * $totalParticipants;
         $totalMarked = $participantsUploadedAnswers > 0 ? floor($totalAnswers / $participantsUploadedAnswers) : 0;
         return $totalMarked;
     }

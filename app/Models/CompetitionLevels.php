@@ -16,10 +16,6 @@ class CompetitionLevels extends Model
         return $this->belongsTo(CompetitionRounds::class,'round_id','id');
     }
 
-    public function groups () {
-        return $this->hasMany(CompetitionMarkingGroup::class,'competition_level_id','id');
-    }
-
     public function collection () {
         return $this->hasOne(Collections::class,'id','collection_id');
     }

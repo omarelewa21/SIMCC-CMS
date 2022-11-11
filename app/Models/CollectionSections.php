@@ -11,7 +11,7 @@ class CollectionSections extends Model
     protected $table = 'collection_sections';
     protected $guarded = '';
 
-    protected $appends=['section_task'];
+    protected $appends=['section_task', 'count_tasks'];
 
     protected $casts = [
         'tasks' => 'json',
@@ -27,7 +27,11 @@ class CollectionSections extends Model
 
     public function getSectionTaskAttribute ()
     {
-        $task = Arr::flatten($this->tasks);
-        return Tasks::whereIn('id',$task)->get();
+        return Tasks::whereIn('id', Arr::flatten($this->tasks))->get();
+    }
+
+    public function getCountTasksAttribute ()
+    {
+        return Tasks::whereIn('id', Arr::flatten($this->tasks))->count();
     }
 }

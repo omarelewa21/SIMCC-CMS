@@ -125,7 +125,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::post("/preparation/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
         Route::get("/participants/country/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::patch("/preparation",[CompetitionController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
-        Route::get("/",[CompetitionController::class,"markingList"])->name('competition.marking.list');
+        Route::get("/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::patch("/",[CompetitionController::class,"changeComputeStatus"])->name('competition.group.status');
         Route::get("/compute",[CompetitionController::class,"computeGroupResults"])->name('competition.group.compute');
         Route::get("/edit",[CompetitionController::class,"editGroupComputedList"])->name('competition.computed.list');

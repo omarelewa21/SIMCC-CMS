@@ -11,19 +11,26 @@ use App\Models\TasksAnswers;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
-class Marking {
-
-    function markList ($competition_id) {
-        $competition = Competition::with(['competitionOrganization.participants:competition_organization_id,id,country_id,status','rounds.levels.taskMarks','rounds.levels.groups' => function($query) {
-            $query->select(['id','competition_level_id','country_group','status']);
-        },'rounds.levels.collection.sections'])->find($competition_id);
-
-        $competition_name = $competition['name'];
-        $participants = $competition['competitionOrganization']->pluck('participants')->flatten();
-
-        $rounds = $competition['rounds']->mapWithKeys(function ($round) use($participants) {
-
-            $round->levels->each(function ($level) use(&$levels,$participants){
+class Marking
+{
+    public function markList(Competition $competition)
+    {
+        $competition->load(['competitionOrganization.participants:competition_organization_id,id,country_id,status', 'rounds.levels.taskMarks', 'groups.countries', 'rounds.levels.collection.sections']);
+        $groups = collect($competition->groups)->map(function ($group) {
+            $absentee = Participants::whereIn('index_no', $group->particitpants_index_no_list)->where('status', 'absent')->get()->flatten()->toArray();
+            $marked = Participants::whereIn('index_no', $group->particitpants_index_no_list)->where('status', 'result computed')->get()->toArray();
+            
+            return [
+                'id' => $group->id,
+                'total_participants' => $group->total_participants_count,
+                'absentee' => $absentee,
+                'marked' => count($marked),
+                'status' => $group->status
+            ];
+        })->toArray();
+        $levels = [];
+        $rounds = $competition->rounds->mapWithKeys(function ($round) use($levels) {
+            $round->levels->each(function ($level) use($levels){
                 $level = $level->toArray();
                 $numberOfTasksId = array_unique(Arr::flatten(Arr::pluck($level['collection']['sections'],'tasks')));
                 $numberOfTasksWithMarksId = array_unique(Arr::pluck($level['task_marks'],'task_answers_id'));
@@ -31,26 +38,10 @@ class Marking {
 
                 $levelAllTasksWithMarks = count($numberOfTasksId) === count($numberOfCorrectAnswersWithMarks) ? true : false;
 
-                $groups = collect($level['groups'])->map(function ($group) use($participants) {
-                    $absentee = Participants::whereIn('index_no',$group['particitpants_index_no_list'])->where('status','absent')->get()->flatten()->toArray();
-//                    $marked = $participants->whereIn('country_id',$group['country_group'])->where('status','result computed')->toArray();
-                    $marked = Participants::whereIn('index_no',$group['particitpants_index_no_list'])->where('status','result computed')->get()->toArray();
-
-                    return [
-                        'id' => $group['id'],
-                        'country_name' => implode(",",$group['country_name']),
-                        'total_participants' => $group['total_participants'],
-                        'absentee' => $absentee,
-                        'marked' => count($marked),
-                        'status' => $group['status']
-                    ];
-                })->toArray();
-
                 $levels[] = [
                     'level_id' => $level['id'],
                     'name' => $level['name'],
-                    'level_ready' => $levelAllTasksWithMarks,
-                    'groups' => $groups
+                    'level_ready' => $levelAllTasksWithMarks
                 ];
 
             })->toArray();
@@ -59,7 +50,7 @@ class Marking {
             ];
         })->toArray();
 
-        return ["competition_name" => $competition_name, "rounds" => $rounds];
+        return ["competition_name" => $competition['name'], "rounds" => $rounds, "groups" => $groups];
     }
 
     function checkValidMarkingGroup ($group_id) {

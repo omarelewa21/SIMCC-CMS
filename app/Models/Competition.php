@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Support\Arr;
 
 class Competition extends Base
 {
@@ -63,11 +64,15 @@ class Competition extends Base
 
     public function rounds ()
     {
-        return $this->hasMany(CompetitionRounds::class,"competition_id",'id');
+        return $this->hasMany(CompetitionRounds::class, "competition_id");
+    }
+
+    public function groups () {
+        return $this->hasMany(CompetitionMarkingGroup::class, 'competition_id');
     }
 
     public function overallAwardsGroups () {
-        return $this->hasMany(CompetitionOverallAwardsGroups::class,'competition_id','id');
+        return $this->hasMany(CompetitionOverallAwardsGroups::class, 'competition_id');
     }
 
     public function participants () {
@@ -101,5 +106,23 @@ class Competition extends Base
     public function getActiveParticipantsByCountry($country_id)
     {   
         return $this->participants()->where('country_id', $country_id)->get();
+    }
+
+    public function totalTasksCount()
+    {
+        $collectionIds = 
+            $this->rounds()->join('competition_levels as cl', 'cl.round_id', 'competition_rounds.id')
+                ->join('collection', 'collection.id', 'cl.collection_id')
+                ->select('collection.id as id')->distinct()
+                ->pluck('id')->toArray();
+
+        $sections = CollectionSections::distinct()->whereIn('collection_id', $collectionIds)->get();
+        $count = 0;
+        foreach($sections as $section){
+            if($section->count_tasks){
+                $count += $section->count_tasks;
+            }
+        }
+        return $count;
     }
 }
