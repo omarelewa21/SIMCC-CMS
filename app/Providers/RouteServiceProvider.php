@@ -47,6 +47,10 @@ class RouteServiceProvider extends ServiceProvider
                 ->namespace($this->namespace)
                 ->group(base_path('routes/web.php'));
         });
+
+        Route::bind('competition_marking_group', function ($value) {
+            return \App\Models\CompetitionMarkingGroup::whereId($value)->firstOrFail();
+        });
     }
 
     /**

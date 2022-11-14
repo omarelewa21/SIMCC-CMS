@@ -11,7 +11,12 @@ use App\Models\Countries;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
+use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
+use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 class MarkingController extends Controller
 {
@@ -40,8 +45,9 @@ class MarkingController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                "status" => 500,
-                "message" => "add marking group unsuccessful"
+                "status"    => 500,
+                "message"   => "add marking group unsuccessful",
+                "error"     => $e->getMessage()
             ], 500);
         }
 
@@ -69,8 +75,9 @@ class MarkingController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "marking preparation list retrieve unsuccessful",
+                "status"    => 500,
+                "message"   => "marking preparation list retrieve unsuccessful",
+                "error"     => $e->getMessage()
             ], 500);
         }
     }
@@ -104,13 +111,14 @@ class MarkingController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "Table retrieval was unsuccessful",
+                "status"    => 500,
+                "message"   => "Table retrieval was unsuccessful",
+                "error"     => $e->getMessage()
             ], 500);
         }
     }
 
-    public function markingList (Competition $competition, Request $request) {
+    public function markingList (Competition $competition) {
         try {
             $markingList = (new Marking())->markList($competition);
             return response()->json([
@@ -123,6 +131,38 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "marking progress list retrieve unsuccessful",
+                "error"     => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function editMarkingGroups(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
+        $group->undoComputedResults('active');
+        try {
+            $group->update([
+                'name'                  => $request->name,
+                'last_modified_userid'  => auth()->user()->id
+            ]);
+
+            DB::table('competition_marking_group_country')->where('marking_group_id', $group->id)->delete();
+
+            foreach($request->countries as $country_id){
+                DB::table('competition_marking_group_country')->insert([
+                    'marking_group_id'  => $group->id,
+                    'country_id'        => $country_id,
+                    'created_at'        => now(),
+                    'updated_at'        => now()
+                ]);
+            }
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "edit marking group successful"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "edit marking group unsuccessful",
                 "error"     => $e->getMessage()
             ]);
         }

@@ -94,7 +94,21 @@ class CompetitionMarkingGroup extends Base
         return $this->belongsTo(Competition::class);
     }
 
-    public function countries() {
+    public function countries(){
         return $this->belongsToMany(Countries::class, 'competition_marking_group_country', 'marking_group_id', 'country_id');
+    }
+
+    public function undoComputedResults($groupStatus) {
+        if(isset($groupStatus)) {
+            $this->status = $groupStatus;
+            $this->save();
+        }
+
+        $particitpants_index_no_list = $this->particitpants_index_no_list->toArray();
+
+        if(count($particitpants_index_no_list) > 0) {
+            CompetitionParticipantsResults::whereIn('participant_index', $particitpants_index_no_list)->delete();
+            Participants::whereIn('index_no', $particitpants_index_no_list)->update(['status' => 'active']);
+        }
     }
 }

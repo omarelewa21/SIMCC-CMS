@@ -92,10 +92,6 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/swapIndex",[ParticipantsController::class,"swapIndex"])->name('participant.swapIndex');
     });
 
-//    Route::group(["prefix" => "tag"], function () {
-//       Route::get("",[DomainsTagsController::class,'create'])->name('createTag');
-//    });
-
     Route::group(["prefix" => "competition"],function () {
         Route::post("",[CompetitionController::class,"create"])->name('competition.create');
         Route::get("",[CompetitionController::class,"list"])->name('competition.list');
@@ -124,7 +120,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::get("/preparation/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
         Route::post("/preparation/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
         Route::get("/participants/country/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
-        Route::patch("/preparation",[CompetitionController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
+        Route::patch("/preparation/{competition_marking_group}",[\App\Http\Controllers\Api\MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
         Route::get("/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::patch("/",[CompetitionController::class,"changeComputeStatus"])->name('competition.group.status');
         Route::get("/compute",[CompetitionController::class,"computeGroupResults"])->name('competition.group.compute');
