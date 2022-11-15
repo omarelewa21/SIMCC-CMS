@@ -4,7 +4,6 @@ namespace App\Http\Controllers\api;
 
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Response;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
@@ -16,7 +15,6 @@ use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
 use App\Models\Countries;
-use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use App\Models\Tasks;
@@ -1116,39 +1114,6 @@ class CompetitionController extends Controller
                 "status" => 500,
                 "message" => "edit marking group unsuccessful"
             ]);
-        }
-    }
-
-
-    public function changeComputeStatus (Request $request) {
-
-        $validate = $request->validate([
-            'id' => ['required','integer',Rule::exists('competition_marking_group','id')->whereNot('status','computing')]
-        ]);
-
-        $group_id = $validate['id'];
-        $found = new Marking();
-        $found = $found->checkValidMarkingGroup($group_id);
-
-        if($found) {
-            $group = CompetitionMarkingGroup::find($group_id);
-            $group->undoComputedResults('computing');
-
-            return response()->json(
-                [
-                    "status" => 200,
-                    "message" => "marking in progress",
-                ]
-            );
-        }
-        else
-        {
-            return response()->json(
-                [
-                    "status" => 500,
-                    "message" => "Unable to mark, make competition is configured",
-                ]
-            );
         }
     }
 

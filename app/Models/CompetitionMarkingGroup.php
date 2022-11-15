@@ -16,12 +16,12 @@ class CompetitionMarkingGroup extends Base
         'created_by',
         'last_modified_by',
         'total_participants_count',
-        'school_participants',
-        'private_participants',
-        'school_participants_answers_count',
-        'private_participants_answers_count',
-        'participants_computed',
-        'particitpants_index_no_list',
+        // 'school_participants',
+        // 'private_participants',
+        // 'school_participants_answers_count',
+        // 'private_participants_answers_count',
+        // 'participants_computed',
+        // 'particitpants_index_no_list',
         // 'country_name'
     ];
 

@@ -7,7 +7,6 @@ use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
-use App\Models\TasksAnswers;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -15,49 +14,39 @@ class Marking
 {
     public function markList(Competition $competition)
     {
-        $competition->load(['competitionOrganization.participants:competition_organization_id,id,country_id,status', 'rounds.levels.taskMarks', 'groups.countries', 'rounds.levels.collection.sections']);
-        $groups = collect($competition->groups)->map(function ($group) {
-            $absentee = Participants::whereIn('index_no', $group->particitpants_index_no_list)->where('status', 'absent')->get()->flatten()->toArray();
-            $marked = Participants::whereIn('index_no', $group->particitpants_index_no_list)->where('status', 'result computed')->get()->toArray();
-            
-            return [
-                'id' => $group->id,
-                'total_participants' => $group->total_participants_count,
-                'absentee' => $absentee,
-                'marked' => count($marked),
-                'status' => $group->status
-            ];
-        })->toArray();
-        $levels = [];
-        $rounds = $competition->rounds->mapWithKeys(function ($round) use($levels) {
-            $round->levels->each(function ($level) use($levels){
-                $level = $level->toArray();
-                $numberOfTasksId = array_unique(Arr::flatten(Arr::pluck($level['collection']['sections'],'tasks')));
-                $numberOfTasksWithMarksId = array_unique(Arr::pluck($level['task_marks'],'task_answers_id'));
-                $numberOfCorrectAnswersWithMarks = TasksAnswers::whereIn('id',$numberOfTasksWithMarksId)->whereNotNull('answer')->get()->makeVisible(['task_id'])->groupBy('task_id');
+        $countries = $competition->groups()->join('competition_marking_group_country as cmgc', 'competition_marking_group.id', 'cmgc.marking_group_id')
+                        ->join('all_countries', 'all_countries.id', 'cmgc.country_id')
+                        ->pluck('all_countries.display_name')->unique();
 
-                $levelAllTasksWithMarks = count($numberOfTasksId) === count($numberOfCorrectAnswersWithMarks) ? true : false;
-
-                $levels[] = [
-                    'level_id' => $level['id'],
-                    'name' => $level['name'],
-                    'level_ready' => $levelAllTasksWithMarks
+        $rounds = $competition->rounds->mapWithKeys(function ($round){
+            $levels = $round->levels->mapWithKeys(function ($level, $key){
+                $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
+                $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
+                    $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
+                })->select('task_answers.task_id')->distinct()->count();
+                $absentees = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct()->pluck('participants.name');
+                return [
+                    $key => [
+                        'level_id'              => $level->id,
+                        'name'                  => $level->name,
+                        'level_ready'           => $numberOfTasksIds === $numberOfCorrectAnswersWithMarks,
+                        'total_participants'    => $level->participants()->count(),
+                        'absentees_count'       => count($absentees),
+                        'absentees'             => $absentees,
+                    ]
                 ];
-
-            })->toArray();
-            return [
-                $round['name'] => $levels
-            ];
-        })->toArray();
-
-        return ["competition_name" => $competition['name'], "rounds" => $rounds, "groups" => $groups];
+            });
+            return [$round['name'] => $levels];
+        });
+        return [
+            "competition_name" => $competition['name'],
+            "countries"        => $countries,
+            "rounds"           => $rounds
+        ];
     }
 
-    function checkValidMarkingGroup ($group_id) {
-        $groups = CompetitionMarkingGroup::find($group_id);
-        $competition_id = $groups->level->rounds->competition->id;
-        $competition = new Marking();
-        $competition = $competition->markList($competition_id);
+    function checkValidMarkingGroup (CompetitionMarkingGroup $group) {
+        $competition = $this->markList($group->competition_id);
         $found = false;
         foreach ($competition['rounds'] as $round) {
             if(!$found) {

@@ -65,7 +65,7 @@ class UpdateCompetitionMarkingGroupRequest extends FormRequest
             if($this->competitionMarkingGroup->status === 'closed'){
                 $validator->errors()->add('Competition', 'The selected competition is close for edit');
             }
-            
+
             foreach($this->countries as $country_id){
                 if($this->competitionMarkingGroup->competition->participants()->where('participants.country_id', $country_id)->count() === 0) {
                     $validator->errors()->add('Country', 'The selected country id have no participants');
