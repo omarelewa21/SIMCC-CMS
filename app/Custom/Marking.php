@@ -24,14 +24,15 @@ class Marking
                 $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
                     $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
                 })->select('task_answers.task_id')->distinct()->count();
-                $absentees = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct()->pluck('participants.name');
+                $absentees = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct()->inRandomOrder()->limit(10)->pluck('participants.name');
+                $absentees_count = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct()->count();
                 return [
                     $key => [
                         'level_id'              => $level->id,
                         'name'                  => $level->name,
                         'level_ready'           => $numberOfTasksIds === $numberOfCorrectAnswersWithMarks,
                         'total_participants'    => $level->participants()->count(),
-                        'absentees_count'       => count($absentees),
+                        'absentees_count'       => $absentees_count,
                         'absentees'             => $absentees,
                     ]
                 ];
