@@ -14,40 +14,19 @@ class CompetitionMarkingGroup extends Base
 
     protected $appends = [
         'created_by',
-        'last_modified_by',
-        'total_participants_count',
-        // 'school_participants',
-        // 'private_participants',
-        // 'school_participants_answers_count',
-        // 'private_participants_answers_count',
-        // 'participants_computed',
-        // 'particitpants_index_no_list',
-        // 'country_name'
+        'last_modified_by'
     ];
 
-
-    public function level () {
-        return $this->belongsTo(CompetitionLevels::class,'competition_level_id','id');
+    public function competition(){
+        return $this->belongsTo(Competition::class);
     }
 
-    public function getCountryGroupAttribute ($value) {
-        return json_decode($value);
+    public function countries(){
+        return $this->belongsToMany(Countries::class, 'competition_marking_group_country', 'marking_group_id', 'country_id');
     }
 
-    public function getCountryNameAttribute ($value) {
-        $countries = Countries::all()->mapWithKeys(function ($item, $key) {
-          return [$item['id'] => $item['display_name']];
-        });
-
-        $countries_id = $this->getCountryGroupAttribute($this->attributes['country_group']);
-
-        return collect($countries_id)->map(function ($item) use($countries) {
-            return $countries[$item];
-        });
-    }
-
-    public function setCountryGroupAttribute ($value) {
-        $this->attributes['country_group'] = json_encode($value);
+    public function participants() {
+        return $this->competition->participants()->whereIn('participants.country_id', $this->countries->pluck('id')->toArray());
     }
 
     public function getTotalParticipantsCountAttribute () {
@@ -84,18 +63,6 @@ class CompetitionMarkingGroup extends Base
 
     public function getParticitpantsIndexNoListAttribute () {
         return $this->participants()->pluck('index_no');
-    }
-
-    public function participants() {
-        return $this->competition->participants()->whereIn('participants.country_id', $this->countries->pluck('id')->toArray());
-    }
-
-    public function competition(){
-        return $this->belongsTo(Competition::class);
-    }
-
-    public function countries(){
-        return $this->belongsToMany(Countries::class, 'competition_marking_group_country', 'marking_group_id', 'country_id');
     }
 
     public function undoComputedResults($groupStatus) {

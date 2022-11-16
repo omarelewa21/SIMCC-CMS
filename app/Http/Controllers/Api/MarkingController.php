@@ -8,7 +8,6 @@ use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
 use App\Models\Countries;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
@@ -16,6 +15,69 @@ use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 
 class MarkingController extends Controller
 {
+    /**
+     * Marking overview page
+     * 
+     * @param App\Models\Competition
+     * 
+     * @return Illuminate\Http\Response
+     */
+    public function markingList(Competition $competition) {
+        try {
+            $markingList = (new Marking())->markList($competition->load('rounds.levels.collection.sections'));
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Marking progress list retrieve successful",
+                "data"      => $markingList
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Marking progress list retrieve unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Competition Marking group overview
+     * 
+     * @param App\Models\Competition
+     * 
+     * @return Illuminate\Http\Response
+     */
+    public function markingGroupsList(Competition $competition)
+    {
+        try {
+            $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+
+            $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
+                        ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
+
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Marking preparation list retrieve successful",
+                'header_data'   => $headerData,
+                'data'          => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Marking preparation list retrieve unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * add a new marking group
+     * 
+     * @param App\Models\Competition
+     * @param App\Http\Requests\StoreCompetitionMarkingGroupRequest
+     * 
+     * @return Illuminate\Http\Response
+     */
     public function addMarkingGroups(Competition $competition, StoreCompetitionMarkingGroupRequest $request)
     {
         DB::beginTransaction();
@@ -49,30 +111,55 @@ class MarkingController extends Controller
             "message" => "Add marking group successful"
         ]);
     }
-
-    public function markingGroupsList(Competition $competition)
-    {
+    
+    /**
+     * Edit marking group
+     * 
+     * @param App\Models\CompetitionMarkingGroup
+     * @param App\Http\Requests\UpdateCompetitionMarkingGroupRequest
+     * 
+     * @return Illuminate\Http\Response
+     */
+    public function editMarkingGroups(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
+        $group->undoComputedResults('active');
         try {
-            $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            $group->update([
+                'name'                  => $request->name,
+                'last_modified_userid'  => auth()->user()->id
+            ]);
 
-            $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
-                        ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
+            DB::table('competition_marking_group_country')->where('marking_group_id', $group->id)->delete();
+
+            foreach($request->countries as $country_id){
+                DB::table('competition_marking_group_country')->insert([
+                    'marking_group_id'  => $group->id,
+                    'country_id'        => $country_id,
+                    'created_at'        => now(),
+                    'updated_at'        => now()
+                ]);
+            }
 
             return response()->json([
-                "status"        => 200,
-                "message"       => "Marking preparation list retrieve successful",
-                'header_data'   => $headerData,
-                'data'          => $data
+                "status"    => 200,
+                "message"   => "Edit marking group successful"
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Marking preparation list retrieve unsuccessful",
+                "message"   => "Edit marking group unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * Get active participants per country per grade
+     * 
+     * @param App\Models\Competition
+     * @param App\Http\Requests\getActiveParticipantsByCountryRequest
+     * 
+     * @return Illuminate\Http\Response
+     */
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
@@ -109,56 +196,11 @@ class MarkingController extends Controller
         }
     }
 
-    public function markingList(Competition $competition) {
-        try {
-            $markingList = (new Marking())->markList($competition->load('rounds.levels.collection.sections'));
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Marking progress list retrieve successful",
-                "data"      => $markingList
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                "status"    => 500,
-                "message"   => "Marking progress list retrieve unsuccessful",
-                "error"     => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function editMarkingGroups(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
-        $group->undoComputedResults('active');
-        try {
-            $group->update([
-                'name'                  => $request->name,
-                'last_modified_userid'  => auth()->user()->id
-            ]);
-
-            DB::table('competition_marking_group_country')->where('marking_group_id', $group->id)->delete();
-
-            foreach($request->countries as $country_id){
-                DB::table('competition_marking_group_country')->insert([
-                    'marking_group_id'  => $group->id,
-                    'country_id'        => $country_id,
-                    'created_at'        => now(),
-                    'updated_at'        => now()
-                ]);
-            }
-
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Edit marking group successful"
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status"    => 500,
-                "message"   => "Edit marking group unsuccessful",
-                "error"     => $e->getMessage()
-            ], 500);
-        }
-    }
-
+    /**
+     * @param App\Models\CompetitionMarkingGroup
+     * 
+     * @return Illuminate\Http\Response
+     */
     public function changeComputeStatus(CompetitionMarkingGroup $group) {
         $found = (new Marking())->checkValidMarkingGroup($group);
         if($found) {
@@ -169,9 +211,9 @@ class MarkingController extends Controller
             ]);
         } else {
             return response()->json([
-                "status"    => 500,
-                "message"   => "Unable to mark, make competition is configured"
-            ], 500);
+                "status"    => 405,
+                "message"   => "Unable to mark, make competition is configured",
+            ], 405);
         }
     }
 }
