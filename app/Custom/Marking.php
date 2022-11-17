@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class Marking
 {
+    /**
+     * Get mark list
+     * 
+     * @param App\Models\Competition
+     * 
+     * @return array
+     */
     public function markList(Competition $competition)
     {
         $countries = $competition->groups()->join('competition_marking_group_country as cmgc', 'competition_marking_group.id', 'cmgc.marking_group_id')
@@ -20,16 +27,12 @@ class Marking
 
         $rounds = $competition->rounds->mapWithKeys(function ($round){
             $levels = $round->levels->mapWithKeys(function ($level, $key){
-                $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
-                $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
-                    $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
-                })->select('task_answers.task_id')->distinct()->count();
                 $absenteesQuery = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct();
                 return [
                     $key => [
                         'level_id'              => $level->id,
                         'name'                  => $level->name,
-                        'level_ready'           => $numberOfTasksIds === $numberOfCorrectAnswersWithMarks,
+                        'level_ready'           => $this->getCompetitionLevelReady($level),
                         'total_participants'    => $level->participants()->count(),
                         'absentees_count'       => $absenteesQuery->count(),
                         'absentees'             => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
@@ -45,36 +48,42 @@ class Marking
         ];
     }
 
-    function checkValidMarkingGroup (CompetitionMarkingGroup $group) {
-        $competition = $this->markList($group->competition_id);
-        $found = false;
-        foreach ($competition['rounds'] as $round) {
-            if(!$found) {
-                foreach($round as $level) {
-                    if($level['level_ready'] && !$found){
-                        foreach($level['groups'] as $group) {
-                            if(count($level['groups']) > 0 ){
-                                if($group['id'] == $group_id && !$found) {
-                                    $found = true;
-                                }
-                            }
-                        }
-                    }
+    /**
+     * Check if all levels are ready for computing
+     * 
+     * @param App\Models\Competition
+     * 
+     * @return bool
+     */
+    public function checkIfShouldChangeMarkingGroupStatus (Competition $competition) {
+        foreach($competition->rounds as $round){
+            foreach($round->levels as $level){
+                if(!$this->getCompetitionLevelReady($level)){
+                    return false;
                 }
             }
         }
-
-        return $found;
+        return true;
     }
 
-    function computingResults () {
+    /**
+     * check if level is ready for computing
+     * 
+     * @param App\Models\CompetitionLevel
+     * 
+     * @return bool
+     */
+    private function getCompetitionLevelReady($level){
+        $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
+        $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
+            $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
+        })->select('task_answers.task_id')->distinct()->count();
+        return $numberOfTasksIds === $numberOfCorrectAnswersWithMarks;
+    }
 
-        $groups = CompetitionMarkingGroup::where([
-            'status' => 'computing'
-        ])->orderBy('updated_at', 'asc');
-
-        if($groups->count() == 0) {
-            abort('200','no groups to compute');
+    public function computingResults(Competition $competition){
+        if($competition->groups()->count() === 0) {
+            throw new \Exception("No groups to compute", 422);
         }
 
         $groups = $groups->first();
@@ -103,9 +112,6 @@ class Marking
         $collection_initial_points = $groups->level->collection->initial_points;
         $tasks_id = $groups->level->collection->sections->pluck('tasks')->flatten();
         $tasks_answers = DB::select( DB::raw("SELECT task_answers.answer,task_answers.task_id,task_labels.content,competition_tasks_mark.marks,competition_task_difficulty.wrong_marks,competition_task_difficulty.blank_marks FROM `task_answers` LEFT JOIN task_labels ON task_answers.id = task_labels.task_answers_id LEFT JOIN competition_tasks_mark ON task_answers.id = competition_tasks_mark.task_answers_id LEFT JOIN competition_task_difficulty on task_answers.task_id = competition_task_difficulty.task_id WHERE `task_answers`.`task_id` in (" . implode(",",$tasks_id->toArray()) . ") AND task_answers.answer IS NOT NULL AND competition_tasks_mark.level_id = " . $level_id . " AND competition_task_difficulty.level_id = " . $level_id));
-
-        // $competition_organization_id = $groups->level->rounds->competition->competitionOrganization->pluck('id')->toArray();
-        // $participants_index = Participants::whereIn('competition_organization_id',$competition_organization_id)->whereIn('country_id',$groups->country_group)->pluck('index_no')->toArray();
 
         $participants_index = $groups->particitpants_index_no_list->toArray();
 
