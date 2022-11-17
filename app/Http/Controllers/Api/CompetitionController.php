@@ -1316,4 +1316,32 @@ class CompetitionController extends Controller
 
         return $competition_level->taskMarks()->createMany($insert);
     }
+
+    public function competitionCountries(Competition $competition, Request $request)
+    {
+        $countries = $competition->participants()
+            ->join('all_countries as ac', 'ac.id', 'participants.country_id');
+
+        switch ($request->mode) {
+            case "not_grouped":
+                $competitionGroupCountriesIdsList = $competition->groups()
+                    ->join('competition_marking_group_country as cmgc', 'competition_marking_group.id', 'cmgc.marking_group_id')
+                    ->join('all_countries as ac', 'ac.id', 'cmgc.country_id')
+                    ->pluck('ac.id');
+
+                $countries->whereNotIn('ac.id', $competitionGroupCountriesIdsList);
+                return response()->json([
+                    "status"    => 200,
+                    "countries" => $countries->pluck('ac.display_name', 'ac.id')
+                ], 200);
+            
+            break;
+            default:
+                return response()->json([
+                    "status"    => 200,
+                    "countries" => $countries->pluck('ac.display_name', 'ac.id')
+                ], 200);
+            break;
+        }
+    }
 }

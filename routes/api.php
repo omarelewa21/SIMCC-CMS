@@ -115,6 +115,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/overall_awards",[CompetitionController::class,"editOverallAwards"])->name('competition.overall.award.edit');
         Route::delete("/overall_awards",[CompetitionController::class,"deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
         Route::get("/report",[CompetitionController::class,"report"])->name('competition.report');
+        Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
     });
 
     Route::group(["prefix" => "marking"],function () {

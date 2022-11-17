@@ -11,7 +11,7 @@ use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
-
+use Illuminate\Http\Request;
 
 class MarkingController extends Controller
 {
