@@ -21,9 +21,7 @@ class Marking
      */
     public function markList(Competition $competition)
     {
-        $countries = $competition->groups()->join('competition_marking_group_country as cmgc', 'competition_marking_group.id', 'cmgc.marking_group_id')
-                        ->join('all_countries', 'all_countries.id', 'cmgc.country_id')
-                        ->pluck('all_countries.display_name')->unique();
+        $countries = $competition->groups->load('countries:id,display_name')->pluck('countries');
 
         $rounds = $competition->rounds->mapWithKeys(function ($round){
             $levels = $round->levels->mapWithKeys(function ($level, $key){
