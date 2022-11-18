@@ -23,25 +23,33 @@ class Marking
     {
         $countries = $competition->groups->load('countries:id,display_name')->pluck('countries');
 
-        $rounds = $competition->rounds->mapWithKeys(function ($round){
-            $levels = $round->levels->mapWithKeys(function ($level, $key){
-                $absenteesQuery = $level->participants()->where('participants.status', 'absent')->select('participants.name')->distinct();
-                return [
-                    $key => [
+        $rounds = $competition->rounds->mapWithKeys(function ($round) use($countries){
+            $levels = $round->levels->mapWithKeys(function ($level) use($countries){
+                $levels = [];
+                foreach($countries as $countryGroup){
+                    $countriesParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray());
+                    $totalParticipants = $countriesParticipants->count();
+                    $absenteesQuery = $countriesParticipants
+                                        ->where('participants.status', 'absent')
+                                        ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                                        ->select('participants.name')->distinct();
+                    
+                    $levels[$level->id][] = [
                         'level_id'              => $level->id,
                         'name'                  => $level->name,
                         'level_ready'           => $this->getCompetitionLevelReady($level),
-                        'total_participants'    => $level->participants()->count(),
+                        'total_participants'    => $totalParticipants,
                         'absentees_count'       => $absenteesQuery->count(),
                         'absentees'             => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
-                    ]
-                ];
+                        'country_group'         => $countryGroup->pluck('display_name')->toArray()
+                    ];
+                }
+                return $levels;
             });
             return [$round['name'] => $levels];
         });
         return [
             "competition_name" => $competition['name'],
-            "countries"        => $countries,
             "rounds"           => $rounds
         ];
     }
