@@ -18,7 +18,7 @@ class MarkingController extends Controller
     /**
      * Marking overview page
      * 
-     * @param App\Models\Competition
+     * @param App\Models\Competition $competition
      * 
      * @return Illuminate\Http\Response
      */
@@ -43,7 +43,7 @@ class MarkingController extends Controller
     /**
      * Competition Marking group overview
      * 
-     * @param App\Models\Competition
+     * @param App\Models\Competition $competition
      * 
      * @return Illuminate\Http\Response
      */
@@ -73,8 +73,8 @@ class MarkingController extends Controller
     /**
      * add a new marking group
      * 
-     * @param App\Models\Competition
-     * @param App\Http\Requests\StoreCompetitionMarkingGroupRequest
+     * @param App\Models\Competition $competition
+     * @param App\Http\Requests\StoreCompetitionMarkingGroupRequest $request
      * 
      * @return Illuminate\Http\Response
      */
@@ -115,8 +115,8 @@ class MarkingController extends Controller
     /**
      * Edit marking group
      * 
-     * @param App\Models\CompetitionMarkingGroup
-     * @param App\Http\Requests\UpdateCompetitionMarkingGroupRequest
+     * @param App\Models\CompetitionMarkingGroup $group
+     * @param App\Http\Requests\UpdateCompetitionMarkingGroupRequest $request
      * 
      * @return Illuminate\Http\Response
      */
@@ -155,8 +155,8 @@ class MarkingController extends Controller
     /**
      * Get active participants per country per grade
      * 
-     * @param App\Models\Competition
-     * @param App\Http\Requests\getActiveParticipantsByCountryRequest
+     * @param App\Models\Competition $competition
+     * @param App\Http\Requests\getActiveParticipantsByCountryRequest $request
      * 
      * @return Illuminate\Http\Response
      */
@@ -197,7 +197,7 @@ class MarkingController extends Controller
     }
 
     /**
-     * @param App\Models\CompetitionMarkingGroup
+     * @param App\Models\CompetitionMarkingGroup $competition
      * 
      * @return Illuminate\Http\Response
      */
@@ -222,9 +222,9 @@ class MarkingController extends Controller
     /**
      * currently only support single mcq structure
      * 
-     * @param App\Models\Competition
+     * @param App\Models\Competition $competition
      * 
-     *  @return array
+     * @return array
      */
     public function computeGroupResults(Competition $competition){
         try {
@@ -237,7 +237,7 @@ class MarkingController extends Controller
     /**
      * 
      * 
-     * @param App\Models\CompetitionMarkingGroup
+     * @param App\Models\CompetitionMarkingGroup $group
      * 
      * @return array
      */
