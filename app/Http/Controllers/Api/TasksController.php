@@ -108,7 +108,7 @@ class TasksController extends Controller
         }catch(\Exception $e){
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks create was unsuccessful",
+                "message"   => "Tasks create was unsuccessful" . $e->getMessage(),
                 "error"     => $e->getMessage() 
             ]);
         }
