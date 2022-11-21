@@ -15,6 +15,10 @@ use App\Models\User;
 use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
 use App\Rules\CheckMultipleVaildIds;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -172,13 +176,12 @@ class CollectionController extends Controller
                 count($tags) == 0 ?: $collection->tags()->sync($tags[$collectionIndex]);
 
                 // add recommendation of grade and difficulty to collection
-                $collection->gradeDifficulty()->delete();
                 if(count($recommendation[$collectionIndex]) > 0 ) {
                     collect($recommendation[$collectionIndex])->map(function ($item) use ($collection,$collectionIndex) {
                         $collection->gradeDifficulty()->create(
                             [
-                                "grade"       => Str::after($item['grade'], (intval(($collectionIndex+1) / 10)+1)),
-                                "difficulty"  => $item['difficulty']
+                                "grade" => Str::after($item['grade'], (intval(($collectionIndex+1) / 10)+1)),
+                                "difficulty" => $item['difficulty']
                             ]);
                     });
                 }
@@ -340,16 +343,21 @@ class CollectionController extends Controller
 
         try {
             $collection_id = Arr::pull($validated, 'collection_id');
-            $section['tasks'] =  json_encode(Arr::pull($validated, 'groups'));
+            $tasks =  json_encode(Arr::pull($validated, 'groups'),JSON_UNESCAPED_SLASHES);
 
+          
             DB::beginTransaction();
-            $section = new CollectionSections();
-            $section->collection_id = $collection_id;
-            $section->description = $validated['description'];
-            $section->tasks = json_encode(Arr::pull($validated, 'groups'));
-            $section->allow_skip = $validated['allow_skip'];
-            $section->sort_randomly = $validated['sort_randomly'];
-            $section->save();
+          
+            CollectionSections::insert(
+            ["collection_id" => $collection_id,
+              "description" => $validated['description'],
+              "tasks" => $tasks,
+              "allow_skip" =>  $validated['allow_skip'],
+              "sort_randomly" => $validated['sort_randomly']
+            ] 
+            );
+          
+            $section = CollectionSections::orderBy('id', 'DESC')->first();
             DB::commit();
 
 
@@ -362,7 +370,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "collection section update unsuccessful "
+                "message" => "collection section update unsuccessful ".$e
             ]);
         }
     }
@@ -384,7 +392,7 @@ class CollectionController extends Controller
         $collection_id = Arr::pull($validated, 'collection_id');
         $section_id = $validated['section_id'] ?? Arr::pull($validated, 'section_id');
         $section = Arr::pull($validated, 'section');
-        $section['tasks'] = json_encode(Arr::pull($section, 'groups'));
+        $section['tasks'] =  json_encode(Arr::pull($section, 'groups'));
 
         try {
 
