@@ -118,7 +118,7 @@ class CollectionController extends Controller
 
             }
 
-            $availForSearch = array("name", "province", "address", "postal", "phone");
+            $availForSearch = array("identifier", "name", "description", "tags");
             $collectionsList = CollectionHelper::searchCollection($searchKey, $collections, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availCollectionsStatus, 'competition' => $availCollectionsCompetition, 'tags' => $availTagType], 'collectionList' => $collectionsList);
 
@@ -131,8 +131,9 @@ class CollectionController extends Controller
         catch(\Exception $e){
             // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "Retrieve collection unsuccessful" .$e
+                "status"    => 500,
+                "message"   => "Retrieve collection unsuccessful" .$e,
+                "error"     => $e->getMessage()
             ]);
         }
     }
