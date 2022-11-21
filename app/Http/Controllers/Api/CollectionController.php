@@ -15,10 +15,6 @@ use App\Models\User;
 use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
 use App\Rules\CheckMultipleVaildIds;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -176,12 +172,13 @@ class CollectionController extends Controller
                 count($tags) == 0 ?: $collection->tags()->sync($tags[$collectionIndex]);
 
                 // add recommendation of grade and difficulty to collection
+                $collection->gradeDifficulty()->delete();
                 if(count($recommendation[$collectionIndex]) > 0 ) {
                     collect($recommendation[$collectionIndex])->map(function ($item) use ($collection,$collectionIndex) {
                         $collection->gradeDifficulty()->create(
                             [
-                                "grade" => Str::after($item['grade'], (intval(($collectionIndex+1) / 10)+1)),
-                                "difficulty" => $item['difficulty']
+                                "grade"       => Str::after($item['grade'], (intval(($collectionIndex+1) / 10)+1)),
+                                "difficulty"  => $item['difficulty']
                             ]);
                     });
                 }
