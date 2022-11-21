@@ -340,18 +340,19 @@ class CollectionController extends Controller
 
         try {
             $collection_id = Arr::pull($validated, 'collection_id');
-            $section['tasks'] =  json_encode(Arr::pull($validated, 'groups'));
+            $tasks =  json_encode(Arr::pull($validated, 'groups'), JSON_UNESCAPED_SLASHES);
 
             DB::beginTransaction();
-            $section = new CollectionSections();
-            $section->collection_id = $collection_id;
-            $section->description = $validated['description'];
-            $section->tasks = json_encode(Arr::pull($validated, 'groups'));
-            $section->allow_skip = $validated['allow_skip'];
-            $section->sort_randomly = $validated['sort_randomly'];
-            $section->save();
-            DB::commit();
 
+            CollectionSections::inset([
+                'collection_id'     => $collection_id,
+                'description'       => $validated['description'],
+                'tasks'             => $tasks,
+                'allow_skip'        => $validated['allow_skip'],
+                'sort_randomly'     => $validated['sort_randomly']
+            ]);
+
+            DB::commit();
 
             return response()->json([
                 "status" => 200,
