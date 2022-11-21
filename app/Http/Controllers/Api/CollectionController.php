@@ -128,7 +128,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status"    => 500,
-                "message"   => "Retrieve collection unsuccessful" .$e,
+                "message"   => "Retrieve collection unsuccessful",
                 "error"     => $e->getMessage()
             ]);
         }
@@ -384,7 +384,7 @@ class CollectionController extends Controller
         $collection_id = Arr::pull($validated, 'collection_id');
         $section_id = $validated['section_id'] ?? Arr::pull($validated, 'section_id');
         $section = Arr::pull($validated, 'section');
-        $section['tasks'] =  json_encode(Arr::pull($section, 'groups'));
+        $section['tasks'] = json_encode(Arr::pull($section, 'groups'));
 
         try {
 
@@ -414,7 +414,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "collection section update unsuccessful "
+                "message" => "collection section update unsuccessful " .$e
             ]);
         }
     }
