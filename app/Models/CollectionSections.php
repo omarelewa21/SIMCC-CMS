@@ -11,7 +11,7 @@ class CollectionSections extends Model
     protected $table = 'collection_sections';
     protected $guarded = '';
     protected $fillable = [
-        'options' => 'enabled'
+       'options->enabled'
     ];
 
     protected $appends=['section_task', 'count_tasks'];
