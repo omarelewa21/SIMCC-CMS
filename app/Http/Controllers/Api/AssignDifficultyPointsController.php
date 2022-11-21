@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 
 class AssignDifficultyPointsController extends Controller
 {
-    public function list (Request $request) //
+    public function list (Request $request)
     {
 
         $validated = $request->validate([
@@ -32,63 +32,59 @@ class AssignDifficultyPointsController extends Controller
         try {
             $competition = Competition::AcceptRequest(['id'])->with(['rounds.levels.collection.sections','taskDifficulty'])->find($validated['id']);
             $TaskDifficultyGroupId = $competition->difficulty_group_id;
-            $difficultyList = TaskDifficultyGroup::with('difficulty')->find($TaskDifficultyGroupId)->toArray();
-            $competitionRounds = CompetitionRounds::where('competition_id',$competition->id)->get()->map(function ($round) {
+            $difficultyList = TaskDifficultyGroup::whereId($TaskDifficultyGroupId)->exists() ? TaskDifficultyGroup::with('difficulty')->find($TaskDifficultyGroupId)->toArray() : [];
+            $competitionRounds = CompetitionRounds::where('competition_id', $competition->id)->get()->map(function ($round) {
 
-                $round['levels'] = CompetitionLevels::where('round_id',$round->id)->get()->map(function ($level) {
+                $round['levels'] = CompetitionLevels::where('round_id', $round->id)->get()->map(function ($level) {
 
-                    CompetitionTasksMark::where('level_id',$level->id)->get()->each(function($row) use(&$CompetitionTasksMark) {
+                    CompetitionTasksMark::where('level_id', $level->id)->get()->each(function($row) use(&$CompetitionTasksMark) {
                         $task_answers_id = is_numeric($row->task_answers_id) ? intVal($row->task_answers_id) : json_decode($row->task_answers_id)[0];
                         $task_id = TasksAnswers::find($task_answers_id)->task->id;
                         $CompetitionTasksMark[$task_id][] = $row->toArray();
                     });
 
-                    CompetitionTaskDifficulty::where('level_id',$level->id)->get()->each(function($row,$key) use(&$CompetitionTasksDifficulty) {
-                        $row['difficulty_id'] === null ? null :TaskDifficulty::find($row['difficulty_id'])->name;
+                    CompetitionTaskDifficulty::where('level_id', $level->id)->get()->each(function($row, $key) use(&$CompetitionTasksDifficulty) {
+                        $row['difficulty_id'] === null ? null : TaskDifficulty::find($row['difficulty_id'])->name;
                         $CompetitionTasksDifficulty[$row['task_id']] = ['id' => $row['id'],'difficulty' => $row['difficulty'],'wrong_marks' => $row['wrong_marks'],'blank_marks' => $row['blank_marks']];
                     });
 
                     $collection = Collections::with(['sections'])->where('id',$level->collection_id)->first();
 
-                    $collectionSection = $collection->sections->map(function ($section) use($CompetitionTasksMark,$CompetitionTasksDifficulty,&$temp) {
-
-                        return $section->section_task->map(function ($task) use($CompetitionTasksMark,$CompetitionTasksDifficulty,$section,&$temp) {
-
-                            $section =  [
-                                'id' => $task->id,
-                                'languages' => $task->languages->first()->name,
-                                'name' => $task->languages->first()->task_title,
-                                'identifier' => $task->identifier,
-                                'answer_structure' => $task->answer_structure,
-                                'task_difficulty' => $CompetitionTasksDifficulty[$task->id]['difficulty'],
-                                'task_wrong' => $CompetitionTasksDifficulty[$task->id]['wrong_marks'],
-                                'task_blank' => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
-                                'task_marks' => $CompetitionTasksMark[$task->id]
-
+                    $collectionSection = $collection->sections->map(function ($section) use($CompetitionTasksMark, $CompetitionTasksDifficulty, &$temp) {
+                        return $section->section_task->map(function ($task) use($CompetitionTasksMark, $CompetitionTasksDifficulty, $section, &$temp) {
+                            $section = [
+                                'id'                => $task->id,
+                                'languages'         => $task->languages->first()->name,
+                                'name'              => $task->languages->first()->task_title,
+                                'identifier'        => $task->identifier,
+                                'answer_structure'  => $task->answer_structure,
+                                'task_difficulty'   => $CompetitionTasksDifficulty[$task->id]['difficulty'],
+                                'task_wrong'        => $CompetitionTasksDifficulty[$task->id]['wrong_marks'],
+                                'task_blank'        => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
+                                'task_marks'        => $CompetitionTasksMark[$task->id]
                             ];
-
                             return $section;
                         })->toArray();
                     })->toArray();
 
                     $level['collections'] = [
-                        'id' => $collection->id,
-                        'name' => $collection->name,
-                        'section' => $collectionSection
+                        'id'        => $collection->id,
+                        'name'      => $collection->name,
+                        'section'   => $collectionSection
                     ];
 
                     return [
-                        'id' => $level->id,
-                        'name' => $level->name,
-                        'grades' => $level->grades,
-                        'collections' => $level->collections
+                        'id'            => $level->id,
+                        'name'          => $level->name,
+                        'grades'        => $level->grades,
+                        'collections'   => $level->collections
                     ];
                 });
 
                 return [
-                    'id' => $round->id,
-                    'name' => $round->name,
-                    'levels' => $round->levels
+                    'id'        => $round->id,
+                    'name'      => $round->name,
+                    'levels'    => $round->levels
                 ];
             });
 

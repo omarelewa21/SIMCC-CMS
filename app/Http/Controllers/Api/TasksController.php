@@ -50,6 +50,7 @@ class TasksController extends Controller
                 }
 
                 //add recommended difficulty entry via polymorphic relationship (one to many)
+                Tasks::find($row->get('id'))->gradeDifficulty()->delete();
                 if ($row->has('recommended_grade')) {
                     if (count($row->get('recommended_grade')) > 0) {
                         for ($i = 0; $i < count($request->all()[$counter]['recommended_grade']); $i++) {
@@ -347,8 +348,8 @@ class TasksController extends Controller
             for ($i = 0; $i < count($validated['recommended_grade']); $i++) {
                 Tasks::find($validated['id'])->gradeDifficulty()->create(
                     [
-                        "grade" => $validated['recommended_grade'][$i],
-                        "difficulty" => $validated['recommended_difficulty'][$i],
+                        "grade"                 => $validated['recommended_grade'][$i],
+                        "difficulty"            => $validated['recommended_difficulty'][$i]
                     ]);
             }
 
