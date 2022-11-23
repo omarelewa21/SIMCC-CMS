@@ -142,7 +142,7 @@ class CompetitionController extends Controller
             $competition->competition_start_date = $validated['competition_start_date'];
             $competition->competition_end_date = $validated['competition_end_date'];
             $competition->competition_mode = $validated['competition_mode'];
-            $competition->difficulty_group_id = $validated['competition_mode'];
+            $competition->difficulty_group_id = $validated['difficulty_group_id'];
 
             switch($validated['competition_mode']) { //update organization competition mode based on the competition's level competition mode
                 case 0:
