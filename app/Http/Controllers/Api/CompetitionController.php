@@ -448,7 +448,8 @@ class CompetitionController extends Controller
                         'name' => $row['name'],
                         'collection_id' => $row['collection_id'],
                         'grades' => $row['grades'],
-                        'created_by_userid' => auth()->user()->id]);
+                        'created_by_userid' => auth()->user()->id
+                    ]);
 
                     $this->addTaskMark($row['collection_id'],$level);
                     $this->addDifficultyGroup($row['collection_id'],$level);
@@ -1062,7 +1063,7 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful'
+                "message" => 'students answers uploaded unsuccessful' .$e
             ]);
         }
     }
@@ -1301,13 +1302,13 @@ class CompetitionController extends Controller
         $insert = Tasks::with(['taskAnswers' => function($query) {
             $query->where('lang_id',env('APP_DEFAULT_LANG'))->whereNotNull('answer');
         }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
-
             if(in_array($items->answer_structure,['group','sequence'])) {
                 return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];
             }
             else
             {
                 $items->taskAnswers->sortBy('position')->each(function ($row) use (&$temp){
+
                     $temp[] = ["task_answers_id" => $row->id];
                 });
                 return $temp;
@@ -1334,7 +1335,7 @@ class CompetitionController extends Controller
                     "status"    => 200,
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
-            
+
             break;
             default:
                 return response()->json([

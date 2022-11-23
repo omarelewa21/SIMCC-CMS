@@ -144,8 +144,8 @@ class SchoolController extends Controller
             }
 
             if((auth()->user()->role_id === 0 || auth()->user()->role_id === 1))  {
-                $school->name = $validated['name'] ?? $school->name;
-                $school->province = $validated['province'] ?? $school->province;
+                $school->name = $request->name ?? $school->name;
+                $school->province = $request->province ?? $school->province;
             }
 
             $school->address = $request->address;
