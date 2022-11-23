@@ -2,18 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\CompetitionMarkingGroup;
-use Illuminate\Validation\Rule;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
+use Illuminate\Validation\Rule;
 
-class StoreCompetitionMarkingGroupRequest extends FormRequest
+class UpdateCompetitionMarkingGroupRequest extends FormRequest
 {
-    protected $competition;
+    protected $competitionMarkingGroup;
 
     function __construct(Route $route)
 	{
-		$this->competition = $route->parameter('competition');
+		$this->competitionMarkingGroup = $route->parameter('competition_marking_group');
 	}
 
     /**
@@ -29,7 +29,7 @@ class StoreCompetitionMarkingGroupRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function rules()
     {
@@ -38,17 +38,18 @@ class StoreCompetitionMarkingGroupRequest extends FormRequest
             "countries.*"   => "required|array" 
         ];
 
-        $excludeCountries = CompetitionMarkingGroup::where('competition_id', $this->competition->id)
+        $excludeCountries = CompetitionMarkingGroup::where('competition_id', $this->competitionMarkingGroup->competition->id)
+                            ->where('competition_marking_group.id', '!=', $this->competitionMarkingGroup->id)
                             ->join('competition_marking_group_country as cm', 'competition_marking_group.id', '=', 'cm.marking_group_id')
                             ->join('all_countries as al_c', 'al_c.id', '=', 'cm.country_id')
                             ->select('al_c.id as country_id')->pluck('country_id')->toArray();
-
+        
         foreach($this->countries as $key=> $country_id){
             $rules = array_merge($rules, [
                 "countries.". $key     => ['integer', 'distinct', 'exists:all_countries,id', Rule::notIn($excludeCountries)]
             ]);
         }
-
+        
         return $rules;
     }
 
@@ -61,8 +62,14 @@ class StoreCompetitionMarkingGroupRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if($this->status === "closed"){
+            if($this->competitionMarkingGroup->status === 'closed'){
                 $validator->errors()->add('Competition', 'The selected competition is close for edit');
+            }
+
+            foreach($this->countries as $country_id){
+                if($this->competitionMarkingGroup->competition->participants()->where('participants.country_id', $country_id)->count() === 0) {
+                    $validator->errors()->add('Country', 'The selected country id have no participants');
+                }
             }
         });
     }

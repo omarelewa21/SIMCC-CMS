@@ -44,6 +44,15 @@ class Tasks extends Base
         'status',
     ];
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::creating(function($record) {
+            $record->created_by_userid = auth()->user()->id;
+        });
+    }
+
     public function taskTags() {
         return $this->morphToMany(DomainsTags::class, 'taggable');
     }
@@ -154,7 +163,6 @@ class Tasks extends Base
     }
 
     public function getImageAttribute () {
-
         return Image::where('image_type','App\Models\Tasks')
             ->where('image_id',$this->id)
             ->limit(1)

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\TasksController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
+use App\Http\Controllers\Api\MarkingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,10 +93,6 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/swapIndex",[ParticipantsController::class,"swapIndex"])->name('participant.swapIndex');
     });
 
-//    Route::group(["prefix" => "tag"], function () {
-//       Route::get("",[DomainsTagsController::class,'create'])->name('createTag');
-//    });
-
     Route::group(["prefix" => "competition"],function () {
         Route::post("",[CompetitionController::class,"create"])->name('competition.create');
         Route::get("",[CompetitionController::class,"list"])->name('competition.list');
@@ -118,18 +115,19 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/overall_awards",[CompetitionController::class,"editOverallAwards"])->name('competition.overall.award.edit');
         Route::delete("/overall_awards",[CompetitionController::class,"deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
         Route::get("/report",[CompetitionController::class,"report"])->name('competition.report');
+        Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
     });
 
     Route::group(["prefix" => "marking"],function () {
-        Route::get("/preparation/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
-        Route::post("/preparation/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
-        Route::get("/participants/country/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
-        Route::patch("/preparation",[CompetitionController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
-        Route::get("/{competition}",[\App\Http\Controllers\Api\MarkingController::class,"markingList"])->name('competition.marking.list');
-        Route::patch("/",[CompetitionController::class,"changeComputeStatus"])->name('competition.group.status');
-        Route::get("/compute",[CompetitionController::class,"computeGroupResults"])->name('competition.group.compute');
-        Route::get("/edit",[CompetitionController::class,"editGroupComputedList"])->name('competition.computed.list');
-        Route::patch("/edit",[CompetitionController::class,"editGroupComputedResult"])->name('competition.computed.edit');
+        Route::get("/preparation/{competition}",[MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
+        Route::post("/preparation/{competition}",[MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
+        Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
+        Route::patch("/preparation/{competition_marking_group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
+        Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
+        Route::patch("/groups/computing/{competition}",[MarkingController::class,"changeComputeStatus"])->name('competition.group.status');
+        Route::get("/compute/{competition}",[MarkingController::class,"computeGroupResults"])->name('competition.group.compute');
+        Route::get("/compute/edit/{competition_marking_group}",[MarkingController::class,"editGroupComputedList"])->name('competition.computed.list');
+        Route::patch("/compute/edit/{competition_marking_group}",[MarkingController::class,"editGroupComputedResult"])->name('competition.computed.edit');
     });
 
     Route::group(["prefix" => "tasks"], function () {

@@ -12,6 +12,10 @@ class CompetitionLevels extends Model
     protected $table = "competition_levels";
     protected $guarded =[];
 
+    protected $casts = [
+        'grades' => 'array',
+    ];
+
     public function rounds () {
         return $this->belongsTo(CompetitionRounds::class,'round_id','id');
     }
@@ -39,5 +43,9 @@ class CompetitionLevels extends Model
 
     public function getGradesAttribute ($value) {
         return json_decode($value);
-}
+    }
+
+    public function participants(){
+        return $this->rounds->competition->participants()->whereIn('participants.grade', $this->grades);
+    }
 }

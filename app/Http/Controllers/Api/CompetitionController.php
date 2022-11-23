@@ -4,7 +4,6 @@ namespace App\Http\Controllers\api;
 
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Response;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
@@ -16,7 +15,6 @@ use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
 use App\Models\Countries;
-use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use App\Models\Tasks;
@@ -1077,7 +1075,7 @@ class CompetitionController extends Controller
 
         $group = CompetitionMarkingGroup::find($group_id);
 //        $groupCountries = $group->country_group;
-        $this->undoComputedResults($group,'active');
+        $group->undoComputedResults('active');
 
         $level_id = $group->competition_level_id;
 
@@ -1117,94 +1115,6 @@ class CompetitionController extends Controller
                 "message" => "edit marking group unsuccessful"
             ]);
         }
-    }
-
-    public function editMarkingGroups (Request $request) {
-
-        $group_id = implode("",$validate = $request->validate([
-            "group_id" => "required|exists:competition_marking_group,id",
-        ]));
-
-        $group = CompetitionMarkingGroup::find($group_id);
-//        $groupCountries = $group->country_group;
-        $this->undoComputedResults($group,'active');
-
-        $level_id = $group->competition_level_id;
-
-        $levelCountries = CompetitionMarkingGroup::where('competition_level_id',$level_id)->where('id','!=',$group_id)->pluck('country_group')->flatten()->toArray();
-        $competition = CompetitionLevels::find($level_id)->rounds->competition;
-        $competitionStatus = $competition->status;
-
-        if($competitionStatus === "closed") {
-            throw ValidationException::withMessages(['competition' => 'The selected competition is close for edit']);
-        }
-
-        $countries = Arr::flatten($request->validate([
-            "countries" => "required|array",
-            "countries.*" => ["required","integer","distinct",Rule::exists("all_countries","id"),Rule::notIn($levelCountries)]
-        ]));
-
-        foreach($countries as $country) { // Check Country Contain Participants
-            if($competition->participants->where('country_id',$country)->count() === 0) {
-                throw ValidationException::withMessages(['Country' => 'The selected country id have no participants']);
-            }
-        }
-
-        try {
-
-            $group->competition_level_id = $level_id;
-            $group->country_group = $countries;
-            $group->last_modified_userid = auth()->user()->id;
-            $group->save();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "edit marking group successful"
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "edit marking group unsuccessful"
-            ]);
-        }
-    }
-
-    public function changeComputeStatus (Request $request) {
-
-        $validate = $request->validate([
-            'id' => ['required','integer',Rule::exists('competition_marking_group','id')->whereNot('status','computing')]
-        ]);
-
-        $group_id = $validate['id'];
-        $found = new Marking();
-        $found = $found->checkValidMarkingGroup($group_id);
-
-        if($found) {
-            $group = CompetitionMarkingGroup::find($group_id);
-            $this->undoComputedResults($group,'computing');
-
-            return response()->json(
-                [
-                    "status" => 200,
-                    "message" => "marking in progress",
-                ]
-            );
-        }
-        else
-        {
-            return response()->json(
-                [
-                    "status" => 500,
-                    "message" => "Unable to mark, make competition is configured",
-                ]
-            );
-        }
-    }
-
-    public function computeGroupResults () { // currently only support single mcq structure
-
-        $mark = new Marking();
-        $mark->computingResults();
     }
 
     public function report (Request $request) {
@@ -1376,113 +1286,6 @@ class CompetitionController extends Controller
 //        return Response::download(, 'report.csv');
     }
 
-    public function editGroupComputedList (Request $request) {
-        $group_id = $request->validate([
-            'group_id' => ['required','integer',Rule::exists('competition_marking_group','id')->where('status','computed')]
-        ])['group_id'];
-
-        try {
-
-//        $group_id = 2; //test group
-
-
-            $group = CompetitionMarkingGroup::find($group_id);
-            $level =  $group->level;
-            $level_id = $group->competition_level_id;
-            $grades = $level->grades;
-            $default_award =  $level->rounds->default_award_name;
-            $competition_id = $level->rounds->competition->id;
-            $schools = School::all()->mapWithKeys(function($items,$keys) {
-                return [$items['id'] => ['name'=>$items['name'],'private' => $items['private']]];
-            })->toArray();
-            $countries = Countries::all()->mapWithKeys(function($items,$keys) {
-                return [$items['id'] => $items['display_name']];
-            });
-
-
-            $participantIndex = CompetitionOrganization::with(['participants' => function($query) use($grades) {
-                $query->whereIn('grade',$grades);
-            }])->where('competition_id',$competition_id)->whereIn('country_id',$group->country_group)->get()->pluck('participants')->collapse()->pluck('index_no')->toArray();
-
-            $level = CompetitionLevels::with(['rounds:id,name,competition_id,default_award_name','rounds.roundsAwards' => function ($query) {
-                $query->Select(['round_id','id','name'])->orderBy('id');
-            },'rounds.competition' => function ($query) {
-                $query->setEagerLoads([])->select(['id','name']);
-            }])->find($level_id,['id','round_id','name'])->toArray();
-
-            $participantResults = CompetitionParticipantsResults::with(['participants:index_no,name,school_id,grade,country_id'])->whereIn('participant_index',$participantIndex)->orderBy('points','desc')->orderBy('ref_award_id')->get()->map( function ($item) use($schools,$countries) {
-                return [
-                    'participant_index' => $item['participant_index'],
-                    'participant' => $item['participants']['name'],
-                    'ref_award_id' => $item['ref_award_id'],
-                    'award_id' => $item['award_id'],
-                    'points' => $item['points'],
-                    'private' => $schools[$item['participants']['school_id']]['private'],
-                    'school' => $schools[$item['participants']['school_id']]['name'] . ' ' . ($schools[$item['participants']['school_id']]['private'] == 1 ? " (Tuition)" : ''),
-                    'grade' => $item['participants']['grade'],
-                    'country' => $countries[$item['participants']['country_id']]
-                ];
-            });
-
-//        $participantResults = CompetitionParticipantsResults::whereIn('participant_index',['094220000013','094220000015','094220000024','094220000026','094220000027'])->orderBy('ref_award_id')->orderBy('points','desc')->get()->toArray(); //same data
-
-            return [
-                'status' => 200,
-                'message' => 'get group computed results list successful',
-                'data' => [
-                    "competition_name" => $level['rounds']['competition']['name'],
-                    "round" => $level['rounds']['name'],
-                    "default_award" => $default_award,
-                    "level" => $level['name'],
-                    "level_id" => $level['id'],
-                    "award_type" => $level['rounds']['competition']['award_type_name'],
-                    "awards" => $level['rounds']['rounds_awards'],
-                    "results" => $participantResults,
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            return [
-                'status' => 500,
-                'message' => 'get group computed results list unsuccessful'
-            ];
-        }
-    }
-
-    public function editGroupComputedResult (Request $request) {
-
-        $results = $this->editGroupComputedList($request)['data'];
-        $participantIndex = Arr::pluck($results['results'],'participant_index');
-        $awards_id = Arr::pluck($results['awards'],'id');
-
-        $validated = $request->validate([
-            'set_awards.*.index_no' => ['required','distinct',Rule::in($participantIndex)],
-            'set_awards.*.award_id' => ['required',Rule::in($awards_id)],
-        ]);
-
-        try {
-            DB::beginTransaction();
-            foreach ($validated['set_awards'] as $row) {
-                $participant = CompetitionParticipantsResults::where('participant_index', $row['index_no'])->first();
-                $participant->award_id = $row['award_id'];
-                $participant->save();
-            }
-            DB::commit();
-
-            return [
-                'status' => 200,
-                'message' => "Edit competition group results successful"
-            ];
-        }
-        catch (\Exception $e) {
-            return [
-                'status' => 500,
-                'message' => "Edit competition group results unsuccessful"
-            ];
-
-        }
-    }
-
     private function addDifficultyGroup ($collection_id,$competition_level) {
         $insert = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->flatten()->map(function ($item) {
             return ["task_id" => $item];
@@ -1514,17 +1317,31 @@ class CompetitionController extends Controller
         return $competition_level->taskMarks()->createMany($insert);
     }
 
-    private function undoComputedResults ($group,$groupStatus) {
-        if(isset($groupStatus)) {
-            $group->status = $groupStatus;
-            $group->save();
-        }
+    public function competitionCountries(Competition $competition, Request $request)
+    {
+        $countries = $competition->participants()
+            ->join('all_countries as ac', 'ac.id', 'participants.country_id');
 
-        $particitpants_index_no_list = $group['particitpants_index_no_list']->toArray();
+        switch ($request->mode) {
+            case "not_grouped":
+                $competitionGroupCountriesIdsList = $competition->groups()
+                    ->join('competition_marking_group_country as cmgc', 'competition_marking_group.id', 'cmgc.marking_group_id')
+                    ->join('all_countries as ac', 'ac.id', 'cmgc.country_id')
+                    ->pluck('ac.id');
 
-        if(count($particitpants_index_no_list) > 0) {
-            CompetitionParticipantsResults::whereIn('participant_index',$particitpants_index_no_list)->delete();
-            Participants::whereIn('index_no',$particitpants_index_no_list)->update(['status' => 'active']);
+                $countries->whereNotIn('ac.id', $competitionGroupCountriesIdsList);
+                return response()->json([
+                    "status"    => 200,
+                    "countries" => $countries->pluck('ac.display_name', 'ac.id')
+                ], 200);
+            
+            break;
+            default:
+                return response()->json([
+                    "status"    => 200,
+                    "countries" => $countries->pluck('ac.display_name', 'ac.id')
+                ], 200);
+            break;
         }
     }
 }
