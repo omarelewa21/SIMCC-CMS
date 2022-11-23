@@ -416,7 +416,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "collection section update unsuccessful "
+                "message" => "collection section update unsuccessful "  .$e
             ]);
         }
     }
