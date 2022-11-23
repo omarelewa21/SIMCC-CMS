@@ -37,18 +37,20 @@ class CheckGlobalRegistrationDateAvail implements Rule,DataAwareRule
     public function passes($attribute, $value)
     {
         $competition_id = $this->data['id'];
-        $organizationRegistrationDate = date('Y-m-d', strtotime(CompetitionOrganization::where('competition_id',$competition_id)->orderBy('registration_open_date')->first()->registration_open_date));
-
-        if("1970-01-01" == $organizationRegistrationDate) {
-            return true;
-        }
+        $organizationRegistrationDate = CompetitionOrganization::where('competition_id',$competition_id)->orderBy('registration_open_date')->where('registration_open_date','>','0000-00-00 00:00:00'); #Retrieve Date that have been set by organization/partner
         $currentGlobalRegistrationOpenDate = date('Y-m-d', strtotime($value));
-        if($organizationRegistrationDate < $currentGlobalRegistrationOpenDate) {
-            $this->message = 'The selected global registration date is in use by organization';
-            return false;
+        $organizationRegistrationDateFound = $organizationRegistrationDate->count();
+
+        if($organizationRegistrationDateFound > 0) { #if date found, compare it to the global registration date, if it's not within the range prompt error msg
+            $organizationRegistrationDateFormatted = date('Y-m-d', strtotime($organizationRegistrationDate->first()->registration_open_date));
+
+            if($organizationRegistrationDateFormatted < $currentGlobalRegistrationOpenDate) {
+                $this->message = 'The selected global registration date is in use by organization';
+                return false;
+            }
         }
 
-        return true;
+        return true;  #When no valid organization/partner found or organization/partner date is within global registration date range return true;
     }
 
     /**
