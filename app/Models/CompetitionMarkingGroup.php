@@ -30,7 +30,11 @@ class CompetitionMarkingGroup extends Base
     }
 
     public function getTotalParticipantsCountAttribute () {
-        return $this->participants()->count();
+        return $this->competition()
+                ->join('competition_organization as c_o', 'competition.id', 'c_o.competition_id')
+                ->join('participants', 'participants.competition_organization_id', 'c_o.id')
+                ->whereIn('participants.country_id', $this->countries->pluck('id')->toArray())
+                ->select('participants.index')->distinct()->count();
     }
 
     public function getSchoolParticipantsAttribute () {
