@@ -20,7 +20,7 @@ class Computing
 
     public function computeResutls()
     {
-
+        
     }
 
     public function computingResults(Competition $competition){
