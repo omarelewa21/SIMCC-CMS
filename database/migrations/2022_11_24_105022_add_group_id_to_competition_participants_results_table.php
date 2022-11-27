@@ -18,10 +18,10 @@ return new class extends Migration
 
         Schema::create('competition_participants_results', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->constrained('competition_marking_group');
+            $table->foreignId('level_id')->constrained('competition_levels');
             $table->string('participant_index', 16);
-            $table->foreignId('ref_award_id')->constrained('competition_rounds_awards');
-            $table->foreignId('award_id')->constrained('competition_rounds_awards');
+            $table->string('ref_award', 64);
+            $table->string('award', 64);
             $table->decimal('points', $precision = 8, $scale = 2);
             $table->unsignedSmallInteger('school_rank');
             $table->unsignedSmallInteger('country_rank');

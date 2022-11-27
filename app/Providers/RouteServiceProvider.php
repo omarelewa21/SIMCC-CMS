@@ -49,7 +49,11 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         Route::bind('competition_marking_group', function ($value) {
-            return \App\Models\CompetitionMarkingGroup::whereId($value)->firstOrFail();
+            return \App\Models\CompetitionMarkingGroup::findOrFail($value);
+        });
+
+        Route::bind('level', function ($value) {
+            return \App\Models\CompetitionLevels::findOrFail($value);
         });
     }
 
