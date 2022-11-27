@@ -35,6 +35,7 @@ class Marking
                         'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
                         'computing_status'              => $level->computing_status,
                         'compute_progress_percentage'   => $level->compute_progress_percentage,
+                        'compute_error_message'         => $level->compute_error_message,
                         'total_participants'            => $totalParticipants,
                         'absentees_count'               => $absenteesQuery->count(),
                         'absentees'                     => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
