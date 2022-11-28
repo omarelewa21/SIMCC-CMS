@@ -50,7 +50,8 @@ class CompetitionLevels extends Model
         return json_decode($value);
     }
 
-    public function participants(){
+    public function participants()
+    {
         return $this->rounds->competition->participants()->whereIn('participants.grade', $this->grades);
     }
 
@@ -63,7 +64,8 @@ class CompetitionLevels extends Model
         ]);
     }
 
-    public function maxPoints(){
+    public function maxPoints()
+    {
         return $this->taskMarks()->sum('competition_tasks_mark.marks');
     }
 

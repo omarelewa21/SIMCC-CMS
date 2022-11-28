@@ -80,6 +80,8 @@ class ComputeLevelCustom
                 'group_rank'            => $participantAnswer->group_rank,
                 'global_rank'           => $index+1
             ]);
+            $participantAnswer->participant->update(['status'   => 'result computed']);
+
             $this->updateComputeProgressPercentage($index);
         };
 

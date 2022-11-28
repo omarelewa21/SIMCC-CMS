@@ -15,7 +15,8 @@ class ParticipantsAnswer extends Model
 
     const CREATED_AT = 'created_date';
 
-    public function task(){
+    public function task()
+    {
         return $this->belongsTo(Tasks::class, 'task_id', 'id');
     }
 
@@ -31,7 +32,8 @@ class ParticipantsAnswer extends Model
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
     }
 
-    public function getAnswerMark(){
+    public function getAnswerMark()
+    {
         if($this->isCorrectAnswer()){
             return CompetitionTasksMark::where('task_answers_id',
                 $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->value('id')
