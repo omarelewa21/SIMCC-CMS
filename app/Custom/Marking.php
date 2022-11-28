@@ -102,6 +102,7 @@ class Marking
         $participantAwards = $level->participantResults()
             ->select('competition_participants_results.award')->distinct()->pluck('competition_participants_results.award');
         
+        $data = [];
         foreach($participantAwards as $award){
             $data[$award] = $level->participantResults()->where('competition_participants_results.award', $award)
                 ->orderBy('points')->value('points');
