@@ -26,6 +26,11 @@ class CompetitionRounds extends Model
         });
     }
 
+    public function getAwardTypeAttribute()
+    {
+        return 'Percentage';
+    }
+
     public function competition () {
         return $this->belongsTo(Competition::class,'competition_id','id');
     }

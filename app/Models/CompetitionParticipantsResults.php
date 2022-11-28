@@ -14,7 +14,7 @@ class CompetitionParticipantsResults extends Model
 
     public $timestamps = false;
 
-    public function participants () {
+    public function participant () {
         return $this->belongsTo(Participants::class,'participant_index','index_no');
     }
 }

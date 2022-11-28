@@ -118,7 +118,7 @@ class CollectionController extends Controller
 
             }
 
-            $availForSearch = array("name", "province", "address", "postal", "phone");
+            $availForSearch = array("identifier", "name", "description", "tags");
             $collectionsList = CollectionHelper::searchCollection($searchKey, $collections, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availCollectionsStatus, 'competition' => $availCollectionsCompetition, 'tags' => $availTagType], 'collectionList' => $collectionsList);
 
@@ -131,8 +131,9 @@ class CollectionController extends Controller
         catch(\Exception $e){
             // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "Retrieve collection unsuccessful" .$e
+                "status"    => 500,
+                "message"   => "Retrieve collection unsuccessful",
+                "error"     => $e->getMessage()
             ]);
         }
     }
@@ -342,18 +343,32 @@ class CollectionController extends Controller
 
         try {
             $collection_id = Arr::pull($validated, 'collection_id');
-            $section['tasks'] =  json_encode(Arr::pull($validated, 'groups'));
+            $tasks =  json_encode(Arr::pull($validated, 'groups'),JSON_UNESCAPED_SLASHES);
 
+          
             DB::beginTransaction();
-            $section = new CollectionSections();
-            $section->collection_id = $collection_id;
-            $section->description = $validated['description'];
-            $section->tasks = json_encode(Arr::pull($validated, 'groups'));
-            $section->allow_skip = $validated['allow_skip'];
-            $section->sort_randomly = $validated['sort_randomly'];
-            $section->save();
+          
+            CollectionSections::insert(
+            ["collection_id" => $collection_id,
+              "description" => $validated['description'],
+              "tasks" => $tasks,
+              "allow_skip" =>  $validated['allow_skip'],
+              "sort_randomly" => $validated['sort_randomly']
+            ] 
+            );
+          
+            $section = CollectionSections::orderBy('id', 'DESC')->first();
             DB::commit();
 
+            CollectionSections::inset([
+                'collection_id'     => $collection_id,
+                'description'       => $validated['description'],
+                'tasks'             => $tasks,
+                'allow_skip'        => $validated['allow_skip'],
+                'sort_randomly'     => $validated['sort_randomly']
+            ]);
+
+            DB::commit();
 
             return response()->json([
                 "status" => 200,
@@ -364,7 +379,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "collection section update unsuccessful "
+                "message" => "collection section update unsuccessful ".$e
             ]);
         }
     }
@@ -416,7 +431,7 @@ class CollectionController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "collection section update unsuccessful "
+                "message" => "collection section update unsuccessful "  .$e
             ]);
         }
     }

@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
 use App\Rules\CheckAnswerLabelEqual;
 use App\Rules\CheckMissingGradeDifficulty;
+use App\Http\Requests\StoreTaskRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -26,47 +27,15 @@ class TasksController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create(Request $request)
+    public function create(StoreTaskRequest $request)
     {
-        $validated = collect($request->validate([
-            '*.title' => 'required|distinct|unique:task_contents,task_title|regex:/^[\.\,\s\(\)\[\]\w-]*$/',
-            '*.identifier' => 'required|distinct|unique:tasks,identifier|regex:/^[\_\w-]*$/',
-            '*.tag_id' => 'array|nullable',
-            '*.tag_id.*' => ['exclude_if:*.tag_id,null','integer', Rule::exists('domains_tags', 'id')->where(function ($query) {
-                $query->where('status', 'active')
-                    ->whereNotNull('domain_id')
-                    ->orWhere('is_tag',1);
-            })],
-            '*.description' => 'max:255',
-            '*.solutions' => 'max:255',
-            '*.image' => 'exclude_if:*.image,null|max:1000000',
-            '*.recommended_grade' => 'required_with:*.recommended_difficulty|array',
-            '*.recommended_grade.*' => ['integer', new CheckMissingGradeDifficulty('recommended_difficulty')],
-            '*.recommended_difficulty' => 'required_with:*.recommended_grade|array',
-            '*.recommended_difficulty.*' => ['string', 'max:255', new CheckMissingGradeDifficulty('recommended_grade')],
-            '*.content' => 'string|max:65535',
-            '*.answer_type' => 'required|integer|exists:answer_type,id',
-            '*.answer_structure' => 'required|integer|min:1|max:4',
-            '*.answer_sorting' => 'integer|nullable|required_if:*.answer_type_id,1|min:1|max:2', //
-            '*.answer_layout' => 'integer|nullable|required_if:*.answer_type_id,1|min:1|max:2',
-            '*.image_label' => 'integer|min:0|max:1',
-            '*.labels' => 'required|array',
-            '*.labels.*' => 'nullable',
-            '*.answers' => ['required', 'array', new CheckAnswerLabelEqual],
-            '*.answers.*' => 'string|max:65535|nullable',
-        ]))
-            ->map(function ($row) { //add created userid to arrays.
-                $row['created_by_userid'] = auth()->user()->id;
-                return $row;
-            })->toArray();
-
         try {
             DB::beginTransaction();
 
             $counter = 0;
 
-            User::find(auth()->user()->id)->tasks()->createMany($validated)->map(function ($row) use (&$counter, $validated) {
-                $row = collect(array_merge($validated[$counter], $row->toArray()));
+            User::find(auth()->user()->id)->tasks()->createMany($request->all())->map(function ($row) use(&$counter, $request){
+                $row = collect(array_merge($request->all()[$counter], $row->toArray()));
 
                 //add image entry via polymorphic relationship (one to one)
                 if ($row->has('image')) {
@@ -83,7 +52,7 @@ class TasksController extends Controller
                 //add recommended difficulty entry via polymorphic relationship (one to many)
                 if ($row->has('recommended_grade')) {
                     if (count($row->get('recommended_grade')) > 0) {
-                        for ($i = 0; $i < count($validated[$counter]['recommended_grade']); $i++) {
+                        for ($i = 0; $i < count($request->all()[$counter]['recommended_grade']); $i++) {
                             Tasks::find($row->get('id'))->gradeDifficulty()->create(
                                 [
                                     "grade" => $row->get('recommended_grade')[$i],
@@ -103,7 +72,6 @@ class TasksController extends Controller
                 ]);
 
                 $answers = collect($row->get('answers'))->map(function ($answer, $key) use ($row) {
-
                     $temp = array([
                         'task_id' => $row->get('id'),
                         'lang_id' => env('APP_DEFAULT_LANG'),
@@ -132,17 +100,16 @@ class TasksController extends Controller
             });
 
             DB::commit();
-
             return response()->json([
                 "status" => 200,
                 "message" => 'Tasks created successfully'
             ]);
-        }
-        catch(\Exception $e){
-            // do task when error
+
+        }catch(\Exception $e){
             return response()->json([
-                "status" => 500,
-                "message" => "Tasks create unsuccessful" .$e
+                "status"    => 500,
+                "message"   => "Tasks create was unsuccessful",
+                "error"     => $e->getMessage()
             ]);
         }
     }
@@ -161,7 +128,6 @@ class TasksController extends Controller
         ]);
 
         try {
-
             $eagerload = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? ['taskAnswers:id,task_id,answer,position','taskAnswers.taskLabels:task_answers_id,lang_id,content'] : [];
             $hide = isset($request->id) || isset($request->identifier) ? [] : ['image'];
 
@@ -202,7 +168,6 @@ class TasksController extends Controller
                 }
             });
 
-
             /**
              * Lists of availabe filters
              */
@@ -226,8 +191,6 @@ class TasksController extends Controller
                 return $temp;
             })->filter()->collapse()->unique()->values();
 
-            
-
             $availTagType = $taskCollection->map(function ($item) {
                 $temp = [];
                 foreach($item->toArray()['tags'] as $row) {
@@ -237,16 +200,6 @@ class TasksController extends Controller
                 }
                 return $temp;
             })->filter()->collapse()->unique()->values();
-
-            /**
-             * EOF Lists of availabe filters
-             */
-
-//            $engTitle = $taskTitle->filter(function ($item) { //get all english title
-//                return strtolower($item['with_title']['name']) == 'english';
-//            })->map(function ($row) {
-//                return $row['with_title']['title'];
-//            });
 
             $taskCollection = $taskCollection->map(function ($item, $key) use ($taskTitle){ //map title into collection row
                 $item['title'] = $taskTitle[$key]['with_title']['title'];
@@ -263,6 +216,8 @@ class TasksController extends Controller
                 );
 
             }
+            dd($taskCollection->toArray());
+//            dd($availForSearch);
 
             $availForSearch = array("identifier", "title", "description","languages");
             $taskList = CollectionHelper::searchCollection($searchKey, $taskCollection, $availForSearch, $limits);

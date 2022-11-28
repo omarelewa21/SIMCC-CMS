@@ -41,17 +41,17 @@ class CollectionHelper
         ));
     }
 
-    static function searchCollection ($searchTerm,$collection,$availForSearch,$limit) {
+    static function searchCollection ($searchTerm, $collection, $availForSearch,$limit) {
         if(!empty($searchTerm)) {
 
             $userList = self::paginate(collect($collection)
-                ->filter(function ($row) use ($searchTerm,$availForSearch) {
+                ->filter(function ($row) use ($searchTerm, $availForSearch) {
 
                     $r = collect($availForSearch)->map(function ($item) use($row) {
                         return $row[$item];
                     });
 
-                    return false !== stristr(collect($r), $searchTerm);
+                    return in_array($searchTerm, $r->toArray());
                 }), $limit);
         } else {
             $userList = CollectionHelper::paginate($collection, $limit);
