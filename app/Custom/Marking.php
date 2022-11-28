@@ -89,4 +89,24 @@ class Marking
 
         return false;
     }
+
+    /**
+     * get cut off points for participant results
+     * 
+     * @param \App\Models\CompetitionLevels $level
+     * 
+     * @return array
+     */
+    public function getCutOffPoints(CompetitionLevels $level)
+    {
+        $participantAwards = $level->participantResults()
+            ->select('competition_participants_results.award')->distinct()->pluck('competition_participants_results.award');
+        
+        foreach($participantAwards as $award){
+            $data[$award] = $level->participantResults()->where('competition_participants_results.award', $award)
+                ->orderBy('points')->value('points');
+        }
+
+        return $data;
+    }
 }

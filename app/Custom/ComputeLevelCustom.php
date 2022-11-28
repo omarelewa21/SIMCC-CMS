@@ -193,7 +193,7 @@ class ComputeLevelCustom
                 }
             }
             if(!$isAwardSet){
-                $answer->setAttribute('award', "CERTIFICATE OF PARTICIPATION");
+                $answer->setAttribute('award', $this->level->rounds->default_award_name);
             }
         }
     }

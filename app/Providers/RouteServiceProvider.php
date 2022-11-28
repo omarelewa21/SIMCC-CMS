@@ -52,6 +52,10 @@ class RouteServiceProvider extends ServiceProvider
             return \App\Models\CompetitionMarkingGroup::findOrFail($value);
         });
 
+        Route::bind('round', function ($value) {
+            return \App\Models\CompetitionRounds::findOrFail($value);
+        });
+
         Route::bind('level', function ($value) {
             return \App\Models\CompetitionLevels::findOrFail($value);
         });

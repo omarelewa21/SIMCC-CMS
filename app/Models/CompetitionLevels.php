@@ -66,4 +66,9 @@ class CompetitionLevels extends Model
     public function maxPoints(){
         return $this->taskMarks()->sum('competition_tasks_mark.marks');
     }
+
+    public function participantResults()
+    {
+        return $this->hasMany(CompetitionParticipantsResults::class, 'level_id');
+    }
 }

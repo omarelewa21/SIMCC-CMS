@@ -60,8 +60,14 @@ class Participants extends Base
         return $this->belongsTo(School::class,"tuition_centre_id","id");
     }
 
-    public function school () {
+    public function school ()
+    {
        return $this->belongsTo(School::class,"school_id","id");
+    }
+
+    public function country ()
+    {
+        return $this->belongsTo(Countries::class, 'country_id');
     }
 
     public function competition_organization () {

@@ -106,8 +106,8 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::delete("/rounds",[CompetitionController::class,"deleteRounds"])->name('competition.rounds.delete');
         Route::post("/organization",[CompetitionController::class,"addOrganization"])->name('competition.organization.add');
         Route::delete("/organization",[CompetitionController::class,"deleteOrganization"])->name('competition.organization.delete');
-        Route::patch("/organization",[CompetitionController::class,"updateOrganizationDate"])->name('competition.');
-        Route::post("/awards",[CompetitionController::class,"addRoundAwards"])->name('competition.round.award.add');
+        Route::patch("/organization",[CompetitionController::class,"updateOrganizationDate"])->name('competition.organization.update.date');
+        Route::get("/awards/{round}",[CompetitionController::class,"getRoundAwards"])->name('competition.round.award.add');
         Route::post("/awards",[CompetitionController::class,"addRoundAwards"])->name('competition.round.award.add');
         Route::patch("/awards",[CompetitionController::class,"editRoundAwards"])->name('competition.round.award.edit');
         Route::delete("/awards",[CompetitionController::class,"deleteRoundAwards"])->name('competition.round.award.delete');
@@ -124,8 +124,10 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/preparation/{competition_marking_group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
         Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
-        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.group.compute.level');
-        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.group.compute');
+        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
+        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
+        Route::get("/moderate/{level}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
+        Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
     });
 
     Route::group(["prefix" => "tasks"], function () {

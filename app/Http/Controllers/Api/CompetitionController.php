@@ -490,6 +490,24 @@ class CompetitionController extends Controller
         ]);
     }
 
+    public function getRoundAwards(CompetitionRounds $round)
+    {
+        try {
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Round awards retreival successful",
+                "data"      => $round->roundsAwards->pluck('name')->concat([$round->default_award_name])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => 500,
+                "message" => "Round awards retreival unsuccessful"
+            ], 500);
+        }
+        
+    }
+
     public function addRoundAwards (Request $request) {
 
         $rounds_id = implode("",Arr::flatten($request->validate([

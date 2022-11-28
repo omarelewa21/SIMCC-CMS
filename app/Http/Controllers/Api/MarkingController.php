@@ -6,6 +6,7 @@ use App\Custom\Compute;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
@@ -266,6 +267,71 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Compute results starting was unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * get moderate list for a level
+     * 
+     * @param \App\Models\CompetitionLevels $level
+     * 
+     * @return response
+     */
+    public function moderateList(CompetitionLevels $level)
+    {
+        $level->load('rounds.competition', 'participantResults');
+        try {
+            $headerData = [
+                'competition'   => $level->rounds->competition->name,
+                'round'         => $level->rounds->name,
+                'level'         => $level->id,
+                'award_type'    => $level->rounds->award_type,
+                'cut_off_points'=> (new Marking())->getCutOffPoints($level),
+                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
+            ];
+
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Participant results retrival successful",
+                'header_data'   => $headerData,
+                'data'          => $level->participantResults->load('participant.school:id,name', 'participant.country:id,display_name as name')
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participant results retrival unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * edit participant award
+     * 
+     * @param \App\Models\CompetitionLevels $level
+     * @param \App\Http\Requests\EditParticipantAwardRequest $request
+     * 
+     * @return response
+     */
+    public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
+    {
+        try {
+            foreach($request->all() as $data){
+                $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
+                    ->update(['award' => $data['award']]);
+            }
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Participant results update successful",
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participant results update unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
