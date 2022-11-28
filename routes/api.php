@@ -121,13 +121,11 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
     Route::group(["prefix" => "marking"],function () {
         Route::get("/preparation/{competition}",[MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
         Route::post("/preparation/{competition}",[MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
-        Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::patch("/preparation/{competition_marking_group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
+        Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
-        Route::patch("/groups/computing/{competition}",[MarkingController::class,"changeComputeStatus"])->name('competition.group.status');
-        Route::get("/compute/{competition}",[MarkingController::class,"computeGroupResults"])->name('competition.group.compute');
-        Route::get("/compute/edit/{competition_marking_group}",[MarkingController::class,"editGroupComputedList"])->name('competition.computed.list');
-        Route::patch("/compute/edit/{competition_marking_group}",[MarkingController::class,"editGroupComputedResult"])->name('competition.computed.edit');
+        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.group.compute.level');
+        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.group.compute');
     });
 
     Route::group(["prefix" => "tasks"], function () {

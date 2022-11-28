@@ -448,7 +448,8 @@ class CompetitionController extends Controller
                         'name' => $row['name'],
                         'collection_id' => $row['collection_id'],
                         'grades' => $row['grades'],
-                        'created_by_userid' => auth()->user()->id]);
+                        'created_by_userid' => auth()->user()->id
+                    ]);
 
                     $this->addTaskMark($row['collection_id'],$level);
                     $this->addDifficultyGroup($row['collection_id'],$level);
@@ -1062,57 +1063,7 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful'
-            ]);
-        }
-    }
-
-    public function editMarkingGroups_original (Request $request) { //[71,41,17,221,212]
-
-        $group_id = implode("",$validate = $request->validate([
-            "group_id" => "required|exists:competition_marking_group,id",
-        ]));
-
-        $group = CompetitionMarkingGroup::find($group_id);
-//        $groupCountries = $group->country_group;
-        $group->undoComputedResults('active');
-
-        $level_id = $group->competition_level_id;
-
-        $levelCountries = CompetitionMarkingGroup::where('competition_level_id',$level_id)->where('id','!=',$group_id)->pluck('country_group')->flatten()->toArray();
-        $competition = CompetitionLevels::find($level_id)->rounds->competition;
-        $competitionStatus = $competition->status;
-
-        if($competitionStatus === "closed") {
-            throw ValidationException::withMessages(['competition' => 'The selected competition is close for edit']);
-        }
-
-        $countries = Arr::flatten($request->validate([
-            "countries" => "required|array",
-            "countries.*" => ["required","integer","distinct",Rule::exists("all_countries","id"),Rule::notIn($levelCountries)]
-        ]));
-
-        foreach($countries as $country) { // Check Country Contain Participants
-            if($competition->participants->where('country_id',$country)->count() === 0) {
-                throw ValidationException::withMessages(['Country' => 'The selected country id have no participants']);
-            }
-        }
-
-        try {
-
-            $group->competition_level_id = $level_id;
-            $group->country_group = $countries;
-            $group->last_modified_userid = auth()->user()->id;
-            $group->save();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "edit marking group successful"
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "edit marking group unsuccessful"
+                "message" => 'students answers uploaded unsuccessful' .$e
             ]);
         }
     }
@@ -1301,13 +1252,13 @@ class CompetitionController extends Controller
         $insert = Tasks::with(['taskAnswers' => function($query) {
             $query->where('lang_id',env('APP_DEFAULT_LANG'))->whereNotNull('answer');
         }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
-
             if(in_array($items->answer_structure,['group','sequence'])) {
                 return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];
             }
             else
             {
                 $items->taskAnswers->sortBy('position')->each(function ($row) use (&$temp){
+
                     $temp[] = ["task_answers_id" => $row->id];
                 });
                 return $temp;
@@ -1334,7 +1285,7 @@ class CompetitionController extends Controller
                     "status"    => 200,
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
-            
+
             break;
             default:
                 return response()->json([

@@ -30,7 +30,11 @@ class CompetitionMarkingGroup extends Base
     }
 
     public function getTotalParticipantsCountAttribute () {
-        return $this->participants()->count();
+        return $this->competition()
+                ->join('competition_organization as c_o', 'competition.id', 'c_o.competition_id')
+                ->join('participants', 'participants.competition_organization_id', 'c_o.id')
+                ->whereIn('participants.country_id', $this->countries->pluck('id')->toArray())
+                ->select('participants.index')->distinct()->count();
     }
 
     public function getSchoolParticipantsAttribute () {
@@ -63,19 +67,5 @@ class CompetitionMarkingGroup extends Base
 
     public function getParticitpantsIndexNoListAttribute () {
         return $this->participants()->pluck('index_no');
-    }
-
-    public function undoComputedResults($groupStatus) {
-        if(isset($groupStatus)) {
-            $this->status = $groupStatus;
-            $this->save();
-        }
-
-        $particitpants_index_no_list = $this->particitpants_index_no_list->toArray();
-
-        if(count($particitpants_index_no_list) > 0) {
-            CompetitionParticipantsResults::whereIn('participant_index', $particitpants_index_no_list)->delete();
-            Participants::whereIn('index_no', $particitpants_index_no_list)->update(['status' => 'active']);
-        }
     }
 }
