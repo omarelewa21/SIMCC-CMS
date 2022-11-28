@@ -209,6 +209,7 @@ class MarkingController extends Controller
     public function computeResultsForSingleLevel(CompetitionLevels $level)
     {
         try {
+            ComputeLevelCustom::validateLevelForValidation($level);
             dispatch(new ComputeLevel($level));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
             return response()->json([
