@@ -159,9 +159,21 @@ class ComputeLevelCustom
                 $query->whereIn('country_id', $countriesIds);
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
-            ->orderBy('points', 'DESC')->get();
+            ->orderBy('points', 'DESC')->get()->toArray();
+        
+        $this->setParticipantAward($allParticipants, $participantAnswer);
+        $this->setParticipantGroupRank($allParticipants, $participantAnswer);
+    }
 
-        // set group rank attribute 
+    /**
+     * Set participant award
+     * 
+     * @param array $allParticipants
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
+     * 
+     * @return void
+     */
+    private function setParticipantAward($allParticipants, ParticipantsAnswer $participantAnswer){
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
                 if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
@@ -171,8 +183,17 @@ class ComputeLevelCustom
                 }
             }
         }
+    }
 
-        // Set award attribute
+    /**
+     * Set participant group rank
+     * 
+     * @param array $allParticipants
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
+     * 
+     * @return void
+     */
+    private function setParticipantGroupRank($allParticipants, ParticipantsAnswer $participantAnswer){
         $isAwardSet = false;
         if($participantAnswer->points === $this->level->maxPoints()){
             $participantAnswer->setAttribute('award', 'PERFECT SCORER');
