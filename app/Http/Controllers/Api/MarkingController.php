@@ -16,6 +16,7 @@ use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
+use App\Models\CompetitionParticipantsResults;
 use Illuminate\Http\Request;
 
 class MarkingController extends Controller
@@ -125,7 +126,7 @@ class MarkingController extends Controller
      * 
      * @return Illuminate\Http\Response
      */
-    public function editMarkingGroups(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
+    public function editMarkingGroup(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
         $group->undoComputedResults('active');
         try {
             $group->update([
@@ -151,6 +152,54 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Edit marking group unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete marking group
+     * 
+     * @param App\Models\CompetitionMarkingGroup $group
+     * 
+     * @return Illuminate\Http\Response
+     */
+    public function deleteMarkingGroup(CompetitionMarkingGroup $group)
+    {
+        try {
+            DB::transaction(function () use($group){
+                $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
+                    ->select('participants.grade')->distinct()->pluck('participants.grade');
+
+                $levelIds = $group->competition->rounds()
+                    ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
+                    ->pluck('competition_levels.grades', 'competition_levels.id')
+                    ->filter(function ($levelGrades) use($grades){
+                        foreach(json_decode($levelGrades, true) as $grade){
+                            if($grades->contains($grade)){
+                                return $levelGrades;
+                            }
+                        }
+                    })->keys();
+
+                $countryIds = $group->countries()->pluck('all_countries.id');
+                CompetitionParticipantsResults::whereIn('level_id', $levelIds)
+                    ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                    ->whereIn('participants.country_id', $countryIds)
+                    ->delete();
+
+                $group->delete();
+            });
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Marking group deleted successful"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Deleting marking group unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
@@ -247,7 +296,7 @@ class MarkingController extends Controller
 
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
-                    ComputeLevelCustom::validateLevelForValidation($level);
+                    ComputeLevelCustom::validateLevelForComputing($level);
                 }
             }
 

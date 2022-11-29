@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 
 class CompetitionMarkingGroup extends Base
 {
@@ -16,6 +17,15 @@ class CompetitionMarkingGroup extends Base
         'created_by',
         'last_modified_by'
     ];
+
+    public static function booted()
+    {
+        parent::booted();
+
+        static::deleting(function($record) {
+            DB::table('competition_marking_group_country')->where('marking_group_id', $record->id)->delete();
+        });
+    }
 
     public function competition(){
         return $this->belongsTo(Competition::class);
