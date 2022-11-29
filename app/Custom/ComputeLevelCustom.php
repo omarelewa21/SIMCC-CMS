@@ -6,6 +6,7 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
@@ -159,7 +160,7 @@ class ComputeLevelCustom
                 $query->whereIn('country_id', $countriesIds);
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
-            ->orderBy('points', 'DESC')->get()->toArray();
+            ->orderBy('points', 'DESC')->get();
         
         $this->setParticipantAward($allParticipants, $participantAnswer);
         $this->setParticipantGroupRank($allParticipants, $participantAnswer);
@@ -168,12 +169,12 @@ class ComputeLevelCustom
     /**
      * Set participant award
      * 
-     * @param array $allParticipants
+     * @param Illuminate\Database\Eloquent\Collection $allParticipants
      * @param \App\Models\ParticipantsAnswer $participantAnswer
      * 
      * @return void
      */
-    private function setParticipantAward($allParticipants, ParticipantsAnswer $participantAnswer){
+    private function setParticipantAward(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
                 if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
@@ -188,12 +189,12 @@ class ComputeLevelCustom
     /**
      * Set participant group rank
      * 
-     * @param array $allParticipants
+     * @param Illuminate\Database\Eloquent\Collection $allParticipants
      * @param \App\Models\ParticipantsAnswer $participantAnswer
      * 
      * @return void
      */
-    private function setParticipantGroupRank($allParticipants, ParticipantsAnswer $participantAnswer){
+    private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         $isAwardSet = false;
         if($participantAnswer->points === $this->level->maxPoints()){
             $participantAnswer->setAttribute('award', 'PERFECT SCORER');
