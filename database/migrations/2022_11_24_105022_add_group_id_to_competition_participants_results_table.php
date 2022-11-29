@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('competition_participants_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('level_id')->constrained('competition_levels');
-            $table->string('participant_index', 16);
+            $table->string('participant_index', 16)->collation('utf8mb4_unicode_ci');
             $table->foreign('participant_index')->references('index_no')->on('participants');
             $table->string('ref_award', 64);
             $table->string('award', 64);
