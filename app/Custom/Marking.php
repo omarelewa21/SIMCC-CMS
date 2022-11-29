@@ -31,7 +31,6 @@ class Marking
                                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->select('participants.name')->distinct();
 
-                    
                     $levels[$level->id][] = [
                         'level_id'                      => $level->id,
                         'name'                          => $level->name,
