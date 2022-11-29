@@ -32,6 +32,7 @@ Route::post("login",[UserController::class,"login"]);
 Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], function () {
 
     Route::group(["prefix" => "info"], function () {
+       
         Route::get('countrylist', [HelperController::class, 'getCountryList'])->name('info.countryList');
         Route::get('competitionlist', [HelperController::class, 'getCompetitionList'])->name('info.competitionList');
         Route::get('roles', [HelperController::class, 'getRoleList'])->name('info.roles');
