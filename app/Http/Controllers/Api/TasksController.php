@@ -81,6 +81,7 @@ class TasksController extends Controller
                     return $temp;
 
                 })->toArray();
+              
 
                 // add task answers
                 $labels = Tasks::find($row->get('id'))->taskAnswers()->createMany(Arr::collapse($answers))->pluck('id')->map(function ($answerId, $key) use ($row) {
@@ -216,7 +217,7 @@ class TasksController extends Controller
                 );
 
             }
-            dd($taskCollection->toArray());
+//            dd($taskCollection->toArray());
 //            dd($availForSearch);
 
             $availForSearch = array("identifier", "title", "description","languages");
