@@ -44,7 +44,11 @@ class ParticipantsAnswer extends Model
     public function getAnswerMark()
     {
         $taskAnswer = $this->getAnswer();
-        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exits()){
+        if(is_null($taskAnswer)){
+            return 0;
+        }
+        
+        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
             return CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->value('marks');
         }
 

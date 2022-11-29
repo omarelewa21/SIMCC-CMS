@@ -121,12 +121,12 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
     Route::group(["prefix" => "marking"],function () {
         Route::get("/preparation/{competition}",[MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
         Route::post("/preparation/{competition}",[MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
-        Route::patch("/preparation/{competition_marking_group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
+        Route::patch("/preparation/{group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
         Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
-        Route::get("/moderate/{level}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
+        Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
     });
 

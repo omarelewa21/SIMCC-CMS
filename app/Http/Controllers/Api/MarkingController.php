@@ -210,7 +210,7 @@ class MarkingController extends Controller
     public function computeResultsForSingleLevel(CompetitionLevels $level)
     {
         try {
-            ComputeLevelCustom::validateLevelForValidation($level);
+            ComputeLevelCustom::validateLevelForComputing($level);
             dispatch(new ComputeLevel($level));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
             return response()->json([
@@ -279,9 +279,14 @@ class MarkingController extends Controller
      * 
      * @return response
      */
-    public function moderateList(CompetitionLevels $level)
+    public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group)
     {
         $level->load('rounds.competition', 'participantResults');
+        $data = $level->participantResults()
+                ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
+                ->with('participant.school:id,name', 'participant.country:id,display_name as name')
+                ->orderBy('competition_participants_results.points', 'DESC')->get();
         try {
             $headerData = [
                 'competition'   => $level->rounds->competition->name,
@@ -296,7 +301,7 @@ class MarkingController extends Controller
                 "status"        => 200,
                 "message"       => "Participant results retrival successful",
                 'header_data'   => $headerData,
-                'data'          => $level->participantResults->load('participant.school:id,name', 'participant.country:id,display_name as name')
+                'data'          => $data
             ], 200);
 
         } catch (\Exception $e) {
