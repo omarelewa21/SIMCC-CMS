@@ -16,15 +16,17 @@ class Marking
      */
     public function markList(Competition $competition)
     {
-        $countries = $competition->groups->load('countries:id,display_name')->pluck('countries');
-
+        $countries = $competition->groups->load('countries:id,display_name')->pluck('countries', 'id');
+        
         $rounds = $competition->rounds->mapWithKeys(function ($round) use($countries){
             $levels = $round->levels->mapWithKeys(function ($level) use($countries){
                 $levels = [];
-                foreach($countries as $countryGroup){
-                    $countriesParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray());
-                    $totalParticipants = $countriesParticipants->count();
-                    $absenteesQuery = $countriesParticipants
+                foreach($countries as $group_id=>$countryGroup){
+                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                                            ->whereIn('participants.status', ['active', 'result computed'])->count();
+                    $markedParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                                            ->where('participants.status', 'result computed')->count();
+                    $absenteesQuery = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->where('participants.status', 'absent')
                                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->select('participants.name')->distinct();
@@ -37,9 +39,11 @@ class Marking
                         'compute_progress_percentage'   => $level->compute_progress_percentage,
                         'compute_error_message'         => $level->compute_error_message,
                         'total_participants'            => $totalParticipants,
+                        'marked_participants'           => $markedParticipants,
                         'absentees_count'               => $absenteesQuery->count(),
                         'absentees'                     => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
-                        'country_group'                 => $countryGroup->pluck('display_name')->toArray()
+                        'country_group'                 => $countryGroup->pluck('display_name')->toArray(),
+                        'marking_group_id'              => $group_id
                     ];
                 }
                 return $levels;
@@ -102,6 +106,7 @@ class Marking
         $participantAwards = $level->participantResults()
             ->select('competition_participants_results.award')->distinct()->pluck('competition_participants_results.award');
         
+        $data = [];
         foreach($participantAwards as $award){
             $data[$award] = $level->participantResults()->where('competition_participants_results.award', $award)
                 ->orderBy('points')->value('points');

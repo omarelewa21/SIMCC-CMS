@@ -15,15 +15,9 @@ class ParticipantsAnswer extends Model
 
     const CREATED_AT = 'created_date';
 
-    public function task(){
-        return $this->belongsTo(Tasks::class, 'task_id', 'id');
-    }
-
-    public function isCorrectAnswer()
+    public function task()
     {
-        return CompetitionTasksMark::where('task_answers_id',
-            $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->value('id')
-        )->exists();
+        return $this->belongsTo(Tasks::class, 'task_id', 'id');
     }
 
     public function participant()
@@ -31,14 +25,34 @@ class ParticipantsAnswer extends Model
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
     }
 
-    public function getAnswerMark(){
-        if($this->isCorrectAnswer()){
-            return CompetitionTasksMark::where('task_answers_id',
-                $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->value('id')
-            )->value('marks');
+    public function getAnswer()
+    {
+        if($this->task->answer_type === 'mcq'){
+            return $this->task->taskAnswers()
+                            ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
+                            ->where('task_labels.content', $this->answer)->first();
         }
 
-        $min_marks = CompetitionTasksMark::whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
-        return $min_marks ? $min_marks : 0;
+        return $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->first();
+    }
+
+    /**
+     * return answer mark if available or return the minimum marks for this task
+     * 
+     * @return int
+     */
+    public function getAnswerMark()
+    {
+        $taskAnswer = $this->getAnswer();
+        if(is_null($taskAnswer)){
+            return 0;
+        }
+        
+        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
+            return CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->value('marks');
+        }
+
+        $minMarks = CompetitionTasksMark::whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
+        return $minMarks ? $minMarks : 0;
     }
 }

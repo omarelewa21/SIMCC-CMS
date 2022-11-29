@@ -19,13 +19,15 @@ return new class extends Migration
         Schema::create('competition_participants_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('level_id')->constrained('competition_levels');
-            $table->string('participant_index', 16);
+            $table->string('participant_index', 16)->collation('utf8mb4_general_ci');
+            $table->foreign('participant_index')->references('index_no')->on('participants');
             $table->string('ref_award', 64);
             $table->string('award', 64);
             $table->decimal('points', $precision = 8, $scale = 2);
             $table->unsignedSmallInteger('school_rank');
             $table->unsignedSmallInteger('country_rank');
             $table->unsignedSmallInteger('group_rank');
+            $table->unsignedSmallInteger('all_participants');
             $table->string('global_rank', 32);
         });
     }

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
 {
-    private $progressCheck = 0;
+    private $progressPreviousVal = 0;
     private $level;
     private $participantsAnswersGrouped;
     private $awards;
@@ -29,10 +29,11 @@ class ComputeLevelCustom
         $this->totalParticipantsAnswersGrouped = count($this->participantsAnswersGrouped);
         
         $percentageSum = 0;
-        $this->awards = $this->level->rounds->roundsAwards->map(function ($award) use(&$percentageSum){
-            $percentageSum += $award->percentage;
-            return $award->setAttribute('percentage', $percentageSum);
-        });
+        $this->awards = $this->level->rounds->roundsAwards->sortBy('id')
+                            ->map(function ($award) use(&$percentageSum){
+                                $percentageSum += $award->percentage;
+                                return $award->setAttribute('percentage', $percentageSum);
+                            });
     }
 
     /**
@@ -40,7 +41,7 @@ class ComputeLevelCustom
      * 
      * @param \App\Models\CompetitionLevels $level
      */
-    public static function validateLevelForValidation(CompetitionLevels $level)
+    public static function validateLevelForComputing(CompetitionLevels $level)
     {
         if($level->computing_status === 'In Progress'){
             throw new \Exception("Level {$level->id} is already under computing, please wait till finished", 409);
@@ -74,12 +75,15 @@ class ComputeLevelCustom
                 'participant_index'     => $participantAnswer->participant_index,
                 'ref_award'             => $participantAnswer->award,
                 'award'                 => $participantAnswer->award,
-                'points'                => $participantAnswer->points,
+                'points'                => $participantAnswer->points ? $participantAnswer->points : 0,         // avoid null values
                 'school_rank'           => $participantAnswer->school_rank,
                 'country_rank'          => $participantAnswer->country_rank,
                 'group_rank'            => $participantAnswer->group_rank,
-                'global_rank'           => $index+1
+                'all_participants'      => $participantAnswer->all_participants,
+                'global_rank'           => sprintf("%s %s", $participantAnswer->award, $participantAnswer->group_rank) 
             ]);
+            $participantAnswer->participant->update(['status' => 'result computed']);
+
             $this->updateComputeProgressPercentage($index);
         };
 
@@ -114,23 +118,9 @@ class ComputeLevelCustom
     private function updateComputeProgressPercentage(int $index)
     {
         $progress = (($index+1)/$this->totalParticipantsAnswersGrouped) * 100;
-        if($progress >= 25 && $progress < 50 && $this->progressCheck != 25){
-            $this->progressCheck = 25;
-            $this->level->compute_progress_percentage = 40;
-            $this->level->save();
-        }
-        elseif($progress >= 50 && $progress < 75 && $this->progressCheck != 50){
-            $this->progressCheck = 5;
-            $this->level->compute_progress_percentage = 60;
-            $this->level->save();
-        }
-        elseif($progress >= 75 && $progress < 100 && $this->progressCheck != 75){
-            $this->progressCheck = 75;
-            $this->level->compute_progress_percentage = 80;
-            $this->level->save();
-        }elseif($progress == 100){
-            $this->progressCheck = 0;
-            $this->level->compute_progress_percentage = 100;
+        if($progress > $this->progressPreviousVal) {
+            $this->progressPreviousVal = $progress;
+            $this->level->compute_progress_percentage = $progress;
             $this->level->save();
         }
     }
@@ -139,31 +129,31 @@ class ComputeLevelCustom
      * Set necessary attributes in answer model to use it in storing results
      * 
      * @param int $index
-     * @param \App\Models\ParticipantsAnswer $answer
+     * @param \App\Models\ParticipantsAnswer $participantsAnswer
      * 
      * @return void
      */
-    public function setNecessaryAttirbutes(ParticipantsAnswer $answer)
+    public function setNecessaryAttirbutes(ParticipantsAnswer $participantsAnswer)
     {
-        $this->setParticipantAwardAndGroupRankAttribute($answer);
-        $this->setSchoolRankAttribute($answer);
-        $this->setCountryRankAttribute($answer);
+        $this->setParticipantAwardAndGroupRankAttribute($participantsAnswer);
+        $this->setSchoolRankAttribute($participantsAnswer);
+        $this->setCountryRankAttribute($participantsAnswer);
     }
 
     /**
-     * get reference award id
+     * set reference award id attribute
      * 
-     * @param \App\Models\ParticipantsAnswer $answer
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
      * 
-     * @return string
+     * @return void
      */
-    protected function setParticipantAwardAndGroupRankAttribute(ParticipantsAnswer $answer)
+    protected function setParticipantAwardAndGroupRankAttribute(ParticipantsAnswer $participantAnswer)
     {
         $countriesIds = CompetitionMarkingGroup::where('competition_id', $this->level->rounds->competition_id)
-                        ->whereRelation('countries', 'id', $answer->participant->country_id)
+                        ->whereRelation('countries', 'id', $participantAnswer->participant->country_id)
                         ->join('competition_marking_group_country as cmgc', 'cmgc.marking_group_id', 'competition_marking_group.id')
                         ->pluck('cmgc.country_id');
-        
+
         $allParticipants = ParticipantsAnswer::where('level_id', $this->level->id)
             ->whereHas('participant', function($query)use($countriesIds){
                 $query->whereIn('country_id', $countriesIds);
@@ -173,27 +163,32 @@ class ComputeLevelCustom
 
         // set group rank attribute 
         foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $answer->participant_index){
-                $answer->setAttribute('group_rank', $index+1);
+            if($participant->participant_index === $participantAnswer->participant_index){
+                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
+                    $participantAnswer->setAttribute('group_rank', $index);
+                }else{
+                    $participantAnswer->setAttribute('group_rank', $index+1);
+                }
             }
         }
 
         // Set award attribute
         $isAwardSet = false;
-        if($answer->points === $this->level->maxPoints()){
-            $answer->setAttribute('award', 'PERFECT SCORER');
+        if($participantAnswer->points === $this->level->maxPoints()){
+            $participantAnswer->setAttribute('award', 'PERFECT SCORER');
             $isAwardSet = true;
         }
         if(!$isAwardSet){
-            $participantPercentageRank = round( ($answer->group_rank/count($allParticipants)) * 100 );
+            $participantPercentageRank = round( ($participantAnswer->group_rank/count($allParticipants)) * 100 );
+            $participantAnswer->setAttribute('all_participants', count($allParticipants));
             foreach($this->awards as $award){
-                if(!$isAwardSet && $participantPercentageRank <= $award->percentage && $answer->points > $award->min_marks){
-                    $answer->setAttribute('award', $award->name);
+                if(!$isAwardSet && $participantPercentageRank <= $award->percentage && $participantAnswer->points > $award->min_marks){
+                    $participantAnswer->setAttribute('award', $award->name);
                     $isAwardSet = true;
                 }
             }
             if(!$isAwardSet){
-                $answer->setAttribute('award', $this->level->rounds->default_award_name);
+                $participantAnswer->setAttribute('award', $this->level->rounds->default_award_name);
             }
         }
     }
@@ -201,45 +196,53 @@ class ComputeLevelCustom
     /**
      * get participant school rank
      * 
-     * @param \App\Models\ParticipantsAnswer $answer
+     * @param \App\Models\ParticipantsAnswer participantAnswer
      * 
-     * @return int
+     * @return void
      */
-    protected function setSchoolRankAttribute(ParticipantsAnswer $answer)
+    protected function setSchoolRankAttribute(ParticipantsAnswer $participantAnswer)
     {
         $allParticipants = ParticipantsAnswer::where('level_id', $this->level->id)
-            ->whereHas('participant', function($query)use($answer){
-                $query->where('school_id', $answer->participant->school_id);
+            ->whereHas('participant', function($query)use($participantAnswer){
+                $query->where('school_id', $participantAnswer->participant->school_id);
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
         
         foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $answer->participant_index){
-                $answer->setAttribute('school_rank', $index+1);
+            if($participant->participant_index === $participantAnswer->participant_index){
+                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
+                    $participantAnswer->setAttribute('school_rank', $index);
+                }else{
+                    $participantAnswer->setAttribute('school_rank', $index+1);
+                }
             }
         }
     }
 
     /**
-     * get participant country rank
+     * set participant country rank attribute
      * 
-     * @param \App\Models\ParticipantsAnswer $answer
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
      * 
-     * @return int
+     * @return void
      */
-    protected function setCountryRankAttribute(ParticipantsAnswer $answer)
+    protected function setCountryRankAttribute(ParticipantsAnswer $participantAnswer)
     {
         $allParticipants = ParticipantsAnswer::where('level_id', $this->level->id)
-            ->whereHas('participant', function($query)use($answer){
-                $query->where('country_id', $answer->participant->country_id);
+            ->whereHas('participant', function($query)use($participantAnswer){
+                $query->where('country_id', $participantAnswer->participant->country_id);
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
         
         foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $answer->participant_index){
-                $answer->setAttribute('country_rank', $index+1);
+            if($participant->participant_index === $participantAnswer->participant_index){
+                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
+                    $participantAnswer->setAttribute('country_rank', $index);
+                }else{
+                    $participantAnswer->setAttribute('country_rank', $index+1);
+                }
             }
         }
     }
