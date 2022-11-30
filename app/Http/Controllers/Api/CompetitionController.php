@@ -1086,7 +1086,40 @@ class CompetitionController extends Controller
         }
     }
 
-    public function report (Request $request) {
+    public function report(Competition $competition)
+    {
+        $levelIds = $competition->rounds()->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
+            ->pluck('competition_levels.id');
+        
+        $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+            ->join('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+            ->join('competition', 'competition.id', 'competition_rounds.competition_id')
+            ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+            ->join('schools', 'participants.school_id', 'schools.id')
+            ->join('all_countries', 'all_countries.id', 'participants.country_id')
+            ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+            ->join('organization', 'organization.id', 'competition_organization.organization_id')
+            ->select(
+                'competition.name as competition',
+                'organization.name as organization',
+                'all_countries.display_name as country',
+                'competition_levels.id as level',
+                'participants.grade',
+                'schools.name as school',
+                'participants.index_no as index',
+                'participants.name as participant',
+                'competition_participants_results.points',
+                'competition_participants_results.award',
+                'competition_participants_results.school_rank',
+                'competition_participants_results.country_rank',
+                'competition_participants_results.group_rank',
+                'competition_participants_results.global_rank'
+            )->distinct('index')->orderBy('points', 'DESC')->get();
+
+        return $data;
+    }
+
+    public function Old_report (Request $request) {
 
         $competition_id = $request->validate([
             'competition_id' => ['required','integer',Rule::exists('competition','id')->where('status','active')]
@@ -1250,9 +1283,6 @@ class CompetitionController extends Controller
             readfile($filename);
             exit;
         }
-
-
-//        return Response::download(, 'report.csv');
     }
 
     private function addDifficultyGroup ($collection_id,$competition_level) {
