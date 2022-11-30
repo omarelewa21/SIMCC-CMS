@@ -23,9 +23,9 @@ class MarkingController extends Controller
 {
     /**
      * Marking overview page
-     * 
+     *
      * @param App\Models\Competition $competition
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function markingList(Competition $competition) {
@@ -48,9 +48,9 @@ class MarkingController extends Controller
 
     /**
      * Competition Marking group overview
-     * 
+     *
      * @param App\Models\Competition $competition
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function markingGroupsList(Competition $competition)
@@ -78,10 +78,10 @@ class MarkingController extends Controller
 
     /**
      * add a new marking group
-     * 
+     *
      * @param App\Models\Competition $competition
      * @param App\Http\Requests\StoreCompetitionMarkingGroupRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function addMarkingGroups(Competition $competition, StoreCompetitionMarkingGroupRequest $request)
@@ -117,13 +117,13 @@ class MarkingController extends Controller
             "message" => "Add marking group successful"
         ]);
     }
-    
+
     /**
      * Edit marking group
-     * 
+     *
      * @param App\Models\CompetitionMarkingGroup $group
      * @param App\Http\Requests\UpdateCompetitionMarkingGroupRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function editMarkingGroup(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
@@ -159,9 +159,9 @@ class MarkingController extends Controller
 
     /**
      * Delete marking group
-     * 
+     *
      * @param App\Models\CompetitionMarkingGroup $group
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function deleteMarkingGroup(CompetitionMarkingGroup $group)
@@ -207,10 +207,10 @@ class MarkingController extends Controller
 
     /**
      * Get active participants per country per grade
-     * 
+     *
      * @param App\Models\Competition $competition
      * @param App\Http\Requests\getActiveParticipantsByCountryRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
@@ -226,7 +226,7 @@ class MarkingController extends Controller
                 $country = Countries::find($country_id);
                 $countries[] = $country->display_name;
                 foreach($grades as $grade){
-                    $data[$country->display_name][$grade] = 
+                    $data[$country->display_name][$grade] =
                         $competition->participants()->where('participants.country_id', $country_id)
                             ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
                 }
@@ -251,9 +251,9 @@ class MarkingController extends Controller
 
     /**
      * Compute single level results
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
-     * 
+     *
      * @return response
      */
     public function computeResultsForSingleLevel(CompetitionLevels $level)
@@ -279,9 +279,9 @@ class MarkingController extends Controller
 
     /**
      * Compute results for the competition
-     * 
+     *
      * @param \App\Models\Competition $competition
-     * 
+     *
      * @return response
      */
     public function computeCompetitionResults(Competition $competition)
@@ -311,7 +311,7 @@ class MarkingController extends Controller
                 "status"    => 200,
                 "message"   => "Competition computing is in progress",
             ], 200);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -323,9 +323,9 @@ class MarkingController extends Controller
 
     /**
      * get moderate list for a level
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
-     * 
+     *
      * @return response
      */
     public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group)
@@ -364,10 +364,10 @@ class MarkingController extends Controller
 
     /**
      * edit participant award
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
      * @param \App\Http\Requests\EditParticipantAwardRequest $request
-     * 
+     *
      * @return response
      */
     public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
