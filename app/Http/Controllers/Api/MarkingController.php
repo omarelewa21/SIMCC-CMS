@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Custom\Compute;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
@@ -17,7 +16,6 @@ use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
-use Illuminate\Http\Request;
 
 class MarkingController extends Controller
 {

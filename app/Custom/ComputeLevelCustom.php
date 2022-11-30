@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
 {
-    private $progressPreviousVal = 0;
+    private $progressPreviousVal = 20;
     private $level;
     private $participantsAnswersGrouped;
     private $awards;
@@ -66,6 +66,7 @@ class ComputeLevelCustom
     public function computeResutlsForSingleLevel()
     {
         $this->computeParticipantAnswersScores();
+        $attendeesIds = [];
         foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
             CompetitionParticipantsResults::where('level_id', $participantAnswer->level_id)
                 ->where('participant_index', $participantAnswer->participant_index)->delete();
@@ -84,10 +85,10 @@ class ComputeLevelCustom
                 'global_rank'           => sprintf("%s %s", $participantAnswer->award, $participantAnswer->group_rank) 
             ]);
             $participantAnswer->participant->update(['status' => 'result computed']);
-
+            $attendeesIds[] = $participantAnswer->participant->id;
             $this->updateComputeProgressPercentage($index);
         };
-
+        $this->updateParticipantsAbsentees($attendeesIds);
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
@@ -267,5 +268,18 @@ class ComputeLevelCustom
                 }
             }
         }
+    }
+
+    /**
+     * update participants status for absentees
+     * 
+     * @param array $attendeesIds
+     * 
+     * @return void
+     */
+    protected function updateParticipantsAbsentees($attendeesIds)
+    {
+        $this->level->rounds->competition->participants()->whereIn('participants.grade', $this->level->grades)
+            ->whereNotIn('participants.id', $attendeesIds)->update(['participants.status' => 'absent']);
     }
 }
