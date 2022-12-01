@@ -17,6 +17,7 @@ class ComputeLevelCustom
     private $participantsAnswersGrouped;
     private $awards;
     private $totalParticipantsAnswersGrouped;
+    private $participantResult;
 
 
     /**
@@ -71,7 +72,7 @@ class ComputeLevelCustom
         $attendeesIds = [];
         foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
             $this->setNecessaryAttirbutes($participantAnswer);
-            CompetitionParticipantsResults::create([
+            $this->participantResult = CompetitionParticipantsResults::create([
                 'level_id'              => $participantAnswer->level_id,
                 'participant_index'     => $participantAnswer->participant_index,
                 'ref_award'             => $participantAnswer->award,
@@ -81,7 +82,7 @@ class ComputeLevelCustom
                 'country_rank'          => $participantAnswer->country_rank,
                 'group_rank'            => $participantAnswer->group_rank,
                 'all_participants'      => $participantAnswer->all_participants,
-                'global_rank'           => sprintf("%s %s", $participantAnswer->award, $participantAnswer->group_rank) 
+                'global_rank'           => $participantAnswer->global_rank
             ]);
             $participantAnswer->participant->update(['status' => 'result computed']);
             $attendeesIds[] = $participantAnswer->participant->id;
@@ -164,10 +165,11 @@ class ComputeLevelCustom
 
         $this->setParticipantGroupRank($allParticipants, $participantAnswer);
         $this->setParticipantAward($allParticipants, $participantAnswer);
+        $this->setParticipantGlobalRank($allParticipants, $participantAnswer);
     }
 
     /**
-     * Set participant award
+     * Set participant group rank
      * 
      * @param Illuminate\Database\Eloquent\Collection $allParticipants
      * @param \App\Models\ParticipantsAnswer $participantAnswer
@@ -177,19 +179,23 @@ class ComputeLevelCustom
     private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
-                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
-                    $groupRank = CompetitionParticipantsResults::where('level_id', $this->level->id)
-                        ->where('participant_index', $allParticipants[$index-1]->participant_index)->value('group_rank');
-                    $participantAnswer->setAttribute('group_rank', $groupRank);
-                }else{
+                if($index === 0){
                     $participantAnswer->setAttribute('group_rank', $index+1);
+                    return;
                 }
+
+                if($participantAnswer->points === $this->participantResult->points){
+                    $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank);
+                }else{
+                    $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank+1);
+                }
+                break;
             }
         }
     }
 
     /**
-     * Set participant group rank
+     * Set participant award
      * 
      * @param Illuminate\Database\Eloquent\Collection $allParticipants
      * @param \App\Models\ParticipantsAnswer $participantAnswer
@@ -235,11 +241,17 @@ class ComputeLevelCustom
         
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
-                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
-                    $participantAnswer->setAttribute('school_rank', $index);
-                }else{
+                if($index === 0){
                     $participantAnswer->setAttribute('school_rank', $index+1);
+                    return;
                 }
+
+                if($participantAnswer->points === $this->participantResult->points){
+                    $participantAnswer->setAttribute('school_rank', $$this->participantResult->school_rank);
+                }else{
+                    $participantAnswer->setAttribute('school_rank', $$this->participantResult->school_rank+1);
+                }
+                break;
             }
         }
     }
@@ -259,14 +271,46 @@ class ComputeLevelCustom
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
-        
+
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
-                if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
-                    $participantAnswer->setAttribute('country_rank', $index);
-                }else{
+                if($index === 0){
                     $participantAnswer->setAttribute('country_rank', $index+1);
+                    return;
                 }
+
+                if($participantAnswer->points === $this->participantResult->points){
+                    $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank);
+                }else{
+                    $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank+1);
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * Set participant global rank
+     * 
+     * @param Illuminate\Database\Eloquent\Collection $allParticipants
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
+     * 
+     * @return void
+     */
+    private function setParticipantGlobalRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
+        foreach($allParticipants as $index=>$participant){
+            if($participant->participant_index === $participantAnswer->participant_index){
+                if($index === 0){
+                    $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
+                    return;
+                }
+
+                if($participantAnswer->points === $this->participantResult->points){
+                    $participantAnswer->setAttribute('global_rank', $this->participantResult->global_rank);
+                }else{
+                    $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
+                }
+                break;
             }
         }
     }
