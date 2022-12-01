@@ -288,6 +288,10 @@ class ComputeLevelCustom
     protected function clearRecords(): void
     {
         CompetitionParticipantsResults::where('level_id', $this->level->id)->delete();
-        $this->level->participants()->update('participants.status', 'active');
+        Participants::whereIn('grade', $this->level->grades)
+            ->join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
+            ->join('competition', 'competition.id', 'competition_organization.competition_id')
+            ->where('competition.id', $this->level->rounds->competition_id)
+            ->update(['participants.status' => 'active']);
     }
 }
