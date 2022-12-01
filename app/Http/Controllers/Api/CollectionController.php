@@ -78,7 +78,6 @@ class CollectionController extends Controller
                         return collect($item)->except(['updated_at','created_at','reject_reason','last_modified_userid','created_by_userid']);
                 });
 
-
             /**
              * Lists of availabe filters
              */
@@ -117,7 +116,8 @@ class CollectionController extends Controller
                 );
 
             }
-
+          
+          
             $availForSearch = array("identifier", "name", "description", "tags");
             $collectionsList = CollectionHelper::searchCollection($searchKey, $collections, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availCollectionsStatus, 'competition' => $availCollectionsCompetition, 'tags' => $availTagType], 'collectionList' => $collectionsList);
