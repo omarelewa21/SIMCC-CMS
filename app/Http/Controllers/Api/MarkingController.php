@@ -304,6 +304,7 @@ class MarkingController extends Controller
                     $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                 }
             }
+            $competition->participants()->update(['participants.status' => 'active']);
 
             return response()->json([
                 "status"    => 200,
