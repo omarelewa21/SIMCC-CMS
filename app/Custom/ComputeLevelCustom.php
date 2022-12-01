@@ -31,10 +31,10 @@ class ComputeLevelCustom
         
         $percentageSum = 0;
         $this->awards = $this->level->rounds->roundsAwards->sortBy('id')
-                            ->map(function ($award) use(&$percentageSum){
-                                $percentageSum += $award->percentage;
-                                return $award->setAttribute('percentage', $percentageSum);
-                            });
+            ->map(function ($award) use(&$percentageSum){
+                $percentageSum += $award->percentage;
+                return $award->setAttribute('percentage', $percentageSum);
+            });
     }
 
     /**

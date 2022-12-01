@@ -1090,8 +1090,9 @@ class CompetitionController extends Controller
     {
         $levelIds = $competition->rounds()->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
             ->pluck('competition_levels.id');
-        
-        $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+
+        $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)
+            ->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
             ->join('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
             ->join('competition', 'competition.id', 'competition_rounds.competition_id')
             ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
