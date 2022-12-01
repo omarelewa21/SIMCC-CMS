@@ -174,11 +174,13 @@ class ComputeLevelCustom
      * 
      * @return void
      */
-    private function setParticipantAward(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
+    private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
                 if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
-                    $participantAnswer->setAttribute('group_rank', $index);
+                    $groupRank = CompetitionParticipantsResults::where('level_id', $this->level->id)
+                        ->where('participant_index', $allParticipants[$index-1]->participant_index)->value('group_rank');
+                    $participantAnswer->setAttribute('group_rank', $groupRank);
                 }else{
                     $participantAnswer->setAttribute('group_rank', $index+1);
                 }
@@ -194,7 +196,7 @@ class ComputeLevelCustom
      * 
      * @return void
      */
-    private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
+    private function setParticipantAward(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         $isAwardSet = false;
         if($participantAnswer->points === $this->level->maxPoints()){
             $participantAnswer->setAttribute('award', 'PERFECT SCORER');
