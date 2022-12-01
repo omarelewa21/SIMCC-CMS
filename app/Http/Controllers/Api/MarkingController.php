@@ -372,8 +372,13 @@ class MarkingController extends Controller
     {
         try {
             foreach($request->all() as $data){
-                $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
-                    ->update(['award' => $data['award']]);
+                $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
+                    ->first();
+
+                $participantResults->update([
+                    'award'         => $data['award'],
+                    'global_rank'   => sprintf("%s %s", $data['award'], $participantResults->group_rank)
+                ]);
             }
             return response()->json([
                 "status"        => 200,
