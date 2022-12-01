@@ -5,12 +5,14 @@ namespace App\Custom;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
 {
-    private $progressPreviousVal = 0;
+    private $progressPreviousVal = 20;
     private $level;
     private $participantsAnswersGrouped;
     private $awards;
@@ -30,10 +32,10 @@ class ComputeLevelCustom
         
         $percentageSum = 0;
         $this->awards = $this->level->rounds->roundsAwards->sortBy('id')
-                            ->map(function ($award) use(&$percentageSum){
-                                $percentageSum += $award->percentage;
-                                return $award->setAttribute('percentage', $percentageSum);
-                            });
+            ->map(function ($award) use(&$percentageSum){
+                $percentageSum += $award->percentage;
+                return $award->setAttribute('percentage', $percentageSum);
+            });
     }
 
     /**
@@ -64,11 +66,10 @@ class ComputeLevelCustom
      */
     public function computeResutlsForSingleLevel()
     {
+        $this->clearRecords();
         $this->computeParticipantAnswersScores();
+        $attendeesIds = [];
         foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
-            CompetitionParticipantsResults::where('level_id', $participantAnswer->level_id)
-                ->where('participant_index', $participantAnswer->participant_index)->delete();
-
             $this->setNecessaryAttirbutes($participantAnswer);
             CompetitionParticipantsResults::create([
                 'level_id'              => $participantAnswer->level_id,
@@ -83,10 +84,10 @@ class ComputeLevelCustom
                 'global_rank'           => sprintf("%s %s", $participantAnswer->award, $participantAnswer->group_rank) 
             ]);
             $participantAnswer->participant->update(['status' => 'result computed']);
-
+            $attendeesIds[] = $participantAnswer->participant->id;
             $this->updateComputeProgressPercentage($index);
         };
-
+        $this->updateParticipantsAbsentees($attendeesIds);
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
@@ -160,19 +161,42 @@ class ComputeLevelCustom
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
+        
+        $this->setParticipantAward($allParticipants, $participantAnswer);
+        $this->setParticipantGroupRank($allParticipants, $participantAnswer);
+    }
 
-        // set group rank attribute 
+    /**
+     * Set participant award
+     * 
+     * @param Illuminate\Database\Eloquent\Collection $allParticipants
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
+     * 
+     * @return void
+     */
+    private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         foreach($allParticipants as $index=>$participant){
             if($participant->participant_index === $participantAnswer->participant_index){
                 if($index > 0 && $participantAnswer->points === $allParticipants[$index-1]->points){
-                    $participantAnswer->setAttribute('group_rank', $index);
+                    $groupRank = CompetitionParticipantsResults::where('level_id', $this->level->id)
+                        ->where('participant_index', $allParticipants[$index-1]->participant_index)->value('group_rank');
+                    $participantAnswer->setAttribute('group_rank', $groupRank);
                 }else{
                     $participantAnswer->setAttribute('group_rank', $index+1);
                 }
             }
         }
+    }
 
-        // Set award attribute
+    /**
+     * Set participant group rank
+     * 
+     * @param Illuminate\Database\Eloquent\Collection $allParticipants
+     * @param \App\Models\ParticipantsAnswer $participantAnswer
+     * 
+     * @return void
+     */
+    private function setParticipantAward(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
         $isAwardSet = false;
         if($participantAnswer->points === $this->level->maxPoints()){
             $participantAnswer->setAttribute('award', 'PERFECT SCORER');
@@ -245,5 +269,31 @@ class ComputeLevelCustom
                 }
             }
         }
+    }
+
+    /**
+     * update participants status for absentees
+     * 
+     * @param array $attendeesIds
+     * 
+     * @return void
+     */
+    protected function updateParticipantsAbsentees($attendeesIds)
+    {
+        $this->level->rounds->competition->participants()->whereIn('participants.grade', $this->level->grades)
+            ->whereNotIn('participants.id', $attendeesIds)->update(['participants.status' => 'absent']);
+    }
+
+    /**
+     * clear all results for this level and update participants status for this level to active status
+     */
+    protected function clearRecords(): void
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)->delete();
+        Participants::whereIn('grade', $this->level->grades)
+            ->join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
+            ->join('competition', 'competition.id', 'competition_organization.competition_id')
+            ->where('competition.id', $this->level->rounds->competition_id)
+            ->update(['participants.status' => 'active']);
     }
 }

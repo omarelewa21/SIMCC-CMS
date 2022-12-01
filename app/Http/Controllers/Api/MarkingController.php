@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Custom\Compute;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
@@ -16,15 +15,15 @@ use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
-use Illuminate\Http\Request;
+use App\Models\CompetitionParticipantsResults;
 
 class MarkingController extends Controller
 {
     /**
      * Marking overview page
-     * 
+     *
      * @param App\Models\Competition $competition
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function markingList(Competition $competition) {
@@ -47,9 +46,9 @@ class MarkingController extends Controller
 
     /**
      * Competition Marking group overview
-     * 
+     *
      * @param App\Models\Competition $competition
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function markingGroupsList(Competition $competition)
@@ -77,10 +76,10 @@ class MarkingController extends Controller
 
     /**
      * add a new marking group
-     * 
+     *
      * @param App\Models\Competition $competition
      * @param App\Http\Requests\StoreCompetitionMarkingGroupRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function addMarkingGroups(Competition $competition, StoreCompetitionMarkingGroupRequest $request)
@@ -116,16 +115,16 @@ class MarkingController extends Controller
             "message" => "Add marking group successful"
         ]);
     }
-    
+
     /**
      * Edit marking group
-     * 
+     *
      * @param App\Models\CompetitionMarkingGroup $group
      * @param App\Http\Requests\UpdateCompetitionMarkingGroupRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
-    public function editMarkingGroups(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
+    public function editMarkingGroup(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
         $group->undoComputedResults('active');
         try {
             $group->update([
@@ -157,11 +156,59 @@ class MarkingController extends Controller
     }
 
     /**
+     * Delete marking group
+     *
+     * @param App\Models\CompetitionMarkingGroup $group
+     *
+     * @return Illuminate\Http\Response
+     */
+    public function deleteMarkingGroup(CompetitionMarkingGroup $group)
+    {
+        try {
+            DB::transaction(function () use($group){
+                $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
+                    ->select('participants.grade')->distinct()->pluck('participants.grade');
+
+                $levelIds = $group->competition->rounds()
+                    ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
+                    ->pluck('competition_levels.grades', 'competition_levels.id')
+                    ->filter(function ($levelGrades) use($grades){
+                        foreach(json_decode($levelGrades, true) as $grade){
+                            if($grades->contains($grade)){
+                                return $levelGrades;
+                            }
+                        }
+                    })->keys();
+
+                $countryIds = $group->countries()->pluck('all_countries.id');
+                CompetitionParticipantsResults::whereIn('level_id', $levelIds)
+                    ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                    ->whereIn('participants.country_id', $countryIds)
+                    ->delete();
+
+                $group->delete();
+            });
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Marking group deleted successful"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Deleting marking group unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get active participants per country per grade
-     * 
+     *
      * @param App\Models\Competition $competition
      * @param App\Http\Requests\getActiveParticipantsByCountryRequest $request
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
@@ -177,7 +224,7 @@ class MarkingController extends Controller
                 $country = Countries::find($country_id);
                 $countries[] = $country->display_name;
                 foreach($grades as $grade){
-                    $data[$country->display_name][$grade] = 
+                    $data[$country->display_name][$grade] =
                         $competition->participants()->where('participants.country_id', $country_id)
                             ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
                 }
@@ -202,9 +249,9 @@ class MarkingController extends Controller
 
     /**
      * Compute single level results
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
-     * 
+     *
      * @return response
      */
     public function computeResultsForSingleLevel(CompetitionLevels $level)
@@ -230,9 +277,9 @@ class MarkingController extends Controller
 
     /**
      * Compute results for the competition
-     * 
+     *
      * @param \App\Models\Competition $competition
-     * 
+     *
      * @return response
      */
     public function computeCompetitionResults(Competition $competition)
@@ -247,7 +294,7 @@ class MarkingController extends Controller
 
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
-                    ComputeLevelCustom::validateLevelForValidation($level);
+                    ComputeLevelCustom::validateLevelForComputing($level);
                 }
             }
 
@@ -257,12 +304,13 @@ class MarkingController extends Controller
                     $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                 }
             }
+            $competition->participants()->update(['participants.status' => 'active']);
 
             return response()->json([
                 "status"    => 200,
                 "message"   => "Competition computing is in progress",
             ], 200);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -274,15 +322,15 @@ class MarkingController extends Controller
 
     /**
      * get moderate list for a level
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
-     * 
+     *
      * @return response
      */
     public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group)
     {
         $level->load('rounds.competition', 'participantResults');
-        $data = $level->participantResults()
+    $data = $level->participantResults()
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
@@ -294,7 +342,7 @@ class MarkingController extends Controller
                 'level'         => $level->id,
                 'award_type'    => $level->rounds->award_type,
                 'cut_off_points'=> (new Marking())->getCutOffPoints($level),
-                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
+                'awards'        => $level->rounds->roundsAwards->sortBy('id')->pluck('name')->concat([$level->rounds->default_award_name])
             ];
 
             return response()->json([
@@ -315,18 +363,23 @@ class MarkingController extends Controller
 
     /**
      * edit participant award
-     * 
+     *
      * @param \App\Models\CompetitionLevels $level
      * @param \App\Http\Requests\EditParticipantAwardRequest $request
-     * 
+     *
      * @return response
      */
     public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
     {
         try {
             foreach($request->all() as $data){
-                $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
-                    ->update(['award' => $data['award']]);
+                $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
+                    ->first();
+
+                $participantResults->update([
+                    'award'         => $data['award'],
+                    'global_rank'   => sprintf("%s %s", $data['award'], $participantResults->group_rank)
+                ]);
             }
             return response()->json([
                 "status"        => 200,

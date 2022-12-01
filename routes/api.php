@@ -115,14 +115,15 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::post("/overall_awards",[CompetitionController::class,"addOverallAwards"])->name('competition.overall.award.add');
         Route::patch("/overall_awards",[CompetitionController::class,"editOverallAwards"])->name('competition.overall.award.edit');
         Route::delete("/overall_awards",[CompetitionController::class,"deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
-        Route::get("/report",[CompetitionController::class,"report"])->name('competition.report');
+        Route::get("/{competition}/report",[CompetitionController::class,"report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
     });
 
     Route::group(["prefix" => "marking"],function () {
         Route::get("/preparation/{competition}",[MarkingController::class,"markingGroupsList"])->name('competition.marking.groups.list');
         Route::post("/preparation/{competition}",[MarkingController::class,"addMarkingGroups"])->name('competition.marking.groups.add');
-        Route::patch("/preparation/{group}",[MarkingController::class,"editMarkingGroups"])->name('competition.marking.groups.edit');
+        Route::patch("/preparation/{group}",[MarkingController::class,"editMarkingGroup"])->name('competition.marking.groups.edit');
+        Route::delete("/preparation/{group}",[MarkingController::class,"deleteMarkingGroup"])->name('competition.marking.groups.delete');
         Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
