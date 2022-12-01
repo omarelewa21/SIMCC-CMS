@@ -5,6 +5,7 @@ namespace App\Custom;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -44,9 +45,9 @@ class ComputeLevelCustom
      */
     public static function validateLevelForComputing(CompetitionLevels $level)
     {
-        // if($level->computing_status === 'In Progress'){
-        //     throw new \Exception("Level {$level->id} is already under computing, please wait till finished", 409);
-        // }
+        if($level->computing_status === 'In Progress'){
+            throw new \Exception("Level {$level->id} is already under computing, please wait till finished", 409);
+        }
 
         if( !(new Marking())->isLevelReadyToCompute($level) ){
             throw new \Exception("Level {$level->id} is not ready to compute, please check that all tasks in this level has answers and answers are uploaded to this level", 406);
@@ -67,7 +68,7 @@ class ComputeLevelCustom
     {
         $this->computeParticipantAnswersScores();
         $attendeesIds = [];
-        CompetitionParticipantsResults::where('level_id', $this->level->id)->delete();
+        $this->clearRecords();
 
         foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
             $this->setNecessaryAttirbutes($participantAnswer);
@@ -280,5 +281,14 @@ class ComputeLevelCustom
     {
         $this->level->rounds->competition->participants()->whereIn('participants.grade', $this->level->grades)
             ->whereNotIn('participants.id', $attendeesIds)->update(['participants.status' => 'absent']);
+    }
+
+    /**
+     * clear all results for this level and update participants status for this level to active status
+     */
+    protected function clearRecords(): void
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)->delete();
+        $this->level->participants()->update('participants.status', 'active');
     }
 }
