@@ -44,9 +44,9 @@ class ComputeLevelCustom
      */
     public static function validateLevelForComputing(CompetitionLevels $level)
     {
-        if($level->computing_status === 'In Progress'){
-            throw new \Exception("Level {$level->id} is already under computing, please wait till finished", 409);
-        }
+        // if($level->computing_status === 'In Progress'){
+        //     throw new \Exception("Level {$level->id} is already under computing, please wait till finished", 409);
+        // }
 
         if( !(new Marking())->isLevelReadyToCompute($level) ){
             throw new \Exception("Level {$level->id} is not ready to compute, please check that all tasks in this level has answers and answers are uploaded to this level", 406);
