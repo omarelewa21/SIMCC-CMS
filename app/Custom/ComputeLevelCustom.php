@@ -161,9 +161,9 @@ class ComputeLevelCustom
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
-        
-        $this->setParticipantAward($allParticipants, $participantAnswer);
+
         $this->setParticipantGroupRank($allParticipants, $participantAnswer);
+        $this->setParticipantAward($allParticipants, $participantAnswer);
     }
 
     /**
