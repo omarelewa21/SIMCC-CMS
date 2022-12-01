@@ -67,10 +67,9 @@ class ComputeLevelCustom
     {
         $this->computeParticipantAnswersScores();
         $attendeesIds = [];
-        foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
-            CompetitionParticipantsResults::where('level_id', $participantAnswer->level_id)
-                ->where('participant_index', $participantAnswer->participant_index)->delete();
+        CompetitionParticipantsResults::where('level_id', $this->level->id)->delete();
 
+        foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
             $this->setNecessaryAttirbutes($participantAnswer);
             CompetitionParticipantsResults::create([
                 'level_id'              => $participantAnswer->level_id,
