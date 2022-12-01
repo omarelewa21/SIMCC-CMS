@@ -66,10 +66,9 @@ class ComputeLevelCustom
      */
     public function computeResutlsForSingleLevel()
     {
+        $this->clearRecords();
         $this->computeParticipantAnswersScores();
         $attendeesIds = [];
-        $this->clearRecords();
-
         foreach($this->participantsAnswersGrouped as $index=>$participantAnswer){                
             $this->setNecessaryAttirbutes($participantAnswer);
             CompetitionParticipantsResults::create([
