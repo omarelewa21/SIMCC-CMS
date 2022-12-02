@@ -177,20 +177,18 @@ class ComputeLevelCustom
      * @return void
      */
     private function setParticipantGroupRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
-        foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $participantAnswer->participant_index){
-                if($index === 0){
-                    $participantAnswer->setAttribute('group_rank', $index+1);
-                    return;
-                }
+        $index = $allParticipants->search(function ($participant)use($participantAnswer) {
+            return $participant->participant_index === $participantAnswer->participant_index;
+        });
 
-                if($participantAnswer->points === $this->participantResult->points){
-                    $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank);
-                }else{
-                    $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank+1);
-                }
-                break;
-            }
+        if($index === 0){
+            $participantAnswer->setAttribute('group_rank', $index+1);
+            return;
+        }
+        if($participantAnswer->points === $this->participantResult->points){
+            $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank);
+        }else{
+            $participantAnswer->setAttribute('group_rank', $this->participantResult->group_rank+1);
         }
     }
 
@@ -203,24 +201,19 @@ class ComputeLevelCustom
      * @return void
      */
     private function setParticipantAward(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
-        $isAwardSet = false;
         if($participantAnswer->points === $this->level->maxPoints()){
             $participantAnswer->setAttribute('award', 'PERFECT SCORER');
-            $isAwardSet = true;
+            return;
         }
-        if(!$isAwardSet){
-            $participantPercentageRank = round( ($participantAnswer->group_rank/count($allParticipants)) * 100 );
-            $participantAnswer->setAttribute('all_participants', count($allParticipants));
-            foreach($this->awards as $award){
-                if(!$isAwardSet && $participantPercentageRank <= $award->percentage && $participantAnswer->points > $award->min_marks){
-                    $participantAnswer->setAttribute('award', $award->name);
-                    $isAwardSet = true;
-                }
-            }
-            if(!$isAwardSet){
-                $participantAnswer->setAttribute('award', $this->level->rounds->default_award_name);
+        $participantPercentageRank = round( ($participantAnswer->group_rank/count($allParticipants)) * 100 );
+        $participantAnswer->setAttribute('all_participants', count($allParticipants));
+        foreach($this->awards as $award){
+            if( $participantPercentageRank <= $award->percentage && $participantAnswer->points > $award->min_marks ){
+                $participantAnswer->setAttribute('award', $award->name);
+                return;
             }
         }
+        $participantAnswer->setAttribute('award', $this->level->rounds->default_award_name);
     }
 
     /**
@@ -238,21 +231,19 @@ class ComputeLevelCustom
             })
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
-        
-        foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $participantAnswer->participant_index){
-                if($index === 0){
-                    $participantAnswer->setAttribute('school_rank', $index+1);
-                    return;
-                }
 
-                if($participantAnswer->points === $this->participantResult->points){
-                    $participantAnswer->setAttribute('school_rank', $$this->participantResult->school_rank);
-                }else{
-                    $participantAnswer->setAttribute('school_rank', $$this->participantResult->school_rank+1);
-                }
-                break;
-            }
+        $index = $allParticipants->search(function ($participant)use($participantAnswer) {
+            return $participant->participant_index === $participantAnswer->participant_index;
+        });
+
+        if($index === 0){
+            $participantAnswer->setAttribute('school_rank', $index+1);
+            return;
+        }
+        if($participantAnswer->points === $this->participantResult->points){
+            $participantAnswer->setAttribute('school_rank', $this->participantResult->school_rank);
+        }else{
+            $participantAnswer->setAttribute('school_rank', $this->participantResult->school_rank+1);
         }
     }
 
@@ -272,20 +263,18 @@ class ComputeLevelCustom
             ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
             ->orderBy('points', 'DESC')->get();
 
-        foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $participantAnswer->participant_index){
-                if($index === 0){
-                    $participantAnswer->setAttribute('country_rank', $index+1);
-                    return;
-                }
+        $index = $allParticipants->search(function ($participant)use($participantAnswer) {
+            return $participant->participant_index === $participantAnswer->participant_index;
+        });
 
-                if($participantAnswer->points === $this->participantResult->points){
-                    $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank);
-                }else{
-                    $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank+1);
-                }
-                break;
-            }
+        if($index === 0){
+            $participantAnswer->setAttribute('country_rank', $index+1);
+            return;
+        }
+        if($participantAnswer->points === $this->participantResult->points){
+            $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank);
+        }else{
+            $participantAnswer->setAttribute('country_rank', $this->participantResult->country_rank+1);
         }
     }
 
@@ -298,20 +287,18 @@ class ComputeLevelCustom
      * @return void
      */
     private function setParticipantGlobalRank(Collection $allParticipants, ParticipantsAnswer $participantAnswer){
-        foreach($allParticipants as $index=>$participant){
-            if($participant->participant_index === $participantAnswer->participant_index){
-                if($index === 0){
-                    $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
-                    return;
-                }
+        $index = $allParticipants->search(function ($participant)use($participantAnswer) {
+            return $participant->participant_index === $participantAnswer->participant_index;
+        });
 
-                if($participantAnswer->points === $this->participantResult->points){
-                    $participantAnswer->setAttribute('global_rank', $this->participantResult->global_rank);
-                }else{
-                    $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
-                }
-                break;
-            }
+        if($index === 0){
+            $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
+            return;
+        }
+        if($participantAnswer->points === $this->participantResult->points){
+            $participantAnswer->setAttribute('global_rank', $this->participantResult->global_rank);
+        }else{
+            $participantAnswer->setAttribute('global_rank', sprintf("%s %s", $participantAnswer->award, $index+1));
         }
     }
 

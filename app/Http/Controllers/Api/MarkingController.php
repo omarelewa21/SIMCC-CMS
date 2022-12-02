@@ -330,7 +330,7 @@ class MarkingController extends Controller
     public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group)
     {
         $level->load('rounds.competition', 'participantResults');
-    $data = $level->participantResults()
+        $data = $level->participantResults()
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
@@ -341,7 +341,7 @@ class MarkingController extends Controller
                 'round'         => $level->rounds->name,
                 'level'         => $level->id,
                 'award_type'    => $level->rounds->award_type,
-                'cut_off_points'=> (new Marking())->getCutOffPoints($level),
+                'cut_off_points'=> (new Marking())->getCutOffPoints($data),
                 'awards'        => $level->rounds->roundsAwards->sortBy('id')->pluck('name')->concat([$level->rounds->default_award_name])
             ];
 

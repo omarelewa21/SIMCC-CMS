@@ -97,21 +97,20 @@ class Marking
     /**
      * get cut off points for participant results
      * 
-     * @param \App\Models\CompetitionLevels $level
+     * @param Illuminate\Database\Eloquent\Collection $participantResults
      * 
      * @return array
      */
-    public function getCutOffPoints(CompetitionLevels $level)
+    public function getCutOffPoints($participantResults)
     {
-        $participantAwards = $level->participantResults()
-            ->select('competition_participants_results.award')->distinct()->pluck('competition_participants_results.award');
+        $participantAwards = $participantResults->pluck('award')->unique();
         
         $data = [];
         foreach($participantAwards as $award){
-            $data[$award] = $level->participantResults()->where('competition_participants_results.award', $award)
-                ->orderBy('points')->value('points');
+            $data[$award] = $participantResults->last(function ($participantResult) use($award){
+                return $participantResult->award == $award;
+            })->points;
         }
-
         return $data;
     }
 }
