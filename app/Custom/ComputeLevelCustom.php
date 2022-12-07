@@ -177,6 +177,8 @@ class ComputeLevelCustom
                 $participantResult->setAttribute('global_rank', $index+1);
             }
             $participantResult->save();
+            $participantResult->participant->setAttribute('status', 'result computed');
+            $participantResult->participant->save();
         }
         $this->updateComputeProgressPercentage(80);
     }
