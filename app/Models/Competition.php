@@ -20,6 +20,7 @@ class Competition extends Base
         'created_by',
         'last_modified_by',
         'award_type_name',
+        'compute_status'
         // 'generate_report_btn'
     ];
 
@@ -85,6 +86,20 @@ class Competition extends Base
 
     public function getAllowedGradesAttribute ($value) {
         return json_decode($value);
+    }
+
+    public function getComputeStatusAttribute()
+    {
+        $statusses = $this->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
+            ->pluck('competition_levels.computing_status')->unique();
+        
+        if($statusses->contains(CompetitionLevels::STATUS_NOT_STARTED)){
+            return CompetitionLevels::STATUS_NOT_STARTED;
+        }
+        if($statusses->contains(CompetitionLevels::STATUS_In_PROGRESS) || $statusses->contains(CompetitionLevels::STATUS_BUG_DETECTED)){
+            return CompetitionLevels::STATUS_In_PROGRESS;
+        }
+        return CompetitionLevels::STATUS_FINISHED;
     }
 
     public function getGenerateReportBtnAttribute () {
