@@ -14,6 +14,11 @@ class CompetitionParticipantsResults extends Model
 
     public $timestamps = false;
 
+    public function getGlobalRankAttribute($value)
+    {
+        return sprintf("%s %s", $this->award, $value);
+    }
+
     public function participant()
     {
         return $this->belongsTo(Participants::class,'participant_index','index_no');
