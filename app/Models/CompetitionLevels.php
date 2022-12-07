@@ -57,10 +57,22 @@ class CompetitionLevels extends Model
 
     public function updateStatus($status, $error_message=null)
     {
+        switch ($status) {
+            case self::STATUS_In_PROGRESS:
+                $progress = 1;
+                break;
+            case self::STATUS_FINISHED:
+                $progress = 100;
+                break;
+            default:
+                $progress = $this->compute_progress_percentage;
+                break;
+        }
+
         $this->update([
             'computing_status'              => $status,
             'compute_error_message'         => $error_message,
-            'compute_progress_percentage'   => $status === self::STATUS_In_PROGRESS ? 0 : $this->compute_progress_percentage
+            'compute_progress_percentage'   => $progress
         ]);
     }
 

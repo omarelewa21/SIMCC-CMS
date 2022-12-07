@@ -88,7 +88,9 @@ class Marking
         })->select('task_answers.task_id')->distinct()->count();
 
         if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
-            return $level->participantsAnswersUploaded()->count() > 0;
+            if($level->participantsAnswersUploaded()->count() > 0){
+                return $level->rounds->roundsAwards()->count() > 0;
+            }
         };
 
         return false;

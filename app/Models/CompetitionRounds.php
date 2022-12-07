@@ -40,7 +40,7 @@ class CompetitionRounds extends Model
     }
 
     public function roundsAwards () {
-        return $this->hasMany(CompetitionRoundsAwards::class,'round_id','id');
+        return $this->hasMany(CompetitionRoundsAwards::class,'round_id','id')->orderBy('id');
     }
 
     public function roundOverallAwards () {

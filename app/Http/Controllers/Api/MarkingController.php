@@ -339,10 +339,10 @@ class MarkingController extends Controller
             $headerData = [
                 'competition'   => $level->rounds->competition->name,
                 'round'         => $level->rounds->name,
-                'level'         => $level->id,
+                'level'         => $level->name,
                 'award_type'    => $level->rounds->award_type,
                 'cut_off_points'=> (new Marking())->getCutOffPoints($data),
-                'awards'        => $level->rounds->roundsAwards->sortBy('id')->pluck('name')->concat([$level->rounds->default_award_name])
+                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
             ];
 
             return response()->json([
