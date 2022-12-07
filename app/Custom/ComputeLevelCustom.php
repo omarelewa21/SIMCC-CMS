@@ -100,7 +100,6 @@ class ComputeLevelCustom
                 })->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index=>$participantResult){
-                $participantResult->setAttribute('group_id', $group->id);
                 if($index === 0){
                     $participantResult->setAttribute('group_rank', $index+1);
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
@@ -126,7 +125,6 @@ class ComputeLevelCustom
                 ->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index=>$participantResult){
-                $participantResult->setAttribute('country_id', $countryId);
                 if($index === 0){
                     $participantResult->setAttribute('country_rank', $index+1);
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
@@ -152,7 +150,6 @@ class ComputeLevelCustom
                 ->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index=>$participantResult){
-                $participantResult->setAttribute('school_id', $schoolId);
                 if($index === 0){
                     $participantResult->setAttribute('school_rank', $index+1);
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
