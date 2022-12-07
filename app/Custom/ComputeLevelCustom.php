@@ -68,7 +68,7 @@ class ComputeLevelCustom
     {
         DB::transaction(function(){
             $attendeesIds = [];
-            $this->participantsAnswersGrouped->each(function($participantAnswer) use($attendeesIds){
+            $this->participantsAnswersGrouped->each(function($participantAnswer) use(&$attendeesIds){
                 CompetitionParticipantsResults::create([
                     'level_id'              => $participantAnswer->level_id,
                     'participant_index'     => $participantAnswer->participant_index,
