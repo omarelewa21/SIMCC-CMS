@@ -16,6 +16,7 @@ use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use Illuminate\Http\Request;
 
 class MarkingController extends Controller
 {
@@ -327,14 +328,51 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
         $level->load('rounds.competition', 'participantResults');
-        $data = $level->participantResults()
+
+        if($request->has('is_for_report') && $request->is_for_report){
+            $data = CompetitionParticipantsResults::where('level_id', $level->id)
+                ->whereHas('participant', function($query)use($group){
+                    $query->whereIn('country_id', $group->countries()->pluck('all_countries.id')->toArray());
+                })
+                ->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+                ->join('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+                ->join('competition', 'competition.id', 'competition_rounds.competition_id')
+                ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                ->join('schools', 'participants.school_id', 'schools.id')
+                ->join('all_countries', 'all_countries.id', 'participants.country_id')
+                ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+                ->join('organization', 'organization.id', 'competition_organization.organization_id')
+                ->select(
+                    DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
+                    DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
+                    DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
+                    DB::raw("CONCAT('\"', competition_levels.name, '\"') AS country"),
+                    'participants.grade',
+                    DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
+                    'participants.index_no as index',
+                    DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
+                    'competition_participants_results.points',
+                    DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
+                    'competition_participants_results.school_rank',
+                    'competition_participants_results.country_rank',
+                    'competition_participants_results.group_rank',
+                    'competition_participants_results.global_rank'
+                )->distinct('index')->orderBy('points', 'DESC')->get();
+
+            return $data;
+        }
+
+        else{
+            $data = $level->participantResults()
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
                 ->orderBy('competition_participants_results.points', 'DESC')->get();
+        }
+        
         try {
             $headerData = [
                 'competition'   => $level->rounds->competition->name,

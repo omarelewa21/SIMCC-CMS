@@ -3,12 +3,9 @@
 namespace App\Custom;
 
 use App\Models\CompetitionLevels;
-use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\Countries;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
@@ -20,7 +17,7 @@ class ComputeLevelCustom
     function __construct(CompetitionLevels $level)
     {
         $this->level = $level->load('participantsAnswersUploaded');
-        // $this->computeParticipantAnswersScores();
+        $this->computeParticipantAnswersScores();
         $this->participantsAnswersGrouped = ParticipantsAnswer::where('level_id', $level->id)
                 ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
                 ->orderBy('points', 'DESC')->get();
