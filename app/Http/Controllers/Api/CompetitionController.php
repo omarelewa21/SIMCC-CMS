@@ -1104,7 +1104,7 @@ class CompetitionController extends Controller
                 'competition.name as competition',
                 'organization.name as organization',
                 'all_countries.display_name as country',
-                'competition_levels.id as level',
+                'competition_levels.name as level',
                 'participants.grade',
                 'schools.name as school',
                 'participants.index_no as index',
