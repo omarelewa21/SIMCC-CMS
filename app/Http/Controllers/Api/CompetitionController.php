@@ -1101,16 +1101,16 @@ class CompetitionController extends Controller
             ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
             ->join('organization', 'organization.id', 'competition_organization.organization_id')
             ->select(
-                'competition.name as competition',
-                'organization.name as organization',
-                'all_countries.display_name as country',
-                'competition_levels.name as level',
+                DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
+                DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
+                DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
+                DB::raw("CONCAT('\"', competition_levels.name, '\"') AS country"),
                 'participants.grade',
-                'schools.name as school',
+                DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
                 'participants.index_no as index',
-                'participants.name as participant',
+                DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
                 'competition_participants_results.points',
-                'competition_participants_results.award',
+                DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
                 'competition_participants_results.school_rank',
                 'competition_participants_results.country_rank',
                 'competition_participants_results.group_rank',
