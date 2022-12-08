@@ -93,7 +93,7 @@ class Competition extends Base
         $statusses = $this->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
             ->pluck('competition_levels.computing_status')->unique();
         
-        if($statusses->contains(CompetitionLevels::STATUS_NOT_STARTED)){
+        if(count($statusses->toArray()) === 0 || $statusses->contains(CompetitionLevels::STATUS_NOT_STARTED)){
             return CompetitionLevels::STATUS_NOT_STARTED;
         }
         if($statusses->contains(CompetitionLevels::STATUS_In_PROGRESS) || $statusses->contains(CompetitionLevels::STATUS_BUG_DETECTED)){
