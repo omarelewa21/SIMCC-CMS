@@ -220,7 +220,7 @@ class TasksController extends Controller
 //            dd($taskCollection->toArray());
 //            dd($availForSearch);
 
-            $availForSearch = array("identifier", "title", "description","languages");
+            $availForSearch = array("identifier", "title", "description");
             $taskList = CollectionHelper::searchCollection($searchKey, $taskCollection, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availTaskStatus, 'lang' => $availLang, 'domains' => $availDomainType, 'tags' => $availTagType], 'taskLists' => $taskList);
 
