@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Collections;
-use App\Models\CollectionGroups;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
 use App\Models\DomainsTags;
@@ -14,11 +13,8 @@ use App\Models\Tasks;
 use App\Models\User;
 use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
+use App\Http\Requests\UpdateSectionRequest;
 use App\Rules\CheckMultipleVaildIds;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -345,9 +341,8 @@ class CollectionController extends Controller
             $collection_id = Arr::pull($validated, 'collection_id');
             $tasks =  json_encode(Arr::pull($validated, 'groups'),JSON_UNESCAPED_SLASHES);
 
-          
             DB::beginTransaction();
-          
+
             CollectionSections::insert(
             ["collection_id" => $collection_id,
               "description" => $validated['description'],
@@ -384,55 +379,35 @@ class CollectionController extends Controller
         }
     }
 
-    public function update_sections (Request $request) {
-
-        $validated = $request->validate([
-            'collection_id' => 'required|integer|exists:collection,id',
-            'section_id' => 'sometimes|required|integer|exists:collection_sections,id',
-            'section' => 'required',
-            'section.groups' => 'required|array',
-            'section.groups.*.task_id' => 'array|required',
-            'section.groups.*.task_id.*' => 'required|integer',//exists:tasks,id
-            'section.sort_randomly' => 'boolean|required',
-            'section.allow_skip' => 'boolean|required',
-            'section.description' => 'string|max:65535',
-        ]);
-
-        $collection_id = Arr::pull($validated, 'collection_id');
-        $section_id = $validated['section_id'] ?? Arr::pull($validated, 'section_id');
-        $section = Arr::pull($validated, 'section');
-        $section['tasks'] =  json_encode(Arr::pull($section, 'groups'));
+    public function update_sections (UpdateSectionRequest $request) {
+        $section = $request->section;
+        $section['tasks'] = json_encode(Arr::pull($section, 'groups'));
 
         try {
-
-            $this->CheckUploadedAnswersCount($collection_id);
+            $this->CheckUploadedAnswersCount($request->collection_id);
 
             DB::beginTransaction();
-
-            if(isset($validated['section_id'])) {
-                $results = CollectionSections::where(['collection_id' => $collection_id])->findOrFail($section_id);
+            if($request->has('section_id')) {
+                $results = CollectionSections::findOrFail($request->section_id);
+                $results->update($section);
             } else {
-                $section['collection_id'] = $collection_id;
-                $results = new CollectionSections;
+                $section['collection_id'] = $request->collection_id;
+                $results = CollectionSections::create($section);
             }
-
-            $results->fill($section);
-            $results->save();
-
             DB::commit();
 
+            return response()->json([
+                "status"    => 200,
+                "message"   => "collection section update successful",
+                "data"      => $results
+            ]);
 
-            return response()->json([
-                "status" => 200,
-                "message" => "collection section update successful",
-                "data" => $results
-            ]);
         } catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "collection section update unsuccessful "  .$e
-            ]);
+                "status"    => 500,
+                "message"   => "collection section update unsuccessful "  . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 

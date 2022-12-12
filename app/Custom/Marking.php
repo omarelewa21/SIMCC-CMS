@@ -22,14 +22,13 @@ class Marking
             $levels = $round->levels->mapWithKeys(function ($level) use($countries){
                 $levels = [];
                 foreach($countries as $group_id=>$countryGroup){
-                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                            ->whereIn('participants.status', ['active', 'result computed'])->count();
+                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())->count();
                     $markedParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                             ->where('participants.status', 'result computed')->count();
-                    $absenteesQuery = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                    $absentees = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->where('participants.status', 'absent')
                                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                        ->select('participants.name')->distinct();
+                                        ->select('participants.name')->distinct()->get();
 
                     $levels[$level->id][] = [
                         'level_id'                      => $level->id,
@@ -39,9 +38,10 @@ class Marking
                         'compute_progress_percentage'   => $level->compute_progress_percentage,
                         'compute_error_message'         => $level->compute_error_message,
                         'total_participants'            => $totalParticipants,
+                        'answers_uploaded'              => $totalParticipants - $absentees->count(),
                         'marked_participants'           => $markedParticipants,
-                        'absentees_count'               => $absenteesQuery->count(),
-                        'absentees'                     => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
+                        'absentees_count'               => $absentees->count(),
+                        'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
                         'country_group'                 => $countryGroup->pluck('display_name')->toArray(),
                         'marking_group_id'              => $group_id
                     ];
