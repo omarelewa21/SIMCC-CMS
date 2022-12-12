@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class CollectionHelper
 {
@@ -50,7 +51,7 @@ class CollectionHelper
                     return collect($availForSearch)->map(
                         fn($item) => $row[$item]
                     )->contains(
-                        fn($item) => str_contains($item, $searchTerm)
+                        fn($item) => str_contains(Str::lower($item), Str::lower($searchTerm))
                     );
 
                 }), $limit);
