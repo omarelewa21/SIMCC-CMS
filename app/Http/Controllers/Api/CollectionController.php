@@ -381,7 +381,7 @@ class CollectionController extends Controller
 
     public function update_sections (UpdateSectionRequest $request) {
         $section = $request->section;
-        $section['tasks'] = json_encode(Arr::pull($section, 'groups'));
+        $section['tasks'] = Arr::pull($section, 'groups');
 
         try {
             $this->CheckUploadedAnswersCount($request->collection_id);
