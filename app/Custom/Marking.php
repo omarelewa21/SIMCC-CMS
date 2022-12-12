@@ -29,7 +29,12 @@ class Marking
                                         ->where('participants.status', 'absent')
                                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->select('participants.name')->distinct()->get();
-
+                    
+                    $answersUploaded = $level->participantsAnswersUploaded()
+                        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+                        ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                        ->select('participant_answers.participant_index')->distinct()->count('participant_index');
+    
                     $levels[$level->id][] = [
                         'level_id'                      => $level->id,
                         'name'                          => $level->name,
@@ -38,7 +43,7 @@ class Marking
                         'compute_progress_percentage'   => $level->compute_progress_percentage,
                         'compute_error_message'         => $level->compute_error_message,
                         'total_participants'            => $totalParticipants,
-                        'answers_uploaded'              => $totalParticipants - $absentees->count(),
+                        'answers_uploaded'              => $answersUploaded,
                         'marked_participants'           => $markedParticipants,
                         'absentees_count'               => $absentees->count(),
                         'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
