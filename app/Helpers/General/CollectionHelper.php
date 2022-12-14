@@ -49,9 +49,9 @@ class CollectionHelper
                 ->filter(function ($row) use ($searchTerm, $availForSearch) {
 
                     return collect($availForSearch)->map(
-                        fn($item) => $row[$item]
+                        fn($item)=> $row[$item]
                     )->contains(
-                        fn($item) => str_contains(Str::lower($item), Str::lower($searchTerm))
+                        fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower($searchTerm)) : false
                     );
 
                 }), $limit);

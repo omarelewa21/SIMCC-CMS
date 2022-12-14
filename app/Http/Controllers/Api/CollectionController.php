@@ -114,7 +114,7 @@ class CollectionController extends Controller
             }
           
           
-            $availForSearch = array("identifier", "name", "description", "tags");
+            $availForSearch = array("identifier", "name", "description");
             $collectionsList = CollectionHelper::searchCollection($searchKey, $collections, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availCollectionsStatus, 'competition' => $availCollectionsCompetition, 'tags' => $availTagType], 'collectionList' => $collectionsList);
 
