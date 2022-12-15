@@ -54,7 +54,7 @@ class Tasks extends Base
     }
 
     public function taskTags() {
-        return $this->morphToMany(DomainsTags::class, 'taggable');
+        return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
     }
 
     public function taskAnswers () {

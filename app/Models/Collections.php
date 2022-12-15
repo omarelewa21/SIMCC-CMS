@@ -25,6 +25,9 @@ class Collections extends Base
         'Moderators'
     );
 
+    public function taskTags() {
+        return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
+    }
 
     public function moderation () {
         return $this->morphMany(Moderation::class, 'moderation')->limit(5);
