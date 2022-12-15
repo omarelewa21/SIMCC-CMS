@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\tasks;
 
+use App\Http\Requests\CreateBaseRequest;
 use App\Rules\CheckAnswerLabelEqual;
 use App\Rules\CheckMissingGradeDifficulty;
 use Illuminate\Validation\Rule;

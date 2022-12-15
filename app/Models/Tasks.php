@@ -187,4 +187,8 @@ class Tasks extends Base
         return $query->filter();
     }
 
+    public function allowedToUpdateAll(): bool
+    {
+        return ParticipantsAnswer::where('task_id', $this->id)->doesntExist();
+    }
 }
