@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 
 class CollectionSections extends Model
 {
+    use HasFactory;
+
     protected $table = 'collection_sections';
     protected $fillable = [
        'options->enabled',
@@ -27,8 +29,6 @@ class CollectionSections extends Model
 
     public $timestamps = false;
 
-    use HasFactory;
-
     public function groups () {
         return $this->hasMany(CollectionGroups::class,'section_id');
     }
@@ -38,7 +38,6 @@ class CollectionSections extends Model
         if($this->tasks){
             return Tasks::whereIn('id', Arr::flatten($this->tasks))->get();
         }
-
         return [];
     }
 
@@ -47,7 +46,6 @@ class CollectionSections extends Model
         if($this->tasks){
             return Tasks::whereIn('id', Arr::flatten($this->tasks))->count();
         }
-
         return [];
     }
 }

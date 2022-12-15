@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Support\Arr;
 
 class Collections extends Base
 {
@@ -60,5 +61,13 @@ class Collections extends Base
             $user = array($item->user->name . ' - ' .  $item->user->roles->first()->name);
         });
         return $user;
+    }
+
+    public function allowedToUpdateAll(): bool
+    {
+        $taskIds = $this->sections()->pluck('tasks')->map(
+            fn($taskArray)=> Arr::flatten($taskArray)
+        )->flatten()->toArray();
+        return ParticipantsAnswer::whereIn('task_id', $taskIds)->doesntExist();
     }
 }
