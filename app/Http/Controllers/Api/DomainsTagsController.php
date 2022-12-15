@@ -212,13 +212,13 @@ class DomainsTagsController extends Controller
     public function delete(UpdateTagStatusRequest $request)
     {
         DB::beginTransaction();
+
         try {
             DomainsTags::whereIn('id', $request->id)
                 ->update([
                     'status'                => 'deleted',
                     'last_modified_userid'  => auth()->user()->id
                 ]);
-            
             DomainsTags::whereIn('id', $request->id)->delete();
 
         } catch (\Exception $e) {
@@ -239,50 +239,31 @@ class DomainsTagsController extends Controller
 
     public function approve(UpdateTagStatusRequest $request)
     {
-        $userid = auth()->user()->id;
-
-        if(Route::currentRouteName() == "approveTag")
-        {
-            $update["approved_by_userid"] = $userid;
-            $update['status'] = 'active';
-        }
-
-        $update["last_modified_userid"] = $userid;
+        DB::beginTransaction();
 
         try {
-            DB::beginTransaction();
-
-            // Start the transaction
-            $domainTags =  DB::table("domains_tags")
-                ->whereIn("id", $request->id)
-                ->whereNotIn ("status", ["active", "deleted"]);
-
-            $result = $domainTags->update($update);
-
-            if($result != count($request->id))
-            {
-                DB::rollback();
-
-                return response()->json([
-                    "status" => 500,
-                    "message" => "active unsuccessful"
+            DomainsTags::whereIn("id", $request->id)
+                ->whereNotIn("status", ["active", "deleted"])
+                ->update([
+                    'approved_by_userid'    => auth()->user()->id,
+                    'last_modified_userid'  => auth()->user()->id,
+                    'status'                => 'active'
                 ]);
-            }
 
-            DB::commit();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "Tag status update successful"
-            ]);
-
-        } catch(QueryException $e) {
+        } catch(\Exception $e) {
             DB::rollback();
             return response()->json([
-                "status" => 500,
-                "message" => "Tag status update unsuccessful" . $e->getMessage(),
-            ]);
+                "status"    => 500,
+                "message"   => "Tag status update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "Tag status update successful"
+        ]);
     }
 }
 
