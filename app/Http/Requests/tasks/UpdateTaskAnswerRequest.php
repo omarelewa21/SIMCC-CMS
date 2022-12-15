@@ -28,9 +28,9 @@ class UpdateTaskAnswerRequest extends FormRequest
         return [
             'id'                => 'required|integer|exists:tasks,id',
             'answer_type'       => 'required|integer|exists:answer_type,id',
-            'answer_structure'  => 'required|integer|min:1|max:4',
-            'answer_sorting'    => 'integer|nullable|required_if:answer_type,1|min:1|max:2',
-            'answer_layout'     => 'integer|nullable|required_if:answer_type,1|min:1|max:2',
+            'answer_structure'  => 'required|integer|exists:answer_structure,id',
+            'answer_sorting'    => 'integer|nullable|required_if:answer_type,1|exists:answer_sorting,id',
+            'answer_layout'     => 'integer|nullable|required_if:answer_type,1|exists:answer_layout,id',
             'labels'            => 'required|array',
             'labels.*'          => 'nullable',
             'answers'           => ['required', 'array', new CheckAnswerLabelEqual],
