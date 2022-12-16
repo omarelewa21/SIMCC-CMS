@@ -347,19 +347,18 @@ class MarkingController extends Controller
                 ->join('organization', 'organization.id', 'competition_organization.organization_id')
                 ->select(
                     DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
-                    DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
-                    DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
-                    DB::raw("CONCAT('\"', competition_levels.name, '\"') AS country"),
-                    'participants.grade',
-                    DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
-                    'participants.index_no as index',
-                    DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
-                    'competition_participants_results.points',
-                    DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
-                    'competition_participants_results.school_rank',
-                    'competition_participants_results.country_rank',
-                    'competition_participants_results.group_rank',
-                    'competition_participants_results.global_rank'
+                DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
+                DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
+                DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
+                'participants.grade',
+                DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
+                'participants.index_no as index',
+                DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
+                'competition_participants_results.points',
+                DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
+                'competition_participants_results.school_rank',
+                'competition_participants_results.country_rank',
+                'competition_participants_results.global_rank'
                 )->distinct('index')->orderBy('points', 'DESC')->get();
 
             return $data;
