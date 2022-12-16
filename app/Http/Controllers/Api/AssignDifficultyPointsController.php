@@ -23,11 +23,9 @@ class AssignDifficultyPointsController extends Controller
 {
     public function list (Request $request)
     {
-
         $validated = $request->validate([
             'id' => 'required|integer|exists:competition,id',
         ]);
- 
 
         try {
             $competition = Competition::AcceptRequest(['id'])->with(['rounds.levels.collection.sections','taskDifficulty'])->find($validated['id']);
@@ -61,10 +59,10 @@ class AssignDifficultyPointsController extends Controller
                                     'name'              => $task->languages->first()->task_title,
                                     'identifier'        => $task->identifier,
                                     'answer_structure'  => $task->answer_structure,
-                                    'task_difficulty'   => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['difficulty'] : null,
-                                    'task_wrong'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['wrong_marks'] : null,
-                                    'task_blank'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['blank_marks'] : null,
-                                    'task_marks'        => Arr::has($CompetitionTasksMark, $task->id) ?  $CompetitionTasksMark[$task->id] : null
+                                    'task_difficulty'   => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['difficulty'] : 0,
+                                    'task_wrong'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['wrong_marks'] : 0,
+                                    'task_blank'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['blank_marks'] : 0,
+                                    'task_marks'        => Arr::has($CompetitionTasksMark, $task->id) ?  $CompetitionTasksMark[$task->id] : 0
                                 ];
                             return $section;
                         })->toArray();
