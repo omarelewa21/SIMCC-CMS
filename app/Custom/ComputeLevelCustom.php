@@ -102,7 +102,7 @@ class ComputeLevelCustom
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('group_rank', $participantResults[$index-1]->group_rank);
                 }else{
-                    $participantResult->setAttribute('group_rank', $participantResults[$index-1]->group_rank+1);
+                    $participantResult->setAttribute('group_rank', $index+1);
                 }
                 $participantResult->save();
             }
@@ -127,7 +127,7 @@ class ComputeLevelCustom
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank);
                 }else{
-                    $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank+1);
+                    $participantResult->setAttribute('country_rank', $index+1);
                 }
                 $participantResult->save();
             }
@@ -152,7 +152,7 @@ class ComputeLevelCustom
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank);
                 }else{
-                    $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank+1);
+                    $participantResult->setAttribute('school_rank', $index+1);
                 }
                 $participantResult->save();
             }
