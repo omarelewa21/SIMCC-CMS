@@ -346,7 +346,7 @@ class CompetitionController extends Controller
         } catch(\Exception $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Add rounds to competition unsuccessful"
+                "message" => "Add rounds to competition unsuccessful - " .$e
             ]);
         }
     }
@@ -1287,7 +1287,7 @@ class CompetitionController extends Controller
     }
 
     private function addDifficultyGroup ($collection_id,$competition_level) {
-        $insert = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->flatten()->map(function ($item) {
+        $insert = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->collapse()->map(function ($item) {
             return ["task_id" => $item];
         })->toArray();
 
@@ -1296,8 +1296,8 @@ class CompetitionController extends Controller
 
     private function addTaskMark ($collection_id,$competition_level)
     {
-        $tasks_id = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->flatten()->toArray();
-
+        $tasks_id = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->collapse()->toArray();
+      
         $insert = Tasks::with(['taskAnswers' => function($query) {
             $query->where('lang_id',env('APP_DEFAULT_LANG'))->whereNotNull('answer');
         }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
