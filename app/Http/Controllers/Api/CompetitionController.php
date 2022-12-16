@@ -1035,7 +1035,7 @@ class CompetitionController extends Controller
         $competition_id = implode("",$request->validate(['competition_id' => ["required","integer",Rule::exists("competition","id")->where("status","active")],]));
         $competitionLevelIndexNo = Competition::find($competition_id)->participants->whereIn('grade',$levelGrades)->pluck('index_no')->toArray();
 
-        $tasks = $level->collection->sections->pluck('tasks')->flatten()->toArray();
+        $tasks = Arr::flatten($level->collection->sections->pluck('tasks')->toArray());
         $tasksCount = count($tasks);
 
         $validate = $request->validate(
@@ -1054,6 +1054,7 @@ class CompetitionController extends Controller
             $participant_index = $participant['index_number'];
 
             return collect($participant['answers'])->map(function ($answers,$index)  use($level_id,$tasks,$participant_index) {
+              
                 return [
                     'level_id' => $level_id,
                     'task_id' => $tasks[$index],
