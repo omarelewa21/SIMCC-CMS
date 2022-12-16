@@ -139,6 +139,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("recommendation",[TasksController::class,"update_recommendation"])->name('task.update.recommendation');
         Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
         Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
+        Route::delete("/{task}",[TasksController::class,"delete"])->name('task.delete');
     });
 
     Route::group(["prefix" => "collection"], function () {
@@ -150,6 +151,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::post("/sections",[CollectionController::class,"add_sections"])->name('collection.sections.add');
         Route::patch("/sections",[CollectionController::class,"update_sections"])->name('collection.sections.update');
         Route::delete("/section",[CollectionController::class,"delete_section"])->name('collection.section.delete');
+        Route::delete("/{collection}",[CollectionController::class,"delete"])->name('collection.delete');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {

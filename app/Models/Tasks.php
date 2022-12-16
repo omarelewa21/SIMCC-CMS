@@ -48,8 +48,12 @@ class Tasks extends Base
     {
         parent::booted();
 
-        static::creating(function($record) {
-            $record->created_by_userid = auth()->user()->id;
+        static::creating(function($task) {
+            $task->created_by_userid = auth()->user()->id;
+        });
+
+        static::deleting(function($task) {
+            $task->created_by_userid = auth()->user()->id;
         });
     }
 

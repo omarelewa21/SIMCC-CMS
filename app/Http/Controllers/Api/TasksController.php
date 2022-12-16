@@ -389,4 +389,11 @@ class TasksController extends Controller
             ], 500);
          }
     }
+
+    public function delete(Tasks $task)
+    {
+        if($task->allowedForDeletion()){
+            
+        }
+    }
 }
