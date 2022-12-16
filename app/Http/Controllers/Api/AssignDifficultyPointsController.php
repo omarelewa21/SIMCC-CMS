@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Collections;
-use App\Models\CollectionSections;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionRounds;
@@ -104,17 +103,17 @@ class AssignDifficultyPointsController extends Controller
                 "status" => 200,
                 "data" => $data
             ]);
-        } catch (QueryException $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful",
-            ]);
-        } catch (ModelNotFoundException $e) {
+                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful"
-            ]);
+                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage()
+            ], 500);
         }
     }
 
