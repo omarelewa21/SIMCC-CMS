@@ -70,4 +70,9 @@ class Collections extends Base
         )->flatten()->toArray();
         return ParticipantsAnswer::whereIn('task_id', $taskIds)->doesntExist();
     }
+
+    public function allowedToDelete(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)->doesntExist();
+    }
 }

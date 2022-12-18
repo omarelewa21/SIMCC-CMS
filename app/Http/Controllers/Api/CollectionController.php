@@ -13,6 +13,7 @@ use App\Models\Tasks;
 use App\Models\User;
 use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
+use App\Http\Requests\collection\DeleteCollectionsRequest;
 use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
@@ -396,40 +397,31 @@ class CollectionController extends Controller
 
     }
 
-    public function delete (Request $request) {
-        $validated = $request->validate([
-            'id' => 'required|array',
-            'id.*' => ['required','integer','distinct',new CheckCollectionUse]
-        ]);
-
+    public function delete(DeleteCollectionsRequest $request)
+    {
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
-            collect($validated)->map(function ($item) {
-                $closedComputedCompetition = CollectionCompetitionStatus::CheckStatus($item, 'closed') + CollectionCompetitionStatus::CheckStatus($item, 'computed'); // check for closed and computed
-                $collection = Collections::findOrFail($item)->first();
-
-                if ($closedComputedCompetition > 0) {
+            collect($request->all())->map(function ($id) {
+                $collection = Collections::findOrFail($id)->first();
+                if (CollectionCompetitionStatus::CheckStatus($id, 'closed') || CollectionCompetitionStatus::CheckStatus($id, 'computed')) {
                     $collection->status = 'deleted';
                     $collection->save();
                 } else {
                     $collection->forceDelete();
                 }
             });
-
-            DB::commit();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "collection delete successful"
-            ]);
         } catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "collection delete unsuccessful"
-            ]);
+                "status"    => 500,
+                "message"   => "collection delete unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "collection delete successful"
+        ]);
     }
 
     private function CheckUploadedAnswersCount($collection_id) {

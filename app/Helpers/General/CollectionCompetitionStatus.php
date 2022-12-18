@@ -7,12 +7,16 @@ use App\Models\CompetitionLevels;
 
 class CollectionCompetitionStatus
 {
-    public static function CheckStatus ($collectionId,$status) {
+    /**
+     * check if a collection is in a competition with specified status
+     */
+    public static function CheckStatus(int $collectionId, string $status): bool
+    {
         $activeCompetition = CompetitionLevels::with(['rounds.competition' => function ($query) use($status) {
-            $query->where('status',$status);
+            $query->where('status', $status);
         }
-        ])->where('collection_id',$collectionId)->get()->pluck('rounds.competition')->filter()->count();
+        ])->where('collection_id', $collectionId)->pluck('rounds.competition')->filter()->count();
 
-        return $activeCompetition;
+        return $activeCompetition > 0;
     }
 }
