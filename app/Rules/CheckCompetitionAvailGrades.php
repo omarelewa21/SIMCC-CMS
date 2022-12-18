@@ -47,7 +47,9 @@ class CheckCompetitionAvailGrades implements Rule, DataAwareRule
             case "participant.create":
                 $rowNum = explode(".",$attribute)[1];
                 $competitionId = $this->data['participant'][$rowNum]['competition_id'];
+                break;
             case "competition.create" :
+                break;
             case "competition.rounds.add":
                 $competitionId = $this->data['competition_id'];
                 break;
