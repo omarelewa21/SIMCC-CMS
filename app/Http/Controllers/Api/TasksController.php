@@ -11,7 +11,7 @@ use App\Models\TasksLabels;
 use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\task\DeleteTaskRequest;
+use App\Http\Requests\tasks\DeleteTaskRequest;
 use App\Http\Requests\tasks\StoreTaskRequest;
 use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
 use App\Http\Requests\tasks\UpdateTaskContentRequest;

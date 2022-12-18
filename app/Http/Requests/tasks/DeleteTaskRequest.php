@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Requests\task;
+namespace App\Http\Requests\tasks;
 
+use App\Rules\CheckTaskUse;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeleteTaskRequest extends FormRequest
