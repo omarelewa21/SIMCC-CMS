@@ -1071,7 +1071,10 @@ class CompetitionController extends Controller
         try {
             DB::beginTransaction();
             ParticipantsAnswer::whereIn('participant_index',$submittedParticipantIndex)->delete();
-            ParticipantsAnswer::insert($insert);
+            foreach (array_chunk($insert,100) as $t) {
+              ParticipantsAnswer::insert($t);
+            }
+            
             DB::commit();
 
             return response()->json([
@@ -1287,19 +1290,26 @@ class CompetitionController extends Controller
     }
 
     private function addDifficultyGroup ($collection_id,$competition_level) {
-        $insert = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->collapse()->map(function ($item) {
-            return ["task_id" => $item];
-        })->toArray();
+        $insert = Arr::collapse(CollectionSections::where('collection_id',$collection_id)->get()->pluck('tasks')->flatten()->map(function ($item) {
+             
+            $mapped = Arr::map(Arr::flatten($item->toArray()), function ($value, $key) {
+                 return ['task_id' => $value];
+            });
+          
+            return $mapped;
+          
+        })->toArray());
+      
 
         return $competition_level->taskDifficultyGroup()->createMany($insert);
     }
 
     private function addTaskMark ($collection_id,$competition_level)
     {
-        $tasks_id = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->collapse()->toArray();
+        $tasks_id = Arr::flatten(CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->toArray());
       
         $insert = Tasks::with(['taskAnswers' => function($query) {
-            $query->where('lang_id',env('APP_DEFAULT_LANG'))->whereNotNull('answer');
+           return $query->whereNotNull('answer');
         }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
             if(in_array($items->answer_structure,['group','sequence'])) {
                 return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];
