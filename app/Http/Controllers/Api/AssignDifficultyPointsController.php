@@ -59,10 +59,10 @@ class AssignDifficultyPointsController extends Controller
                                     'name'              => $task->languages->first()->task_title,
                                     'identifier'        => $task->identifier,
                                     'answer_structure'  => $task->answer_structure,
-                                    'task_difficulty'   => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['difficulty'] : 0,
-                                    'task_wrong'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['wrong_marks'] : 0,
-                                    'task_blank'        => Arr::has($CompetitionTasksDifficulty, $task->id) ? $CompetitionTasksDifficulty[$task->id]['blank_marks'] : 0,
-                                    'task_marks'        => Arr::has($CompetitionTasksMark, $task->id) ?  $CompetitionTasksMark[$task->id] : 0
+                                    'task_difficulty'   => $CompetitionTasksDifficulty[$task->id]['difficulty'],
+                                    'task_wrong'        => $CompetitionTasksDifficulty[$task->id]['wrong_marks'],
+                                    'task_blank'        => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
+                                    'task_marks'        => $CompetitionTasksMark[$task->id]
                                 ];
                             return $section;
                         })->toArray();
