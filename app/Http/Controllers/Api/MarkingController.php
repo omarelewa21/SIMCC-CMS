@@ -415,10 +415,12 @@ class MarkingController extends Controller
                 $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
                     ->firstOrFail();
 
-                $participantResults->update([
-                    'award'         => $data['award'],
-                    'global_rank'   => sprintf("%s %s", $data['award'], $participantResults->group_rank)
-                ]);
+                if($participantResults->award != "PERFECT SCORER"){
+                    $participantResults->update([
+                        'award'         => $data['award'],
+                        'global_rank'   => sprintf("%s %s", $data['award'], $participantResults->group_rank)
+                    ]);
+                }
             }
             return response()->json([
                 "status"        => 200,
