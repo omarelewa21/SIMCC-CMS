@@ -160,7 +160,8 @@ class ParticipantsController extends Controller
                 }
 
                 //Generate Certificate No.
-                $latestIndex = Participants::orderBy('id','desc')->first()->id;
+                $latestIndex = Participants::orderBy('id','desc')->first()->id + 19522;
+             
                 $toNextLetterCounter = floor($latestIndex / 1000000);
                 $startLetter = function () use($toNextLetterCounter) {
                     $letter = 'A';
@@ -214,7 +215,7 @@ class ParticipantsController extends Controller
         catch(QueryException $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Create Participants unsuccessful",
+                "message" => "Create Participants unsuccessful" .$e, 
             ]);
         }
     }

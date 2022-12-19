@@ -182,6 +182,7 @@ class ComputeLevelCustom
 
     protected function setParticipantsAwards()
     {
+     
         // Set Perfect Scorer
         CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('points', $this->level->maxPoints())
