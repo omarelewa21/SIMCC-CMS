@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('competition_participants_results', function (Blueprint $table) {
-            $table->foreignId('group_id')->nullable()->constrained('competition_marking_group');
+            $table->foreignId('group_id')->charset('utf8mb4')->collation('utf8mb4_unicode_ci')->nullable()->constrained('competition_marking_group');
         });
     }
 
