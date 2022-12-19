@@ -97,6 +97,7 @@ class ComputeLevelCustom
                 })->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index=>$participantResult){
+                $participantResult->setAttribute('group_id', $group->id);
                 if($index === 0){
                     $participantResult->setAttribute('group_rank', $index+1);
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
@@ -190,18 +191,25 @@ class ComputeLevelCustom
                 'ref_award' => 'PERFECT SCORER'
             ]);
 
-        // Set participants awards 
-        $this->awards->each(function($award){
-            $count =  CompetitionParticipantsResults::where('level_id', $this->level->id)->whereNull('award')->count();
-            $limit = ceil(($award->percentage / 100) * $count);
-            CompetitionParticipantsResults::where('level_id', $this->level->id)->whereNull('award')
-                ->orderBy('points', 'DESC')->limit($limit)
-                ->update([
-                    'award'     => $award->name,
-                    'ref_award' => $award->name
-                ]);
-            $this->updateParticipantsWhoShareSamePointsAsLastParticipant($award->name);
-        });
+        // Set participants awards
+        $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->select('group_id')->distinct()->pluck('group_id')->toArray();
+        foreach($groupIds as $group_id){
+            $this->awards->each(function($award) use($group_id){
+                $count =  CompetitionParticipantsResults::where('level_id', $this->level->id)
+                    ->where('group_id', $group_id)->whereNull('award')->count();
+
+                $limit = ceil(($award->percentage / 100) * $count);
+                CompetitionParticipantsResults::where('level_id', $this->level->id)
+                    ->where('group_id', $group_id)->whereNull('award')
+                    ->orderBy('points', 'DESC')->limit($limit)
+                    ->update([
+                        'award'     => $award->name,
+                        'ref_award' => $award->name
+                    ]);
+                $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name);
+            });
+        }
 
         // Set default award
         CompetitionParticipantsResults::where('level_id', $this->level->id)
@@ -214,12 +222,13 @@ class ComputeLevelCustom
         $this->updateComputeProgressPercentage(100);
     }
 
-    private function updateParticipantsWhoShareSamePointsAsLastParticipant(string $awardName)
+    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName)
     {
-        $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)->where('award', $awardName)
+        $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $group_id)->where('award', $awardName)
             ->orderBy('points')->value('points');
 
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
+        CompetitionParticipantsResults::where('level_id', $this->level->id)->where('group_id', $group_id)
             ->where('points', $lastParticipantPoints)
             ->update([
                 'award'     => $awardName,
