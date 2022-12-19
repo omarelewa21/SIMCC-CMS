@@ -34,6 +34,7 @@ class EditParticipantAwardRequest extends FormRequest
     {
         $awards = $this->level->rounds->roundsAwards->pluck('name');
         $awards->push($this->level->rounds->default_award_name);
+        $awards->push("PERFECT SCORER");
         return [
             '*.participant_index'   => 'required|exists:participants,index_no',
             '*.award'               => ['required', Rule::in($awards->toArray())]
