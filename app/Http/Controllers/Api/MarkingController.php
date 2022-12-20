@@ -359,6 +359,7 @@ class MarkingController extends Controller
                     DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
                     'competition_participants_results.school_rank',
                     'competition_participants_results.country_rank',
+                    'competition_participants_results.group_rank',
                     'competition_participants_results.global_rank'
                 )
                 ->distinct('index')->orderBy('points', 'DESC')->get();

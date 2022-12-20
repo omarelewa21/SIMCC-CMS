@@ -14,9 +14,9 @@ class CompetitionParticipantsResults extends Model
 
     public $timestamps = false;
 
-    public function getGlobalRankAttribute($value)
+    public function getGlobalRankAttribute()
     {
-        return sprintf("%s %s", $this->award, $value);
+        return sprintf("%s %s", $this->award, $this->group_rank);
     }
 
     public function participant()
