@@ -339,14 +339,14 @@ class MarkingController extends Controller
                 ->whereHas('participant', function($query)use($group){
                     $query->whereIn('country_id', $group->countries()->pluck('all_countries.id')->toArray());
                 })
-                ->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-                ->join('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-                ->join('competition', 'competition.id', 'competition_rounds.competition_id')
-                ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-                ->join('schools', 'participants.school_id', 'schools.id')
-                ->join('all_countries', 'all_countries.id', 'participants.country_id')
-                ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-                ->join('organization', 'organization.id', 'competition_organization.organization_id')
+                ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+                ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+                ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
+                ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                ->leftJoin('schools', 'participants.school_id', 'schools.id')
+                ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
+                ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+                ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
                 ->select(
                     DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
                     DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
