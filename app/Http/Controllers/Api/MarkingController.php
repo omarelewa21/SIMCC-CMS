@@ -17,6 +17,7 @@ use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class MarkingController extends Controller
 {
@@ -412,14 +413,20 @@ class MarkingController extends Controller
     public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
     {
         try {
+            $awardsRankArray = collect(['PERFECT SCORER'])
+                    ->merge($level->rounds->roundsAwards->pluck('name'))
+                    ->push($level->rounds->default_award_name);
+
             foreach($request->all() as $data){
                 $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
                     ->firstOrFail();
+                $globalRankNumber = explode(" ", $participantResults->global_rank);
 
                 if($participantResults->award != "PERFECT SCORER"){
                     $participantResults->update([
                         'award'         => $data['award'],
-                        'global_rank'   => sprintf("%s %s", $data['award'], $participantResults->group_rank)
+                        'award_rank'    => $awardsRankArray->search($data['award']) + 1,
+                        'global_rank'   => sprintf("%s %s", $data['award'], Arr::last($globalRankNumber))
                     ]);
                 }
             }
