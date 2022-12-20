@@ -16,6 +16,7 @@ class Marking
      */
     public function markList(Competition $competition)
     {
+        return [];
         $countries = $competition->groups->load('countries:id,display_name')->pluck('countries', 'id');
         
         $rounds = $competition->rounds->mapWithKeys(function ($round) use($countries){
