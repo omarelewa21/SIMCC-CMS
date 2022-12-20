@@ -1093,7 +1093,7 @@ class CompetitionController extends Controller
     public function report(Competition $competition)
     {
         $levelIds = $competition->rounds()->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
-            ->pluck('competition_levels.id');
+            ->pluck('competition_levels.id')->toArray();
 
         $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)
             ->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
