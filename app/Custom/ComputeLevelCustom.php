@@ -18,7 +18,7 @@ class ComputeLevelCustom
     function __construct(CompetitionLevels $level)
     {
         $this->level = $level->load('participantsAnswersUploaded');
-        // $this->computeParticipantAnswersScores();
+        $this->computeParticipantAnswersScores();
         $this->participantsAnswersGrouped = ParticipantsAnswer::where('level_id', $level->id)
                 ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
                 ->orderBy('points', 'DESC')->get();
@@ -44,12 +44,12 @@ class ComputeLevelCustom
 
     public function computeResutlsForSingleLevel()
     {
-        // $this->clearRecords();
-        // $this->setupCompetitionParticipantsResultsTable();
-        // $this->setParticipantsGroupRank();
-        // $this->setParticipantsCountryRank();
-        // $this->setParticipantsSchoolRank();
-        // $this->setParticipantsAwards();
+        $this->clearRecords();
+        $this->setupCompetitionParticipantsResultsTable();
+        $this->setParticipantsGroupRank();
+        $this->setParticipantsCountryRank();
+        $this->setParticipantsSchoolRank();
+        $this->setParticipantsAwards();
         $this->setParticipantsAwardsRank();
         $this->setParticipantsGlobalRank();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
@@ -246,8 +246,8 @@ class ComputeLevelCustom
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
             }
             $participantResult->save();
-            // $participantResult->participant->setAttribute('status', 'result computed');
-            // $participantResult->participant->save();
+            $participantResult->participant->setAttribute('status', 'result computed');
+            $participantResult->participant->save();
         }
         $this->updateComputeProgressPercentage(100);
     }
