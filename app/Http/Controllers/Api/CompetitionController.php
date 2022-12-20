@@ -1085,7 +1085,7 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful' .$e
+                "message" => 'students answers uploaded unsuccessful' . $e->getMessage()
             ]);
         }
     }
