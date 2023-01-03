@@ -49,7 +49,6 @@ class CheckCompetitionAvailGrades implements Rule, DataAwareRule
                 $competitionId = $this->data['participant'][$rowNum]['competition_id'];
                 break;
             case "competition.create" :
-                break;
             case "competition.rounds.add":
                 $competitionId = $this->data['competition_id'];
                 break;
@@ -57,7 +56,7 @@ class CheckCompetitionAvailGrades implements Rule, DataAwareRule
                 $competitionId = CompetitionRounds::find($this->data['id'])->competition_id;
                 break;
         }
-
+      
         if(!is_numeric($competitionId)) return true;
 
         if(!in_array($value,$allCompetitionsGrades[$competitionId])) {

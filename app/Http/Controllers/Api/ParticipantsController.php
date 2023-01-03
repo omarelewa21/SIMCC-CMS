@@ -109,7 +109,7 @@ class ParticipantsController extends Controller
                     $counter = $country->private_participant_counter;
 
                     if($counter){
-                        $counterYear = substr($counter,0,2);
+                        $counterYear = substr($counter,3,2);
                         if(intval($currentYear) > intval($counterYear)) { // new year reset index counter
                             $country->private_participant_counter = $indexNo; // get the YY|Private/non-Private|Counter
                         }
@@ -130,7 +130,7 @@ class ParticipantsController extends Controller
 
                     if($counter){
                         $counterYear = substr($counter,0,2);
-
+                      
                         if(intval($currentYear) > intval($counterYear)) {
                             $country->participant_counter = $indexNo;
                         }
@@ -161,7 +161,7 @@ class ParticipantsController extends Controller
 
                 //Generate Certificate No.
                 $latestIndex = Participants::orderBy('id','desc')->first()->id + 19522;
-             
+
                 $toNextLetterCounter = floor($latestIndex / 1000000);
                 $startLetter = function () use($toNextLetterCounter) {
                     $letter = 'A';
@@ -172,13 +172,13 @@ class ParticipantsController extends Controller
                     };
                     return $letter;
                 };
-                $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + 1),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + 1),7,"0",STR_PAD_LEFT);
-
+                $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_LEFT);
+               
                 $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
                 $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
                 $row["country_id"] = $country_id;
                 $row["created_by_userid"] =  auth()->user()->id; //assign entry creator user id
-                $row["index_no"] = str_pad($indexNo,12,"0",STR_PAD_LEFT);
+                $row["index_no"] = str_pad($CountryCode.$indexNo,12,"0",STR_PAD_LEFT);
                 $row["certificate_no"] = $certificateNumber;
                 $row["passkey"] = Str::random(8);
                 $row["password"] = Hash::make($row["passkey"]);
