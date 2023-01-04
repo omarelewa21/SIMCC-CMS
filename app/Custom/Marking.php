@@ -86,7 +86,7 @@ class Marking
      * 
      * @return bool
      */
-    public function isLevelReadyToCompute(CompetitionLevels $level){
+    public static function isLevelReadyToCompute(CompetitionLevels $level){
         $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');

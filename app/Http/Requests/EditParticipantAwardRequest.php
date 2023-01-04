@@ -13,7 +13,7 @@ class EditParticipantAwardRequest extends FormRequest
 
     function __construct(Route $route)
 	{
-		$this->level = $route->parameter('level');
+		$this->level = $route->parameter('level')->load('rounds.roundsAwards');
 	}
     /**
      * Determine if the user is authorized to make this request.
@@ -32,9 +32,12 @@ class EditParticipantAwardRequest extends FormRequest
      */
     public function rules()
     {
+        $awards = $this->level->rounds->roundsAwards->pluck('name');
+        $awards->push($this->level->rounds->default_award_name);
+        $awards->push("PERFECT SCORER");
         return [
             '*.participant_index'   => 'required|exists:participants,index_no',
-            '*.award'               => ['required', Rule::exists('competition_rounds_awards', 'name')->where('round_id', $this->level->round_id)]
+            '*.award'               => ['required', Rule::in($awards->toArray())]
         ];
     }
 }

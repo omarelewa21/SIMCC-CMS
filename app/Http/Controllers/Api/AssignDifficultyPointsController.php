@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Collections;
-use App\Models\CollectionSections;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionRounds;
@@ -24,66 +23,47 @@ class AssignDifficultyPointsController extends Controller
 {
     public function list (Request $request)
     {
-
         $validated = $request->validate([
             'id' => 'required|integer|exists:competition,id',
         ]);
- 
 
         try {
             $competition = Competition::AcceptRequest(['id'])->with(['rounds.levels.collection.sections','taskDifficulty'])->find($validated['id']);
             $TaskDifficultyGroupId = $competition->difficulty_group_id;
             $difficultyList = TaskDifficultyGroup::whereId($TaskDifficultyGroupId)->exists() ? TaskDifficultyGroup::with('difficulty')->find($TaskDifficultyGroupId)->toArray() : [];
-            $competitionRounds = CompetitionRounds::where('competition_id', $competition->id)->get()->map(function ($round,$round_index) {
+            $competitionRounds = CompetitionRounds::where('competition_id', $competition->id)->get()->map(function ($round) {
 
-                $round['levels'] = CompetitionLevels::where('round_id', $round->id)->get()->map(function ($level,$level_index) use($round_index) {
-
-                    CompetitionTasksMark::where('level_id', $level->id)->get()->each(function($row) use($level_index,&$CompetitionTasksMark) {
+                $round['levels'] = CompetitionLevels::where('round_id', $round->id)->get()->map(function ($level){
+                    $CompetitionTasksMark = [];
+                    CompetitionTasksMark::where('level_id', $level->id)->get()->each(function($row) use(&$CompetitionTasksMark) {
                         $task_answers_id = is_numeric($row->task_answers_id) ? intVal($row->task_answers_id) : json_decode($row->task_answers_id)[0];
                         $task_id = TasksAnswers::find($task_answers_id)->task->id;
                         $CompetitionTasksMark[$task_id][] = $row->toArray();
                     });
 
-                    CompetitionTaskDifficulty::where('level_id', $level->id)->get()->each(function($row, $key) use(&$CompetitionTasksDifficulty) {
-                        $row['difficulty_id'] === null ? null : TaskDifficulty::find($row['difficulty_id'])->name;
-                        $CompetitionTasksDifficulty[$row['task_id']] = ['id' => $row['id'],'difficulty' => $row['difficulty'],'wrong_marks' => $row['wrong_marks'],'blank_marks' => $row['blank_marks']];
+                    $CompetitionTasksDifficulty = [];
+                    CompetitionTaskDifficulty::where('level_id', $level->id)->get()
+                        ->each(function($row) use(&$CompetitionTasksDifficulty) {
+                            $row['difficulty_id'] === null ? null : TaskDifficulty::find($row['difficulty_id'])->name;
+                            $CompetitionTasksDifficulty[$row['task_id']] = ['id' => $row['id'],'difficulty' => $row['difficulty'],'wrong_marks' => $row['wrong_marks'],'blank_marks' => $row['blank_marks']];
                     });
-                  
-                        
-                          if($level_index == 3) {
-                    //dd($level->name);
-                            //dd($CompetitionTasksMark);
-                  }    
-                  
-                 // dd($CompetitionTasksMark);
 
                     $collection = Collections::with(['sections'])->where('id',$level->collection_id)->first();
 
-                 // dd($collection->toArray());
-                    $collectionSection = $collection->sections->map(function ($section,$section_index) use($round_index,$level_index,$CompetitionTasksMark, $CompetitionTasksDifficulty, &$temp) {
-                        return $section->section_task->map(function ($task,$task_index) use($level_index,$round_index,$section_index, $CompetitionTasksMark, $CompetitionTasksDifficulty, $section, &$temp) {
-
-                            $section = [
-                                'id'                => $task->id,
-                                'languages'         => $task->languages->first()->name,
-                                'name'              => $task->languages->first()->task_title,
-                                'identifier'        => $task->identifier,
-                                'answer_structure'  => $task->answer_structure,
-                                'task_difficulty'   => $CompetitionTasksDifficulty[$task->id]['difficulty'],
-                                'task_wrong'        => $CompetitionTasksDifficulty[$task->id]['wrong_marks'],
-                                'task_blank'        => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
-                                'task_marks'        => $CompetitionTasksMark[$task->id]
-                            ];
-                          
-                          if($level_index == 3) {
-
-                  }    
-                          
-                           if($task->id == 609)
-                          {
-                            //dd($task->id);
-                          }
-                      
+                    $collectionSection = $collection->sections
+                        ->map(function ($section) use($CompetitionTasksMark, $CompetitionTasksDifficulty) {
+                            return $section->section_task->map(function ($task) use($CompetitionTasksMark, $CompetitionTasksDifficulty, $section) {
+                                $section = [
+                                    'id'                => $task->id,
+                                    'languages'         => $task->languages->first()->name,
+                                    'name'              => $task->languages->first()->task_title,
+                                    'identifier'        => $task->identifier,
+                                    'answer_structure'  => $task->answer_structure,
+                                    'task_difficulty'   => $CompetitionTasksDifficulty[$task->id]['difficulty'],
+                                    'task_wrong'        => $CompetitionTasksDifficulty[$task->id]['wrong_marks'],
+                                    'task_blank'        => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
+                                    'task_marks'        => $CompetitionTasksMark[$task->id]
+                                ];
                             return $section;
                         })->toArray();
                     })->toArray();
@@ -121,17 +101,17 @@ class AssignDifficultyPointsController extends Controller
                 "status" => 200,
                 "data" => $data
             ]);
-        } catch (QueryException $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful",
-            ]);
-        } catch (ModelNotFoundException $e) {
+                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful"
-            ]);
+                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage()
+            ], 500);
         }
     }
 
