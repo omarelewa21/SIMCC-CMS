@@ -288,26 +288,21 @@ class MarkingController extends Controller
     public function computeCompetitionResults(Competition $competition)
     {
         try {
-            if(!(new Marking())->isCompetitionReadyForCompute($competition)){
+            if($competition->groups()->count() === 0){
                 return response()->json([
-                    "status"    => 406,
-                    "message"   => "Some level are not ready to compute yet, please check that all tasks in all levels has answers and answers are uploaded correctly to all level",
-                ], 406);
+                    "status"    => 412,
+                    "message"   => "Competition has no groups, please add some country groups first",
+                ], 412);
             }
 
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
-                    ComputeLevelCustom::validateLevelForComputing($level);
+                    if(Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
+                        dispatch(new ComputeLevel($level));
+                        $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
+                    }
                 }
             }
-
-            foreach($competition->rounds as $round){
-                foreach($round->levels as $level){
-                    dispatch(new ComputeLevel($level));
-                    $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
-                }
-            }
-            $competition->participants()->update(['participants.status' => 'active']);
 
             return response()->json([
                 "status"    => 200,
