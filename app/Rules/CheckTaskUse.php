@@ -18,13 +18,11 @@ class CheckTaskUse implements InvokableRule
     public function __invoke($attribute, $value, $fail)
     {
         if( Tasks::whereId($value)->doesntExist() ){
-            $this->message = "The selected task {$value} is invalid.";
-            return false;
+            $fail("The selected task $value is invalid.");
         }
 
-        if( Tasks::checkStatusForDeletion($value, 'active') ){
-            $this->message = 'The selected task id is in use with active competition.';
-            return false;
+        if( Tasks::checkStatusForDeletion($value) ){
+            $fail("The selected task id $value is in use in a collection.");
         }
 
         return true;

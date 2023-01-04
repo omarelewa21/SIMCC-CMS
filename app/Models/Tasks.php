@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class Tasks extends Base
 {
@@ -53,7 +54,23 @@ class Tasks extends Base
         });
 
         static::deleting(function($task) {
-            $task->created_by_userid = auth()->user()->id;
+            $task->taskImage()->delete();
+            
+            DB::table('taggables')->where([
+                ['taggable_type', 'App\Models\Tasks'],
+                ['taggable_id', $task->id],
+            ])->delete();
+
+            DB::table('recommended_difficulty')->where([
+                ['gradeDifficulty_type', 'App\Models\Tasks'],
+                ['gradeDifficulty_id', $task->id],
+            ])->delete();
+
+            $task->taskContents()->delete();
+
+            foreach($task->taskAnswers as $task_answer){
+                $task_answer->delete();
+            }
         });
     }
 
@@ -194,5 +211,10 @@ class Tasks extends Base
     public function allowedToUpdateAll(): bool
     {
         return ParticipantsAnswer::where('task_id', $this->id)->doesntExist();
+    }
+
+    public static function checkStatusForDeletion($task_id)
+    {
+        return CollectionSections::where('tasks', 'LIKE', "%$task_id%")->exists();
     }
 }

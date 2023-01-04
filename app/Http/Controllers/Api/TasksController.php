@@ -391,8 +391,28 @@ class TasksController extends Controller
          }
     }
 
-    public function delete(Tasks $task, DeleteTaskRequest $request)
+    public function delete(DeleteTaskRequest $request)
     {
+        DB::beginTransaction();
+
+        try {
+            foreach($request->id as $task_id){
+                Tasks::find($task_id)->delete();
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks deletetion was unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
+        }
         
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "Tasks deleted successfully"
+        ]);
     }
 }
