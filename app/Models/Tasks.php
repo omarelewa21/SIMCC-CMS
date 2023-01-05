@@ -34,8 +34,9 @@ class Tasks extends Base
         'answer_type_id',
         'answer_structure_id',
         'answer_layout_id',
-        'answer_sorting_id'
-
+        'answer_sorting_id',
+        'allow_delete',
+        'allow_update_answer',
     );
     public $hidden = ['updated_at','created_at'];
     private static $whiteListFilter = [
@@ -190,6 +191,16 @@ class Tasks extends Base
             ->get()
             ->pluck('image_string')
             ->join('');
+    }
+
+    public function getAllowDeleteAttribute()
+    {
+        return !self::checkStatusForDeletion($this->id);
+    }
+
+    public function getAllowUpdateAnswerAttribute()
+    {
+        return $this->allowedToUpdateAll();
     }
 
     public static function applyFilter($query, Request $request)
