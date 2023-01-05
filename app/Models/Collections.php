@@ -23,7 +23,9 @@ class Collections extends Base
         'created_by',
         'last_modified_by',
         'competitions',
-        'Moderators'
+        'Moderators',
+        'allow_delete',
+        'allow_update_sections',
     );
 
     public function taskTags() {
@@ -63,12 +65,22 @@ class Collections extends Base
         return $user;
     }
 
+    public function getAllowDeleteAttribute()
+    {
+        return $this->allowedToDelete();
+    }
+
+    public function getAllowUpdateSectionsAttribute()
+    {
+        return $this->allowedToUpdateAll();
+    }
+
     public function allowedToUpdateAll(): bool
     {
-        $taskIds = $this->sections()->pluck('tasks')->map(
-            fn($taskArray)=> Arr::flatten($taskArray)
-        )->flatten()->toArray();
-        return ParticipantsAnswer::whereIn('task_id', $taskIds)->doesntExist();
+        if(!is_null($this->levels)){
+            return ParticipantsAnswer::where('level_id', $this->levels->id)->doesntExist();
+        }
+        return true;
     }
 
     public function allowedToDelete(): bool
