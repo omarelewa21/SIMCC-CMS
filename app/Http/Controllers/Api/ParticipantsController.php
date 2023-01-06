@@ -41,7 +41,7 @@ class ParticipantsController extends Controller
             "participant.*.competition_id" => ["required","integer","exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
             "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
-            "participant.*.name" => "required|regex:/^[\/\'\;\@\\\.\s\(\)\[\]\w-]*$/",
+            "participant.*.name" => "required|regex:/^[\/\,\'\;\@\\\.\s\(\)\[\]\w-]*$/",
             "participant.*.class" => "required|max:255|nullable",
             "participant.*.grade" => ["required","integer",new CheckCompetitionAvailGrades],
             "participant.*.for_partner" => "required|boolean",
@@ -103,13 +103,13 @@ class ParticipantsController extends Controller
                 /*Generate index no.*/
                 $country = Countries::find($country_id);
                 $currentYear = substr( date("y"), -2);
-                $indexNo = $private ? $CountryCode . $currentYear . '1000001' : $CountryCode . $currentYear . '0000001';
+                $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
 
                 if($private) {
                     $counter = $country->private_participant_counter;
 
                     if($counter){
-                        $counterYear = substr($counter,3,2);
+                        $counterYear = substr($counter,0,2);
                         if(intval($currentYear) > intval($counterYear)) { // new year reset index counter
                             $country->private_participant_counter = $indexNo; // get the YY|Private/non-Private|Counter
                         }
