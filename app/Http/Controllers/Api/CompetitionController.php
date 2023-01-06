@@ -310,7 +310,8 @@ class CompetitionController extends Controller
             "rounds.*.default_award_points" => "integer|nullable",
             "rounds.*.levels" => "array|required",
             "rounds.*.levels.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active'), new CheckExistinglevelCollection],
+            // "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active'), new CheckExistinglevelCollection],
+            "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active')],
             "rounds.*.levels.*.grades" => "array|required",
             "rounds.*.levels.*.grades.*" => ["required","integer",new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
         ]);
