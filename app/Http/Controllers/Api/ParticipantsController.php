@@ -258,7 +258,8 @@ class ParticipantsController extends Controller
                 'competition.name as competition_name',
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
-                'organization.name as organization_name'
+                'organization.name as organization_name',
+                'competition_participants_results.award',
             )
             ->selectRaw("CONCAT_WS(' ',created_user.username,DATE_FORMAT(participants.created_at,'%d/%m/%Y')) as created_by")
             ->selectRaw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by");
