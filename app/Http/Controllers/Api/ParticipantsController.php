@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Custom\ParticipantReportService;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\CompetitionOrganization;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\ParticipantReportRequest;
+use App\Models\CompetitionLevels;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
@@ -26,6 +29,8 @@ use App\Rules\CheckOrganizationCompetitionValid;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckDeleteParticipant;
 use App\Rules\CheckCompetitionEnded;
+use Exception;
+
 class ParticipantsController extends Controller
 {
     public function create (Request $request) {
@@ -737,5 +742,32 @@ class ParticipantsController extends Controller
                 "message" => "Participants index number swap unsuccessful"
             ]);
         }
+    }
+
+    public function report(ParticipantReportRequest $request)
+    {
+        try {
+            $participant = Participants::where('index_no', $request->index_no)->firstOrFail();
+            $level = CompetitionLevels::findOrFail($request->level_id);
+            $report = new ParticipantReportService($participant, $level);
+            return response()->json([
+                "status"                        => 200,
+                "message"                       => "Report generated successfully",
+                "general_data"                  => $report->getGeneralData(),
+                "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
+                "performance_by_topics"         => $report->getPerformanceByTopicsData(),
+                "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
+                "analysis_by_questions"         => $report->getAnalysisByQuestionsData(),
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Report generation is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        
+
     }
 }
