@@ -25,8 +25,8 @@ class ParticipantReportRequest extends FormRequest
     public function rules()
     {
         return [
-            'index_no'  => 'required,exists:participants',
-            'level_id'  => 'required,integer,exists:competition_levels,id'
+            'index_no'  => 'required|exists:participants',
+            'level_id'  => 'required|integer|exists:competition_levels,id'
         ];
     }
 
