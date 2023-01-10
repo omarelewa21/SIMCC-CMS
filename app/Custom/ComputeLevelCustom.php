@@ -61,7 +61,7 @@ class ComputeLevelCustom
         DB::transaction(function(){
             $this->level->participantsAnswersUploaded->append('is_correct_answer')
                 ->each(function($participantAnswer){
-                    $participantAnswer->is_correct = $participantAnswer->is_correct_answer;
+                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute();
                     $participantAnswer->score = $participantAnswer->getAnswerMark();
                     $participantAnswer->save();
             });
