@@ -751,13 +751,13 @@ class ParticipantsController extends Controller
             $level = CompetitionLevels::findOrFail($request->level_id);
             $report = new ParticipantReportService($participant, $level);
             return response()->json([
-                "status"                        => 200,
-                "message"                       => "Report generated successfully",
-                "general_data"                  => $report->getGeneralData(),
-                "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
+                // "status"                        => 200,
+                // "message"                       => "Report generated successfully",
+                // "general_data"                  => $report->getGeneralData(),
+                // "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
                 "performance_by_topics"         => $report->getPerformanceByTopicsData(),
-                "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
-                "analysis_by_questions"         => $report->getAnalysisByQuestionsData(),
+                // "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
+                // "analysis_by_questions"         => $report->getAnalysisByQuestionsData(),
             ]);
 
         } catch (Exception $e) {

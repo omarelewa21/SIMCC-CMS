@@ -52,15 +52,18 @@ class ComputeLevelCustom
         $this->setParticipantsAwards();
         $this->setParticipantsAwardsRank();
         $this->setParticipantsGlobalRank();
+        $this->setParticipantsReportColumn();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
     public function computeParticipantAnswersScores()
     {
         DB::transaction(function(){
-            $this->level->participantsAnswersUploaded->each(function($participantAnswer){
-                $participantAnswer->score = $participantAnswer->getAnswerMark();
-                $participantAnswer->save();
+            $this->level->participantsAnswersUploaded->append('is_correct_answer')
+                ->each(function($participantAnswer){
+                    $participantAnswer->is_correct = $participantAnswer->is_correct_answer;
+                    $participantAnswer->score = $participantAnswer->getAnswerMark();
+                    $participantAnswer->save();
             });
             $this->updateComputeProgressPercentage(20);
         });
@@ -138,7 +141,7 @@ class ComputeLevelCustom
                 $participantResult->save();
             }
         });
-        $this->updateComputeProgressPercentage(60);
+        $this->updateComputeProgressPercentage(50);
     }
 
     protected function setParticipantsSchoolRank()
@@ -163,7 +166,7 @@ class ComputeLevelCustom
                 $participantResult->save();
             }
         });
-        $this->updateComputeProgressPercentage(70);
+        $this->updateComputeProgressPercentage(60);
     }
 
     protected function setParticipantsAwards()
@@ -204,7 +207,7 @@ class ComputeLevelCustom
                 'ref_award' => $this->level->rounds->default_award_name
             ]);
 
-        $this->updateComputeProgressPercentage(90);
+        $this->updateComputeProgressPercentage(70);
     }
 
     private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName)
@@ -230,6 +233,7 @@ class ComputeLevelCustom
                     'award_rank' => $key+1
                 ]);
         });
+        $this->updateComputeProgressPercentage(80);
     }
 
     protected function setParticipantsGlobalRank()
@@ -249,6 +253,18 @@ class ComputeLevelCustom
             $participantResult->participant->setAttribute('status', 'result computed');
             $participantResult->participant->save();
         }
+        $this->updateComputeProgressPercentage(90);
+    }
+
+    protected function setParticipantsReportColumn()
+    {
+        $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->orderBy('points', 'DESC')->get();
+        $participantResults->each(function($participantResult){
+            $report = new ParticipantReportService($participantResult->participant, $this->level);
+            $participantResult->setAttribute('report', $report->getJsonReport());
+            $participantResult->save();
+        });
         $this->updateComputeProgressPercentage(100);
     }
 

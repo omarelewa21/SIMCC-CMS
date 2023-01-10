@@ -56,7 +56,7 @@ class ParticipantsAnswer extends Model
         return $minMarks ? $minMarks : 0;
     }
 
-    public function isCorrectAnswer(): bool
+    public function getIsCorrectAnswerAttribute(): bool
     {
         $taskAnswer = $this->getAnswer();
         if(is_null($taskAnswer)){

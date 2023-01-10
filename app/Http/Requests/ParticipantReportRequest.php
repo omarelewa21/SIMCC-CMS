@@ -39,8 +39,20 @@ class ParticipantReportRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if(ParticipantsAnswer::where([ ['level_id', $this->level_id], ['participant_index', $this->index_no] ])->doesntExist()){
+            if(
+                ParticipantsAnswer::where([
+                    ['level_id', $this->level_id], ['participant_index', $this->index_no]
+                ])->doesntExist()
+            ){
                 $validator->errors()->add('No Answers', 'No answers has been uploaded for this participant for this level');
+            }
+
+            if(
+                ParticipantsAnswer::where(
+                    [ ['level_id', $this->level_id], ['participant_index', $this->index_no]
+                ])->whereNull('score')->exists()
+            ){
+                $validator->errors()->add('Answers Not Computed', 'Some participant answers are not computed yet');
             }
         });
     }
