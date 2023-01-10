@@ -106,7 +106,8 @@ class ParticipantsController extends Controller
                 $temp = str_pad($CountryCode,3,"0",STR_PAD_LEFT).substr( date("y"), -2). $private;
 
                 /*Generate index no.*/
-                $country = Countries::find($country_id);
+                //$country = Countries::find($country_id);
+                $country = Countries::where(['dial'=>$CountryCode,'update_counter'=>1])->first();
                 $currentYear = substr( date("y"), -2);
                 $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
 
