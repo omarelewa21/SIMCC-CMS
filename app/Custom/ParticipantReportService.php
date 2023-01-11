@@ -72,35 +72,35 @@ class ParticipantReportService
 
     public function getAnalysisByQuestionsData()
     {
-        return $this->getParticipantAnswers();
+        return
+            ParticipantsAnswer::where([
+                ['participant_answers.level_id', $this->level->id],
+                ['participant_answers.participant_index', $this->participant->index_no]
+            ])
+            ->join('tasks', 'tasks.id', 'participant_answers.task_id')
+            ->join('competition_task_difficulty', function ($join){
+                $join->on('tasks.id', 'competition_task_difficulty.task_id')
+                    ->where('competition_task_difficulty.level_id', $this->level->id);
+            })
+            ->select(
+                'participant_answers.*',
+                'competition_task_difficulty.difficulty'
+            )->get()
+            ->map(function ($answer, $key){
+                return [
+                    'question'              => sprintf("Q%s", $key+1),
+                    'topic'                 => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
+                    'is_correct'            => $answer->is_correct_answer,
+                    'correct_in_school'     => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
+                    'correct_in_country'    => $this->getParticipantAnswerCorrectInCountryPercentage($answer),
+                    'diffculty'             => $answer->difficulty
+                ];
+            });
     }
 
     public function getParticipantAnswers(): Collection
     {
-        return
-        ParticipantsAnswer::where([
-            ['participant_answers.level_id', $this->level->id],
-            ['participant_answers.participant_index', $this->participant->index_no]
-        ])
-        ->join('tasks', 'tasks.id', 'participant_answers.task_id')
-        ->join('competition_task_difficulty', function ($join){
-            $join->on('tasks.id', 'competition_task_difficulty.task_id')
-                ->where('competition_task_difficulty.level_id', $this->level->id);
-        })
-        ->select(
-            'participant_answers.*',
-            'competition_task_difficulty.difficulty'
-        )->get()
-        ->map(function ($answer){
-            $answer->setAttribute('topics', $this->getParticipantAnswerTopics($answer));
-            $answer->setAttribute('correct_in_school', $this->getParticipantAnswerCorrectInSchoolPercentage($answer));
-        });
-
-        // return ParticipantsAnswer::where(
-        //     [ ['level_id', $this->level->id], ['participant_index', $this->participant->index_no] ]
-        // )->distinct('task_id')->with([
-        //     'task.taskTags' => fn($query) => $query->whereNotNull('domain_id')
-        // ])->get();
+        
     }
 
     public function getJsonReport(): string|false
@@ -114,13 +114,36 @@ class ParticipantReportService
         ]);
     }
 
-    public function getParticipantAnswerTopics(ParticipantsAnswer $answer): string|Null
+    private function getParticipantAnswerTopics(ParticipantsAnswer $answer): string|Null
     {
-        return $answer->task->taskTags()->whereNotNull('domain_id')->implode('name', ', ');
+        return $answer->task->taskTags()->whereNotNull('domain_id')->get()->implode('name', ', ');
     }
 
-    public function getParticipantAnswerCorrectInSchoolPercentage(ParticipantsAnswer $answer): float
+    private function getParticipantAnswerCorrectInSchoolPercentage(ParticipantsAnswer $answer): int
     {
-        
+        $allAnswers = ParticipantsAnswer::where([
+            ['participant_answers.level_id', $answer->level_id],
+            ['participant_answers.task_id', $answer->task_id]
+        ])
+        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+        ->where('participants.school_id', $answer->participant->school_id)
+        ->select('participant_answers.is_correct')
+        ->get();
+
+        return ceil( $allAnswers->sum('is_correct')/$allAnswers->count() * 100 );
+    }
+
+    private function getParticipantAnswerCorrectInCountryPercentage(ParticipantsAnswer $answer): int
+    {
+        $allAnswers = ParticipantsAnswer::where([
+            ['participant_answers.level_id', $answer->level_id],
+            ['participant_answers.task_id', $answer->task_id]
+        ])
+        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+        ->where('participants.country_id', $answer->participant->country_id)
+        ->select('participant_answers.is_correct')
+        ->get();
+
+        return ceil( $allAnswers->sum('is_correct')/$allAnswers->count() * 100 );
     }
 }
