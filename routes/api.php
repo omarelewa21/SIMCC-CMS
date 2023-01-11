@@ -98,7 +98,8 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
     Route::group(["prefix" => "competition"],function () {
         Route::post("",[CompetitionController::class,"create"])->name('competition.create');
         Route::get("",[CompetitionController::class,"list"])->name('competition.list');
-        Route::patch("",[CompetitionController::class,"update"])->name('competition.update');
+        Route::get("/{competition}",[CompetitionController::class,"show"])->name('competition.show');
+        Route::patch("/{competition}",[CompetitionController::class,"update"])->name('competition.update');
         Route::delete("",[CompetitionController::class,"delete"])->name('competition.delete');
         Route::post("/upload_answers",[CompetitionController::class,"upload_answers"])->name('competition.upload_answers');
         Route::get("/difficultyandpoints",[AssignDifficultyPointsController::class,"list"])->name('competition.difficultyandpoints.list');
