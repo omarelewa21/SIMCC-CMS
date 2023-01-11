@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\ParticipantsAnswer;
+use App\Models\CompetitionLevels;
+use App\Models\CompetitionParticipantsResults;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ParticipantReportRequest extends FormRequest
@@ -25,8 +26,8 @@ class ParticipantReportRequest extends FormRequest
     public function rules()
     {
         return [
-            'index_no'  => 'required|exists:participants',
-            'level_id'  => 'required|integer|exists:competition_levels,id'
+            'participant_index'     => 'required|exists:competition_participants_results',
+            'level_id'              => 'required|integer|exists:competition_levels,id'
         ];
     }
 
@@ -38,22 +39,18 @@ class ParticipantReportRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-        $validator->after(function ($validator) {
-            if(
-                ParticipantsAnswer::where([
-                    ['level_id', $this->level_id], ['participant_index', $this->index_no]
-                ])->doesntExist()
-            ){
-                $validator->errors()->add('No Answers', 'No answers has been uploaded for this participant for this level');
-            }
-
-            if(
-                ParticipantsAnswer::where(
-                    [ ['level_id', $this->level_id], ['participant_index', $this->index_no]
-                ])->whereNull('score')->exists()
-            ){
-                $validator->errors()->add('Answers Not Computed', 'Some participant answers are not computed yet');
-            }
-        });
+        // $validator->after(function ($validator) {
+        //     if(is_null(
+        //         CompetitionParticipantsResults::where([
+        //             ['level_id', $this->level_id], ['participant_index', $this->participant_index]
+        //         ])->value('report')
+        //     )){
+        //         $levelName = CompetitionLevels::whereId($this->level_id)->value('name');
+        //         $validator->errors()->add(
+        //             'Report is not generated for this participant',
+        //             "Report is not generated for this participant, please re-run the computing for level $levelName to generate report for this level participants"
+        //         );
+        //     }
+        // });
     }
 }
