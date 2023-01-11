@@ -104,8 +104,8 @@ class CompetitionController extends Controller
         try {
             $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id', $competition->id)->firstOrFail()->competition_date_earliest;
 
-            $request->has('alias')  ?: $competition->alias = $request->alias;
-            $request->has('name')   ?: $competition->name = $request->name;
+            !$request->has('alias')  ?: $competition->alias = $request->alias;
+            !$request->has('name')   ?: $competition->name = $request->name;
 
             $competition->global_registration_date = $request->global_registration_date;
             $competition->competition_start_date = $request->competition_start_date;
