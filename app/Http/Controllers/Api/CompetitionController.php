@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Custom\Marking;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
-use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
@@ -14,9 +12,7 @@ use App\Models\CompetitionParticipantsResults;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
-use App\Models\Countries;
 use App\Models\ParticipantsAnswer;
-use App\Models\School;
 use App\Models\Tasks;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckExistinglevelCollection;
@@ -34,12 +30,9 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
-use App\Rules\CheckGlobalRegistrationDateAvail;
-use App\Rules\CheckGlobalCompetitionStartDateAvail;
-use App\Rules\CheckGlobalCompetitionEndDateAvail;
+use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
-use Illuminate\Validation\ValidationException;
 
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -107,74 +100,59 @@ class CompetitionController extends Controller
         }
     }
 
-    public function update(Request $request) {
-
-        $validated = $request->validate([
-            "id" => "required|integer",
-            "name" => "sometimes|unique:competition,name|required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "competition_mode" => "required|min:0|max:2",
-            "competition_start_date" => ["required","date","after_or_equal:global_registration_date",new CheckGlobalCompetitionStartDateAvail], //06/10/2011 19:00:02
-            "competition_end_date" => ["required","date","after_or_equal:competition_start_date",new CheckGlobalCompetitionEndDateAvail], //06/10/2011 19:00:02
-            "global_registration_date" => ["required","date", new CheckGlobalRegistrationDateAvail], //06/10/2011 19:00:02
-            "global_registration_end_date" => ["sometimes","required","date", "after_or_equal:global_registration_date","before:competition_start_date"], //06/10/2011 19:00:02
-            "alias" => "sometimes|required|string|distinct|unique:competition,alias|" ,
-            "allowed_grades" => "required|array" ,
-            "allowed_grades.*" => "required|integer|min:1" ,
-            "difficulty_group_id" => "required|integer|exists:difficulty_groups,id"
-        ]);
-
+    public function update(Competition $competition, UpdateCompetitionRequest $request) {
         try {
-            $competition = Competition::where('status','active')->findOrFail($validated['id']);
+            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id', $competition->id)->firstOrFail()->competition_date_earliest;
 
-            if($competition->status !== 'active') {
-                return response()->json([
-                    "status" => 500,
-                    "message" => "The selected competition is closed, no edit is allowed."
-                ]);
-            }
+            $request->has('alias')  ?: $competition->alias = $request->alias;
+            $request->has('name')   ?: $competition->name = $request->name;
 
-            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id',$validated['id'])->firstOrFail()->competition_date_earliest;
+            $competition->global_registration_date = $request->global_registration_date;
+            $competition->competition_start_date = $request->competition_start_date;
+            $competition->competition_end_date = $request->competition_end_date;
+            $competition->competition_mode = $request->competition_mode;
+            $competition->difficulty_group_id = $request->difficulty_group_id;
 
-            !isset($validated['alias']) ?: $competition->alias = $validated['alias'];
-            !isset($validated['name']) ?: $competition->alias = $validated['name'];
-
-            $competition->global_registration_date = $validated['global_registration_date'];
-            $competition->competition_start_date = $validated['competition_start_date'];
-            $competition->competition_end_date = $validated['competition_end_date'];
-            $competition->competition_mode = $validated['competition_mode'];
-            $competition->difficulty_group_id = $validated['difficulty_group_id'];
-
-            switch($validated['competition_mode']) { //update organization competition mode based on the competition's level competition mode
+            switch($request->competition_mode) {
+                //update organization competition mode based on the competition's level competition mode
                 case 0:
-                    CompetitionOrganization::where('competition_id',$validated['id'])->whereIn('competition_mode',[1,2])->update(['competition_mode' => 0, 'updated_at' => date("Y-m-d",strtotime(('now')))]);
+                    CompetitionOrganization::where('competition_id', $competition->id)
+                        ->whereIn('competition_mode',[1,2])
+                        ->update([
+                            'competition_mode'  => 0,
+                            'updated_at'        => now()
+                        ]);
                     break;
                 case 1:
-                    CompetitionOrganization::where('competition_id',$validated['id'])->whereIn('competition_mode',[0,2])->update(['competition_mode' => 1, 'updated_at' => date("Y-m-d",strtotime(('now')))]);
+                    CompetitionOrganization::where('competition_id', $competition->id)
+                        ->whereIn('competition_mode',[0,2])
+                        ->update([
+                            'competition_mode'  => 1, 
+                            'updated_at'        => now()
+                        ]);
                     break;
             }
 
             if(isset($earliestOrganizationCompetitionDate)) {
-              if($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) //don't allow to update grades if organization earliest competition date is >= today
+              if($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
               {
-                $competition->allowed_grades = $validated['allowed_grades'];
+                $competition->allowed_grades = $request->allowed_grades;
               }
             }
-           
-
             $competition->save();
 
             return response()->json([
-                "status" => 200,
-                "message" => "Competition update successful",
+                "status"    => 200,
+                "message"   => "Competition update successful",
             ]);
 
         }
         catch(ModelNotFoundException $e){
             // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "Competition create unsuccessful" ,
-            ]);
+                "status"    => 500,
+                "message"   => "Competition create unsuccessful",
+            ], 500);
         }
     }
 
