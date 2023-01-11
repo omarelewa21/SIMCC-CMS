@@ -216,7 +216,7 @@ class CompetitionController extends Controller
                     break;
             }
 
-            $competitionCollection = $competitionModel->filter()->get()->filter(function ($row) {
+            $competitionCollection = $competitionModel->get()->filter(function ($row) {
                 return count($row['competitionOrganization']) > 0;
             });
 
