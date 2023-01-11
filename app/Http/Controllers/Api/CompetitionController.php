@@ -256,6 +256,16 @@ class CompetitionController extends Controller
         }
     }
 
+    public function show(Competition $competition)
+    {
+        $data = $competition->load('rounds.levels', 'competitionOrganization', 'taskDifficultyGroup', 'taskDifficulty');
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Competition retrieved successfully",
+            "data"      => $data
+        ]); 
+    }
+
     public function delete (Request $request) {
         //set in role permission country partner cannot delete
 
