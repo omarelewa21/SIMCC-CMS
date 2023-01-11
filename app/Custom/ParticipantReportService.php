@@ -24,18 +24,22 @@ class ParticipantReportService
             'competition'       => $this->level->rounds->competition->name,
             'particiapnt'       => $this->participant->name,
             'school'            => $this->participant->school->name,
-            'grade'             => sprintf("%s %s", "Grade", $this->participant->grade)
+            'grade'             => sprintf("Grade%s", $this->participant->grade)
         ];
     }
 
     public function getPerformanceByQuestionsData(): Collection
     {
-        return $this->answers->mapWithKeys(function($answer, $key){
-            return [
-                sprintf("%s %s", "Q", $key+1) =>
-                    $answer->is_correct ? $answer->is_correct : $answer->getIsCorrectAnswerAttribute()
-            ];
-        });
+        return
+            ParticipantsAnswer::where([
+                ['participant_answers.level_id', $this->level->id],
+                ['participant_answers.participant_index', $this->participant->index_no]
+            ])->pluck('is_correct')
+            ->flatMap(function($value, $key){
+                return [
+                    sprintf('Q%s', $key+1)  => $value
+                ];
+            });
     }
 
     public function getPerformanceByTopicsData()
@@ -89,8 +93,8 @@ class ParticipantReportService
             ->map(function ($answer, $key){
                 return [
                     'question'              => sprintf("Q%s", $key+1),
-                    'topic'                 => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
-                    'is_correct'            => $answer->is_correct_answer,
+                    'topic'                 => $this->getParticipantAnswerTopics($answer),
+                    'is_correct'            => $answer->is_correct,
                     'correct_in_school'     => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
                     'correct_in_country'    => $this->getParticipantAnswerCorrectInCountryPercentage($answer),
                     'diffculty'             => $answer->difficulty
