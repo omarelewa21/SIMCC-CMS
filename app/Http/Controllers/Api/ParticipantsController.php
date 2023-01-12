@@ -767,9 +767,9 @@ class ParticipantsController extends Controller
                 "message"                       => "Report generated successfully",
                 "general_data"                  => $report->getGeneralData(),
                 "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
-                // "performance_by_topics"         => $report->getPerformanceByTopicsData(),
-                // "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
-                "analysis_by_questions"         => $report->getAnalysisByQuestionsData(),
+                "performance_by_topics"         => $report->getPerformanceByTopicsData(),
+                "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
+                "analysis_by_questions"         => $report->getAnalysisByQuestionsDataProcessed(),
             ]);
 
         } catch (Exception $e) {
