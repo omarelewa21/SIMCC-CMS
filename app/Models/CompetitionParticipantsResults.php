@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 
 class CompetitionParticipantsResults extends Model
 {
@@ -11,6 +12,10 @@ class CompetitionParticipantsResults extends Model
 
     protected $table = 'competition_participants_results';
     protected $guarded = [];
+
+    protected $casts = [
+        'report'    => AsArrayObject::class,
+    ];
 
     public $timestamps = false;
 

@@ -749,28 +749,28 @@ class ParticipantsController extends Controller
     public function report(ParticipantReportRequest $request)
     {
         try {
-            // $report = CompetitionParticipantsResults::where([
-            //     ['level_id', $request->level_id], ['participant_index', $request->participant_index]
-            // ])->value('report');
+            $report = CompetitionParticipantsResults::where([
+                ['level_id', $request->level_id], ['participant_index', $request->participant_index]
+            ])->value('report');
 
-            // return response()->json([
-            //     "status"    => 200,
-            //     "message"   => "Report generated successfully",
-            //     "data"      => $report
-            // ]);
-
-            $participant = Participants::where('index_no', $request->participant_index)->firstOrFail();
-            $level = CompetitionLevels::findOrFail($request->level_id);
-            $report = new ParticipantReportService($participant, $level);
             return response()->json([
-                "status"                        => 200,
-                "message"                       => "Report generated successfully",
-                "general_data"                  => $report->getGeneralData(),
-                "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
-                "performance_by_topics"         => $report->getPerformanceByTopicsData(),
-                "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
-                "analysis_by_questions"         => $report->getAnalysisByQuestionsDataProcessed(),
+                "status"    => 200,
+                "message"   => "Report generated successfully",
+                "data"      => $report
             ]);
+
+            // $participant = Participants::where('index_no', $request->participant_index)->firstOrFail();
+            // $level = CompetitionLevels::findOrFail($request->level_id);
+            // $report = new ParticipantReportService($participant, $level);
+            // return response()->json([
+            //     "status"                        => 200,
+            //     "message"                       => "Report generated successfully",
+            //     "general_data"                  => $report->getGeneralData(),
+            //     "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
+            //     "performance_by_topics"         => $report->getPerformanceByTopicsData(),
+            //     "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
+            //     "analysis_by_questions"         => $report->getAnalysisByQuestionsDataProcessed(),
+            // ]);
 
         } catch (Exception $e) {
             return response()->json([

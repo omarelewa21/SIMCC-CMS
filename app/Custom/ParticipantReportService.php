@@ -97,11 +97,11 @@ class ParticipantReportService
     public function getJsonReport(): string|false
     {
         return json_encode([
-            "general_data"                  => $this->getGeneralData(),
-            "performance_by_questions"      => $this->getPerformanceByQuestionsData(),
-            "performance_by_topics"         => $this->getPerformanceByTopicsData(),
-            "grade_performance_analysis"    => $this->getGradePerformanceAnalysisData(),
-            "analysis_by_questions"         => $this->getAnalysisByQuestionsData(),
+                "general_data"                  => $this->getGeneralData(),
+                "performance_by_questions"      => $this->getPerformanceByQuestionsData(),
+                "performance_by_topics"         => $this->getPerformanceByTopicsData(),
+                "grade_performance_analysis"    => $this->getGradePerformanceAnalysisData(),
+                "analysis_by_questions"         => $this->getAnalysisByQuestionsDataProcessed(),
         ]);
     }
 
