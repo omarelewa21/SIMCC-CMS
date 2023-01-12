@@ -68,7 +68,8 @@ class ParticipantReportService
 
     public function getGradePerformanceAnalysisData()
     {
-        return ParticipantsAnswer::where([
+        return
+        ParticipantsAnswer::where([
             ['participant_answers.level_id', $this->level->id],
             ['participant_answers.participant_index', $this->participant->index_no]
         ])

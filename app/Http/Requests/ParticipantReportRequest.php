@@ -39,18 +39,18 @@ class ParticipantReportRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-        // $validator->after(function ($validator) {
-        //     if(is_null(
-        //         CompetitionParticipantsResults::where([
-        //             ['level_id', $this->level_id], ['participant_index', $this->participant_index]
-        //         ])->value('report')
-        //     )){
-        //         $levelName = CompetitionLevels::whereId($this->level_id)->value('name');
-        //         $validator->errors()->add(
-        //             'Report is not generated for this participant',
-        //             "Report is not generated for this participant, please re-run the computing for level $levelName to generate report for this level participants"
-        //         );
-        //     }
-        // });
+        $validator->after(function ($validator) {
+            if(is_null(
+                CompetitionParticipantsResults::where([
+                    ['level_id', $this->level_id], ['participant_index', $this->participant_index]
+                ])->value('report')
+            )){
+                $levelName = CompetitionLevels::whereId($this->level_id)->value('name');
+                $validator->errors()->add(
+                    'Report is not generated for this participant',
+                    "Report is not generated for this participant, please re-run the computing for level $levelName to generate report for this level participants"
+                );
+            }
+        });
     }
 }
