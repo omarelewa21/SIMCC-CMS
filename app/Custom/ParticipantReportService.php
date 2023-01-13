@@ -95,17 +95,6 @@ class ParticipantReportService
         });
     }
 
-    public function getJsonReport(): string|false
-    {
-        return json_encode([
-                "general_data"                  => $this->getGeneralData(),
-                "performance_by_questions"      => $this->getPerformanceByQuestionsData(),
-                "performance_by_topics"         => $this->getPerformanceByTopicsData(),
-                "grade_performance_analysis"    => $this->getGradePerformanceAnalysisData(),
-                "analysis_by_questions"         => $this->getAnalysisByQuestionsDataProcessed(),
-        ]);
-    }
-
     public function getAnalysisByQuestionsDataProcessed(): Collection
     {
         return
@@ -114,6 +103,18 @@ class ParticipantReportService
             return $data;
         });
     }
+
+    public function getJsonReport(): array
+    {
+        return [
+            "general_data"                  => $this->getGeneralData(),
+            "performance_by_questions"      => $this->getPerformanceByQuestionsData(),
+            "performance_by_topics"         => $this->getPerformanceByTopicsData(),
+            "grade_performance_analysis"    => $this->getGradePerformanceAnalysisData(),
+            "analysis_by_questions"         => $this->getAnalysisByQuestionsDataProcessed(),
+        ];
+    }
+
 
     /**
      ******************************************************* Helpers ******************************************************

@@ -756,7 +756,7 @@ class ParticipantsController extends Controller
             return response()->json([
                 "status"    => 200,
                 "message"   => "Report generated successfully",
-                "data"      => json_decode($report)
+                "data"      => $report
             ]);
 
             // $participant = Participants::where('index_no', $request->participant_index)->firstOrFail();

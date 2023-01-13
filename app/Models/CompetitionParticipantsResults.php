@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,7 +14,7 @@ class CompetitionParticipantsResults extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'report'    => 'json',
+        'report'    => AsArrayObject::class,
     ];
 
     public $timestamps = false;
