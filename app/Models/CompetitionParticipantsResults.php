@@ -12,6 +12,7 @@ class CompetitionParticipantsResults extends Model
 
     protected $table = 'competition_participants_results';
     protected $guarded = [];
+    protected $hidden = ['report'];
 
     protected $casts = [
         'report'    => AsArrayObject::class,

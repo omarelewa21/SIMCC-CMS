@@ -21,6 +21,7 @@ use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\ParticipantReportRequest;
+use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use App\Rules\CheckSchoolStatus;
@@ -746,7 +747,7 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function report(ParticipantReportRequest $request)
+    public function performanceReportWithIndex(ParticipantReportRequest $request)
     {
         try {
             $report = CompetitionParticipantsResults::where([
@@ -779,7 +780,26 @@ class ParticipantsController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
-        
+    }
 
+    public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
+    {
+        try {
+            $report = CompetitionParticipantsResults::where('participant_index', $request->index_no)
+                ->value('report');
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Report generated successfully",
+                "data"      => $report
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Report generation is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
     }
 }
