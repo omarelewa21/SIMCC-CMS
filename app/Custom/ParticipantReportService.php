@@ -82,7 +82,8 @@ class ParticipantReportService
             $join->on('taggables.domains_tags_id', 'domains_tags.id')
                 ->whereNotNull('domains_tags.domain_id');
         })
-        ->select('domains_tags.id', 'domains_tags.name', 'domains_tags.domain_id')->get()
+        ->select('domains_tags.id', 'domains_tags.name', 'domains_tags.domain_id')
+        ->distinct('domains_tags.id')->get()
         ->map(function($topic){
             $schoolData = $this->getParticipantSchoolStatisticsByTopic($topic->id, $this->participant->index_no);
             return [
