@@ -356,6 +356,7 @@ class MarkingController extends Controller
                     'competition_participants_results.school_rank',
                     'competition_participants_results.country_rank',
                     'competition_participants_results.award_rank',
+                    'competition_participants_results.percentile',
                     DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
                 )
                 ->distinct('index')->orderBy('points', 'DESC')->get();

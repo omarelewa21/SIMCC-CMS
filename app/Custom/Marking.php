@@ -111,12 +111,11 @@ class Marking
     public function getCutOffPoints($participantResults)
     {
         $participantAwards = $participantResults->pluck('award')->unique();
-        
         $data = [];
         foreach($participantAwards as $award){
-            $data[$award] = $participantResults->last(function ($participantResult) use($award){
-                return $participantResult->award == $award;
-            })->points;
+            $filteredParticipants = $participantResults->filter(fn($participantResult)=> $participantResult->award == $award);
+            $data[$award]['max'] = $filteredParticipants->first()->points;
+            $data[$award]['min'] = $filteredParticipants->last()->points;
         }
         return $data;
     }
