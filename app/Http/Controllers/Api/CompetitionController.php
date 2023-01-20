@@ -1163,7 +1163,7 @@ class CompetitionController extends Controller
                  ON participants.tuition_centre_id = tuition_school.id
                  LEFT JOIN all_countries
                  ON all_countries.id = schools.country_id
-                 WHERE competition.id = 2
+                 WHERE competition.id = ".$competition_id."
                  ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
         "));
       

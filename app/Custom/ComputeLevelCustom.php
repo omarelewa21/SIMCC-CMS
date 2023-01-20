@@ -90,7 +90,7 @@ class ComputeLevelCustom
     {
         if($percentage === 100){
             $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
-            return;            
+            return;
         }
         $this->level->setAttribute('compute_progress_percentage', $percentage);
         $this->level->save();
@@ -149,7 +149,7 @@ class ComputeLevelCustom
         $schoolIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->join('participants', 'competition_participants_results.participant_index', 'participants.index_no')
             ->select('participants.school_id')->distinct()->pluck('school_id');
-        
+
         $schoolIds->each(function($schoolId){
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->whereRelation('participant', 'school_id', $schoolId)
@@ -183,45 +183,83 @@ class ComputeLevelCustom
         $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->select('group_id')->distinct()->pluck('group_id')->toArray();
         foreach($groupIds as $group_id){
-            $this->awards->each(function($award) use($group_id){
-                $count =  CompetitionParticipantsResults::where('level_id', $this->level->id)
-                    ->where('group_id', $group_id)->whereNull('award')->count();
+            $count = CompetitionParticipantsResults::where('level_id', $this->level->id)
+                ->where('group_id', $group_id)->whereNull('award')->count();
 
-                $limit = ceil(($award->percentage / 100) * $count);
-                CompetitionParticipantsResults::where('level_id', $this->level->id)
-                    ->where('group_id', $group_id)->whereNull('award')
-                    ->orderBy('points', 'DESC')->limit($limit)
-                    ->update([
-                        'award'     => $award->name,
-                        'ref_award' => $award->name
-                    ]);
-                $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name);
+            $totalCount = $count;
+            $awardPercentage = 0;
+
+            $this->awards->each(function($award) use($group_id,$totalCount,&$count,&$awardPercentage){
+                $awardPercentage += $award->percentage;
+                $percentileCutoff = 100 - $awardPercentage;
+
+                for($count;$count>0;$count--) {
+                    $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
+                    if($positionPercentile >= $percentileCutoff) {
+                        CompetitionParticipantsResults::where('level_id', $this->level->id)
+                            ->where('group_id', $group_id)
+                            ->whereNull('award')
+                            ->orderBy('points', 'DESC')
+                            ->limit(1)
+                            ->update([
+                                'award'     => $award->name,
+                                'ref_award' => $award->name,
+                                'percentile' => $positionPercentile,
+                            ]);
+                    }
+                    else
+                    {
+                        $updatedCount = $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name, $totalCount, $count);
+                        $count = $updatedCount;
+                        break;
+                    }
+                }
+
             });
+
+            // Set default award
+            for($count;$count>0;$count--)
+            {
+                $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
+                CompetitionParticipantsResults::where('level_id', $this->level->id)
+                    ->where('group_id', $group_id)
+                    ->whereNull('award')
+                    ->orderBy('points', 'DESC')
+                    ->limit(1)
+                    ->update([
+                        'award'     => $this->level->rounds->default_award_name,
+                        'ref_award' => $this->level->rounds->default_award_name,
+                        'percentile' => $positionPercentile,
+                    ]);
+
+                $this->updateComputeProgressPercentage(70);
+            }
         }
 
-        // Set default award
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->whereNull('award')
-            ->update([
-                'award'     => $this->level->rounds->default_award_name,
-                'ref_award' => $this->level->rounds->default_award_name
-            ]);
-
-        $this->updateComputeProgressPercentage(70);
     }
 
-    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName)
+    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName, int $totalCount, int $currentCount)
     {
         $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $group_id)->where('award', $awardName)
+            ->where('group_id', $group_id)
+            ->where('award', $awardName)
             ->orderBy('points')->value('points');
 
-        CompetitionParticipantsResults::where('level_id', $this->level->id)->where('group_id', $group_id)
+        $competitionParticipantsQuery =  CompetitionParticipantsResults::where('level_id', $this->level->id)->where('group_id', $group_id)
             ->where('points', $lastParticipantPoints)
-            ->update([
-                'award'     => $awardName,
-                'ref_award' => $awardName
-            ]);
+            ->whereNull('award');
+
+        $competitionParticipantsQuery->get()
+            ->each(function ($row,$index) use($totalCount, &$currentCount, $competitionParticipantsQuery, $awardName ) {
+                CompetitionParticipantsResults::find($row->id)->update([
+                    'award'     => $awardName,
+                    'ref_award' => $awardName,
+                    'percentile' => number_format(($currentCount / $totalCount) * 100, 2, '.', ''),
+                ]);
+                $currentCount--;
+            });
+
+        return $currentCount;
     }
 
     public function setParticipantsAwardsRank()
