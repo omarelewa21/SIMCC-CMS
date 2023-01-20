@@ -8,7 +8,6 @@ use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ParticipantReportService
 {
@@ -159,7 +158,7 @@ class ParticipantReportService
     {
         return 
             $this->getAnalysisByQuestionData->filter(
-                fn($data)=> $data['topic']->filter(fn($topic)=> $topic->id === $topicId) 
+                fn($data)=> $data['topic']->filter(fn($topic)=> $topic->id === $topicId)->isNotEmpty()
             );
     }
 
