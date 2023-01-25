@@ -108,6 +108,9 @@ class CompetitionController extends Controller
             !$request->has('name')   ?: $competition->name = $request->name;
 
             $competition->global_registration_date = $request->global_registration_date;
+            if($request->has('global_registration_end_date')){
+                $competition->global_registration_end_date = $request->global_registration_end_date;
+            }
             $competition->competition_start_date = $request->competition_start_date;
             $competition->competition_end_date = $request->competition_end_date;
             $competition->competition_mode = $request->competition_mode;
