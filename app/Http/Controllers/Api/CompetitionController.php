@@ -17,7 +17,6 @@ use App\Models\Tasks;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckExistinglevelCollection;
 use App\Rules\CheckLevelUsedGrades;
-use App\Rules\CheckOrganizationCountryInCompetition;
 use App\Rules\CheckOrgAvailCompetitionMode;
 use App\Rules\CheckRoundAwards;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,9 +29,9 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
-use App\Rules\CheckOrganizationCountryPartnerExist;
 
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -40,64 +39,37 @@ use App\Rules\CheckOrganizationCountryPartnerExist;
 class CompetitionController extends Controller
 {
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new competition.
      *
      * @return \Illuminate\Http\JsonResponse
      */
-
-    public function create(Request $request)
+    public function create(CreateCompetitionRequest $request)
     {
-
+        DB::beginTransaction();
         try{
-            $validated = $request->validate([
-                "name" => "unique:competition,name|required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-                "alias" => "sometimes|required|string|distinct|unique:competition,alias|" ,
-                "competition_mode" => "required|min:0|max:2",
-                "competition_start_date" => "required|date|after_or_equal:global_registration_date", //06/10/2011 19:00:02
-                "competition_end_date" => "required|date|after_or_equal:competition_start_date", //06/10/2011 19:00:02
-                "global_registration_date" => "required|date", //06/10/2011 19:00:02
-                "global_registration_end_date" => ["required_if:format,1","date", "after_or_equal:global_registration_date","before:competition_start_date"], //06/10/2011 19:00:02
-                "allowed_grades" => "required|array" ,
-                "allowed_grades.*" => "required|integer|min:1" ,
-                "format" => "required|boolean",
-                "re-run" => "required|boolean",
-                "parent_competition_id" => ["required_if:re-run,1","integer","nullable",Rule::exists('competition','id')->where(function ($query)  { //use for re-run competition
-                    $query->where('format', 0)
-                        ->where('status', 'closed');
-                })],
-                "difficulty_group_id" => "required|integer|exists:difficulty_groups,id"
+            $request->merge([
+                'created_by_userid' => auth()->user()->id,
+                'allowed_grades'    => collect($request->allowed_grades)->unique()->values()->toArray()
             ]);
+            $competition = Competition::create($request->all());
+            $this->addOrganization($request->organizations, $competition->id);
+            $this->addRounds($request->rounds, $competition);
 
-            DB::beginTransaction();
-            $validated['created_by_userid'] = auth()->user()->id;
-            $validated['allowed_grades'] = array_unique($validated['allowed_grades']);
-            $competition = Competition::create($validated);
-            $addOrgStatus = $this->addOrganization($request,$competition)->original['status'];
-            $addRdsStatus = $this->addRounds($request,$competition)->original['status'];
-            if($addOrgStatus != '201' && $addRdsStatus != '201') {
-                abort(500,'Competition create unsuccessful');
-            }
-            DB::commit();
+        }catch(\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Competition create unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
 
-            return response()->json([
-                "status" => 201,
-                "message" => "Competition create successful",
-                "id" => $competition->id
-            ]);
-        }
-        catch(QueryException $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "Competition create unsuccessful"
-            ]);
-        }
-        catch(ModelNotFoundException $e){
-            // do task when error
-            return response()->json([
-                "status" => 500,
-                "message" => "Competition create unsuccessful"
-            ]);
-        }
+        DB::commit();
+        return response()->json([
+            "status"    => 201,
+            "message"   => "Competition create successful",
+            "id"        => $competition->id
+        ]);
     }
 
     public function update(Competition $competition, UpdateCompetitionRequest $request) {
@@ -278,72 +250,32 @@ class CompetitionController extends Controller
         }
     }
 
-    public function addRounds (Request $request, $competition = null) { //in-complete
-
-        if($competition === null) {
-            $competition = Competition::where("id", $request->competition_id)
-                ->where("status", "active")
-                ->firstOrFail();
-        }
-
-        $request['competition_id'] = $competition->id;
-
-        $validated = $request->validate([
-            "competition_id" => "required|integer|exists:competition,id",
-            "rounds" => "array|required",
-            "rounds.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "rounds.*.round_type" => ["required","integer",Rule::in([0, 1])],
-            "rounds.*.team_setting" => ["exclude_if:rounds.*.round_type,0","required_if:rounds.*.round_type,1","integer",Rule::in([0, 1])],
-            "rounds.*.individual_points" => ["exclude_if:rounds.*.round_type,0","required_if:rounds.*.round_type,1","integer",Rule::in([0, 1])],
-            "rounds.*.award_type" => "required|integer|boolean",
-            "rounds.*.assign_award_points" => "required|integer|boolean",
-            "rounds.*.default_award_name" => "required|string",
-            "rounds.*.default_award_points" => "integer|nullable",
-            "rounds.*.levels" => "array|required",
-            "rounds.*.levels.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            // "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active'), new CheckExistinglevelCollection],
-            "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active')],
-            "rounds.*.levels.*.grades" => "array|required",
-            "rounds.*.levels.*.grades.*" => ["required","integer",new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
-        ]);
-
-        $competition_id = $validated['competition_id'];
-        $rounds = collect($validated['rounds'])->map(function($item) use(&$levels) {
-            $levels[] = Arr::pull($item,'levels');
+    private function addRounds(array $rounds, Competition $competition)
+    {
+        $rounds = collect($rounds)->map(function($round) use(&$levels) {
+            $levels[] = Arr::pull($round,'levels');
             return [
-                ...$item,
+                ...$round,
                 'created_by_userid' => auth()->user()->id
             ];
         })->toArray();
 
-        try
-        {
-            DB::beginTransaction();
-
-            Competition::find($competition_id)->rounds()->createMany($rounds)->pluck('id')->each(function ($round_id,$index) use($levels,$competition_id) {
-                collect($levels[$index])->map(function ($level) use($round_id) {
-                    $level = [...$level,'round_id' => $round_id,'grades' => $level['grades'],'created_by_userid' => auth()->user()->id];
+        $competition->rounds()->createMany($rounds)->pluck('id')
+            ->each(function($round_id, $index) use($levels){
+                collect($levels[$index])->map(function($level) use($round_id){
+                    $level = [
+                        ...$level,
+                        'round_id'          => $round_id,
+                        'grades'            => $level['grades'],
+                        'created_by_userid' => auth()->user()->id
+                    ];
                     $competition_level = CompetitionLevels::create($level);
-
                     if(isset($level['collection_id']) && $level['collection_id'] !== null) {
-                        $this->addTaskMark($level['collection_id'],$competition_level);
-                        $this->addDifficultyGroup($level['collection_id'],$competition_level);
+                        $this->addTaskMark($level['collection_id'], $competition_level);
+                        $this->addDifficultyGroup($level['collection_id'], $competition_level);
                     }
                 });
-            });
-
-            DB::commit();
-
-            return response()->json([
-                "status" => 201,
-                "message" => "Add rounds to competition successful"
-            ]);
-        } catch(\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "Add rounds to competition unsuccessful - " .$e
-            ]);
-        }
+        });
     }
 
     public function editRounds (Request $request) {
@@ -798,59 +730,14 @@ class CompetitionController extends Controller
         }
     }
 
-    public function addOrganization (Request $request, $competition = null )
+    private function addOrganization(array $organizations, int $competition_id)
     {
-        if($competition === null) {
-            $competition = Competition::where("id", $request->competition_id)
-                ->where("status", "active")
-                ->firstOrFail();
-        }
-
-        $request['competition_id'] = $competition->id;
-
-        $validated = $request->validate([
-            "organizations" => 'required|array',
-            "organizations.*.organization_id" => ["required","integer",Rule::exists('organization',"id")->where(function ($query) {
-                $query->where('status','active');
-            }), new CheckOrganizationCountryInCompetition],
-            "organizations.*.country_id" => ['required','integer',new CheckOrganizationCountryPartnerExist],
-            "organizations.*.translate" => "json",
-            "organizations.*.edit_sessions.*" => 'boolean',
-        ]);
-
-        try {
-
-            $createCompetitionOrganization = collect($validated['organizations'])->map(function ($row) use($competition) {
-
-                $row = array_merge($row,
-                    [
-                        'competition_id' => $competition->id,
-                        'created_by_userid' => auth()->user()->id,
-                    ]
-                );
-
-                unset($row['competition_dates']);
-                return $row;
-            })->toArray();
-
-            DB::beginTransaction();
-
-            for($i=0;$i<count($createCompetitionOrganization);$i++) {
-                CompetitionOrganization::create($createCompetitionOrganization[$i]);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                "status" => 201,
-                "message" => "Add organization to competition successful",
-            ]);
-        }
-        catch(\Exception $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "Add organization to competition unsuccessful"
-            ]);
+        foreach($organizations as $organization){
+            CompetitionOrganization::create(
+                array_merge($organization, [
+                    'competition_id'    => $competition_id,
+                    'created_by_userid' => auth()->user()->id,
+            ]));
         }
     }
 
