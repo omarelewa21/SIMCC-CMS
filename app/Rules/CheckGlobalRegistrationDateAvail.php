@@ -2,29 +2,23 @@
 
 namespace App\Rules;
 
+use App\Models\Competition;
 use App\Models\CompetitionOrganization;
 use Illuminate\Contracts\Validation\Rule;
-use Illuminate\Contracts\Validation\DataAwareRule;
 
-class CheckGlobalRegistrationDateAvail implements Rule,DataAwareRule
+class CheckGlobalRegistrationDateAvail implements Rule
 {
-    protected $data = [];
     protected $message =[];
+    protected Competition $competition;
 
-    public function setData($data)
-    {
-        $this->data = $data;
-
-        return $this;
-    }
     /**
      * Create a new rule instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Competition $competition)
     {
-        //
+        $this->competition = $competition;
     }
 
     /**
@@ -36,7 +30,7 @@ class CheckGlobalRegistrationDateAvail implements Rule,DataAwareRule
      */
     public function passes($attribute, $value)
     {
-        $competition_id = $this->data['id'];
+        $competition_id = $this->competition->id;
         $organizationRegistrationDate = CompetitionOrganization::where('competition_id',$competition_id)->orderBy('registration_open_date')->where('registration_open_date','>','0000-00-00 00:00:00'); //Retrieve Date that have been set by organization/partner
         $currentGlobalRegistrationOpenDate = date('Y-m-d', strtotime($value));
         $organizationRegistrationDateFound = $organizationRegistrationDate->count();

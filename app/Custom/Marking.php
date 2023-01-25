@@ -22,15 +22,19 @@ class Marking
             $levels = $round->levels->mapWithKeys(function ($level) use($countries){
                 $levels = [];
                 foreach($countries as $group_id=>$countryGroup){
-                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                            ->whereIn('participants.status', ['active', 'result computed'])->count();
+                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())->count();
                     $markedParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                             ->where('participants.status', 'result computed')->count();
-                    $absenteesQuery = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                    $absentees = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                                         ->where('participants.status', 'absent')
                                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                        ->select('participants.name')->distinct();
-
+                                        ->select('participants.name')->distinct()->get();
+                    
+                    $answersUploaded = $level->participantsAnswersUploaded()
+                        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+                        ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
+                        ->select('participant_answers.participant_index')->distinct()->count('participant_index');
+    
                     $levels[$level->id][] = [
                         'level_id'                      => $level->id,
                         'name'                          => $level->name,
@@ -39,9 +43,10 @@ class Marking
                         'compute_progress_percentage'   => $level->compute_progress_percentage,
                         'compute_error_message'         => $level->compute_error_message,
                         'total_participants'            => $totalParticipants,
+                        'answers_uploaded'              => $answersUploaded,
                         'marked_participants'           => $markedParticipants,
-                        'absentees_count'               => $absenteesQuery->count(),
-                        'absentees'                     => $absenteesQuery->inRandomOrder()->limit(10)->pluck('participants.name'),
+                        'absentees_count'               => $absentees->count(),
+                        'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
                         'country_group'                 => $countryGroup->pluck('display_name')->toArray(),
                         'marking_group_id'              => $group_id
                     ];
@@ -81,7 +86,7 @@ class Marking
      * 
      * @return bool
      */
-    public function isLevelReadyToCompute(CompetitionLevels $level){
+    public static function isLevelReadyToCompute(CompetitionLevels $level){
         $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
@@ -106,12 +111,11 @@ class Marking
     public function getCutOffPoints($participantResults)
     {
         $participantAwards = $participantResults->pluck('award')->unique();
-        
         $data = [];
         foreach($participantAwards as $award){
-            $data[$award] = $participantResults->last(function ($participantResult) use($award){
-                return $participantResult->award == $award;
-            })->points;
+            $filteredParticipants = $participantResults->filter(fn($participantResult)=> $participantResult->award == $award);
+            $data[$award]['max'] = $filteredParticipants->first()->points;
+            $data[$award]['min'] = $filteredParticipants->last()->points;
         }
         return $data;
     }

@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Custom\Marking;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
-use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
@@ -14,9 +12,7 @@ use App\Models\CompetitionParticipantsResults;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
-use App\Models\Countries;
 use App\Models\ParticipantsAnswer;
-use App\Models\School;
 use App\Models\Tasks;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckExistinglevelCollection;
@@ -34,12 +30,9 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
-use App\Rules\CheckGlobalRegistrationDateAvail;
-use App\Rules\CheckGlobalCompetitionStartDateAvail;
-use App\Rules\CheckGlobalCompetitionEndDateAvail;
+use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
-use Illuminate\Validation\ValidationException;
 
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -107,71 +100,59 @@ class CompetitionController extends Controller
         }
     }
 
-    public function update(Request $request) {
-
-        $validated = $request->validate([
-            "id" => "required|integer",
-            "name" => "sometimes|unique:competition,name|required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "competition_mode" => "required|min:0|max:2",
-            "competition_start_date" => ["required","date","after_or_equal:global_registration_date",new CheckGlobalCompetitionStartDateAvail], //06/10/2011 19:00:02
-            "competition_end_date" => ["required","date","after_or_equal:competition_start_date",new CheckGlobalCompetitionEndDateAvail], //06/10/2011 19:00:02
-            "global_registration_date" => ["required","date", new CheckGlobalRegistrationDateAvail], //06/10/2011 19:00:02
-            "global_registration_end_date" => ["sometimes","required","date", "after_or_equal:global_registration_date","before:competition_start_date"], //06/10/2011 19:00:02
-            "alias" => "sometimes|required|string|distinct|unique:competition,alias|" ,
-            "allowed_grades" => "required|array" ,
-            "allowed_grades.*" => "required|integer|min:1" ,
-            "difficulty_group_id" => "required|integer|exists:difficulty_groups,id"
-        ]);
-
+    public function update(Competition $competition, UpdateCompetitionRequest $request) {
         try {
-            $competition = Competition::where('status','active')->findOrFail($validated['id']);
+            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id', $competition->id)->firstOrFail()->competition_date_earliest;
 
-            if($competition->status !== 'active') {
-                return response()->json([
-                    "status" => 500,
-                    "message" => "The selected competition is closed, no edit is allowed."
-                ]);
-            }
+            !$request->has('alias')  ?: $competition->alias = $request->alias;
+            !$request->has('name')   ?: $competition->name = $request->name;
 
-            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id',$validated['id'])->firstOrFail()->competition_date_earliest->competition_date;
+            $competition->global_registration_date = $request->global_registration_date;
+            $competition->competition_start_date = $request->competition_start_date;
+            $competition->competition_end_date = $request->competition_end_date;
+            $competition->competition_mode = $request->competition_mode;
+            $competition->difficulty_group_id = $request->difficulty_group_id;
 
-            !isset($validated['alias']) ?: $competition->alias = $validated['alias'];
-            !isset($validated['name']) ?: $competition->alias = $validated['name'];
-
-            $competition->global_registration_date = $validated['global_registration_date'];
-            $competition->competition_start_date = $validated['competition_start_date'];
-            $competition->competition_end_date = $validated['competition_end_date'];
-            $competition->competition_mode = $validated['competition_mode'];
-            $competition->difficulty_group_id = $validated['difficulty_group_id'];
-
-            switch($validated['competition_mode']) { //update organization competition mode based on the competition's level competition mode
+            switch($request->competition_mode) {
+                //update organization competition mode based on the competition's level competition mode
                 case 0:
-                    CompetitionOrganization::where('competition_id',$validated['id'])->whereIn('competition_mode',[1,2])->update(['competition_mode' => 0, 'updated_at' => date("Y-m-d",strtotime(('now')))]);
+                    CompetitionOrganization::where('competition_id', $competition->id)
+                        ->whereIn('competition_mode',[1,2])
+                        ->update([
+                            'competition_mode'  => 0,
+                            'updated_at'        => now()
+                        ]);
                     break;
                 case 1:
-                    CompetitionOrganization::where('competition_id',$validated['id'])->whereIn('competition_mode',[0,2])->update(['competition_mode' => 1, 'updated_at' => date("Y-m-d",strtotime(('now')))]);
+                    CompetitionOrganization::where('competition_id', $competition->id)
+                        ->whereIn('competition_mode',[0,2])
+                        ->update([
+                            'competition_mode'  => 1, 
+                            'updated_at'        => now()
+                        ]);
                     break;
             }
 
-            if($earliestOrganizationCompetitionDate < date('Y-m-d', strtotime('now'))) //don't allow to update grades if organization earliest competition date is >= today
-            {
-                $competition->allowed_grades = $validated['allowed_grades'];
+            if(isset($earliestOrganizationCompetitionDate)) {
+              if($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
+              {
+                $competition->allowed_grades = $request->allowed_grades;
+              }
             }
-
             $competition->save();
 
             return response()->json([
-                "status" => 200,
-                "message" => "Competition update successful",
+                "status"    => 200,
+                "message"   => "Competition update successful",
             ]);
 
         }
         catch(ModelNotFoundException $e){
             // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "Competition create unsuccessful" ,
-            ]);
+                "status"    => 500,
+                "message"   => "Competition create unsuccessful",
+            ], 500);
         }
     }
 
@@ -213,7 +194,7 @@ class CompetitionController extends Controller
                     break;
             }
 
-            $competitionCollection = $competitionModel->filter()->get()->filter(function ($row) {
+            $competitionCollection = $competitionModel->get()->filter(function ($row) {
                 return count($row['competitionOrganization']) > 0;
             });
 
@@ -251,6 +232,16 @@ class CompetitionController extends Controller
                 "message" => "competition list retrieve unsuccessful"
             ]);
         }
+    }
+
+    public function show(Competition $competition)
+    {
+        $data = $competition->load('rounds.levels', 'competitionOrganization', 'taskDifficultyGroup', 'taskDifficulty');
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Competition retrieved successfully",
+            "data"      => $data
+        ]); 
     }
 
     public function delete (Request $request) {
@@ -307,7 +298,8 @@ class CompetitionController extends Controller
             "rounds.*.default_award_points" => "integer|nullable",
             "rounds.*.levels" => "array|required",
             "rounds.*.levels.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active'), new CheckExistinglevelCollection],
+            // "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active'), new CheckExistinglevelCollection],
+            "rounds.*.levels.*.collection_id" => ["integer","nullable",Rule::exists('collection','id')->where('status','active')],
             "rounds.*.levels.*.grades" => "array|required",
             "rounds.*.levels.*.grades.*" => ["required","integer",new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
         ]);
@@ -346,7 +338,7 @@ class CompetitionController extends Controller
         } catch(\Exception $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Add rounds to competition unsuccessful"
+                "message" => "Add rounds to competition unsuccessful - " .$e
             ]);
         }
     }
@@ -1035,7 +1027,7 @@ class CompetitionController extends Controller
         $competition_id = implode("",$request->validate(['competition_id' => ["required","integer",Rule::exists("competition","id")->where("status","active")],]));
         $competitionLevelIndexNo = Competition::find($competition_id)->participants->whereIn('grade',$levelGrades)->pluck('index_no')->toArray();
 
-        $tasks = $level->collection->sections->pluck('tasks')->flatten()->toArray();
+        $tasks = Arr::flatten($level->collection->sections->pluck('tasks')->toArray());
         $tasksCount = count($tasks);
 
         $validate = $request->validate(
@@ -1054,6 +1046,7 @@ class CompetitionController extends Controller
             $participant_index = $participant['index_number'];
 
             return collect($participant['answers'])->map(function ($answers,$index)  use($level_id,$tasks,$participant_index) {
+              
                 return [
                     'level_id' => $level_id,
                     'task_id' => $tasks[$index],
@@ -1070,7 +1063,10 @@ class CompetitionController extends Controller
         try {
             DB::beginTransaction();
             ParticipantsAnswer::whereIn('participant_index',$submittedParticipantIndex)->delete();
-            ParticipantsAnswer::insert($insert);
+            foreach (array_chunk($insert,100) as $t) {
+              ParticipantsAnswer::insert($t);
+            }
+            
             DB::commit();
 
             return response()->json([
@@ -1081,30 +1077,30 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful' .$e
+                "message" => 'students answers uploaded unsuccessful' . $e->getMessage()
             ]);
         }
     }
 
-    public function report(Competition $competition)
+    public function omar_report(Competition $competition)
     {
         $levelIds = $competition->rounds()->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
-            ->pluck('competition_levels.id');
+            ->pluck('competition_levels.id')->toArray();
 
         $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)
-            ->join('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-            ->join('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-            ->join('competition', 'competition.id', 'competition_rounds.competition_id')
-            ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-            ->join('schools', 'participants.school_id', 'schools.id')
-            ->join('all_countries', 'all_countries.id', 'participants.country_id')
-            ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-            ->join('organization', 'organization.id', 'competition_organization.organization_id')
+            ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+            ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+            ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
+            ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+            ->leftJoin('schools', 'participants.school_id', 'schools.id')
+            ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
+            ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+            ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
             ->select(
                 DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
                 DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
                 DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
-                DB::raw("CONCAT('\"', competition_levels.name, '\"') AS country"),
+                DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
                 'participants.grade',
                 DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
                 'participants.index_no as index',
@@ -1113,24 +1109,23 @@ class CompetitionController extends Controller
                 DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
                 'competition_participants_results.school_rank',
                 'competition_participants_results.country_rank',
-                'competition_participants_results.group_rank',
-                'competition_participants_results.global_rank'
-            )->distinct('index')->orderBy('points', 'DESC')->get();
+                'competition_participants_results.award_rank',
+                DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
+            )
+            ->distinct('index')->orderBy('points', 'DESC')->get();
 
         return $data;
     }
 
-    public function Old_report (Request $request) {
+    public function report (Competition $competition) {
 
-        $competition_id = $request->validate([
+      $competition_id = $competition->id;
+/**        $competition_id = $request->validate([
             'competition_id' => ['required','integer',Rule::exists('competition','id')->where('status','active')]
         ])['competition_id'];
 
         $query = DB::select( DB::raw("SELECT competition.name as competition, organization.name as organization,all_countries.display_name as country, competition_levels.name as level, competition_levels.id as level_id, participants.grade, schools.name as school, participants.index_no,participants.name, competition_participants_results.points, competition_rounds_awards.name as award FROM `competition_participants_results`
-                 LEFT JOIN competition_levels
-                 ON competition_levels.id = competition_participants_results.competition_levels_id
-                 LEFT JOIN competition_rounds
-                 ON competition_rounds.id = competition_levels.round_id
+               ON competition_rounds.id = competition_levels.round_id
                  LEFT JOIN competition
                  ON competition.id = competition_rounds.competition_id
                  LEFT JOIN participants
@@ -1147,10 +1142,35 @@ class CompetitionController extends Controller
                  ON competition_rounds_awards.id = competition_participants_results.award_id
                  WHERE competition.id = " . $competition_id . "
                  ORDER BY `competition_levels`.`id`, `competition_participants_results`.`award_id`, `competition_participants_results`.`points` DESC"));
-
+**/
+        $query = DB::select( DB::raw("
+           SELECT CONCAT('\"',competition.name,'\"') as competition, CONCAT('\"',organization.name,'\"') as organization,CONCAT('\"',all_countries.display_name,'\"') as country, CONCAT('\"',competition_levels.name,'\"') as level, competition_levels.id as level_id, participants.grade, CONCAT('\"',schools.name,'\"') as school, CONCAT('\"',tuition_school.name,'\"') as tuition_centre, participants.index_no, CONCAT('\"',participants.name,'\"') as name, participants.certificate_no, competition_participants_results.points, CONCAT('\"',competition_participants_results.award,'\"') as award FROM `competition_participants_results`
+                 LEFT JOIN competition_levels
+                 ON competition_levels.id = competition_participants_results.level_id
+                 LEFT JOIN competition_rounds
+                 ON competition_rounds.id = competition_levels.round_id
+                 LEFT JOIN competition
+                 ON competition.id = competition_rounds.competition_id
+                 LEFT JOIN participants
+                 ON participants.index_no = competition_participants_results.participant_index
+                 LEFT JOIN competition_organization
+                 ON competition_organization.id = participants.competition_organization_id
+                 LEFT JOIN organization
+                 ON organization.id = competition_organization.organization_id
+                 LEFT JOIN schools
+                 ON participants.school_id = schools.id
+                 LEFT JOIN schools as tuition_school
+                 ON participants.tuition_centre_id = tuition_school.id
+                 LEFT JOIN all_countries
+                 ON all_countries.id = schools.country_id
+                 WHERE competition.id = ".$competition_id."
+                 ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
+        "));
+      
         $filename = 'report.csv';
+        $output = [];
         $fp = fopen(public_path().'/'.$filename, 'w');
-        $header = ['competition','organization','country','level','grade','school','index','participant','points','award','school_rank','country_rank','global rank'];
+        $header = ['competition','organization','country','level','grade','school','tuition','index','participant','certificate number','points','award','school_rank','country_rank','global rank'];
         $array = json_decode(json_encode($query), true);
         $participants = [];
 
@@ -1214,16 +1234,17 @@ class CompetitionController extends Controller
         });
 
         collect($array)->each(function ($row) use(&$noAwards,&$awards) { // seperate participant with/without award
-            if($row['award'] !== null) {
+            if($row['award'] !== 'NULL') {
                 $awards[] = $row;
             } else {
                 $noAwards[] = $row;
             }
         });
-
-        collect($awards)->each(function ($fields,$index) use($fp,$header,$array,&$participants,&$currentLevel,&$noAwards,&$currentAward,&$currentPoints,&$globalRank,&$counter) {
+      
+        collect($awards)->each(function ($fields,$index) use($fp,&$output,$header,$array,&$participants,&$currentLevel,&$noAwards,&$currentAward,&$currentPoints,&$globalRank,&$counter) {
 
             if($index == 0) {
+                $output[] = $header;
                 fputcsv($fp, $header);
                 $globalRank = 1;
                 $counter = 1;
@@ -1250,16 +1271,20 @@ class CompetitionController extends Controller
             $currentLevel = $fields['level_id'];
             $participants[$fields['index_no']]['global_rank'] = $fields['award'] .' '.$globalRank;
             unset($participants[$fields['index_no']]['level_id']);
+            $output[] = $participants[$fields['index_no']];
             fputcsv($fp, $participants[$fields['index_no']]);
             $counter++;
         });
 
-        foreach ($noAwards as $row) {
-            unset($participants[$row['index_no']]['level_id']);
-            $participants[$row['index_no']]['global_rank'] = '';
-            fputcsv($fp, $participants[$row['index_no']]);
+        if(isset($noAwards)) {
+           foreach ($noAwards as $row) {
+              unset($participants[$row['index_no']]['level_id']);
+              $participants[$row['index_no']]['global_rank'] = '';
+              $output[] = $participants[$row['index_no']];
+              fputcsv($fp, $participants[$row['index_no']]);
+          }
         }
-
+      
         fclose($fp);
 
         DB::beginTransaction();
@@ -1273,7 +1298,7 @@ class CompetitionController extends Controller
 
         DB::commit();
 
-        if (file_exists(public_path().'/'.$filename)) {
+        /**if (file_exists(public_path().'/'.$filename)) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
@@ -1283,23 +1308,32 @@ class CompetitionController extends Controller
             header('Content-Length: ' . filesize($filename));
             readfile($filename);
             exit;
-        }
+        }**/
+   
+      return $output;
     }
 
     private function addDifficultyGroup ($collection_id,$competition_level) {
-        $insert = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->flatten()->map(function ($item) {
-            return ["task_id" => $item];
-        })->toArray();
+        $insert = Arr::collapse(CollectionSections::where('collection_id',$collection_id)->get()->pluck('tasks')->flatten()->map(function ($item) {
+             
+            $mapped = Arr::map(Arr::flatten($item->toArray()), function ($value, $key) {
+                 return ['task_id' => $value];
+            });
+          
+            return $mapped;
+          
+        })->toArray());
+      
 
         return $competition_level->taskDifficultyGroup()->createMany($insert);
     }
 
     private function addTaskMark ($collection_id,$competition_level)
     {
-        $tasks_id = CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->flatten()->toArray();
-
+        $tasks_id = Arr::flatten(CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->toArray());
+      
         $insert = Tasks::with(['taskAnswers' => function($query) {
-            $query->where('lang_id',env('APP_DEFAULT_LANG'))->whereNotNull('answer');
+           return $query->whereNotNull('answer');
         }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
             if(in_array($items->answer_structure,['group','sequence'])) {
                 return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];

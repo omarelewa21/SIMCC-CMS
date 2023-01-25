@@ -55,4 +55,16 @@ class ParticipantsAnswer extends Model
         $minMarks = CompetitionTasksMark::whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
         return $minMarks ? $minMarks : 0;
     }
+
+    public function getIsCorrectAnswerAttribute(): bool
+    {
+        $taskAnswer = $this->getAnswer();
+        if(is_null($taskAnswer)){
+            return false;
+        }
+        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
+            return true;
+        }
+        return false;
+    }
 }

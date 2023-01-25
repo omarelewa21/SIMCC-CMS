@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class CollectionHelper
 {
@@ -41,17 +42,18 @@ class CollectionHelper
         ));
     }
 
-    static function searchCollection ($searchTerm, $collection, $availForSearch,$limit) {
+    static function searchCollection ($searchTerm, $collection, $availForSearch, $limit) {
         if(!empty($searchTerm)) {
 
             $userList = self::paginate(collect($collection)
                 ->filter(function ($row) use ($searchTerm, $availForSearch) {
 
-                    $r = collect($availForSearch)->map(function ($item) use($row) {
-                        return $row[$item];
-                    });
+                    return collect($availForSearch)->map(
+                        fn($item)=> $row[$item]
+                    )->contains(
+                        fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower($searchTerm)) : false
+                    );
 
-                    return in_array($searchTerm, $r->toArray());
                 }), $limit);
         } else {
             $userList = CollectionHelper::paginate($collection, $limit);

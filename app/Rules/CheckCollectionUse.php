@@ -4,22 +4,11 @@ namespace App\Rules;
 
 use App\Models\Collections;
 use Illuminate\Contracts\Validation\Rule;
-use App\Models\CompetitionLevels;
 use App\Helpers\General\CollectionCompetitionStatus;
 
 class CheckCollectionUse implements Rule
 {
-    protected $message;
-
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        //
-    }
+    protected string $message;
 
     /**
      * Determine if the validation rule passes.
@@ -30,21 +19,17 @@ class CheckCollectionUse implements Rule
      */
     public function passes($attribute, $value)
     {
-        if(Collection::where('id',$value)->count() == 0) {
-            $this->message = 'The selected collection id is invalid.';
+        if( Collections::whereId($value)->doesntExist() ){
+            $this->message = "The selected collection {$value} is invalid.";
             return false;
         }
 
-        $activeCompetition = CollectionCompetitionStatus::CheckStatus($value,'active');
-
-        if($activeCompetition > 0)
-        {
+        if( CollectionCompetitionStatus::CheckStatus($value, 'active') ){
             $this->message = 'The selected collection id is in use with active competition.';
             return false;
         }
 
         return true;
-
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Support\Arr;
 
 class Collections extends Base
 {
@@ -22,9 +23,14 @@ class Collections extends Base
         'created_by',
         'last_modified_by',
         'competitions',
-        'Moderators'
+        'Moderators',
+        'allow_delete',
+        'allow_update_sections',
     );
 
+    public function taskTags() {
+        return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
+    }
 
     public function moderation () {
         return $this->morphMany(Moderation::class, 'moderation')->limit(5);
@@ -57,5 +63,28 @@ class Collections extends Base
             $user = array($item->user->name . ' - ' .  $item->user->roles->first()->name);
         });
         return $user;
+    }
+
+    public function getAllowDeleteAttribute()
+    {
+        return $this->allowedToDelete();
+    }
+
+    public function getAllowUpdateSectionsAttribute()
+    {
+        return $this->allowedToUpdateAll();
+    }
+
+    public function allowedToUpdateAll(): bool
+    {
+        if(!is_null($this->levels)){
+            return ParticipantsAnswer::where('level_id', $this->levels->id)->doesntExist();
+        }
+        return true;
+    }
+
+    public function allowedToDelete(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)->doesntExist();
     }
 }

@@ -13,6 +13,7 @@ class ComputeLevelCustom
     private $level;
     private $participantsAnswersGrouped;
     private $awards;
+    private $awardsRankArray;
 
     function __construct(CompetitionLevels $level)
     {
@@ -23,6 +24,9 @@ class ComputeLevelCustom
                 ->orderBy('points', 'DESC')->get();
 
         $this->awards = $this->level->rounds->roundsAwards;
+        $this->awardsRankArray = collect(['PERFECT SCORER'])
+            ->merge($this->awards->pluck('name'))
+            ->push($this->level->rounds->default_award_name);
     }
 
     public static function validateLevelForComputing(CompetitionLevels $level)
@@ -45,17 +49,21 @@ class ComputeLevelCustom
         $this->setParticipantsGroupRank();
         $this->setParticipantsCountryRank();
         $this->setParticipantsSchoolRank();
-        $this->setParticipantsGlobalRank();
         $this->setParticipantsAwards();
+        $this->setParticipantsAwardsRank();
+        $this->setParticipantsGlobalRank();
+        $this->setParticipantsReportColumn();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
     public function computeParticipantAnswersScores()
     {
         DB::transaction(function(){
-            $this->level->participantsAnswersUploaded->each(function($participantAnswer){
-                $participantAnswer->score = $participantAnswer->getAnswerMark();
-                $participantAnswer->save();
+            $this->level->participantsAnswersUploaded->append('is_correct_answer')
+                ->each(function($participantAnswer){
+                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute();
+                    $participantAnswer->score = $participantAnswer->getAnswerMark();
+                    $participantAnswer->save();
             });
             $this->updateComputeProgressPercentage(20);
         });
@@ -82,7 +90,7 @@ class ComputeLevelCustom
     {
         if($percentage === 100){
             $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
-            return;            
+            return;
         }
         $this->level->setAttribute('compute_progress_percentage', $percentage);
         $this->level->save();
@@ -97,12 +105,13 @@ class ComputeLevelCustom
                 })->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index=>$participantResult){
+                $participantResult->setAttribute('group_id', $group->id);
                 if($index === 0){
                     $participantResult->setAttribute('group_rank', $index+1);
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('group_rank', $participantResults[$index-1]->group_rank);
                 }else{
-                    $participantResult->setAttribute('group_rank', $participantResults[$index-1]->group_rank+1);
+                    $participantResult->setAttribute('group_rank', $index+1);
                 }
                 $participantResult->save();
             }
@@ -127,12 +136,12 @@ class ComputeLevelCustom
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank);
                 }else{
-                    $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank+1);
+                    $participantResult->setAttribute('country_rank', $index+1);
                 }
                 $participantResult->save();
             }
         });
-        $this->updateComputeProgressPercentage(60);
+        $this->updateComputeProgressPercentage(50);
     }
 
     protected function setParticipantsSchoolRank()
@@ -140,7 +149,7 @@ class ComputeLevelCustom
         $schoolIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->join('participants', 'competition_participants_results.participant_index', 'participants.index_no')
             ->select('participants.school_id')->distinct()->pluck('school_id');
-        
+
         $schoolIds->each(function($schoolId){
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->whereRelation('participant', 'school_id', $schoolId)
@@ -152,32 +161,12 @@ class ComputeLevelCustom
                 }elseif($participantResult->points === $participantResults[$index-1]->points){
                     $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank);
                 }else{
-                    $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank+1);
+                    $participantResult->setAttribute('school_rank', $index+1);
                 }
                 $participantResult->save();
             }
         });
-        $this->updateComputeProgressPercentage(70);
-    }
-
-    protected function setParticipantsGlobalRank()
-    {
-        $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->orderBy('points', 'DESC')->get();
-
-        foreach($participantResults as $index=>$participantResult){
-            if($index === 0){
-                $participantResult->setAttribute('global_rank', $index+1);
-            }elseif($participantResult->points === $participantResults[$index-1]->points){
-                $participantResult->setAttribute('global_rank', $participantResults[$index-1]->global_rank);
-            }else{
-                $participantResult->setAttribute('global_rank', $index+1);
-            }
-            $participantResult->save();
-            $participantResult->participant->setAttribute('status', 'result computed');
-            $participantResult->participant->save();
-        }
-        $this->updateComputeProgressPercentage(80);
+        $this->updateComputeProgressPercentage(60);
     }
 
     protected function setParticipantsAwards()
@@ -190,41 +179,131 @@ class ComputeLevelCustom
                 'ref_award' => 'PERFECT SCORER'
             ]);
 
-        // Set participants awards 
-        $this->awards->each(function($award){
-            $count =  CompetitionParticipantsResults::where('level_id', $this->level->id)->whereNull('award')->count();
-            $limit = ceil(($award->percentage / 100) * $count);
-            CompetitionParticipantsResults::where('level_id', $this->level->id)->whereNull('award')
-                ->orderBy('points', 'DESC')->limit($limit)
-                ->update([
-                    'award'     => $award->name,
-                    'ref_award' => $award->name
-                ]);
-            $this->updateParticipantsWhoShareSamePointsAsLastParticipant($award->name);
-        });
+        // Set participants awards
+        $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->select('group_id')->distinct()->pluck('group_id')->toArray();
+        foreach($groupIds as $group_id){
+            $count = CompetitionParticipantsResults::where('level_id', $this->level->id)
+                ->where('group_id', $group_id)->whereNull('award')->count();
 
-        // Set default award
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->whereNull('award')
-            ->update([
-                'award'     => $this->level->rounds->default_award_name,
-                'ref_award' => $this->level->rounds->default_award_name
-            ]);
+            $totalCount = $count;
+            $awardPercentage = 0;
 
-        $this->updateComputeProgressPercentage(100);
+            $this->awards->each(function($award) use($group_id,$totalCount,&$count,&$awardPercentage){
+                $awardPercentage += $award->percentage;
+                $percentileCutoff = 100 - $awardPercentage;
+
+                for($count;$count>0;$count--) {
+                    $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
+                    if($positionPercentile >= $percentileCutoff) {
+                        CompetitionParticipantsResults::where('level_id', $this->level->id)
+                            ->where('group_id', $group_id)
+                            ->whereNull('award')
+                            ->orderBy('points', 'DESC')
+                            ->limit(1)
+                            ->update([
+                                'award'     => $award->name,
+                                'ref_award' => $award->name,
+                                'percentile' => $positionPercentile,
+                            ]);
+                    }
+                    else
+                    {
+                        $updatedCount = $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name, $totalCount, $count);
+                        $count = $updatedCount;
+                        break;
+                    }
+                }
+
+            });
+
+            // Set default award
+            for($count;$count>0;$count--)
+            {
+                $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
+                CompetitionParticipantsResults::where('level_id', $this->level->id)
+                    ->where('group_id', $group_id)
+                    ->whereNull('award')
+                    ->orderBy('points', 'DESC')
+                    ->limit(1)
+                    ->update([
+                        'award'     => $this->level->rounds->default_award_name,
+                        'ref_award' => $this->level->rounds->default_award_name,
+                        'percentile' => $positionPercentile,
+                    ]);
+
+                $this->updateComputeProgressPercentage(70);
+            }
+        }
+
     }
 
-    private function updateParticipantsWhoShareSamePointsAsLastParticipant(string $awardName)
+    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName, int $totalCount, int $currentCount)
     {
-        $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)->where('award', $awardName)
+        $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $group_id)
+            ->where('award', $awardName)
             ->orderBy('points')->value('points');
 
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
+        $competitionParticipantsQuery =  CompetitionParticipantsResults::where('level_id', $this->level->id)->where('group_id', $group_id)
             ->where('points', $lastParticipantPoints)
-            ->update([
-                'award'     => $awardName,
-                'ref_award' => $awardName
-            ]);
+            ->whereNull('award');
+
+        $competitionParticipantsQuery->get()
+            ->each(function ($row,$index) use($totalCount, &$currentCount, $competitionParticipantsQuery, $awardName ) {
+                CompetitionParticipantsResults::find($row->id)->update([
+                    'award'     => $awardName,
+                    'ref_award' => $awardName,
+                    'percentile' => number_format(($currentCount / $totalCount) * 100, 2, '.', ''),
+                ]);
+                $currentCount--;
+            });
+
+        return $currentCount;
+    }
+
+    public function setParticipantsAwardsRank()
+    {
+        $this->awardsRankArray->each(function($award, $key){
+            CompetitionParticipantsResults::where('level_id', $this->level->id)
+                ->where('award', $award)
+                ->update([
+                    'award_rank' => $key+1
+                ]);
+        });
+        $this->updateComputeProgressPercentage(80);
+    }
+
+    protected function setParticipantsGlobalRank()
+    {
+        $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->orderBy('points', 'DESC')->get();
+
+        foreach($participantResults as $index=>$participantResult){
+            if($index === 0){
+                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
+            }elseif($participantResult->points === $participantResults[$index-1]->points){
+                $participantResult->setAttribute('global_rank', $participantResults[$index-1]->global_rank);
+            }else{
+                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
+            }
+            $participantResult->save();
+            $participantResult->participant->setAttribute('status', 'result computed');
+            $participantResult->participant->save();
+        }
+        $this->updateComputeProgressPercentage(90);
+    }
+
+    protected function setParticipantsReportColumn()
+    {
+        $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->orderBy('points', 'DESC')->get();
+        $participantResults->each(function($participantResult){
+            $report = new ParticipantReportService($participantResult->participant, $this->level);
+            $participantResult->setAttribute('report', $report->getJsonReport());
+            $participantResult->save();
+        });
+        $this->updateComputeProgressPercentage(100);
     }
 
     protected function updateParticipantsAbsentees(array $attendeesIds)

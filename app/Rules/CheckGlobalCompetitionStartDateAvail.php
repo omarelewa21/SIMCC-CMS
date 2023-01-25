@@ -2,30 +2,24 @@
 
 namespace App\Rules;
 
+use App\Models\Competition;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionOrganizationDate;
 use Illuminate\Contracts\Validation\Rule;
-use Illuminate\Contracts\Validation\DataAwareRule;
 
-class CheckGlobalCompetitionStartDateAvail implements Rule,DataAwareRule
+class CheckGlobalCompetitionStartDateAvail implements Rule
 {
-    protected $data = [];
     protected $message =[];
+    protected Competition $competition;
 
-    public function setData($data)
-    {
-        $this->data = $data;
-
-        return $this;
-    }
     /**
      * Create a new rule instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Competition $competition)
     {
-        //
+        $this->competition = $competition;
     }
 
     /**
@@ -37,8 +31,7 @@ class CheckGlobalCompetitionStartDateAvail implements Rule,DataAwareRule
      */
     public function passes($attribute, $value)
     {
-
-        $competition_id = $this->data['id'];
+        $competition_id = $this->competition->id;
         $partnerCompetitonIds = CompetitionOrganization::where('competition_id',$competition_id)->pluck('id')->toArray();
         $count = CompetitionOrganizationDate::whereIn('competition_organization_id',$partnerCompetitonIds)->orderBy('competition_date')->count();
         if($count == 0) {

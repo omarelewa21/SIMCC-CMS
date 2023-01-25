@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Models\DomainsTags;
 use App\Rules\CheckDomainTagsExist;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\UpdateTagStatusRequest;
 
 class DomainsTagsController extends Controller
 {
@@ -208,72 +209,61 @@ class DomainsTagsController extends Controller
         }
     }
 
-    public function delete (Request $request) {
-        return $this->_updateStatus($request,"deleted", "deleted");
-    }
-
-    public function approve (Request $request) {
-        return $this->_updateStatus($request,"active", "active,deleted");
-    }
-
-    private function _updateStatus ($request, $status, $exclude) {
-
-        // {"id" : [xx,xx,xx]}
-        $validated = $request->validate([
-            "id" => "array",
-            "id.*" => "required|integer|exists:domains_tags,id",
-        ]);
-
-        $userid = auth()->user()->id;
-
-        if(Route::currentRouteName() == "approveTag")
-        {
-            $update["approved_by_userid"] = $userid;
-            $update['status'] = 'active';
-        }
-
-        if(Route::currentRouteName() == "deleteTag") {
-            $userid = auth()->user()->id;
-            $update = ["status" => $status];
-        }
-
-        $update["last_modified_userid"] = $userid;
+    public function delete(UpdateTagStatusRequest $request)
+    {
+        DB::beginTransaction();
 
         try {
-            DB::beginTransaction();
-
-            // Start the transaction
-            $domainTags =  DB::table("domains_tags")
-                ->whereIn("id", $validated["id"])
-                ->whereNotIn ("status",[$exclude]);
-
-            $result = $domainTags->update($update);
-
-            if($result != count($request->id))
-            {
-                DB::rollback();
-
-                return response()->json([
-                    "status" => 500,
-                    "message" => "$status unsuccessful"
+            DomainsTags::whereIn('id', $request->id)
+                ->update([
+                    'status'                => 'deleted',
+                    'last_modified_userid'  => auth()->user()->id
                 ]);
-            }
+            DomainsTags::whereIn('id', $request->id)->delete();
 
-            DB::commit();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "Tag status update successful"
-            ]);
-
-        } catch(QueryException $e) {
+        } catch (\Exception $e) {
             DB::rollback();
-
             return response()->json([
-                "status" => 500,
-                "message" => "Tag status update unsuccessful" ,
-            ]);
+                "status"    => 500,
+                "message"   => "delete unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "Tag status update successful"
+        ]);       
+    }
+
+    public function approve(UpdateTagStatusRequest $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            DomainsTags::whereIn("id", $request->id)
+                ->whereNotIn("status", ["active", "deleted"])
+                ->update([
+                    'approved_by_userid'    => auth()->user()->id,
+                    'last_modified_userid'  => auth()->user()->id,
+                    'status'                => 'active'
+                ]);
+
+        } catch(\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tag status update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "Tag status update successful"
+        ]);
     }
 }
 

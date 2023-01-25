@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\MarkingController;
 
 
 Route::post("login",[UserController::class,"login"]);
+Route::get("participant/report/by-certificate",[ParticipantsController::class,"performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
 
 Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], function () {
 
@@ -92,12 +93,14 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("",[ParticipantsController::class,"update"])->name('participant.update');
         Route::delete("",[ParticipantsController::class,"delete"])->name('participant.delete');
         Route::patch("/swapIndex",[ParticipantsController::class,"swapIndex"])->name('participant.swapIndex');
+        Route::get("report",[ParticipantsController::class,"performanceReportWithIndex"])->name('participant.report');
     });
 
     Route::group(["prefix" => "competition"],function () {
         Route::post("",[CompetitionController::class,"create"])->name('competition.create');
         Route::get("",[CompetitionController::class,"list"])->name('competition.list');
-        Route::patch("",[CompetitionController::class,"update"])->name('competition.update');
+        Route::get("/{competition}",[CompetitionController::class,"show"])->name('competition.show');
+        Route::patch("/edit-settings/{competition}",[CompetitionController::class,"update"])->name('competition.update');
         Route::delete("",[CompetitionController::class,"delete"])->name('competition.delete');
         Route::post("/upload_answers",[CompetitionController::class,"upload_answers"])->name('competition.upload_answers');
         Route::get("/difficultyandpoints",[AssignDifficultyPointsController::class,"list"])->name('competition.difficultyandpoints.list');
@@ -139,6 +142,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("recommendation",[TasksController::class,"update_recommendation"])->name('task.update.recommendation');
         Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
         Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
+        Route::delete("",[TasksController::class,"delete"])->name('task.delete');
     });
 
     Route::group(["prefix" => "collection"], function () {

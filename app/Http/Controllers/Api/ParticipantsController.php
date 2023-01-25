@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Custom\ParticipantReportService;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\CompetitionOrganization;
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\ParticipantReportRequest;
+use App\Http\Requests\ParticipantReportWithCertificateRequest;
+use App\Models\CompetitionLevels;
+use App\Models\CompetitionParticipantsResults;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
@@ -26,6 +31,8 @@ use App\Rules\CheckOrganizationCompetitionValid;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckDeleteParticipant;
 use App\Rules\CheckCompetitionEnded;
+use Exception;
+
 class ParticipantsController extends Controller
 {
     public function create (Request $request) {
@@ -41,7 +48,7 @@ class ParticipantsController extends Controller
             "participant.*.competition_id" => ["required","integer","exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
             "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
-            "participant.*.name" => "required|regex:/^[\/\'\;\@\\\.\s\(\)\[\]\w-]*$/",
+            "participant.*.name" => "required|regex:/^[\/\,\'\;\@\\\.\s\(\)\[\]\w-]*$/",
             "participant.*.class" => "required|max:255|nullable",
             "participant.*.grade" => ["required","integer",new CheckCompetitionAvailGrades],
             "participant.*.for_partner" => "required|boolean",
@@ -101,9 +108,10 @@ class ParticipantsController extends Controller
                 $temp = str_pad($CountryCode,3,"0",STR_PAD_LEFT).substr( date("y"), -2). $private;
 
                 /*Generate index no.*/
-                $country = Countries::find($country_id);
+                //$country = Countries::find($country_id);
+                $country = Countries::where(['dial'=>$CountryCode,'update_counter'=>1])->first();
                 $currentYear = substr( date("y"), -2);
-                $indexNo = $private ? $CountryCode . $currentYear . '1000001' : $CountryCode . $currentYear . '0000001';
+                $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
 
                 if($private) {
                     $counter = $country->private_participant_counter;
@@ -130,7 +138,7 @@ class ParticipantsController extends Controller
 
                     if($counter){
                         $counterYear = substr($counter,0,2);
-
+                      
                         if(intval($currentYear) > intval($counterYear)) {
                             $country->participant_counter = $indexNo;
                         }
@@ -160,7 +168,8 @@ class ParticipantsController extends Controller
                 }
 
                 //Generate Certificate No.
-                $latestIndex = Participants::orderBy('id','desc')->first()->id;
+                $latestIndex = Participants::orderBy('id','desc')->first()->id + 19522;
+
                 $toNextLetterCounter = floor($latestIndex / 1000000);
                 $startLetter = function () use($toNextLetterCounter) {
                     $letter = 'A';
@@ -171,13 +180,13 @@ class ParticipantsController extends Controller
                     };
                     return $letter;
                 };
-                $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + 1),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + 1),7,"0",STR_PAD_LEFT);
-
+                $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_LEFT);
+               
                 $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
                 $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
                 $row["country_id"] = $country_id;
                 $row["created_by_userid"] =  auth()->user()->id; //assign entry creator user id
-                $row["index_no"] = str_pad($indexNo,12,"0",STR_PAD_LEFT);
+                $row["index_no"] = str_pad($CountryCode.$indexNo,12,"0",STR_PAD_LEFT);
                 $row["certificate_no"] = $certificateNumber;
                 $row["passkey"] = Str::random(8);
                 $row["password"] = Hash::make($row["passkey"]);
@@ -214,7 +223,7 @@ class ParticipantsController extends Controller
         catch(QueryException $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Create Participants unsuccessful",
+                "message" => "Create Participants unsuccessful" .$e, 
             ]);
         }
     }
@@ -257,7 +266,8 @@ class ParticipantsController extends Controller
                 'competition.name as competition_name',
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
-                'organization.name as organization_name'
+                'organization.name as organization_name',
+                'competition_participants_results.award',
             )
             ->selectRaw("CONCAT_WS(' ',created_user.username,DATE_FORMAT(participants.created_at,'%d/%m/%Y')) as created_by")
             ->selectRaw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by");
@@ -734,6 +744,62 @@ class ParticipantsController extends Controller
                 "status" => 500,
                 "message" => "Participants index number swap unsuccessful"
             ]);
+        }
+    }
+
+    public function performanceReportWithIndex(ParticipantReportRequest $request)
+    {
+        try {
+            $report = CompetitionParticipantsResults::where([
+                ['level_id', $request->level_id], ['participant_index', $request->participant_index]
+            ])->value('report');
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Report generated successfully",
+                "data"      => $report
+            ]);
+
+            // $participant = Participants::where('index_no', $request->participant_index)->firstOrFail();
+            // $level = CompetitionLevels::findOrFail($request->level_id);
+            // $report = new ParticipantReportService($participant, $level);
+            // return response()->json([
+            //     "status"                        => 200,
+            //     "message"                       => "Report generated successfully",
+            //     "general_data"                  => $report->getGeneralData(),
+            //     "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
+            //     "performance_by_topics"         => $report->getPerformanceByTopicsData(),
+            //     "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
+            //     "analysis_by_questions"         => $report->getAnalysisByQuestionsDataProcessed(),
+            // ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Report generation is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
+    {
+        try {
+            $report = CompetitionParticipantsResults::where('participant_index', $request->index_no)
+                ->value('report');
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Report generated successfully",
+                "data"      => $report
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Report generation is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 }

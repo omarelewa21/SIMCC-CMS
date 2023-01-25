@@ -15,6 +15,15 @@ class TasksAnswers extends Model
 
     public $timestamps = false;
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::deleting(function($task_answer) {
+            $task_answer->taskLabels()->delete();
+        });
+    }
+
     public function task () {
         return $this->belongsTo(Tasks::class,'task_id','id');
     }

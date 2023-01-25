@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class Tasks extends Base
 {
@@ -33,8 +34,9 @@ class Tasks extends Base
         'answer_type_id',
         'answer_structure_id',
         'answer_layout_id',
-        'answer_sorting_id'
-
+        'answer_sorting_id',
+        'allow_delete',
+        'allow_update_answer',
     );
     public $hidden = ['updated_at','created_at'];
     private static $whiteListFilter = [
@@ -48,13 +50,33 @@ class Tasks extends Base
     {
         parent::booted();
 
-        static::creating(function($record) {
-            $record->created_by_userid = auth()->user()->id;
+        static::creating(function($task) {
+            $task->created_by_userid = auth()->user()->id;
+        });
+
+        static::deleting(function($task) {
+            $task->taskImage()->delete();
+            
+            DB::table('taggables')->where([
+                ['taggable_type', 'App\Models\Tasks'],
+                ['taggable_id', $task->id],
+            ])->delete();
+
+            DB::table('recommended_difficulty')->where([
+                ['gradeDifficulty_type', 'App\Models\Tasks'],
+                ['gradeDifficulty_id', $task->id],
+            ])->delete();
+
+            $task->taskContents()->delete();
+
+            foreach($task->taskAnswers as $task_answer){
+                $task_answer->delete();
+            }
         });
     }
 
     public function taskTags() {
-        return $this->morphToMany(DomainsTags::class, 'taggable');
+        return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
     }
 
     public function taskAnswers () {
@@ -171,6 +193,16 @@ class Tasks extends Base
             ->join('');
     }
 
+    public function getAllowDeleteAttribute()
+    {
+        return !self::checkStatusForDeletion($this->id);
+    }
+
+    public function getAllowUpdateAnswerAttribute()
+    {
+        return $this->allowedToUpdateAll();
+    }
+
     public static function applyFilter($query, Request $request)
     {
         if($request->filled("domains") || $request->filled("tags")){
@@ -187,4 +219,13 @@ class Tasks extends Base
         return $query->filter();
     }
 
+    public function allowedToUpdateAll(): bool
+    {
+        return ParticipantsAnswer::where('task_id', $this->id)->doesntExist();
+    }
+
+    public static function checkStatusForDeletion($task_id)
+    {
+        return CollectionSections::where('tasks', 'LIKE', "%$task_id%")->exists();
+    }
 }

@@ -11,12 +11,14 @@ use App\Models\TasksLabels;
 use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
-use App\Rules\CheckAnswerLabelEqual;
-use App\Rules\CheckMissingGradeDifficulty;
-use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\tasks\DeleteTaskRequest;
+use App\Http\Requests\tasks\StoreTaskRequest;
+use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
+use App\Http\Requests\tasks\UpdateTaskContentRequest;
+use App\Http\Requests\tasks\UpdateTaskRecommendationsRequest;
+use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use App\Models\User;
 
 class TasksController extends Controller
@@ -111,7 +113,7 @@ class TasksController extends Controller
                 "status"    => 500,
                 "message"   => "Tasks create was unsuccessful",
                 "error"     => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
@@ -220,7 +222,7 @@ class TasksController extends Controller
 //            dd($taskCollection->toArray());
 //            dd($availForSearch);
 
-            $availForSearch = array("identifier", "title", "description","languages");
+            $availForSearch = array("identifier", "title", "description");
             $taskList = CollectionHelper::searchCollection($searchKey, $taskCollection, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availTaskStatus, 'lang' => $availLang, 'domains' => $availDomainType, 'tags' => $availTagType], 'taskLists' => $taskList);
 
@@ -235,68 +237,47 @@ class TasksController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => $e->getMessage()
-            ]);
+            ], 500);
         }
 
     }
 
-    public function update_settings (Request $request) {
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:tasks,id',
-            'title' => ['required','string',Rule::unique('task_contents','task_title')->where(function ($query) use ($request){
-                return $query->where('task_title', '!=', $request->title);
-            })],
-            'identifier' => 'required|regex:/^[\_\w-]*$/',
-            'tag_id' => 'array|nullable',
-            'tag_id.*' => ['exclude_if:*.tag_id,null','integer', Rule::exists('domains_tags', 'id')->where('status', 'active')],
-            'description' => 'max:255',
-            'solutions' => 'max:255',
-            'image' => 'exclude_if:*.image,null|max:1000000',
-        ]);
-
+    public function update_settings(UpdateTaskSettingsRequest $request)
+    {
         try {
-            $task = Tasks::find($validated['id']);
-            if($validated['identifier'] != $task->identifier) {
-                $task->identifier = $validated['identifier'];
+            $task = Tasks::find($request->id);
+            if($task->allowedToUpdateAll()){
+                $task->identifier = $request->identifier;
+                $task->taskContents->first()->task_title = $request->title;
             }
-            $task->description = $validated['description'];
-            $task->solutions = $validated['solutions'];
-            $task->taskImage()->update(['image_string' => $validated['image']]);
-            $task->taskTags()->sync($validated['tag_id']);
-            $task->taskContents->first()->task_title = $validated['title'];
+            $task->description = $request->description;
+            $task->solutions = $request->solutions;
+            $task->taskImage()->update(['image_string' => $request->image]);
+            $task->taskTags()->sync($request->tag_id);
+            
             $task->push();
 
             return response()->json([
-                "status" => 200,
+                "status"  => 200,
                 "message" => "Tasks update successful"
             ]);
         }
         catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 200,
-                "message" => "Tasks update unsuccessful" .$e
-            ]);
+                "status"    => 200,
+                "message"   => "Tasks update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function update_content (Request $request) {
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:tasks,id',
-            're-moderate' => 'required|boolean',
-            'taskContents' => 'required|array',
-            'taskContents.*.title' => 'required|string|max:255',
-            'taskContents.*.lang_id' => 'required|integer',
-            'taskContents.*.content' => 'required|string|max:65535'
-        ]);
-
+    public function update_content(UpdateTaskContentRequest $request)
+    {
         try {
             DB::beginTransaction();
 
-            foreach($validated['taskContents'] as $content) {
-                $task = Tasks::findOrFail($validated['id'])
+            foreach($request->taskContents as $content) {
+                $task = Tasks::findOrFail($request->id)
                     ->taskContents()
                     ->where('language_id',$content['lang_id'])
                     ->first();
@@ -304,14 +285,13 @@ class TasksController extends Controller
                 if($content['title'] != $task->title) {
                     $task->task_title = $content['title'];
                 }
-
                 $task->content = $content['content'];
                 $task->status = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending moderation';
                 $task->save();
             }
 
-            if($validated['re-moderate']) {
-                Tasks::findOrFail($validated['id'])
+            if($request->get('re-moderate')) {
+                Tasks::findOrFail($request->id)
                     ->taskContents()
                     ->where('language_id', '!=' ,env('APP_DEFAULT_LANG'))
                     ->update(['status' => 'pending moderation']);
@@ -326,35 +306,26 @@ class TasksController extends Controller
         }
 
         catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 200,
-                "message" => "Tasks update unsuccessful"
-            ]);
+                "status"    => 200,
+                "message"   => "Tasks update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function update_recommendation (Request $request) {
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:tasks,id',
-            'recommended_grade' => 'required|array',
-            'recommended_grade.*' => ['integer', new CheckMissingGradeDifficulty('recommended_difficulty')],
-            'recommended_difficulty' => 'required|array',
-            'recommended_difficulty.*' => ['string', 'max:255', new CheckMissingGradeDifficulty('recommended_grade')],
-        ]);
-
+    public function update_recommendation(UpdateTaskRecommendationsRequest $request)
+    {
         try {
-            Tasks::find($validated['id'])->gradeDifficulty()->delete();
-
-            for ($i = 0; $i < count($validated['recommended_grade']); $i++) {
-                Tasks::find($validated['id'])->gradeDifficulty()->create(
+            Tasks::find($request->id)->gradeDifficulty()->delete();
+            for ($i = 0; $i < count($request->recommended_grade); $i++) {
+                Tasks::find($request->id)->gradeDifficulty()->create(
                     [
-                        "grade" => $validated['recommended_grade'][$i],
-                        "difficulty" => $validated['recommended_difficulty'][$i],
-                    ]);
+                        "grade"         => $request->recommended_grade[$i],
+                        "difficulty"    => $request->recommended_difficulty[$i],
+                    ]
+                );
             }
-
             return response()->json([
                 "status" => 200,
                 "message" => "Tasks update successful"
@@ -362,70 +333,44 @@ class TasksController extends Controller
         }
          catch(\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "Tasks update unsuccessful"
-            ]);
+                "status"    => 500,
+                "message"   => "Tasks update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
          }
     }
 
-    public function update_answer (Request $request) {
-
-        $validated = collect($request->validate([
-            'id' => 'required|integer|exists:tasks,id',
-            'answer_type' => 'required|integer|exists:answer_type,id',
-            'answer_structure' => 'required|integer|min:1|max:4',
-            'answer_sorting' => 'integer|nullable|required_if:answer_type,1|min:1|max:2',
-            'answer_layout' => 'integer|nullable|required_if:answer_type,1|min:1|max:2',
-//            'correct_answer' => 'required_if:answer_type,1|array',
-//            'correct_answer.*' => 'required_if:answer_type,1|string|max:65535',
-            'labels' => 'required|array',
-            'labels.*' => 'nullable',
-            'answers' => ['required', 'array', new CheckAnswerLabelEqual],
-            'answers.*' => 'string|max:65535|nullable',
-        ]));
-
-        $answers = Arr::pull($validated, 'answers');
-        $labels = Arr::pull($validated, 'labels');
-
+    public function update_answer(UpdateTaskAnswerRequest $request)
+    {
         try {
-            $task = Tasks::findOrFail($validated['id']);
-            $return = $task->update($validated->toArray());
+            $task = Tasks::findOrFail($request->id);
+            if($task->update($request->all())){
+                $allAnswersId = TasksAnswers::where('task_id', $task->id)->pluck('id')->toArray();
+                TasksLabels::whereIn('task_answers_id', $allAnswersId)->delete();
+                TasksAnswers::where('task_id', $task->id)->delete();
 
-            if($return)
-            {
-                $allAnswersId = TasksAnswers::where('task_id',$validated['id'])->pluck('id')->toArray();
-                TasksLabels::whereIn('task_answers_id',$allAnswersId)->delete();
-                TasksAnswers::where('task_id',$validated['id'])->delete();
-
-                $answers = collect($answers)->map(function ($answer, $key) use ($validated) {
-
-                    $temp = array([
-                        'task_id' => $validated['id'],
-                        'lang_id' => env('APP_DEFAULT_LANG'),
-                        'answer' => $answer,
-                        'position' => $key + 1,
+                $answers = collect($request->answers)->map(function ($answer, $key) use($task){
+                    return array([
+                        'task_id'   => $task->id,
+                        'lang_id'   => env('APP_DEFAULT_LANG'),
+                        'answer'    => $answer,
+                        'position'  => $key + 1,
                     ]);
-                    return $temp;
-
                 })->collapse();
 
                 // add task answers
-                $labels = Tasks::find($validated['id'])->taskAnswers()->createMany($answers)->pluck('id')->map(function ($answerId, $key) use ($labels) {
-
-                    $temp = array([
-                        'task_answers_id' => $answerId,
-                        'lang_id' => env('APP_DEFAULT_LANG'),
-                        'content' => $labels[$key],
-                    ]);
-                    return $temp;
-
+                $labels = $request->labels;
+                $labels = Tasks::find($request->id)->taskAnswers()->createMany($answers)->pluck('id')
+                    ->map(function ($answerId, $key) use($labels){
+                        return array([
+                            'task_answers_id'   => $answerId,
+                            'lang_id'           => env('APP_DEFAULT_LANG'),
+                            'content'           => $labels[$key],
+                        ]);
                 });
 
                 // add labels for task answers
                 TasksLabels::insert(Arr::collapse($labels));
-
-
-
                 return response()->json([
                     "status" => 200,
                     "message" => "Tasks update successful"
@@ -434,15 +379,40 @@ class TasksController extends Controller
                 return response()->json([
                     "status" => 500,
                     "message" => "Tasks update unsuccessful"
-                ]);
+                ], 500);
+            }
+        }
+        catch(\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks update unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
+         }
+    }
+
+    public function delete(DeleteTaskRequest $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            foreach($request->id as $task_id){
+                Tasks::find($task_id)->delete();
             }
 
-        }
-         catch(\Exception $e) {
+        } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
-                "status" => 500,
-                "message" => "Tasks update unsuccessful"
-            ]);
-         }
+                "status"    => 500,
+                "message"   => "Tasks deletetion was unsuccessful" . $e->getMessage(),
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        
+        DB::commit();
+        return response()->json([
+            "status" => 200,
+            "message" => "Tasks deleted successfully"
+        ]);
     }
 }

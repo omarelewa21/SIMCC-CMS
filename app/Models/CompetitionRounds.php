@@ -26,9 +26,16 @@ class CompetitionRounds extends Model
         });
     }
 
-    public function getAwardTypeAttribute()
+    public function getAwardTypeAttribute($value)
     {
-        return 'Percentage';
+        switch ($value) {
+            case 1:
+                return 'Position';
+                break;
+            default:
+                return 'Percentage';
+                break;
+        }
     }
 
     public function competition () {

@@ -48,6 +48,12 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/web.php'));
         });
 
+        Route::bind('task', function ($value) {
+            return \App\Models\Tasks::findOrFail($value);
+        });
+        Route::bind('collection', function ($value) {
+            return \App\Models\Collections::findOrFail($value);
+        });
         Route::bind('round', function ($value) {
             return \App\Models\CompetitionRounds::findOrFail($value);
         });
