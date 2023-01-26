@@ -30,6 +30,7 @@ use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\CreateCompetitionRequest;
+use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
 
@@ -219,34 +220,21 @@ class CompetitionController extends Controller
         ]); 
     }
 
-    public function delete (Request $request) {
-        //set in role permission country partner cannot delete
-
-        $validate = array(
-            "id" => "array",
-            "id.*" => ["required", "integer", Rule::exists("competition", "id")
-                ->where("status", "active")]
-        );
-
-        $validated = $request->validate($validate);
-
+    public function delete(DeleteCompetitionRequest $request)
+    {
         try{
-
-//            $deleteCompetition = Competition::findorfail($request->id)->delete();
-            $deleteCompetition = Competition::destroy($validated['id']);
-
-            if($deleteCompetition) {
+            if(Competition::destroy($request->id)) {
                 return response()->json([
-                    "status" => 200,
-                    "message" => "delete competition successful"
+                    "status"    => 200,
+                    "message"   => "delete competition successful"
                 ]);
             }
-        }
-        catch(ModelNotFoundException $e) {
+        }catch(\Exception $e) {
             return response()->json([
-                "status" => 404,
-                "message" => "Invalid record"
-            ]);
+                "status"    => 500,
+                "message"   => "Invalid record",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 

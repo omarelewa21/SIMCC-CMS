@@ -43,7 +43,7 @@ class CreateCompetitionRequest extends FormRequest
             "parent_competition_id"                 => ["required_if:re-run,1", "integer", "nullable", Rule::exists('competition','id')->where('format', 0)->where('status', 'closed')],    //use for re-run competition,
             "difficulty_group_id"                   => "required|integer|exists:difficulty_groups,id",
             "organizations"                         => 'required|array',
-            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), new CheckOrganizationCountryInCompetition],
+            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
             "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
             "organizations.*.translate"             => "json",
             "organizations.*.edit_sessions.*"       => 'boolean',

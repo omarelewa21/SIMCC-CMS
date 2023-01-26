@@ -50,6 +50,14 @@ class Competition extends Base
         "default_award_name"
     ];
 
+    public static function booted()
+    {
+        parent::booted();
+        static::deleting(function($competition) {
+            $competition->
+        });
+    }
+
     public function competitionOrganization()
     {
         return $this->hasMany(CompetitionOrganization::class,"competition_id",'id');

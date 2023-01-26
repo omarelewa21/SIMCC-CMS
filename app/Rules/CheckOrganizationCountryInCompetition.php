@@ -5,26 +5,16 @@ namespace App\Rules;
 use App\Models\CompetitionOrganization;
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Contracts\Validation\DataAwareRule;
+use Illuminate\Support\Arr;
 
-class CheckOrganizationCountryInCompetition implements Rule,DataAwareRule
+class CheckOrganizationCountryInCompetition implements Rule, DataAwareRule
 {
     protected $message;
     protected $data;
 
     public function setData($data)
     {
-        // TODO: Implement setData() method.
         $this->data = $data;
-    }
-
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        //
     }
 
     /**
@@ -36,14 +26,19 @@ class CheckOrganizationCountryInCompetition implements Rule,DataAwareRule
      */
     public function passes($attribute, $value)
     {
-        $rowNum = explode(".",$attribute)[1];
-        $competition_id = $this->data['competition_id'];
-        $country_id = $this->data['organizations'][$rowNum]['country_id'];
+        $rowNum = explode(".", $attribute)[1];
+        $organization_id = $this->data['organizations'][$rowNum]['organization_id'];
 
-        $found = CompetitionOrganization::where(['competition_id' => $competition_id,'organization_id' => $value, 'country_id' => $country_id])->count();
+        if(
+            collect($this->data['organizations'])->filter(
+                fn($organization)=> $organization['organization_id'] === $organization_id
+            )->count() > 2
+        ){
+            $this->message = 'You have selected same organization ';
+            $this->message = 'The selected organization\'s country already participated in the selected competition.';
+        }
 
         if($found > 0) {
-            $this->message = 'The selected organization\'s country already participated in the selected competition.';
             return false;
         }
 
