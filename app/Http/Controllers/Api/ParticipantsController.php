@@ -785,9 +785,17 @@ class ParticipantsController extends Controller
     public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
     {
         try {
-            $report = CompetitionParticipantsResults::where('participant_index', $request->index_no)
-                ->value('report');
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $request->index_no)
+                ->firstOrFail()->makeVisible('report');
 
+            if(is_null($participantResult->report)){
+                $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                $report = $__report->getJsonReport();
+                $participantResult->report = $report;
+                $participantResult->save();
+            }else{
+                $report = $participantResult->report;
+            }
             return response()->json([
                 "status"    => 200,
                 "message"   => "Report generated successfully",
