@@ -58,13 +58,16 @@ class ParticipantsAnswer extends Model
 
     public function getIsCorrectAnswerAttribute(): bool
     {
-        $taskAnswer = $this->getAnswer();
-        if(is_null($taskAnswer)){
+        if(is_null($this->is_correct)){
+            $taskAnswer = $this->getAnswer();
+            if(is_null($taskAnswer)){
+                return false;
+            }
+            if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
+                return true;
+            }
             return false;
         }
-        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
-            return true;
-        }
-        return false;
+        return $this->is_correct;
     }
 }

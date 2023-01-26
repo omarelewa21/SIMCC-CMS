@@ -38,10 +38,10 @@ class ParticipantReportService
             ParticipantsAnswer::where([
                 ['participant_answers.level_id', $this->level->id],
                 ['participant_answers.participant_index', $this->participant->index_no]
-            ])->pluck('is_correct')
-            ->flatMap(function($value, $key){
+            ])->get()
+            ->flatMap(function($answer, $key){
                 return [
-                    sprintf('Q%s', $key+1)  => $value
+                    sprintf('Q%s', $key+1)  => is_null($answer->is_correct) ? $answer->getIsCorrectAnswerAttribute() : $answer->is_correct
                 ];
             });
     }
@@ -134,10 +134,9 @@ class ParticipantReportService
         ])
         ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
         ->where('participants.school_id', $answer->participant->school_id)
-        ->select('participant_answers.is_correct')
-        ->get();
+        ->get()->append('is_correct_answer');
 
-        return round( $allAnswers->sum('is_correct')/$allAnswers->count() * 100 );
+        return round( $allAnswers->sum('is_correct_answer')/$allAnswers->count() * 100 );
     }
 
     private function getParticipantAnswerCorrectInCountryPercentage(ParticipantsAnswer $answer): int
@@ -148,10 +147,9 @@ class ParticipantReportService
         ])
         ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
         ->where('participants.country_id', $answer->participant->country_id)
-        ->select('participant_answers.is_correct')
-        ->get();
+        ->get()->append('is_correct_answer');
 
-        return round( $allAnswers->sum('is_correct')/$allAnswers->count() * 100 );
+        return round( $allAnswers->sum('is_correct_answer')/$allAnswers->count() * 100 );
     }
 
     private function getFilteredAnalysisByQuestionDataByTopicName(int $topicId): Collection
@@ -216,7 +214,7 @@ class ParticipantReportService
                 return [
                     'question'              => sprintf("Q%s", $key+1),
                     'topic'                 => $this->getParticipantAnswerTopics($answer),
-                    'is_correct'            => $answer->is_correct,
+                    'is_correct'            => is_null($answer->is_correct) ? $answer->getIsCorrectAnswerAttribute() : $answer->is_correct,
                     'correct_in_school'     => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
                     'correct_in_country'    => $this->getParticipantAnswerCorrectInCountryPercentage($answer),
                     'diffculty'             => $answer->difficulty
