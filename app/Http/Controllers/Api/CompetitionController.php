@@ -366,8 +366,8 @@ class CompetitionController extends Controller
                         'created_by_userid' => auth()->user()->id
                     ]);
 
-                    $this->addTaskMark($row['collection_id'],$level);
-                    $this->addDifficultyGroup($row['collection_id'],$level);
+                    $this->addTaskMark($row['collection_id'], $level);
+                    $this->addDifficultyGroup($row['collection_id'], $level);
                 }
             }
 
@@ -1191,35 +1191,34 @@ class CompetitionController extends Controller
       return $output;
     }
 
-    private function addDifficultyGroup ($collection_id,$competition_level) {
-        $insert = Arr::collapse(CollectionSections::where('collection_id',$collection_id)->get()->pluck('tasks')->flatten()->map(function ($item) {
-             
-            $mapped = Arr::map(Arr::flatten($item->toArray()), function ($value, $key) {
-                 return ['task_id' => $value];
-            });
-          
-            return $mapped;
-          
-        })->toArray());
-      
-
+    private function addDifficultyGroup ($collection_id, $competition_level) {
+        $insert = Arr::collapse(
+            CollectionSections::where('collection_id', $collection_id)
+            ->get()->pluck('tasks')->flatten()
+            ->map(function ($item) {
+                $mapped = Arr::map(Arr::flatten($item->toArray()), function ($value) {
+                    return ['task_id' => $value];
+                });
+                return $mapped;
+            })
+            ->toArray()
+        );
         return $competition_level->taskDifficultyGroup()->createMany($insert);
     }
 
     private function addTaskMark ($collection_id,$competition_level)
     {
-        $tasks_id = Arr::flatten(CollectionSections::where('collection_id',$collection_id)->pluck('tasks')->toArray());
-      
-        $insert = Tasks::with(['taskAnswers' => function($query) {
-           return $query->whereNotNull('answer');
-        }])->whereIn('id',$tasks_id)->orderBy('id')->get()->map(function ($items) {
-            if(in_array($items->answer_structure,['group','sequence'])) {
-                return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];
-            }
-            else
-            {
-                $items->taskAnswers->sortBy('position')->each(function ($row) use (&$temp){
+        $taskIds = CollectionSections::where('collection_id',$collection_id)
+                ->pluck('tasks')->flatten()->toArray();
 
+        $insert = Tasks::with(['taskAnswers' => function($query) {
+            return $query->whereNotNull('answer');
+        }])->whereIn('id', $taskIds)->orderBy('id')->get()
+        ->map(function ($items) {
+            if(in_array($items->answer_structure, ['group','sequence'])) {
+                return [["task_answers_id" => $items->taskAnswers->sortBy('position')->pluck('id')->toJson()]];
+            }else{
+                $items->taskAnswers->sortBy('position')->each(function ($row) use (&$temp){
                     $temp[] = ["task_answers_id" => $row->id];
                 });
                 return $temp;

@@ -29,7 +29,15 @@ class CompetitionOrganization extends Base
     protected $appends =['created_by','last_modified_by','dates','organization_name'];
 
     protected $hidden = ['created_by_userid','last_modified_userid'];
-
+    
+    public static function booted()
+    {
+        parent::booted();
+        static::deleting(function($competitionOrganization) {
+            $competitionOrganization->all_competition_dates()->delete();
+            $competitionOrganization->reject_reason()->delete();
+        });
+    }
 
     /*
     *

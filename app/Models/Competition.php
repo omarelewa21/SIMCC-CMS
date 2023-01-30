@@ -54,21 +54,24 @@ class Competition extends Base
     {
         parent::booted();
         static::deleting(function($competition) {
-            $competition->
+            $competition->competitionOrganization()->delete();
+            $competition->groups()->delete();
         });
     }
 
-    public function competitionOrganization()
+    public function competitionOrganization ()
     {
-        return $this->hasMany(CompetitionOrganization::class,"competition_id",'id');
+        return $this->hasMany(CompetitionOrganization::class, 'competition_id', 'id');
     }
 
-    public function taskDifficultyGroup () {
-        return $this->hasOne(TaskDifficultyGroup::class,'id','difficulty_group_id');
+    public function taskDifficultyGroup ()
+    {
+        return $this->hasOne(TaskDifficultyGroup::class, 'id', 'difficulty_group_id');
     }
 
-    public function taskDifficulty () {
-        return $this->hasManyThrough(TaskDifficulty::class,TaskDifficultyGroup::class,'id','difficulty_groups_id','difficulty_group_id','id');
+    public function taskDifficulty ()
+    {
+        return $this->hasManyThrough(TaskDifficulty::class, TaskDifficultyGroup::class, 'id', 'difficulty_groups_id', 'difficulty_group_id', 'id');
     }
 
     public function rounds ()
@@ -76,23 +79,28 @@ class Competition extends Base
         return $this->hasMany(CompetitionRounds::class, "competition_id");
     }
 
-    public function groups () {
+    public function groups ()
+    {
         return $this->hasMany(CompetitionMarkingGroup::class, 'competition_id');
     }
 
-    public function overallAwardsGroups () {
+    public function overallAwardsGroups ()
+    {
         return $this->hasMany(CompetitionOverallAwardsGroups::class, 'competition_id');
     }
 
-    public function participants () {
+    public function participants ()
+    {
         return $this->hasManyThrough(Participants::class, CompetitionOrganization::class, 'competition_id', 'competition_organization_id', 'id', 'id');
     }
 
-    public function setAllowedGradesAttribute ($value) {
+    public function setAllowedGradesAttribute ($value)
+    {
         $this->attributes['allowed_grades'] = json_encode($value);
     }
 
-    public function getAllowedGradesAttribute ($value) {
+    public function getAllowedGradesAttribute ($value)
+    {
         return json_decode($value);
     }
 
@@ -113,14 +121,16 @@ class Competition extends Base
         return CompetitionLevels::STATUS_FINISHED;
     }
 
-    public function getGenerateReportBtnAttribute () {
+    public function getGenerateReportBtnAttribute ()
+    {
         $levels = $this->rounds->pluck('levels')->flatten()->pluck('id');
         $found = CompetitionMarkingGroup::whereIn('competition_level_id',$levels)->count() > 0 ?  1 : 0;
 
         return $found;
     }
 
-    public function getAwardTypeNameAttribute () {
+    public function getAwardTypeNameAttribute ()
+    {
         switch($this->award_type) {
             case 0 :
                return 'percentage';

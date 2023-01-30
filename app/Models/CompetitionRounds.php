@@ -22,6 +22,7 @@ class CompetitionRounds extends Model
                     $overallAwardsGroup->overallAwards()->delete();
                     $overallAwardsGroup->delete();
                 }
+                $record->levels()->delete();
             }
         });
     }
