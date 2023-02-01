@@ -31,6 +31,7 @@ use App\Rules\CheckOrganizationCompetitionValid;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckDeleteParticipant;
 use App\Rules\CheckCompetitionEnded;
+use App\Rules\ParticipantEmailRule;
 use Exception;
 
 class ParticipantsController extends Controller
@@ -55,6 +56,7 @@ class ParticipantsController extends Controller
             "participant.*.partner_userid" => "exclude_if:*.for_partner,0|required_if:*.for_partner,1|integer|exists:users,id",
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1','required_if:*.school_id,null','integer','nullable',new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5','required_if:*.tuition_centre_id,null','nullable','integer',new CheckSchoolStatus],
+            "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
 
         $validated = $request->validate($validate);

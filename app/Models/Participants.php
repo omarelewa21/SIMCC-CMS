@@ -28,6 +28,7 @@ class Participants extends Base
         "index_no",
         "country_id",
         "school_id",
+        "email",
         "grade",
         "class",
         "tuition_centre_id",
