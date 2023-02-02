@@ -67,6 +67,7 @@ class Participants extends Base
                     $request->private
                     ? $query->whereNotNull("tuition_centre_id")
                     : $query->whereNull("tuition_centre_id");
+                    break;
                 case 'country_id':
                 case 'school_id':
                 case 'grade':
