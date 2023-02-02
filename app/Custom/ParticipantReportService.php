@@ -27,7 +27,7 @@ class ParticipantReportService
         return [
             'competition'       => $this->level->rounds->competition->name,
             'particiapnt'       => $this->participant->name,
-            'school'            => $this->participant->school->name,
+            'school'            => $this->participant->school ? $this->participant->school : 'No school specified for this participant',
             'grade'             => sprintf("Grade%s", $this->participant->grade)
         ];
     }
