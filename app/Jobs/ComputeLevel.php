@@ -38,7 +38,7 @@ class ComputeLevel implements ShouldQueue
         try {
             (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
         } catch (\Exception $e) {
-            $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e->getMessage());
+            $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e);
         }
     }
 }
