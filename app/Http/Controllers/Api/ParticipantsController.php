@@ -332,7 +332,7 @@ class ParticipantsController extends Controller
         catch(\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Retrieve participants retrieve unsuccessful",
+                "message"   => "The filter entered doesn't return any data, please change field parameters and try again",
                 "error"     => $e->getMessage()
             ], 500);
         }
