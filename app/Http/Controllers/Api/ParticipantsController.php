@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\ParticipantReportRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Models\CompetitionLevels;
@@ -230,15 +231,9 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function list (Request $request) {
-
-        $school = School::get(['id','name','private']);
-        $competitionOrganization =  CompetitionOrganization::get(['id','competition_id','organization_id']);
-        $competition = Competition::get(['id','name']);
-        $organization = Organization::get(['id','name']);
-
-        $query = DB::table('participants')
-            ->leftJoin('users as created_user','created_user.id','=','participants.created_by_userid')
+    public function list (getParticipantListRequest $request)
+    {
+        $participantCollection = Participants::leftJoin('users as created_user','created_user.id','=','participants.created_by_userid')
             ->leftJoin('users as modified_user','modified_user.id','=','participants.last_modified_userid')
             ->leftJoin('all_countries','all_countries.id','=','participants.country_id')
             ->leftJoin('schools','schools.id','=','participants.school_id')
@@ -272,82 +267,15 @@ class ParticipantsController extends Controller
                 'competition_participants_results.award',
             )
             ->selectRaw("CONCAT_WS(' ',created_user.username,DATE_FORMAT(participants.created_at,'%d/%m/%Y')) as created_by")
-            ->selectRaw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by");
-
+            ->selectRaw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by")
+            ->filterList($request)
+            ->get();
         try {
-            $validated = $request->validate([
-                'index_no' => 'alpha_num',
-                'country_id' => 'integer',
-                'organization_id' => 'integer',
-                'competition_organization_id' => 'integer',
-                'competition_id' => 'integer',
-                'school_id' => 'integer',
-                'status' => 'string',
-                'private' => 'boolean',
-                'limits' => 'integer',
-                'page' => 'integer',
-                'search' => 'max:255'
-            ]);
-
-            foreach($validated as $key => $value) {
-                switch($key) {
-                    case 'search' :
-                                $query = $query->where('participants.name','like',"%" . $validated['search'] . "%")
-                                    ->orWhere('participants.index_no',$validated['search'])
-                                    ->orWhere('schools.name','like',"%" .$validated['search']."%")
-                                    ->orWhere('tuition_centre.name','like',"%" .$validated['search']."%");
-                                break;
-                    case 'private':
-                        if($request['private']) {
-                            $query->whereNotNull("tuition_centre_id");
-                        }
-                        else {
-                            $query->whereNull("tuition_centre_id");
-                        }
-                    case 'country_id':
-                    case 'school_id':
-                    case 'grade':
-                    case 'status':
-                        $query = $query->where('participants.' .$key,$value);
-                        break;
-                    case 'organization_id':
-                        $query = $query->where('organization.id',$value);
-                        break;
-                    case 'competition_id':
-                        $query = $query->where('competition.id' ,$value);
-                        break;
-                    case 'page':
-                    case 'limits':
-                        break;
-                    default :
-                        $query = $query->where($key,$value);
-                }
-            }
-
-            switch(auth()->user()->role_id) {
-                case 2:
-                case 4:
-                    $ids = CompetitionOrganization::where(['country_id' => auth()->user()->country_id,'organization_id' => auth()->user()->organization_id])->pluck('id')->toArray();
-                    $query->whereIn("competition_organization_id", $ids);
-                    break;
-                case 3:
-                case 5:
-                    $ids = CompetitionOrganization::where(['country_id' => auth()->user()->country_id,'organization_id' => auth()->user()->organization_id])->pluck('id')->toArray();
-                    $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
-                        ->orWhere("school_id" , auth()->user()->school_id);
-                    break;
-            }
-
-
             if($request->limits == "0") {
                 $limits = 99999999;
             } else {
                 $limits = $request->limits ?? 10; //set default to 10 rows per page
             }
-
-//            $returnFiltered = $query->paginate($limits)->toArray();
-            $participantCollection = collect($query->get()->toArray());
-//            $returnFiltered = $participantModel->filter()->paginate($limits)->toArray();
 
             /**
              * Lists of availabe filters
@@ -385,18 +313,28 @@ class ParticipantsController extends Controller
 
             $availForSearch = array("name", "index_no", "school", "tuition_centre");
             $participantList = CollectionHelper::searchCollection('', $participantCollection, $availForSearch, $limits);
-            $data = array("filterOptions" => ['status' => $availUserStatus,'organization' => $availOrganization, 'grade' => $availGrade, 'private' => $availPrivate, 'countries' => $availCountry, 'competition' => $availCompetition,], "participantList" => $participantList);
 
             return response()->json([
-                "status" => 200,
-                "data" => $data
+                "status"    => 200,
+                "data"      => [
+                    "filterOptions" => [
+                        'status'        => $availUserStatus,
+                        'organization'  => $availOrganization,
+                        'grade'         => $availGrade,
+                        'private'       => $availPrivate,
+                        'countries'     => $availCountry,
+                        'competition'   => $availCompetition
+                    ],
+                    "participantList" => $participantList
+                ]
             ]);
         }
-        catch(QueryException $e) {
+        catch(\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "Retrieve participants retrieve unsuccessful"
-            ]);
+                "status"    => 500,
+                "message"   => "Retrieve participants retrieve unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
