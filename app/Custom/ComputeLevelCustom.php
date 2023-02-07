@@ -11,22 +11,12 @@ use Illuminate\Support\Facades\DB;
 class ComputeLevelCustom
 {
     private $level;
-    private $participantsAnswersGrouped;
     private $awards;
-    private $awardsRankArray;
 
     function __construct(CompetitionLevels $level)
     {
-        $this->level = $level->load('participantsAnswersUploaded');
-        $this->computeParticipantAnswersScores();
-        $this->participantsAnswersGrouped = ParticipantsAnswer::where('level_id', $level->id)
-                ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
-                ->orderBy('points', 'DESC')->get();
-
-        $this->awards = $this->level->rounds->roundsAwards;
-        $this->awardsRankArray = collect(['PERFECT SCORER'])
-            ->merge($this->awards->pluck('name'))
-            ->push($this->level->rounds->default_award_name);
+        $this->level  = $level;
+        $this->awards = $level->rounds->roundsAwards;
     }
 
     public static function validateLevelForComputing(CompetitionLevels $level)
@@ -45,6 +35,7 @@ class ComputeLevelCustom
     public function computeResutlsForSingleLevel()
     {
         $this->clearRecords();
+        $this->computeParticipantAnswersScores();
         $this->setupCompetitionParticipantsResultsTable();
         $this->setParticipantsGroupRank();
         $this->setParticipantsCountryRank();
@@ -59,7 +50,8 @@ class ComputeLevelCustom
     public function computeParticipantAnswersScores()
     {
         DB::transaction(function(){
-            $this->level->participantsAnswersUploaded->append('is_correct_answer')
+            ParticipantsAnswer::where('level_id', $this->level->id)
+                ->get()
                 ->each(function($participantAnswer){
                     $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute();
                     $participantAnswer->score = $participantAnswer->getAnswerMark();
@@ -73,17 +65,21 @@ class ComputeLevelCustom
     {
         DB::transaction(function(){
             $attendeesIds = [];
-            $this->participantsAnswersGrouped->each(function($participantAnswer) use(&$attendeesIds){
-                CompetitionParticipantsResults::create([
-                    'level_id'              => $participantAnswer->level_id,
-                    'participant_index'     => $participantAnswer->participant_index,
-                    'points'                => $participantAnswer->points ? $participantAnswer->points : 0,
-                ]);
-                $attendeesIds[] = $participantAnswer->participant->id;
+            ParticipantsAnswer::where('level_id', $this->level->id)
+                ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
+                ->orderBy('points', 'DESC')
+                ->get()
+                ->each(function($participantAnswer) use(&$attendeesIds){
+                    CompetitionParticipantsResults::create([
+                        'level_id'              => $participantAnswer->level_id,
+                        'participant_index'     => $participantAnswer->participant_index,
+                        'points'                => $participantAnswer->points ? $participantAnswer->points : 0,
+                    ]);
+                    $attendeesIds[] = $participantAnswer->participant->id;
+                });
+                $this->updateParticipantsAbsentees($attendeesIds);
+                $this->updateComputeProgressPercentage(25);
             });
-            $this->updateParticipantsAbsentees($attendeesIds);
-            $this->updateComputeProgressPercentage(25);
-        });
     }
 
     protected function updateComputeProgressPercentage(int $percentage)
@@ -264,7 +260,11 @@ class ComputeLevelCustom
 
     public function setParticipantsAwardsRank()
     {
-        $this->awardsRankArray->each(function($award, $key){
+        $awardsRankArray = collect(['PERFECT SCORER'])
+            ->merge($this->awards->pluck('name'))
+            ->push($this->level->rounds->default_award_name);
+
+        $awardsRankArray->each(function($award, $key){
             CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('award', $award)
                 ->update([
