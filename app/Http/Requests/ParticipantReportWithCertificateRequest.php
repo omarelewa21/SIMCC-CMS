@@ -59,11 +59,10 @@ class ParticipantReportWithCertificateRequest extends FormRequest
                         "Results are not computed for this participant"
                     );
                 }else{
-                    $report = CompetitionParticipantsResults::where('participant_index', $this->index_no)->value('report');
-                    if(is_null($report)){
+                    if(CompetitionParticipantsResults::where('participant_index', $this->index_no)->doesntExist()){
                         $validator->errors()->add(
                             'Report is not generated for this participant',
-                            "Report is not generated for this participant"
+                            "Report is not generated for this participant, please re-compute the results"
                         );
                     }
                 }

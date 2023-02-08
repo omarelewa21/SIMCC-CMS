@@ -50,7 +50,7 @@ class CheckLocalRegistrationDateAvail implements Rule,DataAwareRule
         }
 
         if($competitionFormat == 1) {
-            if($localRegistrationDate <= $globalRegistrationEndDate) {
+            if($localRegistrationDate > $globalRegistrationEndDate) {
                 $this->message = 'The selected local registration date must be before global registration end date';
                 return false;
             }

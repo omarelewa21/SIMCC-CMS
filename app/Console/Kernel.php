@@ -20,7 +20,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 //        $schedule->call('App\Http\Controllers\MyController@MyAction')->everyMinute();
-
+        $schedule->command('telescope:prune --hours=3')->daily();
         $schedule->command('group:compute')
             ->everyMinute();
     }

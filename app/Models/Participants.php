@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Requests\getParticipantListRequest;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ class Participants extends Base
         "index_no",
         "country_id",
         "school_id",
+        "email",
         "grade",
         "class",
         "tuition_centre_id",
@@ -41,11 +43,72 @@ class Participants extends Base
 
     protected $hidden = [
         'password',
-//        "created_by_userid",
         "last_modified_userid"
     ];
 
-//    protected $appends = ['created_by','last_modified_by'];
+    /**
+     * Scope a query to request params
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  getParticipantListRequest $request
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFilterList($query, getParticipantListRequest $request)
+    {
+        foreach($request->all() as $key=>$value){
+            switch($key) {
+                case 'search':
+                    $query->where('participants.name', 'like', "%$value%")
+                        ->orWhere('participants.index_no', $value)
+                        ->orWhere('schools.name', 'like', "%$value%")
+                        ->orWhere('tuition_centre.name', 'like', "%$value%");
+                    break;
+                case 'private':
+                    $request->private
+                    ? $query->whereNotNull("tuition_centre_id")
+                    : $query->whereNull("tuition_centre_id");
+                    break;
+                case 'country_id':
+                case 'school_id':
+                case 'grade':
+                case 'status':
+                    $query->where("participants.$key", $value);
+                    break;
+                case 'organization_id':
+                    $query->where('organization.id', $value);
+                    break;
+                case 'competition_id':
+                    $query->where('competition.id', $value);
+                    break;
+                case 'page':
+                case 'limits':
+                    break;
+                default:
+                    $query->where($key, $value);
+            }
+        }
+
+        switch(auth()->user()->role_id) {
+            case 2:
+            case 4:
+                $ids = CompetitionOrganization::where([
+                    'country_id'        => auth()->user()->country_id,
+                    'organization_id'   => auth()->user()->organization_id
+                ])->pluck('id')->toArray();
+                $query->whereIn("competition_organization_id", $ids);
+                break;
+            case 3:
+            case 5:
+                $ids = CompetitionOrganization::where([
+                    'country_id'        => auth()->user()->country_id,
+                    'organization_id'   => auth()->user()->organization_id
+                ])->pluck('id')->toArray();
+                $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
+                    ->orWhere("school_id" , auth()->user()->school_id);
+                break;
+        }
+    }
+
 
     public function created_by () {
         return $this->belongsTo(User::class,"created_by_userid","id");

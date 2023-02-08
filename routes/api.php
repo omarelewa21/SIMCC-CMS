@@ -163,4 +163,6 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::delete("difficulty",[TaskDifficultyController::class,"delete_difficulty"])->name('taskdifficulty.difficulty.delete');
         Route::delete("",[TaskDifficultyController::class,"delete"])->name('taskdifficulty.delete');
     });
+
+    include 'test-routes.php';
 });
