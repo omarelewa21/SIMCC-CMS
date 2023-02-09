@@ -103,18 +103,28 @@ class CompetitionController extends Controller
                     CompetitionOrganization::where('competition_id', $competition->id)
                         ->whereIn('competition_mode',[0,2])
                         ->update([
-                            'competition_mode'  => 1, 
+                            'competition_mode'  => 1,
                             'updated_at'        => now()
                         ]);
                     break;
             }
 
-            if(isset($earliestOrganizationCompetitionDate)) {
-              if($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
-              {
-                $competition->allowed_grades = $request->allowed_grades;
-              }
+            switch ($competition->competition_mode) {
+                case 0: //local competition
+                    if (isset($earliestOrganizationCompetitionDate)) {
+                        if ($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
+                        {
+                            $competition->allowed_grades = $request->allowed_grades;
+                        }
+                    }
+                    break;
+                case 2: //international competition
+                    if (date('Y-m-d', strtotime('now')) <= $competition->global_registration_end_date) { // allow to edit grades if registration is still open
+                        $competition->allowed_grades = $request->allowed_grades;
+                    }
+                    break;
             }
+
             $competition->save();
 
             return response()->json([
@@ -217,7 +227,7 @@ class CompetitionController extends Controller
             "status"    => 200,
             "message"   => "Competition retrieved successfully",
             "data"      => $data
-        ]); 
+        ]);
     }
 
     public function delete(DeleteCompetitionRequest $request)
@@ -339,7 +349,9 @@ class CompetitionController extends Controller
             }
 
             foreach($levels as $row) {
+//                if($c==1){dd(isset($row['id'] ));}
                 if(isset($row['id'] )) {
+
                     $level = CompetitionLevels::findOrFail($row['id']);
                     $level->name = $row['name'];
                     $level->grades = $row['grades'];
@@ -349,15 +361,15 @@ class CompetitionController extends Controller
                         if($level->collection_id != null) {
                             CompetitionTasksMark::where('level_id',$level->id)->delete();
                         }
+
                         $level->collection_id = $row['collection_id'];
                         $this->addTaskMark($row['collection_id'],$level);
                         $this->addDifficultyGroup($row['collection_id'],$level);
                     }
 
-
                     $level->save($row);
-
                 } else {
+
                     $level = CompetitionLevels::create([
                         'round_id' => $round_id,
                         'name' => $row['name'],
@@ -369,6 +381,7 @@ class CompetitionController extends Controller
                     $this->addTaskMark($row['collection_id'], $level);
                     $this->addDifficultyGroup($row['collection_id'], $level);
                 }
+
             }
 
             DB::commit();
@@ -420,7 +433,7 @@ class CompetitionController extends Controller
                 "message" => "Round awards retreival unsuccessful"
             ], 500);
         }
-        
+
     }
 
     public function addRoundAwards (Request $request) {
@@ -924,7 +937,7 @@ class CompetitionController extends Controller
             $participant_index = $participant['index_number'];
 
             return collect($participant['answers'])->map(function ($answers,$index)  use($level_id,$tasks,$participant_index) {
-              
+
                 return [
                     'level_id' => $level_id,
                     'task_id' => $tasks[$index],
@@ -944,7 +957,7 @@ class CompetitionController extends Controller
             foreach (array_chunk($insert,100) as $t) {
               ParticipantsAnswer::insert($t);
             }
-            
+
             DB::commit();
 
             return response()->json([
@@ -1044,7 +1057,7 @@ class CompetitionController extends Controller
                  WHERE competition.id = ".$competition_id."
                  ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
         "));
-      
+
         $filename = 'report.csv';
         $output = [];
         $fp = fopen(public_path().'/'.$filename, 'w');
@@ -1118,7 +1131,7 @@ class CompetitionController extends Controller
                 $noAwards[] = $row;
             }
         });
-      
+
         collect($awards)->each(function ($fields,$index) use($fp,&$output,$header,$array,&$participants,&$currentLevel,&$noAwards,&$currentAward,&$currentPoints,&$globalRank,&$counter) {
 
             if($index == 0) {
@@ -1162,7 +1175,7 @@ class CompetitionController extends Controller
               fputcsv($fp, $participants[$row['index_no']]);
           }
         }
-      
+
         fclose($fp);
 
         DB::beginTransaction();
@@ -1187,7 +1200,7 @@ class CompetitionController extends Controller
             readfile($filename);
             exit;
         }**/
-   
+
       return $output;
     }
 
@@ -1208,8 +1221,8 @@ class CompetitionController extends Controller
 
     private function addTaskMark ($collection_id,$competition_level)
     {
-        $taskIds = CollectionSections::where('collection_id',$collection_id)
-                ->pluck('tasks')->flatten()->toArray();
+        $taskIds = Arr::flatten(CollectionSections::where('collection_id',$collection_id)
+                ->pluck('tasks')->toArray());
 
         $insert = Tasks::with(['taskAnswers' => function($query) {
             return $query->whereNotNull('answer');
