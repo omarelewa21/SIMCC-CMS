@@ -29,6 +29,7 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
@@ -142,7 +143,7 @@ class CompetitionController extends Controller
         }
     }
 
-    public function list (Request $request) //
+    public function list (CompetitionListRequest $request)
     {
         try {
             if($request->has('id') && Competition::whereId($request->id)->exists()){
