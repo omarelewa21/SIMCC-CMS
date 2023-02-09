@@ -135,18 +135,11 @@ class CompetitionController extends Controller
     public function list (Request $request) //
     {
         try {
-            $validated = $request->validate([
-                'id' => 'integer',
-                'name' => "/^[\.\,\s\(\)\[\]\w-]*$/",
-                'format' => 'boolean',
-                'status' => 'alpha_dash',
-                'limits' => 'integer|min:10|max:50',
-                'page' => 'integer',
-                'search' => 'max:255'
-            ]);
-
+            if($request->has('id') && Competition::whereId($request->id)->exists()){
+                return $this->show(Competition::find($request->id));
+            }
             $limits = $request->limits ? $request->limits : 10;
-            $searchKey = isset($validated['search']) ? $validated['search'] : null;
+            $searchKey = isset($request->search) ? $request->search : null;
 
             $competitionModel = Competition::AcceptRequest(['id','status', 'format', 'name']);
 
