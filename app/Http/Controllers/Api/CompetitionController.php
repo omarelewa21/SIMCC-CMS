@@ -725,7 +725,12 @@ class CompetitionController extends Controller
         }
     }
 
-    public function addOrganization(array $organizations, int $competition_id)
+    public function addOrganizationRoute(Request $request)
+    {
+        $this->addOrganization($request->organizations, $request->competition_id);
+    }
+
+    private function addOrganization(array $organizations, int $competition_id)
     {
         foreach($organizations as $organization){
             CompetitionOrganization::create(
