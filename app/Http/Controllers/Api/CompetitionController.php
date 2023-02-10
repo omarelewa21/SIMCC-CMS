@@ -727,15 +727,30 @@ class CompetitionController extends Controller
 
     public function addOrganizationRoute(Request $request)
     {
-        $request->validate([
-            "organizations"                         => 'required|array',
-            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
-            "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
-            "organizations.*.translate"             => "json",
-            "organizations.*.edit_sessions.*"       => 'boolean',
-        ]);
+        try {
+            $request->validate([
+                "organizations"                         => 'required|array',
+                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
+                "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
+                "organizations.*.translate"             => "json",
+                "organizations.*.edit_sessions.*"       => 'boolean',
+            ]);
+    
+            $this->addOrganization($request->organizations, $request->competition_id);
+            return [
+                "status"    => 200,
+                "message"   => "delete overall awards group successful",
+            ];
 
-        $this->addOrganization($request->organizations, $request->competition_id);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "delete overall awards group unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        
+        
     }
 
     private function addOrganization(array $organizations, int $competition_id)
