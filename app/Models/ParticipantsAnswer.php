@@ -41,29 +41,29 @@ class ParticipantsAnswer extends Model
      * 
      * @return int
      */
-    public function getAnswerMark()
+    public function getAnswerMark($level_id)
     {
         $taskAnswer = $this->getAnswer();
         if(is_null($taskAnswer)){
             return 0;
         }
         
-        if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
-            return CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->value('marks');
+        if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
+            return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
         }
 
-        $minMarks = CompetitionTasksMark::whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
+        $minMarks = CompetitionTasksMark::where('level_id', $level_id)->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
         return $minMarks ? $minMarks : 0;
     }
 
-    public function getIsCorrectAnswerAttribute(): bool
+    public function getIsCorrectAnswerAttribute($level_id): bool
     {
         if(is_null($this->is_correct)){
             $taskAnswer = $this->getAnswer();
             if(is_null($taskAnswer)){
                 return false;
             }
-            if(CompetitionTasksMark::where('task_answers_id', $taskAnswer->id)->exists()){
+            if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
                 return true;
             }
             return false;

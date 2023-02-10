@@ -53,8 +53,8 @@ class ComputeLevelCustom
             ParticipantsAnswer::where('level_id', $this->level->id)
                 ->get()
                 ->each(function($participantAnswer){
-                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute();
-                    $participantAnswer->score = $participantAnswer->getAnswerMark();
+                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute($this->level->id);
+                    $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
                     $participantAnswer->save();
             });
             $this->updateComputeProgressPercentage(20);
