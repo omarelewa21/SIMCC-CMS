@@ -725,7 +725,7 @@ class CompetitionController extends Controller
         }
     }
 
-    private function addOrganization(array $organizations, int $competition_id)
+    public function addOrganization(array $organizations, int $competition_id)
     {
         foreach($organizations as $organization){
             CompetitionOrganization::create(
