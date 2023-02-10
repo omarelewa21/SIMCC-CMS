@@ -56,7 +56,7 @@ class Competition extends Base
 
         static::saved(function($competition){
             if($competition->format === 1){
-                $this->createGlobalMarkingGroup($competition);
+                $competition->createGlobalMarkingGroup();
             }
         });
 
@@ -169,14 +169,14 @@ class Competition extends Base
         return $count;
     }
 
-    protected function createGlobalMarkingGroup(self $competition)
+    protected function createGlobalMarkingGroup()
     {
-        if(CompetitionMarkingGroup::whereId($competition->id)->doesntExist()){
-            $countries = $competition->participants()
-                    ->pluck('participants.country_id')->toArray();
+        if(CompetitionMarkingGroup::whereId($this->id)->doesntExist()){
+            $countries = $this->participants()
+                    ->pluck('participants.country_id')->unique()->toArray();
 
             $markingGroup = CompetitionMarkingGroup::create([
-                'competition_id'    => $competition->id,
+                'competition_id'    => $this->id,
                 'name'              => "Global Group",
                 'created_by_userid' => auth()->user()->id
             ]);
