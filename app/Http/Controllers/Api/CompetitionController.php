@@ -216,7 +216,7 @@ class CompetitionController extends Controller
 
     public function show(Competition $competition)
     {
-        $data = $competition->load('rounds.levels', 'competitionOrganization', 'taskDifficultyGroup', 'taskDifficulty');
+        $data = $competition->load('rounds.levels', 'rounds.roundsAwards', 'competitionOrganization', 'taskDifficultyGroup', 'taskDifficulty');
         return response()->json([
             "status"    => 200,
             "message"   => "Competition retrieved successfully",
