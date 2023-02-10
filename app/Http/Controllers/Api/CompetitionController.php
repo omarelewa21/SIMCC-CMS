@@ -34,7 +34,7 @@ use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
-
+use App\Rules\CheckOrganizationCountryPartnerExist;
 
 //update participant session once competition mode change, add this changes once participant session done
 
@@ -727,17 +727,27 @@ class CompetitionController extends Controller
 
     public function addOrganizationRoute(Request $request)
     {
+        $request->validate([
+            "organizations"                         => 'required|array',
+            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
+            "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
+            "organizations.*.translate"             => "json",
+            "organizations.*.edit_sessions.*"       => 'boolean',
+        ]);
+
         $this->addOrganization($request->organizations, $request->competition_id);
     }
 
     private function addOrganization(array $organizations, int $competition_id)
     {
         foreach($organizations as $organization){
-            CompetitionOrganization::create(
-                array_merge($organization, [
-                    'competition_id'    => $competition_id,
-                    'created_by_userid' => auth()->user()->id,
-            ]));
+            if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->doesntExist()){
+                CompetitionOrganization::create(
+                    array_merge($organization, [
+                        'competition_id'    => $competition_id,
+                        'created_by_userid' => auth()->user()->id,
+                ]));
+            }
         }
     }
 
