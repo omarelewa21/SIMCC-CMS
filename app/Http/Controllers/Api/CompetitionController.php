@@ -954,9 +954,10 @@ class CompetitionController extends Controller
         }
         catch(\Exception $e) {
             return response()->json([
-                "status" => 404,
-                "message" => "Invalid record"
-            ]);
+                "status"    => 404,
+                "message"   => "Invalid record",
+                "error"     => $e
+            ], 404);
         }
     }
 
