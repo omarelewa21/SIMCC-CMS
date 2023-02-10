@@ -242,6 +242,37 @@ class CompetitionController extends Controller
         }
     }
 
+    public function addRoundsRoute(Request $request)
+    {
+        try {
+            $request->validate([
+                "competition_id"                        => 'required|exists:competition,id',
+                "rounds"                                => "array|required",
+                "rounds.*.name"                         => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
+                "rounds.*.round_type"                   => ["required", "integer", Rule::in([0, 1])],
+                "rounds.*.team_setting"                 => ["exclude_if:rounds.*.round_type,0", "required_if:rounds.*.round_type,1", "integer", Rule::in([0, 1])],
+                "rounds.*.individual_points"            => ["exclude_if:rounds.*.round_type,0", "required_if:rounds.*.round_type,1", "integer", Rule::in([0, 1])],
+                "rounds.*.award_type"                   => "required|integer|boolean",
+                "rounds.*.assign_award_points"          => "required|integer|boolean",
+                "rounds.*.default_award_name"           => "required|string",
+                "rounds.*.default_award_points"         => "integer|nullable",
+            ]);
+    
+            $this->addRounds($request->rounds, $request->competition_id);
+            return [
+                "status"    => 200,
+                "message"   => "Add rounds is successfull",
+            ];
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Add rounds is not successfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function addRounds(array $rounds, Competition $competition)
     {
         $rounds = collect($rounds)->map(function($round) use(&$levels) {
@@ -739,18 +770,16 @@ class CompetitionController extends Controller
             $this->addOrganization($request->organizations, $request->competition_id);
             return [
                 "status"    => 200,
-                "message"   => "delete overall awards group successful",
+                "message"   => "add new organization is successfull",
             ];
 
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "delete overall awards group unsuccessful",
+                "message"   => "add new organization is not successful",
                 "error"     => $e->getMessage()
             ], 500);
         }
-        
-        
     }
 
     private function addOrganization(array $organizations, int $competition_id)
