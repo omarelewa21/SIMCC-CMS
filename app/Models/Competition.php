@@ -171,7 +171,7 @@ class Competition extends Base
 
     protected function createGlobalMarkingGroup()
     {
-        if(CompetitionMarkingGroup::whereId($this->id)->doesntExist()){
+        if(CompetitionMarkingGroup::where('competition_id', $this->id)->doesntExist()){
             $countries = $this->participants()
                     ->pluck('participants.country_id')->unique()->toArray();
 
