@@ -258,7 +258,7 @@ class CompetitionController extends Controller
                 "rounds.*.default_award_points"         => "integer|nullable",
             ]);
     
-            $this->addRounds($request->rounds, $request->competition_id);
+            $this->addRounds($request->rounds, Competition::find($request->competition_id));
             return [
                 "status"    => 200,
                 "message"   => "Add rounds is successfull",
