@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class Competition extends Base
 {
@@ -53,7 +53,14 @@ class Competition extends Base
     public static function booted()
     {
         parent::booted();
-        static::deleting(function($competition) {
+
+        static::saved(function($competition){
+            if($competition->format === 1){
+                $this->createGlobalMarkingGroup($competition);
+            }
+        });
+
+        static::deleting(function($competition  ) {
             $competition->competitionOrganization()->delete();
             $competition->groups()->delete();
         });
@@ -160,5 +167,28 @@ class Competition extends Base
             }
         }
         return $count;
+    }
+
+    protected function createGlobalMarkingGroup(self $competition)
+    {
+        if(CompetitionMarkingGroup::whereId($competition->id)->doesntExist()){
+            $countries = $competition->participants()
+                    ->pluck('participants.country_id')->toArray();
+
+            $markingGroup = CompetitionMarkingGroup::create([
+                'competition_id'    => $competition->id,
+                'name'              => "Global Group",
+                'created_by_userid' => auth()->user()->id
+            ]);
+
+            foreach($countries as $country_id){
+                DB::table('competition_marking_group_country')->insert([
+                    'marking_group_id'  => $markingGroup->id,
+                    'country_id'        => $country_id,
+                    'created_at'        => now(),
+                    'updated_at'        => now()
+                ]);
+            }
+        }
     }
 }
