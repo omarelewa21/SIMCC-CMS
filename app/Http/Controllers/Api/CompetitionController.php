@@ -257,7 +257,7 @@ class CompetitionController extends Controller
                 "rounds.*.default_award_name"           => "required|string",
                 "rounds.*.default_award_points"         => "integer|nullable",
             ]);
-    
+
             $this->addRounds($request->rounds, Competition::find($request->competition_id));
             return [
                 "status"    => 200,
@@ -766,7 +766,7 @@ class CompetitionController extends Controller
                 "organizations.*.translate"             => "json",
                 "organizations.*.edit_sessions.*"       => 'boolean',
             ]);
-    
+
             $this->addOrganization($request->organizations, $request->competition_id);
             return [
                 "status"    => 200,
@@ -784,8 +784,9 @@ class CompetitionController extends Controller
 
     private function addOrganization(array $organizations, int $competition_id)
     {
+
         foreach($organizations as $organization){
-            if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->doesntExist()){
+            if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->where('country_id', $organization['country_id'])->doesntExist()){
                 CompetitionOrganization::create(
                     array_merge($organization, [
                         'competition_id'    => $competition_id,
