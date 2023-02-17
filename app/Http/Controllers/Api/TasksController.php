@@ -3,21 +3,18 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DomainsTags;
-use App\Models\Languages;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
 use App\Models\TasksLabels;
-use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\tasks\DeleteTaskRequest;
 use App\Http\Requests\tasks\StoreTaskRequest;
+use App\Http\Requests\tasks\TasksListRequest;
 use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
 use App\Http\Requests\tasks\UpdateTaskContentRequest;
 use App\Http\Requests\tasks\UpdateTaskRecommendationsRequest;
 use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -117,25 +114,26 @@ class TasksController extends Controller
         }
     }
 
-    public function list(Request $request)
+    public function list(TasksListRequest $request)
     {
-        $vaildate = $request->validate([
-            'id'         => 'integer',
-            'identifier' => 'regex:/^[\_\w-]*$/',
-            'lang_id'    => new CheckMultipleVaildIds(new Languages()),
-            'tag_id'     => new CheckMultipleVaildIds(new DomainsTags()),
-            'status'     => 'string|max:255',
-            'limits'     => 'integer',
-            'page'       => 'integer',
-            'search'     => 'string|max:255'
-        ]);
-
         try {
-            $eagerload = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? ['taskAnswers:id,task_id,answer,position','taskAnswers.taskLabels:task_answers_id,lang_id,content'] : [];
+            $eagerload = [
+                'tags:id,is_tag,domain_id,name',
+                'Moderation:moderation_id,moderation_date,moderation_by_userid',
+                'Moderation.user:id,username',
+                'gradeDifficulty:gradeDifficulty_id,grade,difficulty',
+            ];
+            
+            if(auth()->user()->hasRole(['super admin', 'admin'])){
+                $eagerload = array_merge($eagerload, [
+                    'taskAnswers:id,task_id,answer,position',
+                    'taskAnswers.taskLabels:task_answers_id,lang_id,content'
+                ]);
+            }
             $hide = isset($request->id) || isset($request->identifier) ? [] : ['image'];
 
-            $limits = $request->limits ? $request->limits : 10;
-            $searchKey = isset($vaildate['search']) ? $vaildate['search'] : null;
+            $limits = $request->has('limits') ? $request->limits : 10;
+            $searchKey = isset($request->search) ? $request->search : null;
 
             $eagerload = [
                 ...$eagerload,
@@ -204,7 +202,7 @@ class TasksController extends Controller
                 return $temp;
             })->filter()->collapse()->unique()->values();
 
-            $taskCollection = $taskCollection->map(function ($item, $key) use ($taskTitle){ //map title into collection row
+            $taskCollection = $taskCollection->map(function ($item, $key) use ($taskTitle){
                 $item['title'] = $taskTitle[$key]['with_title']['title'];
                 return $item;
             });
@@ -213,14 +211,12 @@ class TasksController extends Controller
                 /** addition filtering done in collection**/
 
                 $taskCollection = $this->filterCollectionList($taskCollection,[
-                        "1,languages" => $request->lang_id ?? false, // 0 = non-nested, 1 = nested
+                        "1,languages" => $request->lang_id ?? false,
                         "1,tags" =>  $request->tag_id ?? false
                     ]
                 );
 
             }
-//            dd($taskCollection->toArray());
-//            dd($availForSearch);
 
             $availForSearch = array("identifier", "title", "description");
             $taskList = CollectionHelper::searchCollection($searchKey, $taskCollection, $availForSearch, $limits);
@@ -240,6 +236,11 @@ class TasksController extends Controller
             ], 500);
         }
 
+    }
+
+    public function show(Tasks $task)
+    {
+        
     }
 
     public function update_settings(UpdateTaskSettingsRequest $request)

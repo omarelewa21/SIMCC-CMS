@@ -6,6 +6,8 @@ use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Base
@@ -61,7 +63,12 @@ class User extends Base
     }
 
     public function roles () {
-        return $this->hasMany(Roles::class,"id",'role_id');
+        return $this->hasMany(Roles::class, "id", 'role_id');
+    }
+
+    public function role ()
+    {
+        return $this->hasOne(Roles::class, 'id', 'role_id');
     }
 
     public function organization () {
@@ -73,7 +80,7 @@ class User extends Base
     }
 
     public function school () {
-        return $this->hasone(School::class,"id",'school_id');
+        return $this->hasne(School::class,"id",'school_id');
     }
 
     public function tasks () {
@@ -106,5 +113,22 @@ class User extends Base
 
     public function getRoleNameAttribute () {
         return $this->roles()->first()->name ?? null;
+    }
+
+    /**
+     * Check if authinticated user has given role
+     * 
+     * @param string|array $role
+     * @return bool
+     */
+    public function hasRole(string|array $roles): bool
+    {
+        if(is_array($roles)){
+            return !is_null(collect($roles)->first(fn($value) =>
+                str::lower(auth()->user()->role()->value('name')) === str::lower($value)
+            ));
+        }
+
+        return str::lower(auth()->user()->role()->value('name')) === str::lower($roles);
     }
 }
