@@ -216,7 +216,12 @@ class CompetitionController extends Controller
 
     public function show(Competition $competition)
     {
-        $data = $competition->load('rounds.levels', 'rounds.roundsAwards', 'competitionOrganization', 'taskDifficultyGroup', 'taskDifficulty');
+        $data = $competition->load(['rounds.levels', 'rounds.roundsAwards', 'competitionOrganization' => function ($query) {
+            if(!is_null(auth()->user()->organization_id)) {
+                $query->where('organization_id',auth()->user()->organization_id);
+            }
+        } , 'taskDifficultyGroup', 'taskDifficulty']);
+
         return response()->json([
             "status"    => 200,
             "message"   => "Competition retrieved successfully",
@@ -812,6 +817,7 @@ class CompetitionController extends Controller
                 break;
             case 2:
             case 4:
+
                 $organization_id = auth()->user()->organization_id;
 
                 $request['organization_id'] = $organization_id;
@@ -822,7 +828,6 @@ class CompetitionController extends Controller
 
                 if($organizationDate->status != 'lock') {
                     $vaildate[] = ['status' => Rule::in(['active', 'ready'])];
-
                 }
                 break;
         }
