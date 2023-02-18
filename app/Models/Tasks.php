@@ -5,7 +5,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class Tasks extends Base
@@ -53,7 +52,7 @@ class Tasks extends Base
         parent::booted();
 
         static::creating(function($task) {
-            $task->created_by_userid = auth()->user()->id;
+            $task->created_by_userid = auth()->id();
         });
 
         static::deleting(function($task) {

@@ -39,7 +39,6 @@ class TasksService
 
         $taskModel = Tasks::with($eagerLoad)
             ->AcceptRequest(['id', 'status', 'identifier'])
-            ->where('tasks.status', '!=', 'deleted')
             ->when(auth()->user()->hasRole(['super admin', 'admin']), 
                 fn($query)=> $query->where('created_by_userid', '!=', auth()->id())
             );
@@ -67,6 +66,11 @@ class TasksService
                     $query->whereIn('domains_tags.id', explode(',', $request->tags));
                 });
             });
+        }
+        if($request->has('currentPage') && $request->currentPage === 'moderation'){
+            $query->whereIn('tasks.status', ['pending moderation', 'rejected']);
+        }else{
+            $query->where('tasks.status', 'active');
         }
         return $query->filter();
     }
