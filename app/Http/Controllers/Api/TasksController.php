@@ -15,6 +15,7 @@ use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
 use App\Http\Requests\tasks\UpdateTaskContentRequest;
 use App\Http\Requests\tasks\UpdateTaskRecommendationsRequest;
 use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
+use App\Http\Services\TasksService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -117,130 +118,29 @@ class TasksController extends Controller
     public function list(TasksListRequest $request)
     {
         try {
-            $eagerload = [
-                'tags:id,is_tag,domain_id,name',
-                'Moderation:moderation_id,moderation_date,moderation_by_userid',
-                'Moderation.user:id,username',
-                'gradeDifficulty:gradeDifficulty_id,grade,difficulty',
-            ];
-            
-            if(auth()->user()->hasRole(['super admin', 'admin'])){
-                $eagerload = array_merge($eagerload, [
-                    'taskAnswers:id,task_id,answer,position',
-                    'taskAnswers.taskLabels:task_answers_id,lang_id,content'
-                ]);
-            }
-            $hide = isset($request->id) || isset($request->identifier) ? [] : ['image'];
-
-            $limits = $request->has('limits') ? $request->limits : 10;
-            $searchKey = isset($request->search) ? $request->search : null;
-
-            $eagerload = [
-                ...$eagerload,
-                'tags:id,is_tag,domain_id,name',
-                'Moderation:moderation_id,moderation_date,moderation_by_userid',
-                'Moderation.user:id,username',
-                'gradeDifficulty:gradeDifficulty_id,grade,difficulty',
-            ];
-
-            $hide = [
-                ...$hide,
-                'created_by_userid',
-                'last_modified_userid'
-            ];
-
-            $taskModel = Tasks::with($eagerload)
-                ->AcceptRequest(['id','status', 'identifier'])
-                ->where('tasks.status', '!=', 'deleted');
-
-            if (!in_array(auth()->user()->role_id,[0,1])) { //if role is not admin, filter by their user respective account
-                $taskModel = $taskModel->where('created_by_userid', '!=', auth()->user()->id);
-            }
-
-            $returnFiltered = Tasks::applyFilter($taskModel, $request)->get()->makeHidden($hide);
-
-            $taskCollection = collect($returnFiltered);
-
-            $taskTitle = $taskCollection->map(function ($item) {
-                foreach($item['languages'] as $row) {
-                    $noTitle = ["id" => $row['id'], "name" => $row['name']];
-                    $withTitle = array_merge($noTitle, ["title" => $row['task_title']]);
-                    return ["no_title" => $noTitle, "with_title" => $withTitle];
-                }
-            });
-
-            /**
-             * Lists of availabe filters
-             */
-            $availTaskStatus = $taskCollection->map(function ($item) {
-                return $item['status'];
-            })->unique()->values();
-
-            $availLang = $taskTitle->map(function ($item,$key) {
-                if(isset($item['no_title'])) {
-                    return $item['no_title'];
-                }
-            })->unique()->values();
-
-            $availDomainType = $taskCollection->map(function ($item) {
-                $temp = [];
-                foreach($item->toArray()['tags'] as $row) {
-                    if($row['domain_id'] && !$row['is_tag']) {
-                        $temp[] = ["id" => $row['id'], "name" => $row['name']];
-                    }
-                }
-                return $temp;
-            })->filter()->collapse()->unique()->values();
-
-            $availTagType = $taskCollection->map(function ($item) {
-                $temp = [];
-                foreach($item->toArray()['tags'] as $row) {
-                    if($row['is_tag']) {
-                        $temp[] = ["id" => $row['id'], "name" => $row['name']];
-                    }
-                }
-                return $temp;
-            })->filter()->collapse()->unique()->values();
-
-            $taskCollection = $taskCollection->map(function ($item, $key) use ($taskTitle){
-                $item['title'] = $taskTitle[$key]['with_title']['title'];
-                return $item;
-            });
-
-            if($request->has('lang_id') || $request->has('tag_id') ) {
-                /** addition filtering done in collection**/
-
-                $taskCollection = $this->filterCollectionList($taskCollection,[
-                        "1,languages" => $request->lang_id ?? false,
-                        "1,tags" =>  $request->tag_id ?? false
-                    ]
-                );
-
-            }
-
-            $availForSearch = array("identifier", "title", "description");
-            $taskList = CollectionHelper::searchCollection($searchKey, $taskCollection, $availForSearch, $limits);
-            $data = array("filterOptions" => ['status' => $availTaskStatus, 'lang' => $availLang, 'domains' => $availDomainType, 'tags' => $availTagType], 'taskLists' => $taskList);
-
+            $taskCollection = TasksService::getTaskListCollection($request);
+            $filterOptions = TasksService::getTaskListFilterOptions($taskCollection, $request);
+            $taskList = CollectionHelper::searchCollection(
+                $request->has('search') ? $request->search : null,
+                $taskCollection,
+                array("identifier", "title", "description"),
+                $request->has('limits') ? $request->limits : 10
+            );
             return response()->json([
-                "status" => 200,
-                "data" => $data
+                "status"    => 200,
+                "data"      => array(
+                    "filterOptions" => $filterOptions,
+                    'taskLists'     => $taskList
+                )
             ]);
         }
-
         catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => $e->getMessage()
+                "status"    => 500,
+                "message"   => "List fetching is not successfull",
+                "error"     => $e->getMessage()
             ], 500);
         }
-
-    }
-
-    public function show(Tasks $task)
-    {
-        
     }
 
     public function update_settings(UpdateTaskSettingsRequest $request)

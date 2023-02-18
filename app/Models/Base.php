@@ -2,27 +2,51 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Base extends Model
 {
-    public function getCreatedByAttribute() {
-
-        if ($this->created_by_userid){
-            $username = User::find($this->created_by_userid)->username;
-
-            return $username . ' ' . ($this->created_at ?? '-');
-        }
-
-        return '-';
+    /**
+     * set created by attribute
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function createdBy(): Attribute
+    {
+        return Attribute::make(
+            get: function($value, $attributes){
+                if (!is_null($attributes['created_by_userid'])){
+                    return sprintf(
+                        "%s %s", 
+                        User::whereId($attributes['created_by_userid'])->value('username'),
+                        !is_null($attributes['created_at']) ? $attributes['created_at'] : '-'
+                    );
+                }
+                return '-';
+            }
+        );
     }
 
-    public function getLastModifiedByAttribute() {
-        if (isset($this->last_modified_userid)){
-            $username = User::find($this->last_modified_userid)->username;
-            return $username . ' ' .$this->updated_at;
-        }
-        return '-';
+    /**
+     * set last modified by attribute
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function lastModifiedBy(): Attribute
+    {
+        return Attribute::make(
+            get: function($value, $attributes){
+                if (!is_null($attributes['last_modified_userid'])){
+                    return sprintf(
+                        "%s %s", 
+                        User::whereId($attributes['last_modified_userid'])->value('username'),
+                        !is_null($attributes['updated_at']) ? $attributes['updated_at'] : '-'
+                    );
+                }
+                return '-';
+            }
+        );
     }
 
     public function tags () {

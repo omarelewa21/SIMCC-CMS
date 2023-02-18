@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
@@ -10,11 +12,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Base
+class User extends Authenticatable 
 {
-    use Notifiable;
-    use HasFactory, HasApiTokens;
-    use Filterable;
+    use Notifiable, HasFactory, HasApiTokens, Filterable;
 
     private static $whiteListFilter = [
         'username',
@@ -113,6 +113,56 @@ class User extends Base
 
     public function getRoleNameAttribute () {
         return $this->roles()->first()->name ?? null;
+    }
+
+    /**
+     * set created by attribute
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function createdBy(): Attribute
+    {
+        return Attribute::make(
+            get: function($value, $attributes){
+                if (!is_null($attributes['created_by_userid'])){
+                    return sprintf(
+                        "%s %s", 
+                        User::whereId($attributes['created_by_userid'])->value('username'),
+                        !is_null($attributes['created_at']) ? $attributes['created_at'] : '-'
+                    );
+                }
+                return '-';
+            }
+        );
+    }
+
+    /**
+     * set last modified by attribute
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function lastModifiedBy(): Attribute
+    {
+        return Attribute::make(
+            get: function($value, $attributes){
+                if (!is_null($attributes['last_modified_userid'])){
+                    return sprintf(
+                        "%s %s", 
+                        User::whereId($attributes['last_modified_userid'])->value('username'),
+                        !is_null($attributes['updated_at']) ? $attributes['updated_at'] : '-'
+                    );
+                }
+                return '-';
+            }
+        );
+    }
+
+    public function getLastModifiedByAttribute() {
+        if (isset($this->last_modified_userid)){
+            $username = User::find($this->last_modified_userid)->username;
+            return $username . ' ' .$this->updated_at;
+        }
+        return '-';
     }
 
     /**

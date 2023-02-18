@@ -13,19 +13,16 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    private function filterCollection ($collection,$filter,$filterVal,$nested=0,$filterBy='id') {
+    private static function filterCollection ($collection, $filter, $filterVal, $nested=0, $filterBy='id')
+    {
         $collection = is_array($collection) ? collect($collection) : $collection;
-
         try {
             $filtered = $collection->filter(function ($fvalue, $fkey) use ($filter, $filterVal, $nested, $filterBy) {
                 return $nested ? collect($fvalue[$filter])->contains($filterBy, $filterVal) : (collect($fvalue)->get($filter) == $filterVal);
             });
-
-
             return $filtered;
         }
         catch(\Exception $e){
-            // do task when error11
             return response()->json([
                 "status" => 500,
                 "message" => "Filter unsuccessful"
@@ -33,7 +30,8 @@ class Controller extends BaseController
         }
     }
 
-    public function filterCollectionList ($collection,$filters,$filterBy="id") {
+    public static function filterCollectionList ($collection, $filters, $filterBy="id")
+    {
 
         try {
             foreach ($filters as $filter => $val) {
@@ -44,7 +42,7 @@ class Controller extends BaseController
                 if($val) {
                     $val = explode(",",$val);
                     foreach($val as $row) {
-                        $collection = $this->filterCollection ($collection,$filter,$row,$nested,$filterBy);
+                        $collection = self::filterCollection($collection, $filter, $row, $nested, $filterBy);
                     }
                 }
             }

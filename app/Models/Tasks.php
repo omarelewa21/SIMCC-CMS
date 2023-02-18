@@ -205,22 +205,6 @@ class Tasks extends Base
         return $this->allowedToUpdateAll();
     }
 
-    public static function applyFilter($query, Request $request)
-    {
-        if($request->filled("domains") || $request->filled("tags")){
-            $query->when($request->filled("domains"), function($query)use($request){
-                $query->whereHas('tags', function($query)use($request){
-                    $query->whereIn('domains_tags.id', explode(',', $request->domains));
-                });
-            })->when($request->filled("tags"), function($query)use($request){
-                $query->whereHas('tags', function($query)use($request){
-                    $query->whereIn('domains_tags.id', explode(',', $request->tags));
-                });
-            });
-        }
-        return $query->filter();
-    }
-
     public function allowedToUpdateAll(): bool
     {
         return ParticipantsAnswer::where('task_id', $this->id)->doesntExist();
