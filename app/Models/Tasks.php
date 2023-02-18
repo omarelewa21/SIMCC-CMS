@@ -54,6 +54,9 @@ class Tasks extends Base
         static::creating(function($task) {
             $task->created_by_userid = auth()->id();
         });
+        static::saving(function($task) {
+            $task->last_modified_userid = auth()->id();
+        });
 
         static::deleting(function($task) {
             $task->taskImage()->delete();
@@ -98,6 +101,11 @@ class Tasks extends Base
 
     public function taskContents () {
         return $this->hasMany(TasksContent::class,'task_id','id');
+    }
+
+    public function rejectReasons()
+    {
+        return $this->morphMany(RejectReasons::class, 'reject')->latest();
     }
 
     public function getAnswerTypeAttribute($value)

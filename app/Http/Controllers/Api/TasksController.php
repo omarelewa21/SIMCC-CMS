@@ -8,7 +8,9 @@ use App\Models\TasksAnswers;
 use App\Models\TasksLabels;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\tasks\ApproveTasksRequest;
 use App\Http\Requests\tasks\DeleteTaskRequest;
+use App\Http\Requests\tasks\RejectTasksRequest;
 use App\Http\Requests\tasks\StoreTaskRequest;
 use App\Http\Requests\tasks\TasksListRequest;
 use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
@@ -312,8 +314,52 @@ class TasksController extends Controller
         
         DB::commit();
         return response()->json([
-            "status" => 200,
-            "message" => "Tasks deleted successfully"
+            "status"    => 200,
+            "message"   => "Tasks deleted successfully"
         ]);
+    }
+
+    public function approve(ApproveTasksRequest $request)
+    {
+        try {
+            Tasks::whereIn('id', $request->ids)->update([
+                'status' => 'active'
+            ]);
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Tasks approved successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks approval operation not successfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reject(RejectTasksRequest $request, Tasks $task)
+    {
+        try {
+            DB::transaction(function () use($task, $request) {
+                $task->rejectReasons()->create([
+                    'reason'            => $request->reason,
+                    'created_by_userid' => auth()->id()
+                ]);
+                $task->status = 'rejected';
+                $task->save();
+            });
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Tasks approved successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks approval operation not successfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
     }
 }

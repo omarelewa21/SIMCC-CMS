@@ -143,6 +143,8 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
         Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
         Route::delete("",[TasksController::class,"delete"])->name('task.delete');
+        Route::post("approve",[TasksController::class,"approve"])->name('task.approve');
+        Route::post("reject/{task}",[TasksController::class,"reject"])->name('task.reject');
     });
 
     Route::group(["prefix" => "collection"], function () {

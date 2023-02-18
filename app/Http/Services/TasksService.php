@@ -31,6 +31,9 @@ class TasksService
                 'taskAnswers.taskLabels:task_answers_id,lang_id,content'
             ]);
         }
+        if($request->has('currentPage') && $request->currentPage === 'moderation'){
+            $eagerLoad[] = 'rejectReasons:id,reject_id,reason,created_at';
+        }
 
         $hide = ['created_by_userid', 'last_modified_userid'];
         if(!$request->has($request->id) && !$request->has('identifier')){
