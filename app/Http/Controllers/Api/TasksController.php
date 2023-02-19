@@ -135,8 +135,7 @@ class TasksController extends Controller
                     'taskLists'     => $taskList
                 )
             ]);
-        }
-        catch(\Exception $e){
+        } catch(\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "List fetching is not successfull",
@@ -346,7 +345,7 @@ class TasksController extends Controller
                     'reason'            => $request->reason,
                     'created_by_userid' => auth()->id()
                 ]);
-                $task->status = 'rejected';
+                $task->status = 'Rejected';
                 $task->save();
             });
 

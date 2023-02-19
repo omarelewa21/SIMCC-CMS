@@ -32,7 +32,7 @@ class TasksService
             ]);
         }
         if($request->has('currentPage') && $request->currentPage === 'moderation'){
-            $eagerLoad[] = 'rejectReasons:id,reject_id,reason,created_at';
+            $eagerLoad[] = 'rejectReasons:id,reject_id,reason,created_at,created_by_userid';
         }
 
         $hide = ['created_by_userid', 'last_modified_userid'];
@@ -71,9 +71,9 @@ class TasksService
             });
         }
         if($request->has('currentPage') && $request->currentPage === 'moderation'){
-            $query->whereIn('tasks.status', ['pending moderation', 'rejected']);
+            $query->whereIn('tasks.status', ['Pending Moderation', 'Rejected']);
         }else{
-            $query->where('tasks.status', 'active');
+            $query->where('tasks.status', 'Active');
         }
         return $query->filter();
     }

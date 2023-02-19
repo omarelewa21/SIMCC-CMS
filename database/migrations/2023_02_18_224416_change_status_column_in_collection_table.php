@@ -14,8 +14,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('tasks', function (Blueprint $table) {
-            DB::statement("ALTER TABLE tasks MODIFY COLUMN status ENUM('Active', 'Pending Moderation', 'Deleted', 'Rejected') DEFAULT 'Pending Moderation'");
+        Schema::table('collection', function (Blueprint $table) {
+            $table->dropColumn('status');
+        });
+        Schema::table('collection', function (Blueprint $table) {
+            $table->enum('status', ['Active', 'Pending Moderation', 'Deleted', 'Rejected'])->default('Pending Moderation');
         });
     }
 

@@ -13,10 +13,12 @@ use App\Models\Tasks;
 use App\Models\User;
 use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
+use App\Http\Requests\collection\CollectionListRequest;
 use App\Http\Requests\collection\DeleteCollectionsRequest;
 use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
+use App\Http\Services\CollectionsService;
 use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -27,113 +29,36 @@ use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
-    public function list (Request $request) {
-
-        $vaildated = $request->validate([
-            "id" => "integer",
-            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
-            'status' => 'alpha',
-            'competition_id' => new CheckMultipleVaildIds(new Competition()),
-            'tag_id' => new CheckMultipleVaildIds(new DomainsTags()),
-            'limits' => 'integer',
-            'page' => 'integer',
-            'search' => 'max:255'
-        ]);
-
-
-        try {
-
-            $limits = $request->limits ? $request->limits : 10; //set default to 10 rows per page
-            $searchKey = isset($vaildated['search']) ? $vaildated['search'] : null;
-            $eagerload = [
-                'reject_reason:reject_id,reason,created_at,created_by_userid',
-                'reject_reason.user:id,username',
-                'reject_reason.role:roles.name',
-                'tags:id,name',
-                'gradeDifficulty',
-                'sections',
-            ];
-
-            $collectionModel = Collections::with($eagerload)
-                ->AcceptRequest(['status', 'id', 'name','identifier']);
-
-            $collections = $collectionModel
-                ->filter()
-                ->get()
-                ->map(function ($item) {
-                        $section = $item->sections->map(function ($section)  {
-                            foreach($section->tasks as $group) {
-                                $tasks = Tasks::with('taskAnswers')->whereIn('id',$group['task_id'])->get()->map(function ($task) {
-                                    return ['id' => $task->id,'task_title' => $task->languages->first()->task_title,'identifier' => $task->identifier] ;
-                                });
-
-                                $groups[] = $tasks;
-                            }
-
-                            $section->tasks = $groups;
-                            return $section;
-                        });
-
-                        return collect($item)->except(['updated_at','created_at','reject_reason','last_modified_userid','created_by_userid']);
-                });
-
-            /**
-             * Lists of availabe filters
-             */
-            $availCollectionsStatus = $collections->map(function ($item) {
-                return $item['status'];
-            })->unique()->values();
-            $availCollectionsCompetition = $collections->map(function ($item) {
-                $competitions = $item->get('competitions');
-
-                return collect($competitions)->map(function ($competition) {
-                    return ["id" => $competition['id'], "name" => $competition['competition']];
-                });
-
-            })->filter()->collapse()->unique()->values();
-            $availTagType = $collections->map(function ($item) {
-                $temp = [];
-
-                foreach($item->toArray()['tags'] as $row) {
-                    $temp[] = ["id" => $row['id'], "name" => $row['name']];
-
-                }
-                return $temp;
-            })->filter()->collapse()->unique()->values();
-
-            /**
-             * EOL Lists of availabe filters
-             */
-
+    public function list (CollectionListRequest $request)
+    {
+        try{
+            $collections = CollectionsService::getCollectionListCollection();
+            $filterOptions = CollectionsService::getCollectionListFilterOptions($collections);
             if($request->has('competition_id') || $request->has('tag_id') ) {
-                /** addition filtering done in collection**/
-
-                $collections = $this->filterCollectionList($collections,[
-                        "1,competitions" => $request->competition_id ?? false, // 0 = non-nested, 1 = nested
-                        "1,tags" =>  $request->tag_id ?? false
-                    ]
-                );
-
+                $collections = $this->filterCollectionList($collections, [
+                    "1,competitions"    => $request->competition_id ?? false,
+                    "1,tags"            =>  $request->tag_id ?? false
+                ]);
             }
-          
-          
-            $availForSearch = array("identifier", "name", "description");
-            $collectionsList = CollectionHelper::searchCollection($searchKey, $collections, $availForSearch, $limits);
-            $data = array("filterOptions" => ['status' => $availCollectionsStatus, 'competition' => $availCollectionsCompetition, 'tags' => $availTagType], 'collectionList' => $collectionsList);
-
+            $collectionsList = CollectionHelper::searchCollection(
+                $request->search ? $request->search : null,
+                $collections,
+                array("identifier", "name", "description"),
+                $request->limits ? $request->limits : 10
+            );
             return response()->json([
-                "status" => 200,
-                "data" => $data
+                "status"    => 200,
+                "data"      => array(
+                    "filterOptions" => $filterOptions,
+                    'taskLists'     => $collectionsList
+                )
             ]);
-        }
-
-        catch(\Exception $e){
-            // do task when error
+        } catch(\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "Retrieve collection unsuccessful",
                 "error"     => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 

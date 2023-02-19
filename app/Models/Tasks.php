@@ -11,7 +11,7 @@ class Tasks extends Base
 {
     use HasFactory, Filterable;
 
-    const STATUS = ['pending moderation', 'active', 'deleted', 'rejected'];
+    const STATUS = ['Pending Moderation', 'Active', 'Deleted', 'Rejected'];
 
     Protected $Table = "task";
     protected $fillable = [

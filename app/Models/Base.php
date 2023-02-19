@@ -16,7 +16,7 @@ class Base extends Model
     {
         return Attribute::make(
             get: function($value, $attributes){
-                if (!is_null($attributes['created_by_userid'])){
+                if (array_key_exists('created_by_userid', $attributes) && !is_null($attributes['created_by_userid'])){
                     return sprintf(
                         "%s %s", 
                         User::whereId($attributes['created_by_userid'])->value('username'),
@@ -37,7 +37,7 @@ class Base extends Model
     {
         return Attribute::make(
             get: function($value, $attributes){
-                if (!is_null($attributes['last_modified_userid'])){
+                if (array_key_exists('last_modified_userid', $attributes) && !is_null($attributes['last_modified_userid'])){
                     return sprintf(
                         "%s %s", 
                         User::whereId($attributes['last_modified_userid'])->value('username'),

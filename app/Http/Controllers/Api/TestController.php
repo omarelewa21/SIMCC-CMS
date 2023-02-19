@@ -246,7 +246,7 @@ class TestController extends Controller
 
         $validated = $request->validate([
             "id" => "array",
-            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')->whereNotIn('created_by_userid', [auth()->user()->id])],
+            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')->whereNotIn('created_by_userid', [auth()->id()])],
             "reject_reason" => "array",
             "reject_reason.*" => 'required|regex:/[a-zA-Z0-9\s]+/'
         ]);
