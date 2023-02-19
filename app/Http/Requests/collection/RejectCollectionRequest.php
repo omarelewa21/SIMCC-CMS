@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Http\Requests\tasks;
+namespace App\Http\Requests\collection;
 
-use App\Models\Tasks;
+use App\Models\Collections;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 
-class RejectTasksRequest extends FormRequest
+class RejectCollectionRequest extends FormRequest
 {
-    private Tasks $task;
+    private Collections $collection;
 
     function __construct(Route $route)
     {
-        $this->task = $route->parameter('task');
+        $this->collection = $route->parameter('collection');
     }
 
     /**
@@ -46,8 +46,8 @@ class RejectTasksRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator){
-            if ($this->task->status !== 'Pending Moderation') {
-                $validator->errors()->add('Status', "You can't reject task which is not in pending status");
+            if ($this->collection->status !== 'Pending Moderation') {
+                $validator->errors()->add('Status', "You can't reject collection which is not in pending status");
             }
         });
     }

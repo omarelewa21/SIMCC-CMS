@@ -76,11 +76,11 @@ class User extends Authenticatable
     }
 
     public function country () {
-        return $this->hasone(Countries::class,"id",'country_id');
+        return $this->hasOne(Countries::class,"id",'country_id');
     }
 
     public function school () {
-        return $this->hasne(School::class,"id",'school_id');
+        return $this->hasOne(School::class,"id",'school_id');
     }
 
     public function tasks () {
@@ -124,7 +124,7 @@ class User extends Authenticatable
     {
         return Attribute::make(
             get: function($value, $attributes){
-                if (!is_null($attributes['created_by_userid'])){
+                if (array_key_exists('created_by_userid', $attributes) && !is_null($attributes['created_by_userid'])){
                     return sprintf(
                         "%s %s", 
                         User::whereId($attributes['created_by_userid'])->value('username'),
@@ -145,7 +145,7 @@ class User extends Authenticatable
     {
         return Attribute::make(
             get: function($value, $attributes){
-                if (!is_null($attributes['last_modified_userid'])){
+                if (array_key_exists('last_modified_userid', $attributes) && !is_null($attributes['last_modified_userid'])){
                     return sprintf(
                         "%s %s", 
                         User::whereId($attributes['last_modified_userid'])->value('username'),

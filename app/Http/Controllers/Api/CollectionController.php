@@ -7,19 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Collections;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
-use App\Models\DomainsTags;
-use App\Models\Competition;
-use App\Models\Tasks;
 use App\Models\User;
-use App\Rules\CheckCollectionUse;
 use App\Helpers\General\CollectionCompetitionStatus;
+use App\Http\Requests\collection\ApproveCollectionRequest;
 use App\Http\Requests\collection\CollectionListRequest;
 use App\Http\Requests\collection\DeleteCollectionsRequest;
+use App\Http\Requests\collection\RejectCollectionRequest;
 use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
 use App\Http\Services\CollectionsService;
-use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,12 +29,12 @@ class CollectionController extends Controller
     public function list (CollectionListRequest $request)
     {
         try{
-            $collections = CollectionsService::getCollectionListCollection();
+            $collections = CollectionsService::getCollectionListCollection($request);
             $filterOptions = CollectionsService::getCollectionListFilterOptions($collections);
             if($request->has('competition_id') || $request->has('tag_id') ) {
                 $collections = $this->filterCollectionList($collections, [
                     "1,competitions"    => $request->competition_id ?? false,
-                    "1,tags"            =>  $request->tag_id ?? false
+                    "1,tags"            => $request->tag_id ?? false
                 ]);
             }
             $collectionsList = CollectionHelper::searchCollection(
@@ -83,7 +80,7 @@ class CollectionController extends Controller
             '*.sections.*.allow_skip' => 'boolean|required',
             '*.sections.*.description' => 'string|max:65535',
         ]))->map(function ($item,$index) use (&$tags,&$recommendation,&$sections,&$role_id) {
-            $item['settings']['status'] = (auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending');
+            $item['settings']['status'] = (auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'Active' : 'Pending Moderation');
             $item['settings']['created_by_userid'] = auth()->user()->id;
             $tags[] = Arr::pull($item, 'settings.tags');
             $recommendation[] = Arr::pull($item, 'recommendations');
@@ -329,7 +326,7 @@ class CollectionController extends Controller
             collect($request->all())->map(function ($id) {
                 $collection = Collections::findOrFail($id)->first();
                 if (CollectionCompetitionStatus::CheckStatus($id, 'closed') || CollectionCompetitionStatus::CheckStatus($id, 'computed')) {
-                    $collection->status = 'deleted';
+                    $collection->status = 'Deleted';
                     $collection->save();
                 } else {
                     $collection->forceDelete();
@@ -352,5 +349,49 @@ class CollectionController extends Controller
     private function CheckUploadedAnswersCount($collection_id) {
         $uploadAnswersCount = CompetitionLevels::with(['participantsAnswersUploaded'])->where('collection_id',$collection_id)->get()->pluck('participantsAnswersUploaded')->flatten()->count();
         $uploadAnswersCount == 0 ?:  abort(403, 'Unauthorized action, Answers have been uploaded to collection');;
+    }
+
+    public function approve(ApproveCollectionRequest $request)
+    {
+        try {
+            Collections::whereIn('id', $request->ids)->update([
+                'status' => 'Active'
+            ]);
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Collections approved successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Collections approval operation not successfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reject(RejectCollectionRequest $request, Collections $collection)
+    {
+        try {
+            DB::transaction(function () use($collection, $request) {
+                $collection->reject_reason()->create([
+                    'reason'            => $request->reason,
+                    'created_by_userid' => auth()->id()
+                ]);
+                $collection->status = 'Rejected';
+                $collection->save();
+            });
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Collections Rejected successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks Rejection operation not successfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
     }
 }

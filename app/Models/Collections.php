@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
-use Illuminate\Support\Arr;
 
 class Collections extends Base
 {
@@ -28,6 +27,18 @@ class Collections extends Base
         'allow_update_sections',
     );
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::creating(function($collection) {
+            $collection->created_by_userid = auth()->id();
+        });
+        static::saving(function($collection) {
+            $collection->last_modified_userid = auth()->id();
+        });
+    }
+
     public function taskTags() {
         return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
     }
@@ -48,8 +59,9 @@ class Collections extends Base
         return $this->belongsTo(CompetitionLevels::class,'id','collection_id');
     }
 
-    public function reject_reason () {
-        return $this->morphMany(RejectReasons::class,'reject');
+    public function rejectReasons()
+    {
+        return $this->morphMany(RejectReasons::class, 'reject')->latest();
     }
 
     public function getCompetitionsAttribute () {

@@ -69,7 +69,7 @@ class TasksController extends Controller
                     'language_id' => env('APP_DEFAULT_LANG'),
                     'task_title' => $row->get('title'),
                     'content' => $row->get('content'),
-                    'status' => auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending moderation',
+                    'status' => auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'Active' : 'Pending Moderation',
                     'created_by_userid' => auth()->user()->id
                 ]);
 
@@ -188,7 +188,7 @@ class TasksController extends Controller
                     $task->task_title = $content['title'];
                 }
                 $task->content = $content['content'];
-                $task->status = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending moderation';
+                $task->status = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'Active' : 'Pending Moderation';
                 $task->save();
             }
 
@@ -196,7 +196,7 @@ class TasksController extends Controller
                 Tasks::findOrFail($request->id)
                     ->taskContents()
                     ->where('language_id', '!=' ,env('APP_DEFAULT_LANG'))
-                    ->update(['status' => 'pending moderation']);
+                    ->update(['status' => 'Pending Moderation']);
             }
 
             DB::commit();
@@ -322,7 +322,7 @@ class TasksController extends Controller
     {
         try {
             Tasks::whereIn('id', $request->ids)->update([
-                'status' => 'active'
+                'status' => 'Active'
             ]);
             return response()->json([
                 "status"    => 200,
@@ -351,12 +351,12 @@ class TasksController extends Controller
 
             return response()->json([
                 "status"    => 200,
-                "message"   => "Tasks approved successfully"
+                "message"   => "Task Rejected successfully"
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks approval operation not successfull",
+                "message"   => "Task Rejection operation not successfull",
                 "error"     => $e->getMessage()
             ], 500);
         }

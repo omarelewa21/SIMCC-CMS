@@ -12,22 +12,28 @@ class CollectionsService
     /**
      * get collection list collection
      * 
+     * @param \App\Http\Requests\collection\CollectionListRequest $request
      * @return \Illuminate\Support\Collection
      */
-    public static function getCollectionListCollection()
+    public static function getCollectionListCollection(CollectionListRequest $request)
     {
+        $query = Collections::with([
+            'rejectReasons:id,reject_id,reason,created_at,created_by_userid',
+            'tags:id,name',
+            'gradeDifficulty',
+            'sections',
+        ])
+        ->AcceptRequest(['status', 'id', 'name', 'identifier'])
+        ->filter();
+
+        if($request->has('currentPage') && $request->currentPage === 'moderation'){
+            $query->whereIn('status', ['Pending Moderation', 'Rejected']);
+        } else {
+            $query->where('status', 'Active');
+        }
+
         return
-            Collections::with([
-                'reject_reason:reject_id,reason,created_at,created_by_userid',
-                'reject_reason.user:id,username',
-                'reject_reason.role:roles.name',
-                'tags:id,name',
-                'gradeDifficulty',
-                'sections',
-            ])
-            ->AcceptRequest(['status', 'id', 'name', 'identifier'])
-            ->filter()
-            ->get()
+            $query->get()
             ->map(function ($item){
                 $item->sections->map(function ($section) {
                     foreach($section->tasks as $group) {
@@ -41,7 +47,6 @@ class CollectionsService
                     $section->tasks = $groups;
                     return $section;
                 });
-
                 return collect($item)->except(['updated_at','created_at','reject_reason','last_modified_userid','created_by_userid']);
         });
     }

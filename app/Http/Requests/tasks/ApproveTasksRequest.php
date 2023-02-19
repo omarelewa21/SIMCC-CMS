@@ -26,7 +26,7 @@ class ApproveTasksRequest extends FormRequest
     {
         return [
             'ids'       => 'required|array|min:1',
-            'ids.*'     => [Rule::exists('tasks', 'id')->whereNotIn('status', ['active', 'deleted'])]
+            'ids.*'     => [Rule::exists('tasks', 'id')->whereNotIn('status', ['Active', 'Deleted'])]
         ];
     }
 }
