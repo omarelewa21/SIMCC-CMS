@@ -110,7 +110,7 @@ class CompetitionController extends Controller
                     break;
             }
 
-            switch ($competition->competition_mode) {
+            switch ($competition->format) {
                 case 0: //local competition
                     if (isset($earliestOrganizationCompetitionDate)) {
                         if ($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
