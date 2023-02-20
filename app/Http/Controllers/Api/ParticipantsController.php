@@ -141,7 +141,7 @@ class ParticipantsController extends Controller
 
                     if($counter){
                         $counterYear = substr($counter,0,2);
-                      
+
                         if(intval($currentYear) > intval($counterYear)) {
                             $country->participant_counter = $indexNo;
                         }
@@ -184,7 +184,7 @@ class ParticipantsController extends Controller
                     return $letter;
                 };
                 $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_LEFT);
-               
+
                 $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
                 $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
                 $row["country_id"] = $country_id;
@@ -226,7 +226,7 @@ class ParticipantsController extends Controller
         catch(QueryException $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Create Participants unsuccessful" .$e, 
+                "message" => "Create Participants unsuccessful" .$e,
             ]);
         }
     }

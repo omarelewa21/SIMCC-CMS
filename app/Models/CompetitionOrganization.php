@@ -29,7 +29,7 @@ class CompetitionOrganization extends Base
     protected $appends =['created_by','last_modified_by','dates','organization_name'];
 
     protected $hidden = ['created_by_userid','last_modified_userid'];
-    
+
     public static function booted()
     {
         parent::booted();
@@ -79,6 +79,22 @@ class CompetitionOrganization extends Base
 
     public function getOrganizationNameAttribute () {
         return $this->organization()->pluck('name')->first();
+    }
+
+    public function getStatusAttribute($value) {
+        $status = strtolower($value);
+
+        if($status == 'lock' && !in_array(auth()->user()->role_id,[1,2])) {
+            return "lock";
+        }
+
+        switch($status) {
+            case "added" :
+            case "active" :
+                return "active";
+            default :
+                return $status;
+        }
     }
 
 

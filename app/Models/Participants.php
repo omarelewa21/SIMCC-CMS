@@ -104,7 +104,7 @@ class Participants extends Base
                     'organization_id'   => auth()->user()->organization_id
                 ])->pluck('id')->toArray();
                 $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
-                    ->orWhere("school_id" , auth()->user()->school_id);
+                    ->orWhere("schools.id" , auth()->user()->school_id);
                 break;
         }
     }
