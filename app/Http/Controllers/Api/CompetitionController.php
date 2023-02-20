@@ -119,7 +119,7 @@ class CompetitionController extends Controller
                         }
                     }
                     break;
-                case 2: //international competition
+                case 1: //international competition
                     if (date('Y-m-d', strtotime('now')) <= $competition->global_registration_end_date) { // allow to edit grades if registration is still open
                         $competition->allowed_grades = $request->allowed_grades;
                     }
