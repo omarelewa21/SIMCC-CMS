@@ -35,6 +35,7 @@ use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
+use Exception;
 
 //update participant session once competition mode change, add this changes once participant session done
 
@@ -76,7 +77,11 @@ class CompetitionController extends Controller
 
     public function update(Competition $competition, UpdateCompetitionRequest $request) {
         try {
-            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id', $competition->id)->firstOrFail()->competition_date_earliest;
+            $earliestOrganizationCompetitionDate = CompetitionOrganization::where('competition_id', $competition->id)
+                ->join('competition_organization_date', 'competition_organization_date.competition_organization_id', 'competition_organization.id')
+                ->select('competition_organization_date.competition_date')
+                ->orderBy('competition_date')
+                ->first();
 
             !$request->has('alias')  ?: $competition->alias = $request->alias;
             !$request->has('name')   ?: $competition->name = $request->name;
@@ -111,21 +116,19 @@ class CompetitionController extends Controller
             }
 
             switch ($competition->format) {
-                case 0: //local competition
-                    if (isset($earliestOrganizationCompetitionDate)) {
-                        if ($earliestOrganizationCompetitionDate->competition_date < date('Y-m-d', strtotime('now'))) // don't allow to update grades if organization earliest competition date is >= today
-                        {
-                            $competition->allowed_grades = $request->allowed_grades;
-                        }
+                case Competition::LOCAL:
+                    if (is_null($earliestOrganizationCompetitionDate) || now()->lt($earliestOrganizationCompetitionDate->competition_date)) {
+                        // allow to edit grades if registration is still open
+                        $competition->allowed_grades = $request->allowed_grades;
                     }
                     break;
-                case 1: //international competition
-                    if (date('Y-m-d', strtotime('now')) <= $competition->global_registration_end_date) { // allow to edit grades if registration is still open
+                case Competition::GOLBAL:
+                    if ( now()->lte($competition->global_registration_end_date) ) {
+                        // allow to edit grades if registration is still open
                         $competition->allowed_grades = $request->allowed_grades;
                     }
                     break;
             }
-
             $competition->save();
 
             return response()->json([
