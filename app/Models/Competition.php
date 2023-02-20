@@ -10,6 +10,9 @@ class Competition extends Base
 {
     use HasFactory, Filterable;
 
+    const GOLBAL = 1;       // format column
+    const LOCAL = 0;        // format column
+
     protected $table = "competition";
 
     protected $with = ['rounds'];
