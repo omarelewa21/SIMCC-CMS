@@ -27,7 +27,8 @@ class DomainsTags extends Model
         "is_tag",
         "created_by_userid",
         "modified_by_userid",
-        "status"
+        "status",
+        "deleted_at"
     ];
 
     public function created_by ()
