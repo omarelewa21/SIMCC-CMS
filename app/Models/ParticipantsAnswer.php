@@ -52,8 +52,11 @@ class ParticipantsAnswer extends Model
             return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
         }
 
-        $minMarks = CompetitionTasksMark::where('level_id', $level_id)->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id'))->value('min_marks');
-        return $minMarks ? $minMarks : 0;
+        $minMarks = CompetitionTasksMark::where('level_id', $level_id)
+            ->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id')->toArray() )
+            ->value('min_marks');
+
+        return $minMarks ?? 0;
     }
 
     public function getIsCorrectAnswerAttribute($level_id): bool

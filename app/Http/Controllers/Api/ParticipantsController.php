@@ -245,6 +245,7 @@ class ParticipantsController extends Controller
             ->select(
                 'participants.id',
                 'participants.name',
+                'participants.email',
                 'participants.index_no',
                 'participants.class',
                 'participants.tuition_centre_id',
@@ -511,7 +512,7 @@ class ParticipantsController extends Controller
             'class' => "max:20",
             'grade' => ['required','integer','min:1','max:99',new CheckParticipantGrade],
             'school_type' => ['required',Rule::in(0,1)],
-            "tuition_centre_id" => ['exclude_if:for_partner,1','exclude_if:school_type,0','integer',new CheckSchoolStatus(1,$participantCountryId)],
+            "tuition_centre_id" => ['exclude_if:for_partner,1','exclude_if:school_type,0','integer','nullable',new CheckSchoolStatus(1,$participantCountryId)],
             "school_id" => ['required_if:school_type,0','integer','nullable',new CheckSchoolStatus(0,$participantCountryId)],
             'password' => ['confirmed','min:8','regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/'],
         );
