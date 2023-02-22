@@ -245,6 +245,7 @@ class ParticipantsController extends Controller
             ->select(
                 'participants.id',
                 'participants.name',
+                'participants.email',
                 'participants.index_no',
                 'participants.class',
                 'participants.tuition_centre_id',
