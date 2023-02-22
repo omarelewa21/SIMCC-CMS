@@ -246,6 +246,7 @@ class ParticipantsController extends Controller
                 'participants.id',
                 'participants.name',
                 'participants.index_no',
+                'participants.email',
                 'participants.class',
                 'participants.tuition_centre_id',
                 'participants.grade',
