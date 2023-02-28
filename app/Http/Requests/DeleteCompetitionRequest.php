@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\AllowedToDeleteCompetitionRule;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class DeleteCompetitionRequest extends FormRequest
     {
         return [
             "id"    => "array",
-            "id.*"  => ["required", "integer", Rule::exists("competition", "id")->where("status", "active"), new AllowedToDeleteCompetitionRule]
+            "id.*"  => ["required", "integer", Rule::exists("competition", "id")->where(fn(Builder $query) => $query->where("status", "active")), new AllowedToDeleteCompetitionRule]
         ];
     }
 }
