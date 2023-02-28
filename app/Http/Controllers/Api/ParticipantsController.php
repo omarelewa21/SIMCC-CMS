@@ -57,7 +57,8 @@ class ParticipantsController extends Controller
             "participant.*.partner_userid" => "exclude_if:*.for_partner,0|required_if:*.for_partner,1|integer|exists:users,id",
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1','required_if:*.school_id,null','integer','nullable',new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5','required_if:*.tuition_centre_id,null','nullable','integer',new CheckSchoolStatus],
-            "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
+            "participant.*.email"     => ['sometimes', 'email']
+            // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
 
         $validated = $request->validate($validate);
@@ -247,6 +248,7 @@ class ParticipantsController extends Controller
                 'participants.name',
                 'participants.email',
                 'participants.index_no',
+                'participants.email',
                 'participants.class',
                 'participants.tuition_centre_id',
                 'participants.grade',
@@ -512,6 +514,7 @@ class ParticipantsController extends Controller
             'class' => "max:20",
             'grade' => ['required','integer','min:1','max:99',new CheckParticipantGrade],
             'school_type' => ['required',Rule::in(0,1)],
+            'email' => ['sometimes', 'email'],
             "tuition_centre_id" => ['exclude_if:for_partner,1','exclude_if:school_type,0','integer','nullable',new CheckSchoolStatus(1,$participantCountryId)],
             "school_id" => ['required_if:school_type,0','integer','nullable',new CheckSchoolStatus(0,$participantCountryId)],
             'password' => ['confirmed','min:8','regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/'],
@@ -548,6 +551,7 @@ class ParticipantsController extends Controller
             $participant->last_modified_userid = auth()->user()->id;
             $participant->grade = $validated['grade'];
             $participant->class = $validated['class'];
+            $participant->email = $validated['email'];
 
             if($validated['school_type'] == 1 & (auth()->user()->role_id == 0 || auth()->user()->role_id == 1 || auth()->user()->role_id == 2 || auth()->user()->role_id == 4)) { //0 for school, 1 for private
 
