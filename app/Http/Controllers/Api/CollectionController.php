@@ -269,6 +269,7 @@ class CollectionController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+
         DB::commit();
         return response()->json([
             "status"  => 200,
@@ -280,12 +281,11 @@ class CollectionController extends Controller
     {
         try {
             Collections::whereIn('id', $request->ids)->update([
-                'status' => 'Active'
+                'status'                => 'Active',
+                'approved_by_userid'    => auth()->id(),
+                'last_modified_userid'  => auth()->id()
             ]);
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Collections approved successfully"
-            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -293,6 +293,11 @@ class CollectionController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Collections approved successfully"
+        ]);
     }
 
     public function reject(RejectCollectionRequest $request, Collections $collection)
@@ -307,10 +312,6 @@ class CollectionController extends Controller
                 $collection->save();
             });
 
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Collections Rejected successfully"
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -318,5 +319,10 @@ class CollectionController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Collections Rejected successfully"
+        ]);
     }
 }
