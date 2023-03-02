@@ -39,10 +39,9 @@ class Collections extends Base
             $collection->status = auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'Active' : 'Pending Moderation';
         });
 
-        static::saved(function(self $collection) {
+        static::saving(function(self $collection) {
             if($collection->isDirty()){
                 $collection->last_modified_userid = auth()->id();
-                $collection->save();
             }
         });
 
