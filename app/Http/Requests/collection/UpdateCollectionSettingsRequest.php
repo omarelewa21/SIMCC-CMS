@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\collection;
 
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class UpdateCollectionSettingsRequest extends FormRequest
             'settings.time_to_solve'        => 'required|integer|min:0|max:600',
             'settings.initial_points'       => 'integer|min:0',
             'settings.tags'                 => 'array',
-            'settings.tags.*'               => ['integer', Rule::exists('domains_tags',"id")->where('is_tag',1)],
+            'settings.tags.*'               => ['integer', Rule::exists('domains_tags',"id")->where(fn(Builder $query) => $query->where('is_tag', 1))],
             'settings.description'          => 'string|max:65535',
         ];
     }

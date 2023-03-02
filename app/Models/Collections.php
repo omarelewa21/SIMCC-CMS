@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collections extends Base
 {
-    use HasFactory,Filterable;
+    use HasFactory,Filterable, SoftDeletes;
 
     private static $whiteListFilter = [
         'name',
@@ -36,6 +37,12 @@ class Collections extends Base
         });
         static::saving(function($collection) {
             $collection->last_modified_userid = auth()->id();
+        });
+        static::deleted(function($collection) {
+            self::withTrashed()->whereId($collection->id)->update([
+                'status' => 'deleted',
+                'last_modified_userid' => auth()->id()
+            ]);
         });
     }
 

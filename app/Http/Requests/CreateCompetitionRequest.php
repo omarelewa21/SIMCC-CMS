@@ -4,10 +4,10 @@ namespace App\Http\Requests;
 
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckLevelUsedGrades;
-use App\Rules\CheckOrganizationCountryInCompetition;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\Query\Builder;
 
 class CreateCompetitionRequest extends FormRequest
 {
@@ -40,10 +40,12 @@ class CreateCompetitionRequest extends FormRequest
             "allowed_grades.*"                      => "required|integer|min:1" ,
             "format"                                => "required|boolean",
             "re-run"                                => "required|boolean",
-            "parent_competition_id"                 => ["required_if:re-run,1", "integer", "nullable", Rule::exists('competition','id')->where('format', 0)->where('status', 'closed')],    //use for re-run competition,
+            "parent_competition_id"                 => ["required_if:re-run,1", "integer", "nullable", Rule::exists('competition','id')->where(function(Builder $query){
+                                                            return $query->where('format', 0)->where('status', 'closed');
+                                                        })],    //use for re-run competition,
             "difficulty_group_id"                   => "required|integer|exists:difficulty_groups,id",
             "organizations"                         => 'required|array',
-            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
+            "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where(fn(Builder $query) => $query->where('status','active')), "distinct"],
             "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
             "organizations.*.translate"             => "json",
             "organizations.*.edit_sessions.*"       => 'boolean',
@@ -58,7 +60,7 @@ class CreateCompetitionRequest extends FormRequest
             "rounds.*.default_award_points"         => "integer|nullable",
             "rounds.*.levels"                       => "array|required",
             "rounds.*.levels.*.name"                => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "rounds.*.levels.*.collection_id"       => ["integer", "nullable", Rule::exists('collection','id')->where('status','active')],
+            "rounds.*.levels.*.collection_id"       => ["integer", "nullable", Rule::exists('collection','id')->where(fn(Builder $query) => $query->where('status','active'))],
             "rounds.*.levels.*.grades"              => "array|required",
             "rounds.*.levels.*.grades.*"            => ["required", "integer", new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
         ];

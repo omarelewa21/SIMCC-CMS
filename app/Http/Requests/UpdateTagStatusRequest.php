@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,7 +27,7 @@ class UpdateTagStatusRequest extends FormRequest
     {
         return [
             "id"    => "array",
-            "id.*"  => ['required', 'integer', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')]
+            "id.*"  => ['required', 'integer', Rule::exists('domains_tags', 'id')->where(fn(Builder $query) => $query->whereNull('deleted_at'))]
         ];
     }
 }

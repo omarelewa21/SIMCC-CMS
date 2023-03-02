@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use Notification;
+use Illuminate\Support\Facades\Notification;
 use App\Notifications\SendNotification;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Countries;
@@ -75,75 +76,42 @@ class SchoolController extends Controller
         }
     }
 
-    public function update (Request $request) {
-
-        $validated = $request->validate([
-            "id" => "required|integer|exists:schools,id",
-            "name" => ["sometimes","required","distinct","regex:/^[\'\;\.\,\s\(\)\[\]\w-]*$/",new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
-            "address" => "max:255",
-            "postal" => "integer",
-            "phone" => "required|regex:/^[0-9]*$/",
-            "email" => "required|email",
-            "province" => "sometimes|required|max:255",
-        ]);
-
+    public function update (UpdateSchoolRequest $request)
+    {
         try {
+            $editOwnRoles = ['Country Partner', 'Teacher', 'Country Partner Assistant', 'School Manager'];
+            $school = School::whereId($request->id)->where('status', '!=', 'deleted')->firstOrFail();
+            $user = auth()->user();
 
-            $EditOwnRoleIds = [2,3,4,5]; // default roles
-            $viewEditOwn = in_array(auth()->user()->role_id, $EditOwnRoleIds) ? true : false; //return true if role id belongs to country partner , partner assistant, school manager and teacher
-            $school = School::where('id',($request->id))->where('status','!=','deleted')->firstORFail();
-
-            if($viewEditOwn) {
-                if($school->status == 'pending' || $school->status == "rejected"){
-                    switch(auth()->user()->role_id){
-                        case 2:
-                        case 4:
-                            $idAllowed= User::where(['organization_id' => auth()->user()->organization_id,'country_id' => auth()->user()->country_id])->whereIn('role_id',[2,4])->get()->pluck('id')->toArray(); // country partner and assistance id
-                            $idAllowed[] = auth()->user()->id;
-
-
-                            if (!in_array($school->created_by_userid,$idAllowed))  {
+            if($user->hasRole($editOwnRoles)) {
+                if(in_array($school->status, ['pending', 'rejected'])){
+                    if($user->hasRole(['Country Partner', 'Country Partner Assistant'])){
+                        $idAllowed = User::where(['organization_id' => $user->organization_id,'country_id' => $user->country_id])
+                                        ->whereIn('role_id', [2,4])->pluck('id')->toArray();
+                            $idAllowed[] = $user->id;
+                            if (!in_array($school->created_by_userid, $idAllowed))  {
                                 return response()->json([
-                                    "status" => 401,
+                                    "status"  => 401,
                                     "message" => "School update unsuccessful, only allowed to edit pending school created by country partner or assistance"
-                                ]);
+                                ], 401);
                             };
-                            break;
                     }
+                    if ($request->filled($request->name)) $school->name = $request->name;
+                    if ($request->filled($request->province)) $school->province = $request->province;
 
-                    if (isset( $request->name)) $school->name = $request->name;
-                    if (isset( $request->province)) $school->province = $request->province;
                 } else {
-
-                    if((auth()->user()->role_id == 2 || auth()->user()->role_id == 4) && (isset( $request->name) ||  $request->province)) {
-                        if (isset( $request->name)) $school->name = $request->name;
-                        if (isset( $request->province)) $school->province = $request->province;
+                    if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('$request->name') ||  $request->has('province')) ) {
+                        if($request->filled('name')) $school->name = $request->name;
+                        if($request->filled('province')) $school->province = $request->province;
                         $school->status = 'pending';
-                    }
-
-                    // country partner and teacher role unable to edit school from other country
-                    if (in_array(auth()->user()->role_id,[2,4]) && $school->country_id != auth()->user()->country_id) {
-                        return response()->json([
-                            "status" => 401,
-                            "message" => "School update unsuccessful, only allowed to edit school's from current country"
-                        ]);
-                    }
-
-                    if (in_array(auth()->user()->role_id,[3,5]) && auth()->user()->school_id != $school->id) {
-                        return response()->json([
-                            "status" => 401,
-                            "message" => "School update unsuccessful, only allowed to edit current school"
-                        ]);
                     }
                 }
 
-            }
-            else
-            {
+            } else {
                 $school->status = "active";
             }
 
-            if((auth()->user()->role_id === 0 || auth()->user()->role_id === 1))  {
+            if($user->hasRole(['Super Admin', 'Admin']))  {
                 $school->name = $request->name ?? $school->name;
                 $school->province = $request->province ?? $school->province;
             }
@@ -152,24 +120,22 @@ class SchoolController extends Controller
             $school->email = $request->email;
             $school->phone = $request->phone;
             $school->postal = $request->postal;
-            $school->last_modified_userid = auth()->user()->id;
+            $school->last_modified_userid = $user->id;
             $school->save();
 
             return response()->json([
-                "status" => 200 ,
-                "message" => "School update successful",
-                "data" => $school
+                "status"    => 200,
+                "message"   => "School update successful",
+                "data"      => $school
             ]);
 
         }
-
         catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "School update unsuccessful"
-            ]);
-
+                "status"    => 500,
+                "message"   => "School update unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
