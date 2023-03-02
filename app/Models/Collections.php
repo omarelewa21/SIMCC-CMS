@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ApprovedByTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collections extends Base
 {
-    use HasFactory,Filterable, SoftDeletes;
+    use HasFactory, Filterable, SoftDeletes, ApprovedByTrait;
 
     private static $whiteListFilter = [
         'name',
@@ -26,6 +27,7 @@ class Collections extends Base
         'Moderators',
         'allow_delete',
         'allow_update_sections',
+        'approved_by'
     );
 
     public static function booted()
