@@ -12,11 +12,10 @@ class CollectionCompetitionStatus
      */
     public static function CheckStatus(int $collectionId, string $status): bool
     {
-        $activeCompetition = CompetitionLevels::with(['rounds.competition' => function ($query) use($status) {
-            $query->where('status', $status);
-        }
-        ])->where('collection_id', $collectionId)->pluck('rounds.competition')->filter()->count();
-
-        return $activeCompetition > 0;
+        return CompetitionLevels::where('collection_id', $collectionId)
+            ->join('competition_rounds', 'competition_rounds.id', 'competition_levels.round_id')
+            ->join('competition', 'competition.id', 'competition_rounds.competition_id')
+            ->where('competition.status', $status)
+            ->exists();
     }
 }

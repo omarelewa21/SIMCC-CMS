@@ -401,25 +401,19 @@ class CollectionController extends Controller
     {
         DB::beginTransaction();
         try {
-            collect($request->all())->map(function ($id) {
-                $collection = Collections::findOrFail($id)->first();
-                if (CollectionCompetitionStatus::CheckStatus($id, 'closed') || CollectionCompetitionStatus::CheckStatus($id, 'computed')) {
-                    $collection->status = 'deleted';
-                    $collection->save();
-                } else {
-                    $collection->forceDelete();
-                }
-            });
+            Collections::whereIn('id', $request->id)->get()
+                ->each(fn($collection) => $collection->delete());
+
         } catch(\Exception $e){
             return response()->json([
                 "status"    => 500,
-                "message"   => "collection delete unsuccessful" . $e->getMessage(),
+                "message"   => "collection delete unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
         DB::commit();
         return response()->json([
-            "status" => 200,
+            "status"  => 200,
             "message" => "collection delete successful"
         ]);
     }
