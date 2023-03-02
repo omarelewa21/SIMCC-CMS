@@ -32,13 +32,19 @@ class Collections extends Base
     {
         parent::booted();
 
-        static::creating(function($collection) {
+        static::creating(function(self $collection) {
             $collection->created_by_userid = auth()->id();
+            $collection->status = auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'Active' : 'Pending Moderation';
         });
-        static::saving(function($collection) {
-            $collection->last_modified_userid = auth()->id();
+
+        static::saved(function(self $collection) {
+            if($collection->isDirty()){
+                $collection->last_modified_userid = auth()->id();
+                $collection->save();
+            }
         });
-        static::deleted(function($collection) {
+
+        static::deleted(function(self $collection) {
             self::withTrashed()->whereId($collection->id)->update([
                 'status' => 'deleted',
                 'last_modified_userid' => auth()->id()

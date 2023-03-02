@@ -6,27 +6,25 @@ use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Collections;
 use App\Models\CollectionSections;
-use App\Models\CompetitionLevels;
 use App\Models\User;
-use App\Helpers\General\CollectionCompetitionStatus;
-use App\Http\Requests\collection\ApproveCollectionRequest;
-use App\Http\Requests\collection\CollectionListRequest;
-use App\Http\Requests\collection\DeleteCollectionsRequest;
-use App\Http\Requests\collection\RejectCollectionRequest;
-use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
-use App\Http\Requests\collection\UpdateCollectionSectionRequest;
-use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
+use App\Http\Requests\Collection\ApproveCollectionRequest;
+use App\Http\Requests\Collection\CollectionListRequest;
+use App\Http\Requests\Collection\DeleteCollectionsRequest;
+use App\Http\Requests\Collection\RejectCollectionRequest;
+use App\Http\Requests\Collection\UpdateCollectionRecommendationsRequest;
+use App\Http\Requests\Collection\UpdateCollectionSectionRequest;
+use App\Http\Requests\Collection\UpdateCollectionSettingsRequest;
+use App\Http\Requests\Collection\CreateCollectionRequest;
+use App\Http\Requests\Collection\DeleteSectionsRequest;
 use App\Http\Services\CollectionsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-
 
 class CollectionController extends Controller
 {
-    public function list (CollectionListRequest $request)
+    public function list(CollectionListRequest $request)
     {
         try{
             $collections = CollectionsService::getCollectionListCollection($request);
@@ -59,40 +57,20 @@ class CollectionController extends Controller
         }
     }
 
-    public function create (Request $request) {
-
-        $validated = collect($request->validate([
-            '*.settings.name' => 'required|distinct|unique:collection,name|regex:/^[\/\.\,\s\(\)\[\]\w-]*$/',
-            '*.settings.identifier' => 'required|distinct|unique:collection,identifier|regex:/^[\/\_\w-]*$/',
-            '*.settings.time_to_solve' => 'required|integer|min:0|max:600',
-            '*.settings.initial_points' => 'integer|min:0',
-            '*.settings.tags' => 'array',
-            '*.settings.tags.*' => ['integer',Rule::exists('domains_tags','id')->where('is_tag',1)],
-            '*.settings.description' => 'string|max:65535',
-            '*.recommendations' => 'array',
-            '*.recommendations.*.grade' => 'required_with:collection.*.recommendation.*.difficulty|integer|distinct', // add collection index infront of the grade for example grade 1 will be grade 11, as distinct function check through all the collection for the unqiue value
-            '*.recommendations.*.difficulty' => 'required_with:collection.*.recommendation.*.grade|string',
-            '*.sections' => 'required|array',
-            '*.sections.*.groups' => 'required|array',
-            '*.sections.*.groups.*.task_id' => 'array|required',
-            '*.sections.*.groups.*.task_id.*' => 'required|integer|exists:tasks,id',
-            '*.sections.*.sort_randomly' => 'boolean|required',
-            '*.sections.*.allow_skip' => 'boolean|required',
-            '*.sections.*.description' => 'string|max:65535',
-        ]))->map(function ($item,$index) use (&$tags,&$recommendation,&$sections,&$role_id) {
-            $item['settings']['status'] = (auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'Active' : 'Pending Moderation');
-            $item['settings']['created_by_userid'] = auth()->user()->id;
-            $tags[] = Arr::pull($item, 'settings.tags');
-            $recommendation[] = Arr::pull($item, 'recommendations');
-            $sections[] = $item['sections'];
-            unset($item['sections']);
-            return $item;
-        })->pluck("settings")->toArray();
-
+    public function create(CreateCollectionRequest $request)
+    {
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
+            $settings = collect($request->all())
+                ->map(function ($setting) use (&$tags, &$recommendation, &$sections) {
+                    $tags[] = Arr::pull($setting, 'tags');
+                    $recommendation[] = Arr::pull($setting, 'recommendations');
+                    $sections[] = $setting['sections'];
+                    unset($setting['sections']);
+                    return $setting;
+                })->pluck('settings')->toArray();
 
-            $results = User::find(auth()->user()->id)->collection()->createMany($validated)->pluck('id')->map(function ($item,$collectionIndex) use (&$tags,&$recommendation,&$sections) {
+            User::find(auth()->user()->id)->collection()->createMany($settings)->pluck('id')->map(function ($item,$collectionIndex) use (&$tags,&$recommendation,&$sections) {
                 $collection = Collections::find($item);
                 count($tags) == 0 ?: $collection->tags()->sync($tags[$collectionIndex]);
 
@@ -107,28 +85,28 @@ class CollectionController extends Controller
                     });
                 }
 
-                collect($sections[$collectionIndex])->map(function ($section,$index) use ($collection) {
+                collect($sections[$collectionIndex])->map(function ($section) use ($collection) {
                     $section['tasks'] =  Arr::pull($section, 'groups');
-                    $section_id = $collection->sections()->create($section)->id;
+                    $collection->sections()->create($section)->id;
                 });
             });
-            DB::commit();
 
-            return response()->json([
-                "status" => 200,
-                "message" => "collection create successful"
-            ]);
         } catch(\Exception $e){
-            // do task when error
             return response()->json([
                 "status"  => 500,
-                "message" => "collection create unsuccessful" . $e->getMessage(),
+                "message" => "collection create unsuccessful",
                 "error"   => $e->getMessage()
-            ]);
+            ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status"  => 200,
+            "message" => "collection create successful"
+        ]);
     }
 
-    public function update_settings(UpdateCollectionSettingsRequest $request)
+    public function updateSettings(UpdateCollectionSettingsRequest $request)
     {
         DB::beginTransaction();
         try {
@@ -162,7 +140,7 @@ class CollectionController extends Controller
         ]);        
     }
 
-    public function update_recommendations(UpdateCollectionRecommendationsRequest $request)
+    public function updateRecommendations(UpdateCollectionRecommendationsRequest $request)
     {
         DB::beginTransaction();
         try {
@@ -192,68 +170,41 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function add_sections(Request $request)
-    {
-        $validated = $request->validate([
-            'collection_id' => 'required|integer|exists:collection,id',
-            'groups' => 'required|array',
-            'groups.*.task_id' => 'array|required',
-            'groups.*.task_id.*' => 'required|integer',//exists:tasks,id
-            'sort_randomly' => 'boolean|required',
-            'allow_skip' => 'boolean|required',
-            'description' => 'string|max:65535',
-        ]);
-
-        try {
-            $collection_id = Arr::pull($validated, 'collection_id');
-            $tasks =  json_encode(Arr::pull($validated, 'groups'),JSON_UNESCAPED_SLASHES);
-
-            DB::beginTransaction();
-
-            CollectionSections::insert(
-            ["collection_id" => $collection_id,
-              "description" => $validated['description'],
-              "tasks" => $tasks,
-              "allow_skip" =>  $validated['allow_skip'],
-              "sort_randomly" => $validated['sort_randomly']
-            ] 
-            );
-          
-            $section = CollectionSections::orderBy('id', 'DESC')->first();
-            DB::commit();
-
-            CollectionSections::inset([
-                'collection_id'     => $collection_id,
-                'description'       => $validated['description'],
-                'tasks'             => $tasks,
-                'allow_skip'        => $validated['allow_skip'],
-                'sort_randomly'     => $validated['sort_randomly']
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "collection section update successful",
-                "data" => $section
-            ]);
-        } catch(\Exception $e){
-            // do task when error
-            return response()->json([
-                "status" => 500,
-                "message" => "collection section update unsuccessful ".$e
-            ]);
-        }
-    }
-
-    public function update_sections(UpdateCollectionSectionRequest $request)
+    public function addSections(Request $request)
     {
         DB::beginTransaction();
+        try {
+            $section = CollectionSections::create([
+                "collection_id" => $request->collection_id,
+                "description"   => $request->description,
+                "tasks"         => json_encode($request->groups, JSON_UNESCAPED_SLASHES),
+                "allow_skip"    => $request->allow_skip,
+                "sort_randomly" => $request->sort_randomly
+            ]);
 
+        } catch(\Exception $e){
+            return response()->json([
+                "status"  => 500,
+                "message" => "Operation unsuccessfull",
+                "error"   => $e->getMessage()
+            ]);
+        }
+
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Section added Successfully",
+            "data"      => $section
+        ]);
+    }
+
+    public function updateSections(UpdateCollectionSectionRequest $request)
+    {
+        DB::beginTransaction();
         try {
             $section = $request->section;
             $section['tasks'] = Arr::pull($section, 'groups');
-            $this->CheckUploadedAnswersCount($request->collection_id);
+            CollectionsService::CheckUploadedAnswersCount($request->collection_id);
 
             if($request->has('section_id')) {
                 $results = CollectionSections::findOrFail($request->section_id);
@@ -279,44 +230,29 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function delete_section (Request $request) {
-        $validated = $request->validate([
-            'collection_id' => 'required|integer|exists:collection,id',
-            'id' => 'required|array',
-            'id.*' => 'required|integer|distinct|exists:collection_sections,id'
-        ]);
-
-        $collection_id = Arr::pull($validated, 'collection_id');
-        $sections_id = Arr::pull($validated, 'id');
-
+    public function deleteSection(DeleteSectionsRequest $request)
+    {
+        DB::beginTransaction();
         try {
-            $this->CheckUploadedAnswersCount($collection_id);
-
-            DB::beginTransaction();
-
-            collect($sections_id)->map(function ($item) use($collection_id) {
-
-                $sections = CollectionSections::where(['collection_id' => $collection_id, 'id' => $item])->firstOrFail();
+            CollectionsService::CheckUploadedAnswersCount($request->collection_id);
+            collect($request->id)->map(function ($id) use($request) {
+                $sections = CollectionSections::where(['collection_id' => $request->collection_id, 'id' => $id])->firstOrFail();
                 $sections->forceDelete();
-
             });
 
-            DB::commit();
-
-            return response()->json([
-                "status" => 200,
-                "message" => "collection section delete successful"
-            ]);
-
-
         } catch(\Exception $e){
-            // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "collection section delete unsuccessful"
+                "status"    => 500,
+                "message"   => "Section delete unsuccessful",
+                "error"     => $e->getMessage()
             ]);
         }
 
+        DB::commit();
+        return response()->json([
+            "status"  => 200,
+            "message" => "collection section delete successful"
+        ]);
     }
 
     public function delete(DeleteCollectionsRequest $request)
@@ -338,11 +274,6 @@ class CollectionController extends Controller
             "status"  => 200,
             "message" => "collection delete successful"
         ]);
-    }
-
-    private function CheckUploadedAnswersCount($collection_id) {
-        $uploadAnswersCount = CompetitionLevels::with(['participantsAnswersUploaded'])->where('collection_id',$collection_id)->get()->pluck('participantsAnswersUploaded')->flatten()->count();
-        $uploadAnswersCount == 0 ?:  abort(403, 'Unauthorized action, Answers have been uploaded to collection');;
     }
 
     public function approve(ApproveCollectionRequest $request)

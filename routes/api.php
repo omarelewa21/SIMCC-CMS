@@ -138,10 +138,10 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
     Route::group(["prefix" => "tasks"], function () {
         Route::post("",[TasksController::class,"create"])->name('task.create');
         Route::get("",[TasksController::class,"list"])->name('task.list');
-        Route::patch("settings",[TasksController::class,"update_settings"])->name('task.update.settings');
-        Route::patch("recommendation",[TasksController::class,"update_recommendation"])->name('task.update.recommendation');
-        Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
-        Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
+        Route::patch("settings",[TasksController::class,"updateSettings"])->name('task.update.settings');
+        Route::patch("recommendation",[TasksController::class,"updateRecommendation"])->name('task.update.recommendation');
+        Route::patch("content",[TasksController::class,"updateContent"])->name('task.edit.content');
+        Route::patch("answer",[TasksController::class,"updateAnswer"])->name('task.edit.answer');
         Route::delete("",[TasksController::class,"delete"])->name('task.delete');
         Route::post("approve",[TasksController::class,"approve"])->name('task.approve');
         Route::post("reject/{task}",[TasksController::class,"reject"])->name('task.reject');
@@ -151,11 +151,11 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::get("",[CollectionController::class,"list"])->name('collection.list');
         Route::post("",[CollectionController::class,"create"])->name('collection.create');
         Route::delete("",[CollectionController::class,"delete"])->name('collection.delete');
-        Route::patch("/settings",[CollectionController::class,"update_settings"])->name('collection.settings.update');
-        Route::patch("/recommendations",[CollectionController::class,"update_recommendations"])->name('collection.recommendations.update');
-        Route::post("/sections",[CollectionController::class,"add_sections"])->name('collection.sections.add');
-        Route::patch("/sections",[CollectionController::class,"update_sections"])->name('collection.sections.update');
-        Route::delete("/section",[CollectionController::class,"delete_section"])->name('collection.section.delete');
+        Route::patch("/settings",[CollectionController::class,"updateSettings"])->name('collection.settings.update');
+        Route::patch("/recommendations",[CollectionController::class,"updateRecommendations"])->name('collection.recommendations.update');
+        Route::post("/sections",[CollectionController::class,"addSections"])->name('collection.sections.add');
+        Route::patch("/sections",[CollectionController::class,"updateSections"])->name('collection.sections.update');
+        Route::delete("/section",[CollectionController::class,"deleteSection"])->name('collection.section.delete');
         Route::post("approve",[CollectionController::class,"approve"])->name('collection.approve');
         Route::post("reject/{collection}",[CollectionController::class,"reject"])->name('collection.reject');
     });

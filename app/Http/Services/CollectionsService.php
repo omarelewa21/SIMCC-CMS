@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use App\Http\Requests\collection\CollectionListRequest;
 use App\Models\Collections;
+use App\Models\CompetitionLevels;
 use App\Models\Tasks;
 use Illuminate\Support\Collection;
 
@@ -93,5 +94,14 @@ class CollectionsService
                 }
                 return $temp;
             })->filter()->collapse()->unique()->values();
+    }
+
+    public static function CheckUploadedAnswersCount($collectionId)
+    {
+        $uploadAnswersCount = CompetitionLevels::with(['participantsAnswersUploaded'])
+            ->where('collection_id',$collectionId)->get()
+            ->pluck('participantsAnswersUploaded')->flatten()
+            ->count();
+        $uploadAnswersCount == 0 ?:  abort(403, 'Unauthorized action, Answers have been uploaded to collection');
     }
 }

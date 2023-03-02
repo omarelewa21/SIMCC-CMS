@@ -144,7 +144,7 @@ class TasksController extends Controller
         }
     }
 
-    public function update_settings(UpdateTaskSettingsRequest $request)
+    public function updateSettings(UpdateTaskSettingsRequest $request)
     {
         try {
             $task = Tasks::find($request->id);
@@ -173,7 +173,7 @@ class TasksController extends Controller
         }
     }
 
-    public function update_content(UpdateTaskContentRequest $request)
+    public function updateContent(UpdateTaskContentRequest $request)
     {
         try {
             DB::beginTransaction();
@@ -216,7 +216,7 @@ class TasksController extends Controller
         }
     }
 
-    public function update_recommendation(UpdateTaskRecommendationsRequest $request)
+    public function updateRecommendation(UpdateTaskRecommendationsRequest $request)
     {
         try {
             Tasks::find($request->id)->gradeDifficulty()->delete();
@@ -242,7 +242,7 @@ class TasksController extends Controller
          }
     }
 
-    public function update_answer(UpdateTaskAnswerRequest $request)
+    public function updateAnswer(UpdateTaskAnswerRequest $request)
     {
         try {
             $task = Tasks::findOrFail($request->id);
