@@ -11,8 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\QueryException;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
@@ -20,18 +18,12 @@ use App\Models\School;
 use App\Models\Countries;
 use App\Rules\CheckSchoolUnique;
 
-
-/**
- *
- */
 class SchoolController extends Controller
 {
 
-    public function create (Request $request) {
-
+    public function create (Request $request)
+    {
         $countries = Countries::get()->pluck('id');
-        $counter = 0;
-
         $request['role_id'] = auth()->user()->role_id;
 
         $validated = $request->validate([
@@ -59,69 +51,33 @@ class SchoolController extends Controller
 
         try{
             School::insert($validated['school']);
-
             return response()->json([
-                "status" => 201,
-                "message" => "Schools create successful"
+                "status"    => 201,
+                "message"   => "Schools create successful"
             ]);
-
         }
         catch (\Exception $e) {
-
             return response()->json([
-                "status" => 500,
-                "message" => "Create school unsuccessful"
-            ]);
-
+                "status"    => 500,
+                "message"   => "Create school unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function update (UpdateSchoolRequest $request)
+    public function update(UpdateSchoolRequest $request)
     {
         try {
-            $editOwnRoles = ['Country Partner', 'Teacher', 'Country Partner Assistant', 'School Manager'];
             $school = School::whereId($request->id)->where('status', '!=', 'deleted')->firstOrFail();
-            $user = auth()->user();
-
-            if($user->hasRole($editOwnRoles)) {
-                if(in_array($school->status, ['pending', 'rejected'])){
-                    if($user->hasRole(['Country Partner', 'Country Partner Assistant'])){
-                        $idAllowed = User::where(['organization_id' => $user->organization_id,'country_id' => $user->country_id])
-                                        ->whereIn('role_id', [2,4])->pluck('id')->toArray();
-                            $idAllowed[] = $user->id;
-                            if (!in_array($school->created_by_userid, $idAllowed))  {
-                                return response()->json([
-                                    "status"  => 401,
-                                    "message" => "School update unsuccessful, only allowed to edit pending school created by country partner or assistance"
-                                ], 401);
-                            };
-                    }
-                    if ($request->filled($request->name)) $school->name = $request->name;
-                    if ($request->filled($request->province)) $school->province = $request->province;
-
-                } else {
-                    if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('$request->name') ||  $request->has('province')) ) {
-                        if($request->filled('name')) $school->name = $request->name;
-                        if($request->filled('province')) $school->province = $request->province;
-                        $school->status = 'pending';
-                    }
-                }
-
-            } else {
-                $school->status = "active";
-            }
-
-            if($user->hasRole(['Super Admin', 'Admin']))  {
-                $school->name = $request->name ?? $school->name;
-                $school->province = $request->province ?? $school->province;
-            }
-
-            $school->address = $request->address;
-            $school->email = $request->email;
-            $school->phone = $request->phone;
-            $school->postal = $request->postal;
-            $school->last_modified_userid = $user->id;
-            $school->save();
+            $school->update([
+                'status'    => auth()->user()->hasRole(['Super Admin', 'Admin']) ? 'active' : 'pending',
+                'name'      => $request->name ?? $school->name,
+                'province'  => $request->province ?? $school->province,
+                'address'   => $request->address,
+                'email'     => $request->email,
+                'phone'     => $request->phone,
+                'postal'    => $request->postal,
+            ]);
 
             return response()->json([
                 "status"    => 200,
@@ -163,9 +119,6 @@ class SchoolController extends Controller
             $searchKey = isset($vaildate['search']) ? $vaildate['search'] : null;
             $countries = Countries::all()->keyBy('id')->toArray();
             $eagerload = [
-                'created_by',
-                'modified_by',
-                'approved_by',
                 'reject_reason:reject_id,reason,created_at,created_by_userid',
                 'reject_reason.user:id,username',
                 'reject_reason.role:roles.name',
@@ -193,24 +146,9 @@ class SchoolController extends Controller
 
             $schoolCollection = collect($returnFiltered)->map(function ($item) use ($countries) { // match country id and add country name into the collection
 
-                $item['country_name'] = $countries[$item['country_id']]['display_name'];
-                $item['created_by_username'] = $item['created_by']['name'];
-                $item['modified_by_username'] = !empty($item['modified_by']) ? $item['modified_by']['username'] : null;
-                $item['approved_by_username'] = !empty($item['approved_by']) ? $item['approved_by']['username'] : null;
-                $item['rejected_by_username'] = !empty($item['rejected_by']) ? $item['rejected_by']['username'] : null;
+            $item['country_name'] = $countries[$item['country_id']]['display_name'];
 
-
-//                unset($item['created_by_userid']);
-                unset($item['last_modified_userid']);
-                unset($item['approved_by_userid']);
-                unset($item['rejected_by_userid']);
-                unset($item['deleted_by_userid']);
-                unset($item['created_by']);
-                unset($item['modified_by']);
-                unset($item['approved_by']);
-                unset($item['rejected_by']);
-
-                return $item;
+            return $item;
             });
 
 

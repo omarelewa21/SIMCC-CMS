@@ -17,7 +17,6 @@ use App\Http\Requests\Collection\UpdateCollectionSettingsRequest;
 use App\Http\Requests\Collection\CreateCollectionRequest;
 use App\Http\Requests\Collection\DeleteSectionsRequest;
 use App\Http\Services\CollectionsService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

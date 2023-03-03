@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Roles;
 use App\Models\School;
+use App\Models\User;
 use App\Rules\CheckSchoolUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -45,15 +47,30 @@ class UpdateSchoolRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-        $school = School::where('id', $this->id)->where('status', '!=', 'deleted')->firstORFail();
+        $school = School::where('id', $this->id)->where('status', '!=', 'deleted')->firstOrFail();
         $user = auth()->user();
 
         $validator->after(function ($validator) use($school, $user){
-            if ($user->hasRole(['Country Partner', 'Country Partner Assistant']) && $school->country_id != $user->country_id) {
-                $validator->errors()->add('Permission Denied', "Only allowed to edit school's from current country");
-            }
+            if ($user->hasRole(['Country Partner', 'Country Partner Assistant'])){
+                if(in_array($school->status, ['pending', 'rejected'])){
+                    $allowedIds = User::where([
+                        'organization_id' => $user->organization_id,
+                        'country_id' => $user->country_id
+                    ])
+                    ->whereIn('role_id', [Roles::COUNTRY_PARTNER_ID, Roles::COUNTRY_PARTNER_ASSISTANT_ID])
+                    ->pluck('id');
+
+                    if (!$allowedIds->contains($school->created_by_userid))  {
+                        $validator->errors()->add('Permission Denied', "Only allowed to edit pending school created by you or your assistances");
+                    };
+                }
+
+                if($school->country_id != $user->country_id) {
+                    $validator->errors()->add('Permission Denied', "Only allowed to edit school's from current country");
+                }
+            } 
             if ($user->hasRole(['Teacher', 'School Manager']) && $user->school_id != $school->id) {
-                $validator->errors()->add('Permission Denied', "Only allowed to edit current school");
+                $validator->errors()->add('Permission Denied', "Only allowed to edit own school");
             }
         });
     }

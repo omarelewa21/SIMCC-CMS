@@ -8,6 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class Base extends Model
 {
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'created_by',
+        'last_modified_by'
+    ];
+
+    /**
      * set created by attribute
      *
      * @return \Illuminate\Database\Eloquent\Casts\Attribute

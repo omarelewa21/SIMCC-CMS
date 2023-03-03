@@ -2,14 +2,26 @@
 
 namespace App\Models;
 
+use App\Traits\ApprovedByTrait;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class School extends Model
+class School extends Base
 {
-    use HasFactory;
-    use Filterable;
+    use HasFactory, Filterable, ApprovedByTrait;
+
+    public static function booted()
+    {
+        parent::booted();
+
+        static::creating(function($school) {
+            $school->created_by_userid = auth()->id();
+        });
+        static::saving(function($school) {
+            $school->last_modified_userid = auth()->id();
+            $school->updated_at = now()->toDateTimeString();
+        });
+    }
 
     private static $whiteListFilter = [
         'name',

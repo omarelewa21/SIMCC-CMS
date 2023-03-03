@@ -17,7 +17,7 @@ trait ApprovedByTrait
         return Attribute::make(
             get: function($value, $attributes){
                 if (!is_null($attributes['approved_by_userid'])){
-                    return User::whereId($attributes['created_by_userid'])->value('username');
+                    return User::whereId($attributes['approved_by_userid'])->value('username');
                 }
                 return '-';
             }
