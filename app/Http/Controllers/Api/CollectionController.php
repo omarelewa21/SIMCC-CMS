@@ -187,7 +187,7 @@ class CollectionController extends Controller
                 "status"  => 500,
                 "message" => "Operation unsuccessfull",
                 "error"   => $e->getMessage()
-            ]);
+            ], 500);
         }
 
         DB::commit();
@@ -245,7 +245,7 @@ class CollectionController extends Controller
                 "status"    => 500,
                 "message"   => "Section delete unsuccessful",
                 "error"     => $e->getMessage()
-            ]);
+            ], 500);
         }
 
         DB::commit();
