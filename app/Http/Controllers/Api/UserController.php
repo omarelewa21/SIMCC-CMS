@@ -213,9 +213,10 @@ class UserController extends Controller
         }
         catch (\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "Create user unsuccessful"
-            ]);
+                "status"    => 500,
+                "message"   => "Create user unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -317,17 +318,16 @@ class UserController extends Controller
 //        }
     }
 
-    public function login (Request $request) {
-
+    public function login (Request $request)
+    {
         $request->validate([
             'username' => 'required',
             'password' => 'required'
         ]);
-
         try {
-
             $user = User::where("username", $request->username)
                 ->orWhere('email', $request->username)
+                ->with('school', 'organization')
                 ->firstOrFail();
 
             if ($user->status == 'active') {
@@ -339,35 +339,39 @@ class UserController extends Controller
                     $user->last_login = Carbon::now();
                     $user->save();
 
+
+
                     return response()->json([
-                        "status" => 200,
-                        "role_id" => $user->role_id,
-                        "user_id" => $user->id,
-                        "country_id" => $user->country_id,
-                        "school_id" => $user->school_id,
-                        "private" => $user->private_school,
-                        "parent_id" => $user->parent_id,
-                        "message" => "Login successful",
-                        "token" => $token
+                        "status"        => 200,
+                        "message"       => "Login successful",
+                        "role_id"       => $user->role_id,
+                        "user_id"       => $user->id,
+                        "country_id"    => $user->country_id,
+                        "school_id"     => $user->school_id,
+                        "school"        => $user->school,
+                        "organization"  => $user->organization,
+                        "private"       => $user->private_school,
+                        "parent_id"     => $user->parent_id,
+                        "token"         => $token
                     ]);
 
                 } else {
                     return response()->json([
                         "status" => 401,
                         "message" => "Incorrect password or username"
-                    ]);
+                    ], 401);
                 }
             } else {
                 return response()->json([
-                    "status" => 404 ,
+                    "status"  => 404 ,
                     "message" => "User not found"
-                ]);
+                ], 404);
             }
         } catch (\Exception $e) {
             return response()->json([
-                "status" => 404 ,
-                "message" => "User not found"
-            ]);
+                "status"    => 404 ,
+                "message"   => "User not found"
+            ], 404);
         }
     }
 
