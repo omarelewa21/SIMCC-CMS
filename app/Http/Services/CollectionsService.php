@@ -30,7 +30,7 @@ class CollectionsService
         if($request->has('currentPage') && $request->currentPage === 'moderation'){
             $query->whereIn('status', ['Pending Moderation', 'Rejected']);
         } else {
-            $query->where('status', 'Active');
+            $query->whereIn('status', ['Active', 'Pending Moderation']);
         }
 
         return
