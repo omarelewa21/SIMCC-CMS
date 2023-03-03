@@ -6,7 +6,6 @@ use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Collections;
 use App\Models\CollectionSections;
-use App\Models\User;
 use App\Http\Requests\Collection\ApproveCollectionRequest;
 use App\Http\Requests\Collection\CollectionListRequest;
 use App\Http\Requests\Collection\DeleteCollectionsRequest;
@@ -70,7 +69,7 @@ class CollectionController extends Controller
                     return $setting;
                 })->pluck('settings')->toArray();
 
-            User::find(auth()->user()->id)->collection()->createMany($settings)->pluck('id')->map(function ($item,$collectionIndex) use (&$tags,&$recommendation,&$sections) {
+           auth()->user()->collection()->createMany($settings)->pluck('id')->map(function ($item,$collectionIndex) use (&$tags,&$recommendation,&$sections) {
                 $collection = Collections::find($item);
                 count($tags) == 0 ?: $collection->tags()->sync($tags[$collectionIndex]);
 
