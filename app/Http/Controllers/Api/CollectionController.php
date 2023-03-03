@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Collection\AddSectionsRequest;
 use App\Models\Collections;
 use App\Models\CollectionSections;
 use App\Http\Requests\Collection\ApproveCollectionRequest;
@@ -169,16 +170,16 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function addSections(Request $request)
+    public function addSections(AddSectionsRequest $request)
     {
         DB::beginTransaction();
         try {
             $section = CollectionSections::create([
                 "collection_id" => $request->collection_id,
-                "description"   => $request->description,
-                "tasks"         => json_encode($request->groups, JSON_UNESCAPED_SLASHES),
-                "allow_skip"    => $request->allow_skip,
-                "sort_randomly" => $request->sort_randomly
+                "description"   => $request->section['description'] ?? null,
+                "tasks"         => $request->section['groups'],
+                "allow_skip"    => $request->section['allow_skip'],
+                "sort_randomly" => $request->section['sort_randomly']
             ]);
 
         } catch(\Exception $e){
