@@ -43,8 +43,8 @@ class CollectionController extends Controller
             return response()->json([
                 "status"    => 200,
                 "data"      => array(
-                    "filterOptions" => $filterOptions,
-                    'taskLists'     => $collectionsList
+                    "filterOptions"     => $filterOptions,
+                    'collectionList'    => $collectionsList
                 )
             ]);
         } catch(\Exception $e) {
