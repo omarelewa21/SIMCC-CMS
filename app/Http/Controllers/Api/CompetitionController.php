@@ -35,7 +35,7 @@ use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
-use Exception;
+use App\Services\CompetitionService;
 
 //update participant session once competition mode change, add this changes once participant session done
 
@@ -1038,234 +1038,219 @@ class CompetitionController extends Controller
 
     public function omar_report(Competition $competition)
     {
-        $levelIds = $competition->rounds()->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
-            ->pluck('competition_levels.id')->toArray();
+        try {
+            $header = collect(array([
+                'competition','organization','country','level','grade','school','tuition','index',
+                'participant','certificate number','points','award','school_rank','country_rank',
+                'global rank'
+            ]));
+            $data = CompetitionService::getReportData($competition->id);
+            return $header->merge($data);
 
-        $data = CompetitionParticipantsResults::whereIn('level_id', $levelIds)
-            ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-            ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-            ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
-            ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-            ->leftJoin('schools', 'participants.school_id', 'schools.id')
-            ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
-            ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-            ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
-            ->select(
-                DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
-                DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
-                DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
-                DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
-                'participants.grade',
-                DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
-                'participants.index_no as index',
-                DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
-                'competition_participants_results.points',
-                DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
-                'competition_participants_results.school_rank',
-                'competition_participants_results.country_rank',
-                'competition_participants_results.award_rank',
-                DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
-            )
-            ->distinct('index')->orderBy('points', 'DESC')->get();
-
-        return $data;
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => "Failed to fetch report",
+                'error'     => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function report (Competition $competition) {
 
-      $competition_id = $competition->id;
-/**        $competition_id = $request->validate([
-            'competition_id' => ['required','integer',Rule::exists('competition','id')->where('status','active')]
-        ])['competition_id'];
-
-        $query = DB::select( DB::raw("SELECT competition.name as competition, organization.name as organization,all_countries.display_name as country, competition_levels.name as level, competition_levels.id as level_id, participants.grade, schools.name as school, participants.index_no,participants.name, competition_participants_results.points, competition_rounds_awards.name as award FROM `competition_participants_results`
-               ON competition_rounds.id = competition_levels.round_id
-                 LEFT JOIN competition
-                 ON competition.id = competition_rounds.competition_id
-                 LEFT JOIN participants
-                 ON participants.index_no = competition_participants_results.participant_index
-                 LEFT JOIN competition_organization
-                 ON competition_organization.id = participants.competition_organization_id
-                 LEFT JOIN organization
-                 ON organization.id = competition_organization.organization_id
-                 LEFT JOIN schools
-                 ON participants.school_id = schools.id
-                 LEFT JOIN all_countries
-                 ON all_countries.id = schools.country_id
-                 LEFT JOIN competition_rounds_awards
-                 ON competition_rounds_awards.id = competition_participants_results.award_id
-                 WHERE competition.id = " . $competition_id . "
-                 ORDER BY `competition_levels`.`id`, `competition_participants_results`.`award_id`, `competition_participants_results`.`points` DESC"));
-**/
-        $query = DB::select( DB::raw("
-           SELECT CONCAT('\"',competition.name,'\"') as competition, CONCAT('\"',organization.name,'\"') as organization,CONCAT('\"',all_countries.display_name,'\"') as country, CONCAT('\"',competition_levels.name,'\"') as level, competition_levels.id as level_id, participants.grade, CONCAT('\"',schools.name,'\"') as school, CONCAT('\"',tuition_school.name,'\"') as tuition_centre, participants.index_no, CONCAT('\"',participants.name,'\"') as name, participants.certificate_no, competition_participants_results.points, CONCAT('\"',competition_participants_results.award,'\"') as award FROM `competition_participants_results`
-                 LEFT JOIN competition_levels
-                 ON competition_levels.id = competition_participants_results.level_id
-                 LEFT JOIN competition_rounds
+        $competition_id = $competition->id;
+  /**        $competition_id = $request->validate([
+              'competition_id' => ['required','integer',Rule::exists('competition','id')->where('status','active')]
+          ])['competition_id'];
+  
+          $query = DB::select( DB::raw("SELECT competition.name as competition, organization.name as organization,all_countries.display_name as country, competition_levels.name as level, competition_levels.id as level_id, participants.grade, schools.name as school, participants.index_no,participants.name, competition_participants_results.points, competition_rounds_awards.name as award FROM `competition_participants_results`
                  ON competition_rounds.id = competition_levels.round_id
-                 LEFT JOIN competition
-                 ON competition.id = competition_rounds.competition_id
-                 LEFT JOIN participants
-                 ON participants.index_no = competition_participants_results.participant_index
-                 LEFT JOIN competition_organization
-                 ON competition_organization.id = participants.competition_organization_id
-                 LEFT JOIN organization
-                 ON organization.id = competition_organization.organization_id
-                 LEFT JOIN schools
-                 ON participants.school_id = schools.id
-                 LEFT JOIN schools as tuition_school
-                 ON participants.tuition_centre_id = tuition_school.id
-                 LEFT JOIN all_countries
-                 ON all_countries.id = schools.country_id
-                 WHERE competition.id = ".$competition_id."
-                 ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
-        "));
-
-        $filename = 'report.csv';
-        $output = [];
-        $fp = fopen(public_path().'/'.$filename, 'w');
-        $header = ['competition','organization','country','level','grade','school','tuition','index','participant','certificate number','points','award','school_rank','country_rank','global rank'];
-        $array = json_decode(json_encode($query), true);
-        $participants = [];
-
-        collect($array)->sortBy([ // school ranking
-            ['level_id','asc'],
-            ['school','asc'],
-            ['points','desc']
-        ])->each(function ($row,$index) use(&$participants,&$currentLevel,&$currentSchool,&$currentPoints,&$counter){
-            if($index == 0) {
-                $currentLevel = $row['level_id'];
-                $currentSchool = $row['school'];
-                $currentPoints = $row['points'];
-                $counter = 1;
+                   LEFT JOIN competition
+                   ON competition.id = competition_rounds.competition_id
+                   LEFT JOIN participants
+                   ON participants.index_no = competition_participants_results.participant_index
+                   LEFT JOIN competition_organization
+                   ON competition_organization.id = participants.competition_organization_id
+                   LEFT JOIN organization
+                   ON organization.id = competition_organization.organization_id
+                   LEFT JOIN schools
+                   ON participants.school_id = schools.id
+                   LEFT JOIN all_countries
+                   ON all_countries.id = schools.country_id
+                   LEFT JOIN competition_rounds_awards
+                   ON competition_rounds_awards.id = competition_participants_results.award_id
+                   WHERE competition.id = " . $competition_id . "
+                   ORDER BY `competition_levels`.`id`, `competition_participants_results`.`award_id`, `competition_participants_results`.`points` DESC"));
+  **/
+          $query = DB::select( DB::raw("
+             SELECT CONCAT('\"',competition.name,'\"') as competition, CONCAT('\"',organization.name,'\"') as organization,CONCAT('\"',all_countries.display_name,'\"') as country, CONCAT('\"',competition_levels.name,'\"') as level, competition_levels.id as level_id, participants.grade, CONCAT('\"',schools.name,'\"') as school, CONCAT('\"',tuition_school.name,'\"') as tuition_centre, participants.index_no, CONCAT('\"',participants.name,'\"') as name, participants.certificate_no, competition_participants_results.points, CONCAT('\"',competition_participants_results.award,'\"') as award FROM `competition_participants_results`
+                   LEFT JOIN competition_levels
+                   ON competition_levels.id = competition_participants_results.level_id
+                   LEFT JOIN competition_rounds
+                   ON competition_rounds.id = competition_levels.round_id
+                   LEFT JOIN competition
+                   ON competition.id = competition_rounds.competition_id
+                   LEFT JOIN participants
+                   ON participants.index_no = competition_participants_results.participant_index
+                   LEFT JOIN competition_organization
+                   ON competition_organization.id = participants.competition_organization_id
+                   LEFT JOIN organization
+                   ON organization.id = competition_organization.organization_id
+                   LEFT JOIN schools
+                   ON participants.school_id = schools.id
+                   LEFT JOIN schools as tuition_school
+                   ON participants.tuition_centre_id = tuition_school.id
+                   LEFT JOIN all_countries
+                   ON all_countries.id = schools.country_id
+                   WHERE competition.id = ".$competition_id."
+                   ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
+          "));
+  
+          $filename = 'report.csv';
+          $output = [];
+          $fp = fopen(public_path().'/'.$filename, 'w');
+          $header = ['competition','organization','country','level','grade','school','tuition','index','participant','certificate number','points','award','school_rank','country_rank','global rank'];
+          $array = json_decode(json_encode($query), true);
+          $participants = [];
+  
+          collect($array)->sortBy([ // school ranking
+              ['level_id','asc'],
+              ['school','asc'],
+              ['points','desc']
+          ])->each(function ($row,$index) use(&$participants,&$currentLevel,&$currentSchool,&$currentPoints,&$counter){
+              if($index == 0) {
+                  $currentLevel = $row['level_id'];
+                  $currentSchool = $row['school'];
+                  $currentPoints = $row['points'];
+                  $counter = 1;
+              }
+  
+              if($currentPoints !== $row['points']) {
+                  $counter++;
+                  $currentPoints = $row['points'];
+              }
+  
+              if($currentLevel !== $row['level_id'] || $currentSchool !== $row['school']){
+                  $currentLevel = $row['level_id'];
+                  $currentSchool = $row['school'];
+                  $counter = 1;
+              }
+  
+              $participants[$row['index_no']] = [
+                  ...$row,
+                  'school_rank' => $counter
+              ];
+          });
+  
+          collect($participants)->sortBy([ // country ranking
+              ['level_id','asc'],
+              ['country','asc'],
+              ['points','desc']
+          ])->each(function ($row,$index) use(&$participants,&$currentLevel,&$currentCountry,&$currentPoints,&$counter){
+              if($index == 0) {
+                  $currentLevel = $row['level_id'];
+                  $currentCountry = $row['country'];
+                  $currentPoints = $row['points'];
+                  $counter = 1;
+              }
+  
+              if($currentPoints !== $row['points']) {
+                  $counter++;
+                  $currentPoints = $row['points'];
+              }
+  
+              if($currentLevel !== $row['level_id'] || $currentCountry !== $row['country']){
+                  $currentLevel = $row['level_id'];
+                  $currentCountry = $row['country'];
+                  $counter = 1;
+              }
+  
+              $participants[$row['index_no']] = [
+                  ...$row,
+                  'country_rank' => $counter
+              ];
+  
+          });
+  
+          collect($array)->each(function ($row) use(&$noAwards,&$awards) { // seperate participant with/without award
+              if($row['award'] !== 'NULL') {
+                  $awards[] = $row;
+              } else {
+                  $noAwards[] = $row;
+              }
+          });
+  
+          collect($awards)->each(function ($fields,$index) use($fp,&$output,$header,$array,&$participants,&$currentLevel,&$noAwards,&$currentAward,&$currentPoints,&$globalRank,&$counter) {
+  
+              if($index == 0) {
+                  $output[] = $header;
+                  fputcsv($fp, $header);
+                  $globalRank = 1;
+                  $counter = 1;
+                  $currentAward = $fields['award'];
+                  $currentPoints = $fields['points'];
+                  $currentLevel = $fields['level_id'];
+              }
+  
+              if($currentLevel != $fields['level_id']){
+                  $globalRank = 1;
+                  $counter = 1;
+              }
+  
+              if($currentAward === $fields['award'] && $currentPoints !== $fields['points']) {
+                  $globalRank = $counter;
+                  $currentPoints = $fields['points'];
+              } elseif ($currentAward !== $fields['award'] ) {
+                  $currentAward = $fields['award'];
+                  $currentPoints = $fields['points'];
+                  $globalRank = 1;
+                  $counter = 1;
+              }
+  
+              $currentLevel = $fields['level_id'];
+              $participants[$fields['index_no']]['global_rank'] = $fields['award'] .' '.$globalRank;
+              unset($participants[$fields['index_no']]['level_id']);
+              $output[] = $participants[$fields['index_no']];
+              fputcsv($fp, $participants[$fields['index_no']]);
+              $counter++;
+          });
+  
+          if(isset($noAwards)) {
+             foreach ($noAwards as $row) {
+                unset($participants[$row['index_no']]['level_id']);
+                $participants[$row['index_no']]['global_rank'] = '';
+                $output[] = $participants[$row['index_no']];
+                fputcsv($fp, $participants[$row['index_no']]);
             }
-
-            if($currentPoints !== $row['points']) {
-                $counter++;
-                $currentPoints = $row['points'];
-            }
-
-            if($currentLevel !== $row['level_id'] || $currentSchool !== $row['school']){
-                $currentLevel = $row['level_id'];
-                $currentSchool = $row['school'];
-                $counter = 1;
-            }
-
-            $participants[$row['index_no']] = [
-                ...$row,
-                'school_rank' => $counter
-            ];
-        });
-
-        collect($participants)->sortBy([ // country ranking
-            ['level_id','asc'],
-            ['country','asc'],
-            ['points','desc']
-        ])->each(function ($row,$index) use(&$participants,&$currentLevel,&$currentCountry,&$currentPoints,&$counter){
-            if($index == 0) {
-                $currentLevel = $row['level_id'];
-                $currentCountry = $row['country'];
-                $currentPoints = $row['points'];
-                $counter = 1;
-            }
-
-            if($currentPoints !== $row['points']) {
-                $counter++;
-                $currentPoints = $row['points'];
-            }
-
-            if($currentLevel !== $row['level_id'] || $currentCountry !== $row['country']){
-                $currentLevel = $row['level_id'];
-                $currentCountry = $row['country'];
-                $counter = 1;
-            }
-
-            $participants[$row['index_no']] = [
-                ...$row,
-                'country_rank' => $counter
-            ];
-
-        });
-
-        collect($array)->each(function ($row) use(&$noAwards,&$awards) { // seperate participant with/without award
-            if($row['award'] !== 'NULL') {
-                $awards[] = $row;
-            } else {
-                $noAwards[] = $row;
-            }
-        });
-
-        collect($awards)->each(function ($fields,$index) use($fp,&$output,$header,$array,&$participants,&$currentLevel,&$noAwards,&$currentAward,&$currentPoints,&$globalRank,&$counter) {
-
-            if($index == 0) {
-                $output[] = $header;
-                fputcsv($fp, $header);
-                $globalRank = 1;
-                $counter = 1;
-                $currentAward = $fields['award'];
-                $currentPoints = $fields['points'];
-                $currentLevel = $fields['level_id'];
-            }
-
-            if($currentLevel != $fields['level_id']){
-                $globalRank = 1;
-                $counter = 1;
-            }
-
-            if($currentAward === $fields['award'] && $currentPoints !== $fields['points']) {
-                $globalRank = $counter;
-                $currentPoints = $fields['points'];
-            } elseif ($currentAward !== $fields['award'] ) {
-                $currentAward = $fields['award'];
-                $currentPoints = $fields['points'];
-                $globalRank = 1;
-                $counter = 1;
-            }
-
-            $currentLevel = $fields['level_id'];
-            $participants[$fields['index_no']]['global_rank'] = $fields['award'] .' '.$globalRank;
-            unset($participants[$fields['index_no']]['level_id']);
-            $output[] = $participants[$fields['index_no']];
-            fputcsv($fp, $participants[$fields['index_no']]);
-            $counter++;
-        });
-
-        if(isset($noAwards)) {
-           foreach ($noAwards as $row) {
-              unset($participants[$row['index_no']]['level_id']);
-              $participants[$row['index_no']]['global_rank'] = '';
-              $output[] = $participants[$row['index_no']];
-              fputcsv($fp, $participants[$row['index_no']]);
           }
-        }
-
-        fclose($fp);
-
-        DB::beginTransaction();
-        foreach ($participants as $row) {
-            $participantResult = CompetitionParticipantsResults::where('participant_index',$row['index_no'])->first();
-            $participantResult->school_rank = $row['school_rank'];
-            $participantResult->country_rank = $row['country_rank'];
-            $participantResult->global_rank = $row['global_rank'] ?: null ;
-            $participantResult->save();
-        }
-
-        DB::commit();
-
-        /**if (file_exists(public_path().'/'.$filename)) {
-            header('Content-Description: File Transfer');
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($filename));
-            readfile($filename);
-            exit;
-        }**/
-
-      return $output;
-    }
+  
+          fclose($fp);
+  
+          DB::beginTransaction();
+          foreach ($participants as $row) {
+              $participantResult = CompetitionParticipantsResults::where('participant_index',$row['index_no'])->first();
+              $participantResult->school_rank = $row['school_rank'];
+              $participantResult->country_rank = $row['country_rank'];
+              $participantResult->global_rank = $row['global_rank'] ?: null ;
+              $participantResult->save();
+          }
+  
+          DB::commit();
+  
+          /**if (file_exists(public_path().'/'.$filename)) {
+              header('Content-Description: File Transfer');
+              header('Content-Type: application/octet-stream');
+              header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+              header('Expires: 0');
+              header('Cache-Control: must-revalidate');
+              header('Pragma: public');
+              header('Content-Length: ' . filesize($filename));
+              readfile($filename);
+              exit;
+          }**/
+  
+        return $output;
+      }
 
     private function addDifficultyGroup ($collection_id, $competition_level) {
         $insert = Arr::collapse(
