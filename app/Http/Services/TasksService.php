@@ -23,6 +23,7 @@ class TasksService
             'Moderation:moderation_id,moderation_date,moderation_by_userid',
             'Moderation.user:id,username',
             'gradeDifficulty:gradeDifficulty_id,grade,difficulty',
+            'rejectReasons:id,reject_id,reason,created_at,created_by_userid',
         ];
 
         if(auth()->user()->hasRole(['super admin', 'admin'])){
@@ -30,9 +31,6 @@ class TasksService
                 'taskAnswers:id,task_id,answer,position',
                 'taskAnswers.taskLabels:task_answers_id,lang_id,content'
             ]);
-        }
-        if($request->has('currentPage') && $request->currentPage === 'moderation'){
-            $eagerLoad[] = 'rejectReasons:id,reject_id,reason,created_at,created_by_userid';
         }
 
         $hide = ['created_by_userid', 'last_modified_userid'];
@@ -72,8 +70,6 @@ class TasksService
         }
         if($request->has('currentPage') && $request->currentPage === 'moderation'){
             $query->whereIn('tasks.status', ['Pending Moderation', 'Rejected']);
-        }else{
-            $query->where('tasks.status', 'Active');
         }
         return $query->filter();
     }
