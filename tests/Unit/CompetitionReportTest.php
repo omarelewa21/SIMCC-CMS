@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Http\Controllers\api\CompetitionController;
 use App\Models\Competition;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Tests\TestCase;
 
 class CompetitionReportTest extends TestCase
@@ -19,8 +21,10 @@ class CompetitionReportTest extends TestCase
     public function testOmarAndAdrenReportIdenticality()
     {
         $competition = Competition::find(self::COMPETITION_ID);
-        $OmarData = (new CompetitionController())->omar_report($competition)->sortBy('index_no')->toArray();
-        $AdrenData = collect((new CompetitionController())->report($competition))->sortBy('index_no')->toArray();
+        $OmarData = collect((new CompetitionController())->report($competition, Request::create('/', 'GET', ['mode' => 'csv'])))
+            ->map(fn($arr)=> Arr::except($arr, ['country_id', 'school_id']))
+            ->sortBy('index_no')->toArray();
+        $AdrenData = collect((new CompetitionController())->old_report($competition))->sortBy('index_no')->toArray();
 
         $this->assertEqualsCanonicalizing($AdrenData, $OmarData);
     }
