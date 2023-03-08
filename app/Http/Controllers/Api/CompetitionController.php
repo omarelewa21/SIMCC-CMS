@@ -33,6 +33,7 @@ use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
+use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
@@ -769,13 +770,13 @@ class CompetitionController extends Controller
         try {
             $request->validate([
                 "organizations"                         => 'required|array',
-                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where('status','active'), "distinct"],
+                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where(fn($query) => $query->where('status', 'active')), new AddOrganizationDistinctIDRule],
                 "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
                 "organizations.*.translate"             => "json",
                 "organizations.*.edit_sessions.*"       => 'boolean',
             ]);
 
-            $this->addOrganization($request->organizations, $request->competition_id);
+            // $this->addOrganization($request->organizations, $request->competition_id);
             return [
                 "status"    => 200,
                 "message"   => "add new organization is successfull",
