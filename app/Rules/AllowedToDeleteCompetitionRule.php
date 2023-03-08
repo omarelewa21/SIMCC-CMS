@@ -4,7 +4,6 @@ namespace App\Rules;
 
 use App\Models\Competition;
 use App\Models\Participants;
-use App\Models\ParticipantsAnswer;
 use Illuminate\Contracts\Validation\InvokableRule;
 
 class AllowedToDeleteCompetitionRule implements InvokableRule
