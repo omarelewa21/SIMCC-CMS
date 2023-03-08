@@ -321,7 +321,7 @@ class CollectionController extends Controller
 
         return response()->json([
             "status"    => 200,
-            "message"   => "Collections Rejected successfully"
+            "message"   => "Collection Rejected successfully"
         ]);
     }
 }
