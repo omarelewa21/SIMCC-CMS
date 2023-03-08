@@ -28,7 +28,7 @@ class ApproveCollectionRequest extends FormRequest
     {
         return [
             'ids'       => 'required|array|min:1',
-            'ids.*'     => [Rule::exists('collection', 'id')->whereNotIn('status', ['Active', 'Deleted'])]
+            'ids.*'     => [Rule::exists('collection', 'id')->where(fn($query) => $query->whereNotIn('status', ['Active', 'Deleted']))]
         ];
     }
 
