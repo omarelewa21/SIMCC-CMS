@@ -303,7 +303,7 @@ class CollectionController extends Controller
     {
         try {
             DB::transaction(function () use($collection, $request) {
-                $collection->reject_reason()->create([
+                $collection->rejectReasons()->create([
                     'reason'            => $request->reason,
                     'created_by_userid' => auth()->id()
                 ]);
@@ -314,7 +314,7 @@ class CollectionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks Rejection operation not successfull",
+                "message"   => "Collection rejection operation not successfull",
                 "error"     => $e->getMessage()
             ], 500);
         }
