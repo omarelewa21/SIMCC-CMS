@@ -398,7 +398,7 @@ class UserController extends Controller
         $request['role_id'] = auth()->user()->role_id;
 
         $vaildate = array(
-            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/|min:3|max:255',
+//            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/|min:3|max:255',
             'role_id' => 'integer|exists:roles,id',
             'about' => 'max:65535',
             'email' => ['email','max:255',Rule::unique('users')->ignore(auth()->user()->email, 'email')],

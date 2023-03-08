@@ -55,18 +55,41 @@ class Participants extends Base
      */
     public function scopeFilterList($query, getParticipantListRequest $request)
     {
+        switch(auth()->user()->role_id) {
+            case 2:
+            case 4:
+                $ids = CompetitionOrganization::where([
+                    'country_id'        => auth()->user()->country_id,
+                    'organization_id'   => auth()->user()->organization_id
+                ])->pluck('id');
+                $query->where('participants.country_id',auth()->user()->country_id)
+                    ->whereIn("competition_organization_id", $ids);
+                break;
+            case 3:
+            case 5:
+                $ids = CompetitionOrganization::where([
+                    'country_id'        => auth()->user()->country_id,
+                    'organization_id'   => auth()->user()->organization_id
+                ])->pluck('id')->toArray();
+                $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
+                    ->orWhere("schools.id" , auth()->user()->school_id);
+                break;
+        }
+
         foreach($request->all() as $key=>$value){
             switch($key) {
                 case 'search':
                     $query->where('participants.name', 'like', "%$value%")
-                        ->orWhere('participants.index_no', $value)
-                        ->orWhere('schools.name', 'like', "%$value%")
-                        ->orWhere('tuition_centre.name', 'like', "%$value%");
+                        ->orWhere(function ($query) use($value) {
+                            $query->where('participants.index_no', $value)
+                                ->orWhere('schools.name', 'like', "%$value%")
+                                ->orWhere('tuition_centre.name', 'like', "%$value%");
+                        });
                     break;
                 case 'private':
                     $request->private
-                    ? $query->whereNotNull("tuition_centre_id")
-                    : $query->whereNull("tuition_centre_id");
+                        ? $query->whereNotNull("tuition_centre_id")
+                        : $query->whereNull("tuition_centre_id");
                     break;
                 case 'country_id':
                 case 'school_id':
@@ -88,25 +111,6 @@ class Participants extends Base
             }
         }
 
-        switch(auth()->user()->role_id) {
-            case 2:
-            case 4:
-                $ids = CompetitionOrganization::where([
-                    'country_id'        => auth()->user()->country_id,
-                    'organization_id'   => auth()->user()->organization_id
-                ])->pluck('id')->toArray();
-                $query->whereIn("competition_organization_id", $ids);
-                break;
-            case 3:
-            case 5:
-                $ids = CompetitionOrganization::where([
-                    'country_id'        => auth()->user()->country_id,
-                    'organization_id'   => auth()->user()->organization_id
-                ])->pluck('id')->toArray();
-                $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
-                    ->orWhere("schools.id" , auth()->user()->school_id);
-                break;
-        }
     }
 
 
@@ -125,7 +129,7 @@ class Participants extends Base
 
     public function school ()
     {
-       return $this->belongsTo(School::class,"school_id","id");
+        return $this->belongsTo(School::class,"school_id","id");
     }
 
     public function country ()
