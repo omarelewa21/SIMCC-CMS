@@ -776,7 +776,7 @@ class CompetitionController extends Controller
                 "organizations.*.edit_sessions.*"       => 'boolean',
             ]);
 
-            // $this->addOrganization($request->organizations, $request->competition_id);
+            $this->addOrganization($request->organizations, $request->competition_id);
             return [
                 "status"    => 200,
                 "message"   => "add new organization is successfull",
