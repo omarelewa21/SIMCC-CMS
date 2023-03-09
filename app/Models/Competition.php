@@ -165,7 +165,7 @@ class Competition extends Base
         return $count;
     }
 
-    protected function createGlobalMarkingGroup()
+    public function createGlobalMarkingGroup()
     {
         $countries = $this->participants()
                 ->pluck('participants.country_id')->unique()->toArray();
