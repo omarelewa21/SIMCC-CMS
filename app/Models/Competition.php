@@ -58,7 +58,7 @@ class Competition extends Base
         parent::booted();
         static::deleting(function($competition) {
             $competition->competitionOrganization()->delete();
-            $competition->groups()->delete();
+            $competition->groups->each(fn($group) => $group->delete());
         });
     }
 

@@ -29,13 +29,12 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\AddOrganizationRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
-use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
-use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -56,7 +55,7 @@ class CompetitionController extends Controller
                 'allowed_grades'    => collect($request->allowed_grades)->unique()->values()->toArray()
             ]);
             $competition = Competition::create($request->all());
-            $this->addOrganization($request->organizations, $competition->id);
+            CompetitionService::addOrganizations($request->organizations, $competition->id);
             $this->addRounds($request->rounds, $competition);
 
         }catch(\Exception $e) {
@@ -765,18 +764,10 @@ class CompetitionController extends Controller
         }
     }
 
-    public function addOrganizationRoute(Request $request)
+    public function addOrganizations(AddOrganizationRequest $request)
     {
         try {
-            $request->validate([
-                "organizations"                         => 'required|array',
-                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization',"id")->where(fn($query) => $query->where('status', 'active')), new AddOrganizationDistinctIDRule],
-                "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
-                "organizations.*.translate"             => "json",
-                "organizations.*.edit_sessions.*"       => 'boolean',
-            ]);
-
-            $this->addOrganization($request->organizations, $request->competition_id);
+            CompetitionService::addOrganizations($request->organizations, $request->competition_id);
             return [
                 "status"    => 200,
                 "message"   => "add new organization is successfull",
@@ -788,20 +779,6 @@ class CompetitionController extends Controller
                 "message"   => "add new organization is not successful",
                 "error"     => $e->getMessage()
             ], 500);
-        }
-    }
-
-    private function addOrganization(array $organizations, int $competition_id)
-    {
-
-        foreach($organizations as $organization){
-            if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->where('country_id', $organization['country_id'])->doesntExist()){
-                CompetitionOrganization::create(
-                    array_merge($organization, [
-                        'competition_id'    => $competition_id,
-                        'created_by_userid' => auth()->user()->id,
-                ]));
-            }
         }
     }
 

@@ -108,7 +108,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::post("/rounds",[CompetitionController::class,"addRoundsRoute"])->name('competition.rounds.add');
         Route::patch("/rounds",[CompetitionController::class,"editRounds"])->name('competition.rounds.edit');
         Route::delete("/rounds",[CompetitionController::class,"deleteRounds"])->name('competition.rounds.delete');
-        Route::post("/organization",[CompetitionController::class,"addOrganizationRoute"])->name('competition.organization.add');
+        Route::post("/organization",[CompetitionController::class,"addOrganizations"])->name('competition.organization.add');
         Route::delete("/organization",[CompetitionController::class,"deleteOrganization"])->name('competition.organization.delete');
         Route::patch("/organization",[CompetitionController::class,"updateOrganizationDate"])->name('competition.organization.update.date');
         Route::get("/awards/{round}",[CompetitionController::class,"getRoundAwards"])->name('competition.round.award.add');
