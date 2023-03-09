@@ -167,8 +167,8 @@ class Competition extends Base
 
     public function createGlobalMarkingGroup()
     {
-        $countries = $this->participants()
-                ->pluck('participants.country_id')->unique()->toArray();
+        $countries = $this->competitionOrganization()
+                ->pluck('competition_organization.country_id')->unique()->toArray();
         $markingGroup = CompetitionMarkingGroup::firstOrCreate(
             ['competition_id' => $this->id],
             ['name' => "Global Group", 'created_by_userid' => auth()->id()]
