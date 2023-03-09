@@ -56,14 +56,7 @@ class Competition extends Base
     public static function booted()
     {
         parent::booted();
-
-        static::saved(function($competition){
-            if($competition->format === 1){
-                $competition->createGlobalMarkingGroup();
-            }
-        });
-
-        static::deleting(function($competition  ) {
+        static::deleting(function($competition) {
             $competition->competitionOrganization()->delete();
             $competition->groups()->delete();
         });
@@ -174,24 +167,17 @@ class Competition extends Base
 
     protected function createGlobalMarkingGroup()
     {
-        if(CompetitionMarkingGroup::where('competition_id', $this->id)->doesntExist()){
-            $countries = $this->participants()
-                    ->pluck('participants.country_id')->unique()->toArray();
-
-            $markingGroup = CompetitionMarkingGroup::create([
-                'competition_id'    => $this->id,
-                'name'              => "Global Group",
-                'created_by_userid' => auth()->user()->id
-            ]);
-
-            foreach($countries as $country_id){
-                DB::table('competition_marking_group_country')->insert([
-                    'marking_group_id'  => $markingGroup->id,
-                    'country_id'        => $country_id,
-                    'created_at'        => now(),
-                    'updated_at'        => now()
-                ]);
-            }
+        $countries = $this->participants()
+                ->pluck('participants.country_id')->unique()->toArray();
+        $markingGroup = CompetitionMarkingGroup::firstOrCreate(
+            ['competition_id' => $this->id],
+            ['name' => "Global Group", 'created_by_userid' => auth()->id()]
+        );
+        foreach($countries as $country_id){
+            DB::table('competition_marking_group_country')->updateOrInsert(
+                ['marking_group_id' => $markingGroup->id, 'country_id' => $country_id],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
         }
     }
 }
