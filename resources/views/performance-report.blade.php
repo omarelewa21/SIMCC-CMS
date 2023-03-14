@@ -70,13 +70,13 @@
                      <div class="card">
                         <p class="topic"> {{ $array['topic'] }} </p>
                         <div style="width:90%">
-                           <span> {{ $array['participant'] }} % </span>
+                           <span style="font-weight: bold"> {{ $array['participant'] }} % </span>
                            @php
                               $svg = base64_encode('<svg stroke="currentColor" fill="white" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="color: rgb(255, 255, 255); font-size: 30px;">
                                  <path d="M256 256c52.805 0 96-43.201 96-96s-43.195-96-96-96-96 43.201-96 96 43.195 96 96 96zm0 48c-63.598 0-192 32.402-192 96v48h384v-48c0-63.598-128.402-96-192-96z"></path>
                               </svg>')
                            @endphp
-                           <img src="data:image/svg+xml;base64,{!! $svg !!}" height="0.5" width="0.5" style="float: right;"/>
+                           <img src="data:image/svg+xml;base64,{!! $svg !!}" height="0.6" width="0.6" style="float: right;"/>
                         </div>
                         <hr width="100%">
                         <div style="width:90%">
