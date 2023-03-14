@@ -59,16 +59,22 @@ class ParticipantsAnswer extends Model
         return $minMarks ?? 0;
     }
 
-    public function getIsCorrectAnswerAttribute($level_id): bool
+    public function getIsCorrectAnswer($level_id): bool
     {
         $taskAnswer = $this->getAnswer();
-        if(is_null($taskAnswer)){
-            return false;
+        if(
+            !is_null($taskAnswer)
+            && CompetitionTasksMark::where('level_id', $level_id)
+                ->where('task_answers_id', $taskAnswer->id)->exists()
+            )
+        {
+            $this->is_correct = true;
         }
-        if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
-            return true;
+        else {
+            $this->is_correct = false;
         }
-        return false;
-        
+
+        $this->save();
+        return $this->is_correct;
     }
 }
