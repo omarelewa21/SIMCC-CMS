@@ -93,7 +93,6 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("",[ParticipantsController::class,"update"])->name('participant.update');
         Route::delete("",[ParticipantsController::class,"delete"])->name('participant.delete');
         Route::patch("/swapIndex",[ParticipantsController::class,"swapIndex"])->name('participant.swapIndex');
-        Route::get("report",[ParticipantsController::class,"performanceReportWithIndex"])->name('participant.report');
     });
 
     Route::group(["prefix" => "competition"],function () {

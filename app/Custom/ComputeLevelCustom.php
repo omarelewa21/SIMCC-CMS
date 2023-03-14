@@ -53,7 +53,7 @@ class ComputeLevelCustom
             ParticipantsAnswer::where('level_id', $this->level->id)
                 ->get()
                 ->each(function($participantAnswer){
-                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswerAttribute($this->level->id);
+                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($this->level->id);
                     $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
                     $participantAnswer->save();
             });
