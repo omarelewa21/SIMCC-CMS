@@ -14,5 +14,6 @@ Route::group(['prefix' => "testing"], function () {
     Route::get("/getNumberOfUploadedAnswersByLevelId/{level}", [TestingController::class, "getNumberOfParticipantsByLevelId"]);
     Route::get("/testCompetitionReportData/{competition}", [TestingController::class, "testCompetitionReportData"]);
     Route::post("/storeRemainingGroupCountriesForCompetitionId/{competition_id}", [TestingController::class, "storeRemainingGroupCountriesForCompetitionId"]);
+    Route::get('/pdf-file', [TestingController::class, 'testPDF']);
 });
 
