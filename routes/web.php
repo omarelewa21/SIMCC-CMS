@@ -18,5 +18,3 @@ Route::get('/', function () {
     abort(404);
     return view('welcome');
 });
-
-Route::get('/pdf-file', [TestingController::class, 'testPDF']);

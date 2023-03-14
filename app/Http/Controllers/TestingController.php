@@ -46,7 +46,7 @@ class TestingController extends Controller
             'grade_performance_analysis'    => $report['grade_performance_analysis'],
             'analysis_by_questions'         => $report['analysis_by_questions']
         ];
-        $pdf = PDF::loadView('testPdf', $data);
+        $pdf = PDF::loadView('performance-report', $data);
         return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
     }
 }
