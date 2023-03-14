@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TestingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,3 +18,5 @@ Route::get('/', function () {
     abort(404);
     return view('welcome');
 });
+
+Route::get('/pdf-file', [TestingController::class, 'testPDF']);
