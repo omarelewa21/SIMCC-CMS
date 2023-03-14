@@ -33,6 +33,13 @@ class CompetitionOrganization extends Base
     public static function booted()
     {
         parent::booted();
+        static::saved(function($competitionOrganization){
+            $competition = Competition::find($competitionOrganization->competition_id);
+            if($competition->format === 1){
+                $competition->createGlobalMarkingGroup();
+            }
+        });
+
         static::deleting(function($competitionOrganization) {
             $competitionOrganization->all_competition_dates()->delete();
             $competitionOrganization->reject_reason()->delete();

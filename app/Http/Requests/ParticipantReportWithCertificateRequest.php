@@ -27,7 +27,8 @@ class ParticipantReportWithCertificateRequest extends FormRequest
     {
         return [
             'index_no'          => 'required|exists:participants',
-            'certificate_no'    => 'required|exists:participants'
+            'certificate_no'    => 'required|exists:participants',
+            'as_pdf'            => 'boolean'
         ];
     }
 

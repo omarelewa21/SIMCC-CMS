@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Competition;
+use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -219,5 +220,19 @@ class CompetitionService
             'name'      => $names,
             'award'     => $awards
         ];
+    }
+
+
+    public static function addOrganizations(array $organizations, int $competition_id)
+    {
+        foreach($organizations as $organization){
+            if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->where('country_id', $organization['country_id'])->doesntExist()){
+                CompetitionOrganization::create(
+                    array_merge($organization, [
+                        'competition_id'    => $competition_id,
+                        'created_by_userid' => auth()->user()->id,
+                ]));
+            }
+        }
     }
 }

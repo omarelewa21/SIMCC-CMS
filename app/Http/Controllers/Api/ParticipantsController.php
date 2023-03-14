@@ -6,11 +6,9 @@ use App\Custom\ParticipantReportService;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\CompetitionOrganization;
-use App\Models\Organization;
 use App\Models\School;
 use App\Rules\CheckParticipantDeleteExpire;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -21,9 +19,7 @@ use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\getParticipantListRequest;
-use App\Http\Requests\ParticipantReportRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
-use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
@@ -32,8 +28,8 @@ use App\Rules\CheckOrganizationCompetitionValid;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckDeleteParticipant;
 use App\Rules\CheckCompetitionEnded;
-use App\Rules\ParticipantEmailRule;
 use Exception;
+use PDF;
 
 class ParticipantsController extends Controller
 {
@@ -692,46 +688,11 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function performanceReportWithIndex(ParticipantReportRequest $request)
-    {
-        try {
-            $report = CompetitionParticipantsResults::where([
-                ['level_id', $request->level_id], ['participant_index', $request->participant_index]
-            ])->value('report');
-
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Report generated successfully",
-                "data"      => $report
-            ]);
-
-            // $participant = Participants::where('index_no', $request->participant_index)->firstOrFail();
-            // $level = CompetitionLevels::findOrFail($request->level_id);
-            // $report = new ParticipantReportService($participant, $level);
-            // return response()->json([
-            //     "status"                        => 200,
-            //     "message"                       => "Report generated successfully",
-            //     "general_data"                  => $report->getGeneralData(),
-            //     "performance_by_questions"      => $report->getPerformanceByQuestionsData(),
-            //     "performance_by_topics"         => $report->getPerformanceByTopicsData(),
-            //     "grade_performance_analysis"    => $report->getGradePerformanceAnalysisData(),
-            //     "analysis_by_questions"         => $report->getAnalysisByQuestionsDataProcessed(),
-            // ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                "status"    => 500,
-                "message"   => "Report generation is unsuccessfull",
-                "error"     => $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $request->index_no)
-                ->firstOrFail()->makeVisible('report');
+                ->with('participant')->firstOrFail()->makeVisible('report');
 
             if(is_null($participantResult->report)){
                 $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
@@ -741,6 +702,18 @@ class ParticipantsController extends Controller
             }else{
                 $report = $participantResult->report;
             }
+
+            if($request->has('as_pdf') && $request->as_pdf == 1){
+                $pdf = PDF::loadView('performance-report', [
+                    'general_data'                  => $report['general_data'],
+                    'performance_by_questions'      => $report['performance_by_questions'],
+                    'performance_by_topics'         => $report['performance_by_topics'],
+                    'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                    'analysis_by_questions'         => $report['analysis_by_questions']
+                ]);
+                return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
+            }
+
             return response()->json([
                 "status"    => 200,
                 "message"   => "Report generated successfully",
