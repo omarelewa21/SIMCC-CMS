@@ -1045,12 +1045,13 @@ class CompetitionController extends Controller
             DB::commit();
 
             if($request->mode === 'csv') return Arr::prepend($output, $header);
-            
+
             $filterOptions = $competitionService->getReportFilterOptions($output);
+            $data = collect($output)->paginate($request->limit ?? 10, $request->page ?? 1);     // paginate is defined in AppServiceProvider
             return [
                 'filterOptions'     => $filterOptions,
                 'header'            => $header,
-                'data'              => $output,
+                'data'              => $data,
             ];
 
         } catch (\Exception $e) {

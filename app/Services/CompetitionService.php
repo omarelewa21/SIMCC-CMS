@@ -72,9 +72,7 @@ class CompetitionService
 
         if($request->filled('grade')) $query->where('participants.grade', $request->grade);
         if($request->filled('country')) $query->where('participants.country_id', $request->country);
-        if($request->filled('code')) $query->where('participants.index_no', $request->code);
-        if($request->filled('school')) $query->where('participants.school_id', $request->school_id);
-        if($request->filled('name')) $query->where('participants.name', $request->name);
+        if($request->filled('school')) $query->where('participants.school_id', $request->school);
         if($request->filled('award')) $query->where('competition_participants_results.award', $request->award);
 
         return $query;
@@ -205,19 +203,15 @@ class CompetitionService
     public function getReportFilterOptions(array $data): array
     {
         $collection = collect($data);
-        $grades = $collection->pluck('grade')->unique();
+        $grades = $collection->pluck('grade')->unique()->values();
         $countries = $collection->pluck('country', 'country_id')->unique();
-        $indexes = $collection->pluck('index_no')->unique();
         $schools = $collection->pluck('school', 'school_id')->unique();
-        $names = $collection->pluck('name')->unique();
-        $awards = $collection->pluck('award')->unique();
+        $awards = $collection->pluck('award')->unique()->values();
 
         return [
             'grade'     => $grades,
             'country'   => $countries,
-            'code'      => $indexes,
             'school'    => $schools,
-            'name'      => $names,
             'award'     => $awards
         ];
     }
