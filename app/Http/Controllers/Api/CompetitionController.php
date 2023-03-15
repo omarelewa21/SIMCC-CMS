@@ -1047,7 +1047,12 @@ class CompetitionController extends Controller
             if($request->mode === 'csv') return Arr::prepend($output, $header);
 
             $filterOptions = $competitionService->getReportFilterOptions($output);
-            $data = collect($output)->paginate($request->limit ?? 10, $request->page ?? 1);     // paginate is defined in AppServiceProvider
+            $data = CollectionHelper::searchCollection(
+                $request->search,
+                collect($output),
+                array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
+                $request->limits ?? 10
+            );
             return [
                 'filterOptions'     => $filterOptions,
                 'header'            => $header,
