@@ -253,7 +253,7 @@ class ParticipantsController extends Controller
                 'participants.session',
                 'participants.status',
                 'all_countries.display_name as country_name',
-                'schools.private',
+                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
                 'schools.id as school_id',
                 'schools.name as school_name',
                 'tuition_centre.id as tuition_centre_id',
@@ -264,9 +264,9 @@ class ParticipantsController extends Controller
                 'organization.id as organization_id',
                 'organization.name as organization_name',
                 'competition_participants_results.award',
+                DB::raw("CONCAT_WS(' ',created_user.username,DATE_FORMAT(participants.created_at,'%d/%m/%Y')) as created_by"),
+                DB::raw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by")
             )
-            ->selectRaw("CONCAT_WS(' ',created_user.username,DATE_FORMAT(participants.created_at,'%d/%m/%Y')) as created_by")
-            ->selectRaw("CONCAT_WS(' ',modified_user.username,DATE_FORMAT(participants.updated_at,'%d/%m/%Y')) as last_modified_by")
             ->filterList($request)
             ->get();
         try {
