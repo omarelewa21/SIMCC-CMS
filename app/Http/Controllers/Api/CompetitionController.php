@@ -1024,7 +1024,7 @@ class CompetitionController extends Controller
             ];
             $competitionService = new CompetitionService($competition);
             $data = $competitionService->applyFilterToReport(
-                $competitionService->getReportQuery(),
+                $competitionService->getReportQuery($request->mode ?? 'all'),
                 $request
             )->get()->toArray();
 
@@ -1063,7 +1063,7 @@ class CompetitionController extends Controller
             return response()->json([
                 'status'    => 500,
                 'message'   => "Failed to fetch report",
-                'error'     => $e->getMessage()
+                'error'     => "" .$e
             ], 500);
         }
     }
