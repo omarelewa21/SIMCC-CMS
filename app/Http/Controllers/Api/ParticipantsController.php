@@ -253,7 +253,7 @@ class ParticipantsController extends Controller
                 'participants.session',
                 'participants.status',
                 'all_countries.display_name as country_name',
-                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 1 ELSE 0 END AS private"),
+                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
                 'schools.id as school_id',
                 'schools.name as school_name',
                 'tuition_centre.id as tuition_centre_id',
