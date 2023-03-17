@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\tasks\TasksListRequest;
+use App\Models\Collections;
 use App\Models\Tasks;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -57,6 +58,15 @@ class TasksService
      */
     public static function applyFilter(Builder $query, TasksListRequest $request)
     {
+        if($request->filled('collection_id')){
+            $taskIds = Collections::withTrashed()->whereId($request->collection_id)->with('sections')
+                ->first()->sections->flatMap(function ($values) {
+                    return collect($values->tasks)->flatten();
+                })->toArray();
+
+            $query->whereIn('tasks.id', $taskIds);
+        }
+
         if($request->filled("domains") || $request->filled("tags")){
             $query->when($request->filled("domains"), function($query)use($request){
                 $query->whereHas('tags', function($query)use($request){

@@ -28,15 +28,16 @@ class TasksListRequest extends FormRequest
     public function rules()
     {
         return [
-            'id'         => 'integer',
-            'identifier' => 'regex:/^[\_\w-]*$/',
-            'lang_id'    => new CheckMultipleVaildIds(new Languages()),
-            'tag_id'     => new CheckMultipleVaildIds(new DomainsTags()),
-            'status'     => 'string|max:255',
-            'limits'     => 'integer',
-            'page'       => 'integer',
-            'search'     => 'string|max:255',
-            'status'     => sprintf("in:%s", implode(',', Tasks::STATUS))
+            'collection_id' => 'exists:collection,id',
+            'id'            => 'integer',
+            'identifier'    => 'regex:/^[\_\w-]*$/',
+            'lang_id'       => new CheckMultipleVaildIds(new Languages()),
+            'tag_id'        => new CheckMultipleVaildIds(new DomainsTags()),
+            'status'        => 'string|max:255',
+            'limits'        => 'integer',
+            'page'          => 'integer',
+            'search'        => 'string|max:255',
+            'status'        => sprintf("in:%s", implode(',', Tasks::STATUS))
         ];
     }
 }
