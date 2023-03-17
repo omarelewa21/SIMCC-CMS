@@ -1063,7 +1063,7 @@ class CompetitionController extends Controller
             return response()->json([
                 'status'    => 500,
                 'message'   => "Failed to fetch report",
-                'error'     => "" .$e
+                'error'     => $e->getMessage()
             ], 500);
         }
     }

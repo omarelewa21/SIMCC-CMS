@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Services;
+namespace App\Services;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\tasks\TasksListRequest;

@@ -17,7 +17,7 @@ use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
 use App\Http\Requests\tasks\UpdateTaskContentRequest;
 use App\Http\Requests\tasks\UpdateTaskRecommendationsRequest;
 use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
-use App\Http\Services\TasksService;
+use App\Services\TasksService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 

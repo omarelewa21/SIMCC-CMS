@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Services;
+namespace App\Services;
 
 use App\Http\Requests\collection\CollectionListRequest;
 use App\Models\Collections;
