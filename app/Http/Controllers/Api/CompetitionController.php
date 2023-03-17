@@ -1018,9 +1018,8 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'competition','organization','country','level','grade','school','tuition','index',
-                'participant','certificate number','points','award','school_rank','country_rank',
-                'global rank'
+                'participant','index','certificate number','competition','organization','country',
+                'level','grade','school','tuition','points','award','school_rank','country_rank','global rank'
             ];
             $competitionService = new CompetitionService($competition);
             $data = $competitionService->applyFilterToReport(
