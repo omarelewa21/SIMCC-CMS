@@ -35,10 +35,10 @@ class CollectionController extends Controller
                 ]);
             }
             $collectionsList = CollectionHelper::searchCollection(
-                $request->search ? $request->search : null,
+                $request->search,
                 $collections,
                 array("identifier", "name", "description"),
-                $request->limits ? $request->limits : 10
+                $request->limits ?? 10
             );
             return response()->json([
                 "status"    => 200,
