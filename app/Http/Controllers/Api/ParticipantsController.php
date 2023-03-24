@@ -537,8 +537,6 @@ class ParticipantsController extends Controller
 
         $validated = $request->validate($vaildate);
 
-
-
         try {
 
             $participantObject = new Participants;
@@ -553,7 +551,7 @@ class ParticipantsController extends Controller
 
                 if(isset($validated["for_partner"]) && $validated["for_partner"] == 1)  {
 
-                    $participant = $organizationId = Participants::find($validated['id']);
+//                    $participant = $organizationId = Participants::find($validated['id']);
                     $organizationId =  $participant->competition_organization->organization->id;
                     $countryId =  $participant->country_id;
 
