@@ -506,7 +506,7 @@ class ParticipantsController extends Controller
 
         $vaildate = array(
             'for_partner' => 'required_if:school_type,1|exclude_if:school_type,0|boolean',
-            'name' => 'required|regex:/^[\.\\\'\,\s\(\)\[\]\w-]*$/|min:3|max:255',
+            'name' => 'required|string|min:3|max:255',
             'class' => "max:20",
             'grade' => ['required','integer','min:1','max:99',new CheckParticipantGrade],
             'school_type' => ['required',Rule::in(0,1)],
