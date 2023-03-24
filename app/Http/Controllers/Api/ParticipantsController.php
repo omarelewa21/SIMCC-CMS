@@ -26,7 +26,6 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
 use App\Rules\CheckOrganizationCompetitionValid;
-use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckDeleteParticipant;
 use App\Rules\CheckCompetitionEnded;
 use Exception;
