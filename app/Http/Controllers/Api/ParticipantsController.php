@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Models\CompetitionParticipantsResults;
@@ -597,43 +598,21 @@ class ParticipantsController extends Controller
 //        }
     }
 
-    public function delete (Request $request) {
-
-        $validate = array(
-            "id" => "array",
-            "id.*" => ["required", "integer", 'bail', new CheckDeleteParticipant(auth()->user()->role_id), new CheckCompetitionEnded('delete'), new CheckParticipantDeleteExpire(7)],
-        );
-
-        $validated = $request->validate($validate);
-
+    public function delete (DeleteParticipantRequest $request) {
         try {
-            $deletedRecords = Participants::destroy($validated['id']);
-
+            $deletedRecords = Participants::destroy($request->id);
             return response()->json([
-                "status" => 200,
-                "message" => $deletedRecords ." Participants delete successful"
+                "status"    => 200,
+                "message"   => "$deletedRecords Participants delete successful"
             ]);
         }
-        catch(QueryException $e) {
-            return response()->json([
-                "status" => 200,
-                "message" => "Participants delete unsuccessful",
-            ]);
-        }
-        catch(ModelNotFoundException $e){
-            // do task when error
-            return response()->json([
-                "status" => 500,
-                "message" => "Participants delete unsuccessful"
-            ]);
-        }
-//        catch (\Exception $e) {
-//            return response()->json([
-//                "status" => 500,
-//                "message" => "Participants delete unsuccessful"
-//            ]);
-//        }
-
+       catch (\Exception $e) {
+           return response()->json([
+               "status"     => 500,
+               "message"    => "Participants delete unsuccessful",
+               "error"      => $e->getMessage()
+           ], 500);
+       }
     }
 
     public function swapIndex (Request $request) {
