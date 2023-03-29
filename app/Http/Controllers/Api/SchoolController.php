@@ -37,7 +37,7 @@ class SchoolController extends Controller
         $validated = $request->validate([
             "role_id" => "nullable",
             "school.*.country_id" => ['exclude_if:role_id:2,4','required_if:role_id,1','integer',Rule::in($countries)],
-            "school.*.name" => ["required","regex:/^[\&\@\'\;\.\,\s\(\)\[\]\’\w-]*$/",new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
+            "school.*.name" => ["required","string",new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
             "school.*.private" => "required|boolean",
             "school.*.address" => "max:255",
             "school.*.postal" => "max:255",
