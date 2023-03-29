@@ -12,11 +12,13 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\SchoolListRequest;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Countries;
 use App\Rules\CheckSchoolUnique;
+use Illuminate\Database\Eloquent\Builder;
 
 class SchoolController extends Controller
 {
@@ -95,20 +97,7 @@ class SchoolController extends Controller
         }
     }
 
-    public function list (Request $request) {
-
-        $vaildate = $request->validate([
-            'id' => "integer",
-            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
-            'status' => 'alpha',
-            'country_id' => 'integer',
-            'private' => 'boolean',
-            'limits' => 'integer',
-            'page' => 'integer',
-            'show_teachers' => 'boolean',
-            'search' => 'max:255'
-        ]);
-
+    public function list (SchoolListRequest $request) {
         try {
             if($request->limits == "0") {
                 $limits = 99999999;
@@ -141,8 +130,25 @@ class SchoolController extends Controller
             }
 
             $returnFiltered = $schoolModel
+                ->when($request->mode === 'csv', function(Builder $query){
+                    $query->join('all_countries', 'all_countries.id', 'schools.country_id')
+                    ->selectRaw(
+                        "CONCAT('\"',schools.name,'\"') as name,
+                        CONCAT('\"',all_countries.display_name,'\"') as country,
+                        schools.status,
+                        schools.email,
+                        CONCAT('\"',schools.address,'\"') as address,
+                        CONCAT('\"',schools.postal,'\"') as postal,
+                        CONCAT('\"',schools.province,'\"') as province,
+                        schools.phone"
+                    );
+                })
                 ->filter()
                 ->get();
+
+            if($request->mode === 'csv'){
+                return $returnFiltered;
+            }
 
             $schoolCollection = collect($returnFiltered)->map(function ($item) use ($countries) { // match country id and add country name into the collection
 
@@ -150,8 +156,6 @@ class SchoolController extends Controller
 
             return $item;
             });
-
-
 
             /**
              * Lists of availabe filters
