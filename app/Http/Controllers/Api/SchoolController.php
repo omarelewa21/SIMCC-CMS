@@ -105,7 +105,7 @@ class SchoolController extends Controller
                 $limits = $request->limits ?? 10; //set default to 10 rows per page
             }
 
-            $searchKey = isset($vaildate['search']) ? $vaildate['search'] : null;
+            $searchKey = $request->search ?? null;
             $countries = Countries::all()->keyBy('id')->toArray();
             $eagerload = [
                 'reject_reason:reject_id,reason,created_at,created_by_userid',
