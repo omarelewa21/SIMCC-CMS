@@ -35,7 +35,7 @@ class CheckSchoolUnique implements Rule,DataAwareRule
      */
     public function passes($attribute, $value)
     {
-        $query = School::where('name',$value);
+        $query = School::where('name', $value);
 
         if(isset($this->data['id'])) {
             $query->where('id','!=',$this->data['id']);
@@ -48,13 +48,13 @@ class CheckSchoolUnique implements Rule,DataAwareRule
             $province = $this->data['school'][$rowNum]['province'];
         }
 
-        $count = $query->where('name',$value)
-            ->where('country_id',$country_id)
-            ->where('province',$province)
-            ->count();
+        $school = School::where([
+            'country_id'    => $country_id,
+            'province'      => $province
+        ])->first();
 
-        if($count > 0) {
-            $this->message = 'The selected school already existed in the country/province.';
+        if($school) {
+            $this->message = sprintf('School name already exists with status %s.', $school->status);
             return false;
         }
 
