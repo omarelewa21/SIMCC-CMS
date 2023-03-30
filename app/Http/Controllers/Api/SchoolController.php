@@ -99,7 +99,7 @@ class SchoolController extends Controller
                     if ($request->filled($request->province)) $school->province = $request->province;
 
                 } else {
-                    if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('$request->name') ||  $request->has('province')) ) {
+                    if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('name') ||  $request->has('province')) ) {
                         if($request->filled('name')) $school->name = $request->name;
                         if($request->filled('province')) $school->province = $request->province;
                         $school->status = 'pending';
