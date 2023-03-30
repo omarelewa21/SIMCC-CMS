@@ -25,24 +25,27 @@ class SchoolController extends Controller
 {
     public function create (CreateSchoolRequest $request)
     {
+        DB::beginTransaction();
+
         try{
             collect($request->school)->unique('name')
                 ->each(function($school){
                     School::create($school);
                 });
 
-            return response()->json([
-                "status"    => 201,
-                "message"   => "Schools create successful"
-            ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "Create school unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status"    => 201,
+            "message"   => "Schools create successful"
+        ]);
     }
 
     public function update(UpdateSchoolRequest $request)
