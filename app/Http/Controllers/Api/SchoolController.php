@@ -75,52 +75,19 @@ class SchoolController extends Controller
         }
     }
 
-    public function update (UpdateSchoolRequest $request)
+    public function update(UpdateSchoolRequest $request)
     {
         try {
-            $editOwnRoles = ['Country Partner', 'Teacher', 'Country Partner Assistant', 'School Manager'];
             $school = School::whereId($request->id)->where('status', '!=', 'deleted')->firstOrFail();
-            $user = auth()->user();
-            if($user->hasRole($editOwnRoles)) {
-                if(in_array($school->status, ['pending', 'rejected'])){
-                    if($user->hasRole(['Country Partner', 'Country Partner Assistant'])){
-                        $idAllowed = User::where(['organization_id' => $user->organization_id,'country_id' => $user->country_id])
-                                        ->whereIn('role_id', [2,4])->pluck('id')->toArray();
-                            $idAllowed[] = $user->id;
-                            if (!in_array($school->created_by_userid, $idAllowed))  {
-                                return response()->json([
-                                    "status"  => 401,
-                                    "message" => "School update unsuccessful, only allowed to edit pending school created by country partner or assistance"
-                                ], 401);
-                            };
-                    }
-                    
-                    if ($request->filled('name')) $school->name = $request->name;
-                    if ($request->filled('province')) $school->province = $request->province;
-
-                } else {
-                    if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('name') ||  $request->has('province')) ) {
-                        if($request->filled('name')) $school->name = $request->name;
-                        if($request->filled('province')) $school->province = $request->province;
-                        $school->status = 'pending';
-                    }
-                }
-
-            } else {
-                $school->status = "active";
-            }
-
-            if($user->hasRole(['Super Admin', 'Admin']))  {
-                $school->name = $request->name ?? $school->name;
-                $school->province = $request->province ?? $school->province;
-            }
-
-            $school->address = $request->address;
-            $school->email = $request->email;
-            $school->phone = $request->phone;
-            $school->postal = $request->postal;
-            $school->last_modified_userid = $user->id;
-            $school->save();
+            $school->update([
+                'status'    => auth()->user()->hasRole(['Super Admin', 'Admin']) ? 'active' : 'pending',
+                'name'      => $request->name ?? $school->name,
+                'province'  => $request->province ?? $school->province,
+                'address'   => $request->address ?? $school->address,
+                'email'     => $request->email ?? $school->email,
+                'phone'     => $request->phone ?? $school->phone,
+                'postal'    => $request->postal ?? $school->postal
+            ]);
 
             return response()->json([
                 "status"    => 200,
