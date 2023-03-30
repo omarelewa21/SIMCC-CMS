@@ -12,66 +12,36 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\CreateSchoolRequest;
 use App\Http\Requests\SchoolListRequest;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Countries;
-use App\Rules\CheckSchoolUnique;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- *
- */
+
 class SchoolController extends Controller
 {
-
-    public function create (Request $request) {
-
-        $countries = Countries::get()->pluck('id');
-        $counter = 0;
-
-        $request['role_id'] = auth()->user()->role_id;
-
-        $validated = $request->validate([
-            "role_id" => "nullable",
-            "school.*.country_id" => ['exclude_if:role_id:2,4','required_if:role_id,1','integer',Rule::in($countries)],
-            "school.*.name" => ["required","string",new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
-            "school.*.private" => "required|boolean",
-            "school.*.address" => "max:255",
-            "school.*.postal" => "max:255",
-            "school.*.phone" => "required|regex:/^[0-9]*$/",
-            "school.*.email" => "required|email",
-            "school.*.province" => "required|max:255",
-        ]);
-
-        for($i=0;$i<count($validated['school']);$i++) {
-
-            $validated['school'][$i] = [
-                ...$validated['school'][$i],
-                "country_id" => in_array(auth()->user()->role_id,[2,4]) ? auth()->user()->country_id : $validated['school'][$i]['country_id'],
-                "created_by_userid" => auth()->user()->id,
-                "created_at" => date('Y-m-d H:i:s'),
-                "status" => in_array(auth()->user()->role_id,[2,4]) ? "pending" : "active" // if this is admin role, set school status to active
-            ];
-        }
-
+    public function create (CreateSchoolRequest $request)
+    {
         try{
-            School::insert($validated['school']);
+            collect($request->school)->unique('name')
+                ->each(function($school){
+                    School::create($school);
+                });
 
             return response()->json([
-                "status" => 201,
-                "message" => "Schools create successful"
+                "status"    => 201,
+                "message"   => "Schools create successful"
             ]);
-
         }
         catch (\Exception $e) {
-
             return response()->json([
-                "status" => 500,
-                "message" => "Create school unsuccessful"
-            ]);
-
+                "status"    => 500,
+                "message"   => "Create school unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 

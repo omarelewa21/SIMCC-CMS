@@ -21,6 +21,26 @@ class School extends Model
     protected $table = 'schools';
     protected $guarded = [];
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::creating(function($school) {
+            $school->created_by_userid = Auth()->id();
+            if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
+                $school->status = 'pending';
+                $school->country_id = Auth()->user()->country_id;
+            } else {
+                $school->approved_by_userid = Auth()->id();
+                $school->status = 'active';
+            }
+        });
+
+        static::updating(function($school) {
+            $school->last_modified_userid = Auth()->id();
+        });
+    }
+
     public function country()
     {
         return $this->belongsTo(Countries::class,"country_id","id");
