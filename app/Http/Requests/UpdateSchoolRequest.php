@@ -30,7 +30,7 @@ class UpdateSchoolRequest extends FormRequest
     {
         return [
             "id"        => "required|integer|exists:schools,id",
-            "name"      => ["sometimes", "required", "distinct", "regex:/^[\'\;\.\,\s\(\)\[\]\w-]*$/", new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
+            "name"      => ["sometimes", "required", "distinct", "string", new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
             "address"   => "max:255",
             "postal"    => "integer",
             "phone"     => "required|regex:/^[0-9]*$/",
