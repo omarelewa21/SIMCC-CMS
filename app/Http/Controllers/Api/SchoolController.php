@@ -71,18 +71,23 @@ class SchoolController extends Controller
     {
         try {
             $school = School::whereId($request->id)->where('status', '!=', 'deleted')->firstOrFail();
-            $request->merge([
+            $school->update([
                 'status'    => auth()->user()->hasRole(['Super Admin', 'Admin']) ? 'active' : 'pending',
+                'name'      => $request->name ?? $school->name,
+                'province'  => $request->province ?? $school->province,
+                'address'   => $request->address ?? $school->address,
+                'email'     => $request->email ?? $school->email,
+                'phone'     => $request->phone ?? $school->phone,
+                'postal'    => $request->postal ?? $school->postal
             ]);
 
-            $school->update($request->all());
             return response()->json([
                 "status"    => 200,
                 "message"   => "School update successful",
                 "data"      => $school
             ]);
-        }
 
+        }
         catch(\Exception $e){
             return response()->json([
                 "status"    => 500,
