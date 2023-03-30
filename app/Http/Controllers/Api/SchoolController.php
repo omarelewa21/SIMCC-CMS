@@ -81,7 +81,6 @@ class SchoolController extends Controller
             $editOwnRoles = ['Country Partner', 'Teacher', 'Country Partner Assistant', 'School Manager'];
             $school = School::whereId($request->id)->where('status', '!=', 'deleted')->firstOrFail();
             $user = auth()->user();
-
             if($user->hasRole($editOwnRoles)) {
                 if(in_array($school->status, ['pending', 'rejected'])){
                     if($user->hasRole(['Country Partner', 'Country Partner Assistant'])){
@@ -95,8 +94,9 @@ class SchoolController extends Controller
                                 ], 401);
                             };
                     }
-                    if ($request->filled($request->name)) $school->name = $request->name;
-                    if ($request->filled($request->province)) $school->province = $request->province;
+                    
+                    if ($request->filled('name')) $school->name = $request->name;
+                    if ($request->filled('province')) $school->province = $request->province;
 
                 } else {
                     if(($user->hasRole(['Country Partner', 'Country Partner Assistant'])) && ($request->has('name') ||  $request->has('province')) ) {
