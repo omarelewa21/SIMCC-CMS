@@ -10,19 +10,6 @@ class School extends Base
 {
     use HasFactory, Filterable, ApprovedByTrait;
 
-    public static function booted()
-    {
-        parent::booted();
-
-        static::creating(function($school) {
-            $school->created_by_userid = auth()->id();
-        });
-        static::saving(function($school) {
-            $school->last_modified_userid = auth()->id();
-            $school->updated_at = now()->toDateTimeString();
-        });
-    }
-
     private static $whiteListFilter = [
         'name',
         'status',
