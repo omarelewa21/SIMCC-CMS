@@ -48,7 +48,7 @@ class CheckSchoolUnique implements Rule,DataAwareRule
             $province = $this->data['school'][$rowNum]['province'];
         }
 
-        $school = School::where([
+        $school = $query->where([
             'country_id'    => $country_id,
             'province'      => $province
         ])->first();
