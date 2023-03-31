@@ -5,8 +5,6 @@ namespace App\Models;
 use App\Http\Requests\getParticipantListRequest;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
 
 class Participants extends Base
 {
@@ -121,7 +119,6 @@ class Participants extends Base
         }
 
     }
-
 
     public function created_by () {
         return $this->belongsTo(User::class,"created_by_userid","id");
