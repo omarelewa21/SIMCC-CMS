@@ -2,53 +2,45 @@
 
 namespace App\Rules;
 
+use App\Models\Competition;
 use App\Models\Participants;
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\InvokableRule;
 
-class CheckParticipantDeleteExpire implements Rule
+class CheckParticipantDeleteExpire implements InvokableRule
 {
-    protected $messages;
-    protected $days;
+
+    protected int $days;
+
     /**
      * Create a new rule instance.
      *
      * @return void
      */
-    public function __construct($days)
+    public function __construct(int $days)
     {
         $this->days = $days;
     }
 
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value)
+    public function __invoke($attribute, $value, $fail)
     {
-        if(in_array(auth()->user()->role_id,[0,1])) return true;
+        if(Auth()->user()->hasRole('Super Admin', 'Admin')) return;
 
-        $participant = Participants::where('id',$value)->first();
-        $restrictDeleteDate = date_add($participant->created_at,date_interval_create_from_date_string($this->days . " days"));
+        $participant = Participants::where('id', $value)->first();
+        $restrictDeleteDate = date_add($participant->created_at, date_interval_create_from_date_string($this->days . " days"));
         $todayDate = date('Y-m-d', strtotime('now'));
 
-        if($todayDate > $restrictDeleteDate) {
-            $this->message = 'The selected participant could not be delete after 1 week of creation';
-            return false;
+        if($participant->competition_organization->competition->format === Competition::LOCAL){
+            if($todayDate > $restrictDeleteDate) {
+                $fail('The selected participant could not be delete after 1 week of creation');
+            }
         }
-
-        return true;
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return $this->message;
     }
 }
