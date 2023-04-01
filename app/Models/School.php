@@ -75,4 +75,9 @@ class School extends Model
         return $this->morphMany(RejectReasons::class,'reject');
     }
 
+    public function participants()
+    {
+        return $this->hasMany(Participants::class);
+    }
+
 }

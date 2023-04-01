@@ -101,6 +101,7 @@ class SchoolController extends Controller
 
             $schoolModel = School::has('organization','=',0)
                 ->with($eagerload)
+                ->withCount('participants')
                 ->AcceptRequest(['status', 'country_id', 'name', 'private']);
 
             switch(auth()->user()->role_id) {
