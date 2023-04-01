@@ -33,6 +33,7 @@ class SchoolController extends Controller
                 });
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 "status"    => 500,
                 "message"   => "Create school unsuccessful",
@@ -96,6 +97,7 @@ class SchoolController extends Controller
 
             $schoolModel = School::has('organization','=',0)
                 ->with($eagerload)
+                ->withCount('participants')
                 ->AcceptRequest(['status', 'country_id', 'name', 'private']);
 
             switch(auth()->user()->role_id) {

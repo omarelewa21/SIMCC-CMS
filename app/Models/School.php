@@ -74,4 +74,9 @@ class School extends Base
         return $this->morphMany(RejectReasons::class,'reject');
     }
 
+    public function participants()
+    {
+        return $this->hasMany(Participants::class);
+    }
+
 }
