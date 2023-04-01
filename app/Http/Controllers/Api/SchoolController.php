@@ -34,6 +34,7 @@ class SchoolController extends Controller
                 });
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 "status"    => 500,
                 "message"   => "Create school unsuccessful",
