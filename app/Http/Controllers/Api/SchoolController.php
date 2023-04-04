@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\CreateSchoolRequest;
 use App\Http\Requests\SchoolListRequest;
+use App\Http\Requests\Schools\ApproveSchoolRequest;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
@@ -206,16 +207,9 @@ class SchoolController extends Controller
         return $this->_updateStatus($vaildated,"rejected", "rejected,deleted,active");
     }
 
-    public function approve (Request $request) {
-
-        $vaildated = $request->validate([
-            "id" => "required|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')->whereNotIn('created_by_userid',[auth()->user()->id])],
-//            "id.*" => ['required','integer','exists:schools,id'],
-        ]);
-
-
-        return $this->_updateStatus($vaildated,"active", "active,deleted");
+    public function approve (ApproveSchoolRequest $request)
+    {
+        return $this->_updateStatus($request->all(), "active", "active,deleted");
     }
 
     public function undelete (Request $request) {
