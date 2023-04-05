@@ -15,6 +15,7 @@ use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\CreateSchoolRequest;
 use App\Http\Requests\SchoolListRequest;
 use App\Http\Requests\Schools\ApproveSchoolRequest;
+use App\Http\Requests\Schools\RejectSchoolRequest;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
@@ -195,16 +196,9 @@ class SchoolController extends Controller
 
     }
 
-    public function reject (Request $request) {
-
-        $vaildated = $request->validate([
-            "id" => "required|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')->whereNotIn('created_by_userid',[auth()->user()->id])],
-            "reject_reason" => "required|array",
-            "reject_reason.*" => 'nullable|regex:/[a-zA-Z0-9\s]+/'
-        ]);
-
-        return $this->_updateStatus($vaildated,"rejected", "rejected,deleted,active");
+    public function reject (RejectSchoolRequest $request)
+    {
+        return $this->_updateStatus($request->all(), "rejected", "rejected,deleted,active");
     }
 
     public function approve (ApproveSchoolRequest $request)
@@ -244,7 +238,7 @@ class SchoolController extends Controller
             $schoolCount = School::whereIn("id",$vaildated['id'])
                 ->where([
                     ['created_by_userid', '!=', $userId],
-                    ['status', '=', 'pending']
+                    ['status', '<>', 'active']
                 ])
                 ->count();
 

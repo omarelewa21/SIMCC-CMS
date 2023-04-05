@@ -8,7 +8,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ApproveSchoolRequest extends FormRequest
+class RejectSchoolRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,8 +28,10 @@ class ApproveSchoolRequest extends FormRequest
     public function rules()
     {
         return [
-            "id"    => "required|array",
-            "id.*"  => ['required', 'integer', Rule::exists('schools','id')->where(fn(Builder $query) => $query->where('status', '<>', 'active'))],
+            "id"                => "required|array",
+            "id.*"              => ['required', 'integer', Rule::exists('schools','id')->where(fn(Builder $query) => $query->where('status', 'pending'))],
+            "reject_reason"     => "required|array",
+            "reject_reason.*"   => 'nullable|regex:/[a-zA-Z0-9\s]+/'
         ];
     }
 
@@ -46,10 +48,10 @@ class ApproveSchoolRequest extends FormRequest
                 foreach($this->id as $schoolId){
                     $userWhoCreatedSchool = User::findOrFail(School::whereId($schoolId)->value('created_by_userid'));
                     if(Auth()->user()->organization_id != $userWhoCreatedSchool->organization_id){
-                        $validator->errors()->add('id', 'Not authorized to approve this school because it belongs to another organization.');
+                        $validator->errors()->add('id', 'Not authorized to reject this school because it belongs to another organization.');
                     }
-                    if(Auth()->id() == $userWhoCreatedSchool->id){
-                        $validator->errors()->add('id', 'Not authorized to approve your own school.');
+                    if (Auth()->id() == $userWhoCreatedSchool->id){
+                        $validator->errors()->add('id', 'Not authorized to reject your own school.');
                     }
                 }
             });
