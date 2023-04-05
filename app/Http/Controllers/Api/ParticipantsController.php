@@ -45,7 +45,7 @@ class ParticipantsController extends Controller
             "participant.*.competition_id" => ["required","integer","exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
             "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
-            "participant.*.name" => "required|regex:/^[\/\,\'\;\@\\\.\s\(\)\[\]\w-]*$/",
+            "participant.*.name" => "required|string|max:255",
             "participant.*.class" => "required|max:255|nullable",
             "participant.*.grade" => ["required","integer",new CheckCompetitionAvailGrades],
             "participant.*.for_partner" => "required|boolean",
