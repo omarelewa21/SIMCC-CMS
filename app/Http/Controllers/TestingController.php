@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TestingController extends Controller
@@ -32,5 +33,13 @@ class TestingController extends Controller
         }
 
         return response('Success', 200);
+    }
+
+    public function setSchoolsToActive(Request $request)
+    {
+        collect($request->all())->pluck('school_id')->unique()->each(function($school_id){
+            DB::table('schools')->where('id', $school_id)->update(['status' => 'active']);
+        });
+        return response('all schools updates successfully', 200);
     }
 }
