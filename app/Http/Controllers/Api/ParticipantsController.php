@@ -111,8 +111,9 @@ class ParticipantsController extends Controller
                 $country = Countries::where(['dial'=>$CountryCode,'update_counter'=>1])->first();
                 $currentYear = substr( date("y"), -2);
                 $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
+                
 
-                if($private) {
+                if($country->private_participant_counter && $country->private_participant_counter >= $country->participant_counter) {
                     $counter = $country->private_participant_counter;
 
                     if($counter){
