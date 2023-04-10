@@ -56,11 +56,8 @@ class Participants extends Base
         switch(auth()->user()->role_id) {
             case 2:
             case 4:
-                $ids = CompetitionOrganization::where([
-                    'country_id'        => auth()->user()->country_id,
-                    'organization_id'   => auth()->user()->organization_id
-                ])->pluck('id');
-                $query->where('participants.country_id',auth()->user()->country_id)
+                $ids = CompetitionOrganization::where('organization_id', auth()->user()->organization_id)->pluck('id');
+                $query->where('participants.country_id', auth()->user()->country_id)
                     ->whereIn("participants.competition_organization_id", $ids);
                 break;
             case 3:
