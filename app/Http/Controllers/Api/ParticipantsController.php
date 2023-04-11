@@ -203,7 +203,9 @@ class ParticipantsController extends Controller
                 return $row;
             })->toArray();
 
-            Participants::insert($validated);;
+            foreach($validated as $participant){
+                Participants::create($participant);
+            }
 
             DB::commit();
 
