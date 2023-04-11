@@ -218,7 +218,7 @@ class ParticipantsController extends Controller
                 "status"    => 500,
                 "message"   => "Create Participants unsuccessful",
                 "error"     => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
