@@ -217,7 +217,7 @@ class ParticipantsController extends Controller
         catch(Exception $e){
             return response()->json([
                 "status"    => 500,
-                "message"   => "Create Participants unsuccessful",
+                "message"   => "Create Participants unsuccessful" . $e,
                 "error"     => $e->getMessage()
             ], 500);
         }
