@@ -161,7 +161,6 @@ class Participants extends Base
             $counter = strval(intval($counter) + 1);
             $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
         }
-        dd($index);
         return $index;
     }
 
