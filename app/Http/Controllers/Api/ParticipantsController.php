@@ -108,6 +108,7 @@ class ParticipantsController extends Controller
                 /*Generate index no.*/
                 //$country = Countries::find($country_id);
                 $country = Countries::where(['dial'=>$CountryCode,'update_counter'=>1])->first();
+                $index = Participants::generateIndex($country, $row["school_id"]);
                 $currentYear = substr( date("y"), -2);
                 $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
                 
@@ -185,7 +186,7 @@ class ParticipantsController extends Controller
                 $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
                 $row["country_id"] = $country_id;
                 $row["created_by_userid"] =  auth()->user()->id; //assign entry creator user id
-                $row["index_no"] = str_pad($CountryCode.$indexNo,12,"0",STR_PAD_LEFT);
+                $row["index_no"] = $index;
                 $row["certificate_no"] = $certificateNumber;
                 $row["passkey"] = Str::random(8);
                 $row["password"] = Hash::make($row["passkey"]);
@@ -201,7 +202,9 @@ class ParticipantsController extends Controller
                 return $row;
             })->toArray();
 
-            Participants::insert($validated);;
+            foreach($validated as $participant){
+                Participants::create($participant);
+            }
 
             DB::commit();
 
@@ -212,18 +215,12 @@ class ParticipantsController extends Controller
             ]);
         }
 
-        catch(ModelNotFoundException $e){
-            // do task when error
+        catch(Exception $e){
             return response()->json([
-                "status" => 500,
-                "message" => "Create Participants unsuccessful",
-            ]);
-        }
-        catch(QueryException $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "Create Participants unsuccessful" .$e,
-            ]);
+                "status"    => 500,
+                "message"   => "Create Participants unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
         }
     }
 
