@@ -157,7 +157,11 @@ class Participants extends Base
         if(is_null($last_record)){
             $index = $identifier . '000001';
         }else{
-            $counter = Str::of($last_record->index_no)->substr(6, 12)->value();
+            if($last_record instanceof self){
+                $counter = Str::of($last_record->index_no)->substr(6, 12)->value();
+            }else{
+                $counter = Str::of($last_record)->substr(6, 12)->value();
+            }
             $counter = strval(intval($counter) + 1);
             $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
         }
