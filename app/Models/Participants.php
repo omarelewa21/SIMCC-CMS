@@ -153,7 +153,7 @@ class Participants extends Base
 
         $tuition_centre = is_null($school_id) ? '0' : (School::find($school_id)->private ? '1' : '0'); 
         $identifier = $dial . Str::of(now()->year)->after('20') . $tuition_centre;
-        $last_record = self::where('index_no', 'like', $identifier .'%')->orderBy('index_no', 'DESC')->first();
+        $last_record = $country->new_index_counter ?? self::where('index_no', 'like', $identifier .'%')->orderBy('index_no', 'DESC')->first();
         if(is_null($last_record)){
             $index = $identifier . '000001';
         }else{
@@ -161,6 +161,8 @@ class Participants extends Base
             $counter = strval(intval($counter) + 1);
             $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
         }
+        $country->new_index_counter = $index;
+        $country->save();
         return $index;
     }
 
