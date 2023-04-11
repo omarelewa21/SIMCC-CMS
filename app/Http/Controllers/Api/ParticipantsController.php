@@ -213,17 +213,11 @@ class ParticipantsController extends Controller
             ]);
         }
 
-        catch(ModelNotFoundException $e){
-            // do task when error
+        catch(Exception $e){
             return response()->json([
-                "status" => 500,
-                "message" => "Create Participants unsuccessful",
-            ]);
-        }
-        catch(QueryException $e) {
-            return response()->json([
-                "status" => 500,
-                "message" => "Create Participants unsuccessful" .$e,
+                "status"    => 500,
+                "message"   => "Create Participants unsuccessful",
+                "error"     => $e->getMessage()
             ]);
         }
     }
