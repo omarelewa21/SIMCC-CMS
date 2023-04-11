@@ -151,13 +151,13 @@ class Participants extends Base
                 break;
         }
 
-        $tuition_centre = is_null($school_id) ? '0' : (School::find($school_id)->is_tuition_centre ? '1' : '0'); 
+        $tuition_centre = is_null($school_id) ? '0' : (School::find($school_id)->private ? '1' : '0'); 
         $identifier = $dial . Str::of(now()->year)->after('20') . $tuition_centre;
         $last_record = self::where('index_no', 'like', $identifier .'%')->orderBy('index_no', 'DESC')->first();
         if(is_null($last_record)){
             $index = $identifier . '000001';
         }else{
-            $counter = Str::of($last_record->index)->substr(6, 12)->value();
+            $counter = Str::of($last_record->index_no)->substr(6, 12)->value();
             $counter = strval(intval($counter) + 1);
             $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
         }
