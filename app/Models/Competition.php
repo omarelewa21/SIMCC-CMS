@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
 
 class Competition extends Base
@@ -60,6 +61,26 @@ class Competition extends Base
             $competition->competitionOrganization()->delete();
             $competition->groups()->delete();
         });
+    }
+
+    protected function competitionStartDate(): Attribute
+    {
+        return Attribute::make(
+            get: function (string $value) {
+                if($value && !empty($value)) return date("Y/m/d", strtotime($value));
+                return $value;
+            }
+        );
+    }
+
+    protected function competitionEndDate(): Attribute
+    {
+        return Attribute::make(
+            get: function (string $value) {
+                if($value && !empty($value)) return date("Y/m/d", strtotime($value));
+                return $value;
+            }
+        );
     }
 
     public function competitionOrganization ()
