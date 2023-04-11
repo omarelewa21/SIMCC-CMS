@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('all_countries', function (Blueprint $table) {
-            $table->integer('new_index_counter')->nullable();
+            $table->string('new_index_counter')->nullable();
         });
     }
 
