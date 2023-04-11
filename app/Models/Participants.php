@@ -65,12 +65,9 @@ class Participants extends Base
         switch(auth()->user()->role_id) {
             case 2:
             case 4:
-                $ids = CompetitionOrganization::where([
-                    'country_id'        => auth()->user()->country_id,
-                    'organization_id'   => auth()->user()->organization_id
-                ])->pluck('id');
-                $query->where('participants.country_id',auth()->user()->country_id)
-                    ->whereIn("competition_organization_id", $ids);
+                $ids = CompetitionOrganization::where('organization_id', auth()->user()->organization_id)->pluck('id');
+                $query->where('participants.country_id', auth()->user()->country_id)
+                    ->whereIn("participants.competition_organization_id", $ids);
                 break;
             case 3:
             case 5:
@@ -86,12 +83,12 @@ class Participants extends Base
         foreach($request->all() as $key=>$value){
             switch($key) {
                 case 'search':
-                    $query->where('participants.name', 'like', "%$value%")
-                        ->orWhere(function ($query) use($value) {
-                            $query->where('participants.index_no', $value)
-                                ->orWhere('schools.name', 'like', "%$value%")
-                                ->orWhere('tuition_centre.name', 'like', "%$value%");
-                        });
+                    $query->where(function($query) use($value){
+                        $query->where('participants.index_no', $value)
+                            ->orWhere('participants.name', 'like', "%$value%")
+                            ->orWhere('schools.name', 'like', "%$value%")
+                            ->orWhere('tuition_centre.name', 'like', "%$value%");
+                    });
                     break;
                 case 'private':
                     $request->private

@@ -15,5 +15,6 @@ Route::group(['prefix' => "testing"], function () {
     Route::get("/testCompetitionReportData/{competition}", [TestingController::class, "testCompetitionReportData"]);
     Route::post("/storeRemainingGroupCountriesForCompetitionId/{competition_id}", [TestingController::class, "storeRemainingGroupCountriesForCompetitionId"]);
     Route::get('/pdf-file', [TestingController::class, 'testPDF']);
+    Route::post("/school/status", [TestingController::class, "setSchoolsToActive"]);
 });
 

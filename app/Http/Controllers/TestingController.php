@@ -11,6 +11,7 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use PDF;
+use App\Models\School;
 use Illuminate\Support\Facades\DB;
 
 class TestingController extends Controller
@@ -59,5 +60,14 @@ class TestingController extends Controller
         ];
         $pdf = PDF::loadView('performance-report', $data);
         return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
+    }
+
+
+    public function setSchoolsToActive(Request $request)
+    {
+        $Ids = collect($request->all())->pluck('school_id')->unique()->toArray();
+        // dd(School::whereIn('id', $Ids)->toSql());
+        School::whereIn('id', $Ids)->update(['status' => 'active']);
+        return response('all schools updates successfully', 200);
     }
 }
