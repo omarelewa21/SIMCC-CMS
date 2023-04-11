@@ -139,15 +139,15 @@ class Participants extends Base
 
     public static function generateIndex(Countries $country, $school_id=null)
     {
-        switch (Str::length($country->dial)) {
+        switch (Str::length($country->Dial)) {
             case 1:
-                $dial = '00' . $country->dial;
+                $dial = '00' . $country->Dial;
                 break;
             case 2:
-                $dial = '0' . $country->dial;
+                $dial = '0' . $country->Dial;
                 break;
             default:
-                $dial = $country->dial;
+                $dial = $country->Dial;
                 break;
         }
 
@@ -161,6 +161,7 @@ class Participants extends Base
             $counter = strval(intval($counter) + 1);
             $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
         }
+        dd($index);
         return $index;
     }
 
