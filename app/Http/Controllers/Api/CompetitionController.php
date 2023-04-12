@@ -171,9 +171,10 @@ class CompetitionController extends Controller
                 case 4:
                 case 3:
                 case 5:
-                    $competitionModel->with(['competitionOrganization' => function ($row)  {
-                        $row->where(['organization_id' => auth()->user()->organization_id])
-                            ->where('country_id',auth()->user()->country_id);
+                    $competitionModel->with(['competitionOrganization' => function ($query)  {
+                        $query->where(['organization_id' => auth()->user()->organization_id])
+                            ->where('country_id', auth()->user()->country_id)
+                            ->limit(1);
                     }])->where('status','active');
                     break;
             }
@@ -222,7 +223,9 @@ class CompetitionController extends Controller
     {
         $data = $competition->load(['rounds.levels', 'rounds.roundsAwards', 'competitionOrganization' => function ($query) {
             if(!is_null(auth()->user()->organization_id)) {
-                $query->where('organization_id',auth()->user()->organization_id);
+                $query->where(['organization_id' => auth()->user()->organization_id])
+                    ->where('country_id', auth()->user()->country_id)
+                    ->limit(1);
             }
         } , 'taskDifficultyGroup', 'taskDifficulty']);
 
