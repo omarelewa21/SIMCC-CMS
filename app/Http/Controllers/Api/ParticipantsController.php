@@ -117,15 +117,13 @@ class ParticipantsController extends Controller
                 $row["certificate_no"] = $certificate;
                 $row["passkey"] = Str::random(8);
                 $row["password"] = Hash::make($row["passkey"]);
-                $row["created_at"] = date('Y-m-d H:i:s');
-
-                $returnData[] = $row;
                 unset($returnData[count($returnData)-1]['password']);
                 unset($row['passkey']);
                 unset($row['competition_id']);
                 unset($row['for_partner']);
                 unset($row['organization_id']);
-                Participants::create($row);
+                $participant = Participants::create($row);
+                $returnData[] = $participant;
                 return $row;
             })->toArray();
 
