@@ -14,5 +14,6 @@ Route::group(['prefix' => "testing"], function () {
     Route::get("/getNumberOfUploadedAnswersByLevelId/{level}", [TestingController::class, "getNumberOfParticipantsByLevelId"]);
     Route::post("/storeRemainingGroupCountriesForCompetitionId/{competition_id}", [TestingController::class, "storeRemainingGroupCountriesForCompetitionId"]);
     Route::post("/school/status", [TestingController::class, "setSchoolsToActive"]);
+    Route::get("/fixIndianParticipants", [TestingController::class, "fixIndianParticipants"]);
 });
 

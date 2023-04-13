@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
+use App\Models\Participants;
 use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,5 +43,18 @@ class TestingController extends Controller
         // dd(School::whereIn('id', $Ids)->toSql());
         School::whereIn('id', $Ids)->update(['status' => 'active']);
         return response('all schools updates successfully', 200);
+    }
+
+    public function fixIndianParticipants()
+    {
+        $Participants = Participants::where('index_no', 'like', '0912300%')->where('country_id', 108)
+            ->whereNotNull('tuition_centre_id')->get();
+
+        foreach($Participants as $participant){
+            $participant->index_no = substr_replace($participant->index_no, "1", 5, 1);
+            $participant->save();
+        }
+
+        return response()->json(['message' => 'success'], 200);
     }
 }
