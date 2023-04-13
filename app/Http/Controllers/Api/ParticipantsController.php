@@ -62,8 +62,7 @@ class ParticipantsController extends Controller
             DB::beginTransaction();
 
             $returnData = [];
-            $indexNoList = [];
-            $validated = collect($validated['participant'])->map(function ($row,$index) use($validated,$ccode,&$indexNoList,&$returnData) {
+            $validated = collect($validated['participant'])->map(function ($row,$index) use($ccode, &$returnData) {
 
                 switch(auth()->user()->role_id) {
                     case 0:
@@ -102,92 +101,19 @@ class ParticipantsController extends Controller
 
                 $country_id  = in_array(auth()->user()->role_id , [2,3,4,5])? auth()->user()->country_id : $row["country_id"];
                 $CountryCode = $ccode[$country_id];
-                $private = isset($tuitionCentreId) ? 1 : 0;
-                $temp = str_pad($CountryCode,3,"0",STR_PAD_LEFT).substr( date("y"), -2). $private;
 
                 /*Generate index no.*/
                 //$country = Countries::find($country_id);
                 $country = Countries::where(['dial'=>$CountryCode,'update_counter'=>1])->first();
-                $index = Participants::generateIndex($country, $row["school_id"]);
-                $currentYear = substr( date("y"), -2);
-                $indexNo = $private ? $currentYear . '1000001' : $currentYear . '0000001';
-                
-
-                if($country->private_participant_counter && $country->private_participant_counter >= $country->participant_counter) {
-                    $counter = $country->private_participant_counter;
-
-                    if($counter){
-                        $counterYear = substr($counter,0,2);
-                        if(intval($currentYear) > intval($counterYear)) { // new year reset index counter
-                            $country->private_participant_counter = $indexNo; // get the YY|Private/non-Private|Counter
-                        }
-                        else
-                        {
-                            $indexNo = strval(intval($counter) + 1);
-                            $country->private_participant_counter = $indexNo;
-                        }
-                    }
-                    else
-                    {
-                        $country->private_participant_counter = $indexNo;
-                    }
-                }
-                else
-                {
-                    $counter = $country->participant_counter;
-
-                    if($counter){
-                        $counterYear = substr($counter,0,2);
-
-                        if(intval($currentYear) > intval($counterYear)) {
-                            $country->participant_counter = $indexNo;
-                        }
-                        else
-                        {
-                            $indexNo = strval(intval($counter) + 1);
-                            $country->participant_counter = $indexNo;
-                        }
-                    }
-                    else
-                    {
-                        $country->participant_counter = $indexNo;
-                    }
-                }
-
-                $country->save();
-
-                if(!isset($indexNoList[$temp])) {
-                    $indexNoList[$temp] = [];
-                }
-
-                if(!in_array($indexNo,$indexNoList[$temp])) {
-                    $indexNoList[$temp][] = $indexNo;
-                } else {
-                    $indexNo = last($indexNoList[$temp]) + 1;
-                    $indexNoList[$temp][] = $indexNo;
-                }
-
-                //Generate Certificate No.
-                $latestIndex = Participants::orderBy('id','desc')->first()->id + 19522;
-
-                $toNextLetterCounter = floor($latestIndex / 1000000);
-                $startLetter = function () use($toNextLetterCounter) {
-                    $letter = 'A';
-                    if($toNextLetterCounter > 0){
-                        for ($i=0;$i < $toNextLetterCounter;$i++){
-                            $letter++;
-                        }
-                    };
-                    return $letter;
-                };
-                $certificateNumber = $latestIndex > 1000000 ? $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_RIGHT) : $startLetter() . str_pad((($latestIndex % 10000000) + $index),7,"0",STR_PAD_LEFT);
+                $index = Participants::generateIndexNo($country, isset($row["tuition_centre_id"]) && $row["tuition_centre_id"]);
+                $certificate = Participants::generateCertificateNo();
 
                 $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
                 $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
                 $row["country_id"] = $country_id;
-                $row["created_by_userid"] =  auth()->user()->id; //assign entry creator user id
+                $row["created_by_userid"] =  auth()->id(); //assign entry creator user id
                 $row["index_no"] = $index;
-                $row["certificate_no"] = $certificateNumber;
+                $row["certificate_no"] = $certificate;
                 $row["passkey"] = Str::random(8);
                 $row["password"] = Hash::make($row["passkey"]);
                 $row["created_at"] = date('Y-m-d H:i:s');

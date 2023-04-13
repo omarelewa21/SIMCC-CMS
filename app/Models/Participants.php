@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Http\Requests\getParticipantListRequest;
+use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
@@ -146,37 +147,44 @@ class Participants extends Base
         return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
     }
 
-    public static function generateIndex(Countries $country, $school_id=null)
+    public static function generateIndexNo(Countries $country, $isPrivate=false)
     {
-        switch (Str::length($country->Dial)) {
-            case 1:
-                $dial = '00' . $country->Dial;
-                break;
-            case 2:
-                $dial = '0' . $country->Dial;
-                break;
-            default:
-                $dial = $country->Dial;
-                break;
+        $dial_code = str_pad($country->Dial, 3, '0', STR_PAD_LEFT);
+        $year = Carbon::now()->format('y');
+
+        // construct the initial index_no based on the parameters
+        $index_no = $isPrivate . $dial_code . $year . '000000';
+
+        // get the latest record for the same country and private status
+        $latest_participant = self::where('index_no', 'like', substr($index_no, 0, 7) . '%')
+                                  ->orderByDesc('index_no')
+                                  ->first();
+
+        if ($latest_participant) {
+            // increment the last 6 digits of the index_no by 1
+            $last_six_digits = substr($latest_participant->index_no, -6);
+            $new_six_digits = str_pad($last_six_digits + 1, 6, '0', STR_PAD_LEFT);
+            $index_no = substr_replace($index_no, $new_six_digits, -6);
         }
 
-        $tuition_centre = is_null($school_id) ? '0' : (School::find($school_id)->private ? '1' : '0'); 
-        $identifier = $dial . Str::of(now()->year)->after('20') . $tuition_centre;
-        $last_record = $country->new_index_counter ?? self::where('index_no', 'like', $identifier .'%')->orderBy('index_no', 'DESC')->first();
-        if(is_null($last_record)){
-            $index = $identifier . '000001';
-        }else{
-            if($last_record instanceof self){
-                $counter = Str::of($last_record->index_no)->substr(6, 12)->value();
-            }else{
-                $counter = Str::of($last_record)->substr(6, 12)->value();
-            }
-            $counter = strval(intval($counter) + 1);
-            $index = $identifier . str_repeat('0', 6 - Str::length($counter)) . $counter;
-        }
-        $country->new_index_counter = $index;
-        $country->save();
-        return $index;
+        return $index_no;
     }
 
+    public static function generateCertificateNo()
+    {
+        $lastCertificateNo = self::latest('certificate_no')->value('certificate_no') ?? 'A0000000';
+        
+        $lastCharacter = substr($lastCertificateNo, 0, 1);
+        $lastNumber = substr($lastCertificateNo, 1);
+        
+        if ($lastNumber == '9999999') {
+            $newCharacter = chr(ord($lastCharacter) + 1);
+            $newNumber = '0000000';
+        } else {
+            $newCharacter = $lastCharacter;
+            $newNumber = str_pad((int) $lastNumber + 1, 7, '0', STR_PAD_LEFT);
+        }
+
+        return $newCharacter . $newNumber;
+    }
 }
