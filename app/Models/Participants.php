@@ -138,25 +138,24 @@ class Participants extends Base
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
     {
-        $dial_code = str_pad($country->Dial, 3, '0', STR_PAD_LEFT);
+        // Get the dial code for the country
+        $dial = str_pad($country->Dial, 3, '0', STR_PAD_LEFT);
+        
+        // Get the current year as two digits
         $year = Carbon::now()->format('y');
-
-        // construct the initial index_no based on the parameters
-        $index_no = $isPrivate . $dial_code . $year . '000000';
-
-        // get the latest record for the same country and private status
-        $latest_participant = self::where('index_no', 'like', substr($index_no, 0, 7) . '%')
-                                  ->orderByDesc('index_no')
-                                  ->first();
-
-        if ($latest_participant) {
-            // increment the last 6 digits of the index_no by 1
-            $last_six_digits = substr($latest_participant->index_no, -6);
-            $new_six_digits = str_pad($last_six_digits + 1, 6, '0', STR_PAD_LEFT);
-            $index_no = substr_replace($index_no, $new_six_digits, -6);
-        }
-
-        return $index_no;
+        
+        // Check if the latest participant is private or non-private
+        $latestParticipant = static::where('country_id', $country->id)
+            ->orderByDesc('id')
+            ->first();
+        
+        // Get the latest index number for the same country and privacy status
+        $latestIndexNo = $latestParticipant ? substr($latestParticipant->index_no, -6) : '000000';
+        
+        // Generate the new index number
+        $indexNo = $dial . $year . ($isPrivate ? '1' : '0') . str_pad($latestIndexNo + 1, 6, '0', STR_PAD_LEFT);
+        
+        return $indexNo;
     }
 
     public static function generateCertificateNo()
