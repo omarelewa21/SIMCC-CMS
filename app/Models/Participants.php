@@ -25,22 +25,7 @@ class Participants extends Base
 
     protected $table = 'participants';
 
-    protected $fillable = [
-        "name",
-        "index_no",
-        "country_id",
-        "school_id",
-        "email",
-        "grade",
-        "class",
-        "tuition_centre_id",
-        "competition_organization_id",
-        'password',
-        "status",
-        "session",
-        "created_by_userid",
-        "last_modified_userid"
-    ];
+    protected $guarded = [];
 
     protected $hidden = [
         'password',
