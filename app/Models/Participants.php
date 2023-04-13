@@ -32,6 +32,19 @@ class Participants extends Base
         "last_modified_userid"
     ];
 
+    public static function booted()
+    {
+        parent::booted();
+
+        static::saving(function($participant) {
+            $participant->last_modified_userid = auth()->id();
+        });
+        
+        static::creating(function($participant) {
+            $participant->created_by_userid = auth()->id();
+        });
+    }
+
     /**
      * Scope a query to request params
      *
