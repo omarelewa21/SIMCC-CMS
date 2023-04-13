@@ -47,14 +47,24 @@ class TestingController extends Controller
 
     public function fixIndianParticipants()
     {
-        $Participants = Participants::where('index_no', 'like', '0912300%')->where('country_id', 108)
+        try {
+            $Participants = Participants::where('index_no', 'like', '0912300%')->where('country_id', 108)
             ->whereNotNull('tuition_centre_id')->get();
 
-        foreach($Participants as $participant){
-            $participant->index_no = substr_replace($participant->index_no, "1", 5, 1);
-            $participant->save();
-        }
+            foreach($Participants as $participant){
+                $participant->index_no = substr_replace($participant->index_no, "1", 5, 1);
+                $participant->save();
+            }
 
-        return response()->json(['message' => 'success'], 200);
+            return response()->json(['message' => 'success'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+        
     }
 }
