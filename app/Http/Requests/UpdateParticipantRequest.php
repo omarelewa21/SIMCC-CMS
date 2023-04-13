@@ -54,8 +54,9 @@ class UpdateParticipantRequest extends FormRequest
             case 4:
                 $organizationId = $user->organization_id;
                 $countryId = $user->country_id;
-                $activeCompetitionOrganizationIds = CompetitionOrganization::where(['organization_id'=> $organizationId, 'status' => 'active'])->pluck('id')->toArray();
-                $rules['id'] = ["required","integer", Rule::exists('participants','id')->where("country_id", $countryId)->whereIn("competition_organization_id", $activeCompetitionOrganizationIds)];
+                // $activeCompetitionOrganizationIds = CompetitionOrganization::where(['organization_id'=> $organizationId, 'status' => 'active'])->pluck('id')->toArray();
+                // $rules['id'] = ["required","integer", Rule::exists('participants','id')->where("country_id", $countryId)->whereIn("competition_organization_id", $activeCompetitionOrganizationIds)];
+                $rules['id'] = ["required","integer", Rule::exists('participants','id')->where("country_id", $countryId)];
                 break;
             case 3:
             case 5:
