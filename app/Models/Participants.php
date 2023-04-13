@@ -140,21 +140,25 @@ class Participants extends Base
     {
         // Get the dial code for the country
         $dial = str_pad($country->Dial, 3, '0', STR_PAD_LEFT);
-        
+
         // Get the current year as two digits
         $year = Carbon::now()->format('y');
-        
+
+        $searchIndex = $dial . $year . ($isPrivate ? '1' : '0');
+
         // Check if the latest participant is private or non-private
         $latestParticipant = static::where('country_id', $country->id)
+            ->where('tuition_centre_id', $isPrivate ? '!=' : '=', null)
+            ->where('index_no', 'like', $searchIndex . '%')
             ->orderByDesc('id')
             ->first();
-        
-        // Get the latest index number for the same country and privacy status
+
+        // Get the latest index number for the same country
         $latestIndexNo = $latestParticipant ? substr($latestParticipant->index_no, -6) : '000000';
-        
+
         // Generate the new index number
         $indexNo = $dial . $year . ($isPrivate ? '1' : '0') . str_pad($latestIndexNo + 1, 6, '0', STR_PAD_LEFT);
-        
+
         return $indexNo;
     }
 

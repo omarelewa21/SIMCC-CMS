@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Participants;
+use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,15 +49,24 @@ class TestingController extends Controller
     public function fixIndianParticipants()
     {
         try {
-            $Participants = Participants::where('index_no', 'like', '0912300%')->where('country_id', 108)
-            ->whereNotNull('tuition_centre_id')->get();
+            $participants = Participants::where('index_no', 'like', '0912300%')->where('country_id', 108)
+                ->whereNotNull('tuition_centre_id')->get();
+            foreach($participants as $participant){
+                $participant_answers = ParticipantsAnswer::where('participant_index', $participant->index_no)->get();
+                $participantAnswersToInsert = $participant_answers->toArray();
+                ParticipantsAnswer::where('participant_index', $participant->index_no)->delete();
 
-            foreach($Participants as $participant){
+                foreach($participant_answers as $participant_answer){
+                    $participant_answer->participant_index = substr_replace($participant_answer->participant_index, "1", 5, 1);
+                    $participant_answer->save();
+                }
                 $participant->index_no = substr_replace($participant->index_no, "1", 5, 1);
                 $participant->save();
-            }
 
+                ParticipantsAnswer::insert($participantAnswersToInsert);
+            }
             return response()->json(['message' => 'success'], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
