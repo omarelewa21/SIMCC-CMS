@@ -39,6 +39,10 @@ class Participants extends Base
         static::saving(function($participant) {
             $participant->last_modified_userid = auth()->id();
         });
+        
+        static::creating(function($participant) {
+            $participant->created_by_userid = auth()->id();
+        });
     }
 
     /**
