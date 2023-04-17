@@ -144,6 +144,7 @@ class Participants extends Base
         // Get the current year as two digits
         $year = Carbon::now()->format('y');
 
+        // Generate the search index
         $searchIndex = $dial . $year . ($isPrivate ? '1' : '0');
 
         // Check if the latest participant is private or non-private
@@ -157,18 +158,18 @@ class Participants extends Base
         $latestIndexNo = $latestParticipant ? substr($latestParticipant->index_no, -6) : '000000';
 
         // Generate the new index number
-        $indexNo = $dial . $year . ($isPrivate ? '1' : '0') . str_pad($latestIndexNo + 1, 6, '0', STR_PAD_LEFT);
+        $indexNo = $searchIndex . str_pad($latestIndexNo + 1, 6, '0', STR_PAD_LEFT);
 
         return $indexNo;
     }
 
     public static function generateCertificateNo()
     {
-        $lastCertificateNo = self::latest('certificate_no')->value('certificate_no') ?? 'A0000000';
-        
+        $lastCertificateNo = static::latest('certificate_no')->value('certificate_no') ?? 'A0000000';
+
         $lastCharacter = substr($lastCertificateNo, 0, 1);
         $lastNumber = substr($lastCertificateNo, 1);
-        
+
         if ($lastNumber == '9999999') {
             $newCharacter = chr(ord($lastCharacter) + 1);
             $newNumber = '0000000';
