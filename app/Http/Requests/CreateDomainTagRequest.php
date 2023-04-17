@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\CheckDomainTagsExist;
-use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -30,10 +30,15 @@ class CreateDomainTagRequest extends FormRequest
             '*.is_tag'      => 'required_if:*.domain_id,null|boolean',
             '*.domain_id'   => 'integer|exclude_if:*.is_tag,1|exists:domains_tags,id' ,
             '*.name'        => 'required|array',
-            '*.name.*'      => ['required','regex:/^[\.\,\s\(\)\[\]\w-]*$/', new CheckDomainTagsExist,
-                                Rule::unique('domains_tags','name')->where(function(Builder $query){
-                                    return $query->whereNull('domain_id')->whereNull('deleted_at');
-                                })],
+            '*.name.*'      => [
+                'required',
+                'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
+                new CheckDomainTagsExist,
+                Rule::unique('domains_tags','name')
+                    ->where(function(Builder $query){
+                        return $query->whereNull('domain_id')->whereNull('deleted_at');
+                })
+            ],
         ];
     }
 }
