@@ -148,9 +148,7 @@ class Participants extends Base
         $searchIndex = $dial . $year . ($isPrivate ? '1' : '0');
 
         // Check if the latest participant is private or non-private
-        $latestParticipant = static::where('country_id', $country->id)
-            ->where('tuition_centre_id', $isPrivate ? '!=' : '=', null)
-            ->where('index_no', 'like', $searchIndex . '%')
+        $latestParticipant = static::where('index_no', 'like', $searchIndex . '%')
             ->orderByDesc('id')
             ->first();
 
