@@ -40,8 +40,6 @@ use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
-use App\Services\ComputeCheatingParticipantsService;
-use Exception;
 
 //update participant session once competition mode change, add this changes once participant session done
 
