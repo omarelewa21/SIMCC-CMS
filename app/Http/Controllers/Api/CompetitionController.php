@@ -36,6 +36,7 @@ use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
+use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
@@ -1377,5 +1378,27 @@ class CompetitionController extends Controller
                 'message'   => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get all participants that are cheating by group
+     * 
+     * @param int $group_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipantsByGroup($group_id)
+    {
+        $cheatingParticipants = Participants::distinct()
+            ->leftJoin('cheating_participants as cp1', 'cp1.participant_index', 'participants.index_no')
+            ->leftJoin('cheating_participants as cp2', 'cp2.cheating_with_participant_index', 'participants.index_no')
+            ->where('cp1.group_id', $group_id)
+            ->orWhere('cp2.group_id', $group_id)
+            ->select('participants.index_no', 'participants.name')
+            ->with('answers:participant_index,task_id,answer,is_correct')
+            ->get();
+        return response()->json([
+            'status'    => 200,
+            'data'      => $cheatingParticipants
+        ], 200);
     }
 }
