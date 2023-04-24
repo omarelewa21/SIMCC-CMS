@@ -29,6 +29,13 @@ class CompetitionService
             });
     }
 
+    /**
+     * get cheat status and data
+     * 
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     * @return Illuminate\Http\JsonResponse
+     */
     public static function returnCheatStatusAndData(Competition $competition, CompetitionCheatingListRequest $request)
     {
         $cheatingStatus = CheatingStatus::findOrFail($competition->id);
