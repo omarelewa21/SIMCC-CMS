@@ -21,6 +21,11 @@ class ComputeCheatingParticipantsService
         $this->cheatStatus = CheatingStatus::findOrFail($this->competition->id);
     }
 
+    /**
+     * Compute cheating participants
+     * 
+     * @return void
+     */
     public function computeCheatingParticipants()
     {
         try {
