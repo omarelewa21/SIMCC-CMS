@@ -29,13 +29,18 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
+use App\Jobs\ComputeCheatingParticipants;
+use App\Models\CheatingStatus;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
+use App\Services\CompetitionService;
+use App\Services\ComputeCheatingParticipantsService;
 use Exception;
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -1331,6 +1336,48 @@ class CompetitionController extends Controller
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
             break;
+        }
+    }
+
+    /**
+     * Get all participants that are cheating
+     * 
+     * @param Competition $competition
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            if(CheatingStatus::where('competition_id',$competition->id)->exists())
+                return CompetitionService::returnCheatStatusAndData($competition, $request);
+
+            CompetitionService::validateIfCanGenerateCheatingPage($competition);
+
+            DB::beginTransaction();
+
+            CheatingStatus::updateOrCreate(
+                    ['competition_id' => $competition->id],
+                    [
+                        'status' => 'In Progress',
+                        'progress_percentage' => 1,
+                        'compute_error_message' => null
+                    ]
+                );
+
+            dispatch(new ComputeCheatingParticipants($competition));
+            DB::commit();
+
+            return response()->json([
+                'status'    => 200,
+                'message'   => 'Computing cheating participants has been started.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
         }
     }
 }
