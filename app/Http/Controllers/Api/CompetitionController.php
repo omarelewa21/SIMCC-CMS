@@ -1360,9 +1360,9 @@ class CompetitionController extends Controller
             DB::commit();
 
             return response()->json([
-                'status'    => 200,
+                'status'    => 201,
                 'message'   => 'Computing cheating participants has been started.'
-            ], 200);
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1387,7 +1387,9 @@ class CompetitionController extends Controller
             ->where('cp1.group_id', $group_id)
             ->orWhere('cp2.group_id', $group_id)
             ->select('participants.index_no', 'participants.name')
-            ->with('answers:participant_index,task_id,answer,is_correct')
+            ->with(['answers' => 
+                fn($query) => $query->orderBy('task_id')->select('participant_index','task_id','answer','is_correct')
+            ])
             ->get();
         return response()->json([
             'status'    => 200,
