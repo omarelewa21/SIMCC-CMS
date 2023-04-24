@@ -82,7 +82,7 @@ class CompetitionService
      */
     public static function getCheatingList(Competition $competition)
     {
-        $groups = CheatingParticipants::where('competition_id', $competition->id)
+        return CheatingParticipants::where('competition_id', $competition->id)
             ->selectRaw(
                 "*,
                 AVG(number_of_cheating_questions) AS avg_cheating_questions_number,
@@ -118,8 +118,6 @@ class CompetitionService
 
                 return [$group->group_id => $cheatersGroupData];
             });
-
-        return $groups;
     }
 
     /**
@@ -130,14 +128,12 @@ class CompetitionService
      */
     public static function getFilterOptions($cheaters)
     {
-        $filterOptions = [
+        return [
             'country' => $cheaters->pluck('country')->unique()->values(),
             'school' => $cheaters->pluck('school')->unique()->values(),
             'grade' => $cheaters->pluck('grade')->unique()->values(),
             'cheating_percentage' => $cheaters->pluck('cheating_percentage')->unique()->values(),
             'number_of_cheating_questions' => $cheaters->pluck('number_of_cheating_questions')->unique()->values(),
         ];
-
-        return $filterOptions;
     }
 }
