@@ -6,8 +6,6 @@ use App\Http\Requests\getParticipantListRequest;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
-
 
 class Participants extends Base
 {
@@ -134,6 +132,11 @@ class Participants extends Base
 
     public function competition_organization () {
         return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
