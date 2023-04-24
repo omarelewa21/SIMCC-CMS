@@ -30,14 +30,16 @@ use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\AddOrganizationRequest;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
+use App\Jobs\ComputeCheatingParticipants;
+use App\Models\CheatingStatus;
+use App\Models\Participants;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Services\CompetitionService;
-
-//update participant session once competition mode change, add this changes once participant session done
 
 class CompetitionController extends Controller
 {
@@ -1327,5 +1329,69 @@ class CompetitionController extends Controller
                 ], 200);
             break;
         }
+    }
+
+    /**
+     * Get all participants that are cheating
+     * 
+     * @param Competition $competition
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            if(CheatingStatus::where('competition_id',$competition->id)->exists())
+                return CompetitionService::returnCheatStatusAndData($competition, $request);
+
+            CompetitionService::validateIfCanGenerateCheatingPage($competition);
+
+            DB::beginTransaction();
+
+            CheatingStatus::updateOrCreate(
+                    ['competition_id' => $competition->id],
+                    [
+                        'status' => 'In Progress',
+                        'progress_percentage' => 1,
+                        'compute_error_message' => null
+                    ]
+                );
+
+            dispatch(new ComputeCheatingParticipants($competition));
+            DB::commit();
+
+            return response()->json([
+                'status'    => 200,
+                'message'   => 'Computing cheating participants has been started.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all participants that are cheating by group
+     * 
+     * @param int $group_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipantsByGroup($group_id)
+    {
+        $cheatingParticipants = Participants::distinct()
+            ->leftJoin('cheating_participants as cp1', 'cp1.participant_index', 'participants.index_no')
+            ->leftJoin('cheating_participants as cp2', 'cp2.cheating_with_participant_index', 'participants.index_no')
+            ->where('cp1.group_id', $group_id)
+            ->orWhere('cp2.group_id', $group_id)
+            ->select('participants.index_no', 'participants.name')
+            ->with('answers:participant_index,task_id,answer,is_correct')
+            ->get();
+        return response()->json([
+            'status'    => 200,
+            'data'      => $cheatingParticipants
+        ], 200);
     }
 }

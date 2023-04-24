@@ -6,8 +6,6 @@ use App\Http\Requests\getParticipantListRequest;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
-
 
 class Participants extends Base
 {
@@ -136,6 +134,11 @@ class Participants extends Base
         return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
     }
 
+    public function answers()
+    {
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no');
+    }
+
     public static function generateIndexNo(Countries $country, $isPrivate=false)
     {
         // Get the dial code for the country
@@ -148,9 +151,7 @@ class Participants extends Base
         $searchIndex = $dial . $year . ($isPrivate ? '1' : '0');
 
         // Check if the latest participant is private or non-private
-        $latestParticipant = static::where('country_id', $country->id)
-            ->where('tuition_centre_id', $isPrivate ? '!=' : '=', null)
-            ->where('index_no', 'like', $searchIndex . '%')
+        $latestParticipant = static::where('index_no', 'like', $searchIndex . '%')
             ->orderByDesc('id')
             ->first();
 

@@ -13,6 +13,10 @@ class ParticipantsAnswer extends Model
     protected $guarded = [];
     public $timestamps = false;
 
+    protected $casts = [
+        'is_correct' => 'boolean',
+    ];
+
     const CREATED_AT = 'created_date';
 
     public function task()
