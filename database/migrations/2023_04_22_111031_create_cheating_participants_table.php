@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create('cheating_participants', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('competition_id')->constrained('competition');
             if(env('APP_ENV') === 'local_') {
                 $table->string('participant_index', 16)->collation('utf8mb4_unicode_ci');
                 $table->string('cheating_with_participant_index', 16)->collation('utf8mb4_unicode_ci');
