@@ -59,7 +59,7 @@ class ComputeCheatingParticipantsService
                     });
                 });
 
-            $this->updateCheatStatus(30, 'In Progress');
+            $this->updateCheatStatus(40, 'In Progress');
         });
     }
 
@@ -103,14 +103,22 @@ class ComputeCheatingParticipantsService
      */
     private function groupParticipantsByCountrySchoolAndGrade()
     {
-        return Participants::join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
+        $groups = collect();
+
+        Participants::join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
             ->where('competition_organization.competition_id', $this->competition->id)
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
-            ->get()
-            ->groupBy(function ($participant) {
-                return $participant->country_id . '-' . $participant->school_id . '-' . $participant->grade;
-            })->filter(function ($group) {
+            ->cursor()->each(function ($participant) use ($groups) {
+                $key = $participant->country_id . '-' . $participant->school_id . '-' . $participant->grade;
+                if($groups->has($key))
+                    $groups->get($key)->push($participant);
+                else
+                    $groups->put($key, collect([$participant]));
+            });
+
+        $this->updateCheatStatus(60, 'In Progress');
+        return $groups->lazy()->filter(function ($group) {
                 return $group->count() > 1;
             });
     }
@@ -149,7 +157,12 @@ class ComputeCheatingParticipantsService
             $otherAnswer = $otherParticipant->answers->first(
                 fn($otherParticipantAnswer) => $participantAnswer->task_id === $otherParticipantAnswer->task_id
             );
-            if($otherAnswer && $participantAnswer->is_correct === $otherAnswer->is_correct){
+            if(
+                $otherAnswer
+                && !is_null($participantAnswer->answer) && !empty($participantAnswer->answer) 
+                && $participantAnswer->answer == $otherAnswer->answer
+                && $participantAnswer->is_correct === $otherAnswer->is_correct
+            ){
                 $numOfMatchAnswers++;
             }
         });

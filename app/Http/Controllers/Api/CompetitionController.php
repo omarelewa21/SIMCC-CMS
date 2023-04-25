@@ -1381,19 +1381,9 @@ class CompetitionController extends Controller
      */
     public function getcheatingParticipantsByGroup($group_id)
     {
-        $cheatingParticipants = Participants::distinct()
-            ->leftJoin('cheating_participants as cp1', 'cp1.participant_index', 'participants.index_no')
-            ->leftJoin('cheating_participants as cp2', 'cp2.cheating_with_participant_index', 'participants.index_no')
-            ->where('cp1.group_id', $group_id)
-            ->orWhere('cp2.group_id', $group_id)
-            ->select('participants.index_no', 'participants.name')
-            ->with(['answers' => 
-                fn($query) => $query->orderBy('task_id')->select('participant_index','task_id','answer','is_correct')
-            ])
-            ->get();
         return response()->json([
             'status'    => 200,
-            'data'      => $cheatingParticipants
+            'data'      => CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers'])
         ], 200);
     }
 }

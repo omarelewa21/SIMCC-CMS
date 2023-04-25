@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Competition;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +10,8 @@ use App\Custom\Marking;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
+use App\Models\Competition;
+use App\Models\Participants;
 
 class CompetitionService
 {
@@ -338,11 +339,9 @@ class CompetitionService
             ->get()
             ->mapWithKeys(function($group){
                 $cheatersGroupData = [];
-                $cheatingParticipants = CheatingParticipants::where(['competition_id' => $group->competition_id, 'group_id' => $group->group_id])
-                    ->with('participant.school', 'participant.country', 'otherParticipant.school', 'otherParticipant.country')
-                    ->get();
+                $cheatingParticipants = static::getCheatingParticipantsByGroup($group->group_id, ['country', 'school']); 
+                $firstRecordParticipant = $cheatingParticipants->first();
 
-                $firstRecordParticipant = $cheatingParticipants->first()->participant;
                 $cheatersGroupData['number_of_questions'] = $firstRecordParticipant->answers()->count();
                 $cheatersGroupData['cheating_percentage'] = round($group->avg_cheating_percentage_percentage);
                 $cheatersGroupData['number_of_cheating_questions'] = round($group->avg_cheating_questions_number);
@@ -350,19 +349,9 @@ class CompetitionService
                 $cheatersGroupData['country'] = $firstRecordParticipant->country->display_name;
                 $cheatersGroupData['grade'] = $firstRecordParticipant->grade;
                 $cheatersGroupData['group_id'] = $group->group_id;
-                $cheatersGroupData['participants'] = $cheatingParticipants->map(function($cheatingParticipant){
-                    return [
-                        [
-                            'index' => $cheatingParticipant->participant->index_no,
-                            'name'  => $cheatingParticipant->participant->name, 
-                        ],
-                        [
-                            'index' => $cheatingParticipant->otherParticipant->index_no,
-                            'name'  => $cheatingParticipant->otherParticipant->name
-                        ]
-                    ];
-                })->flatten(1)->toArray();
-
+                $cheatersGroupData['participants'] = $cheatingParticipants->map(
+                    fn($cheatingParticipant) => $cheatingParticipant->only('index_no', 'name')
+                )->toArray();
                 return [$group->group_id => $cheatersGroupData];
             });
     }
@@ -382,5 +371,24 @@ class CompetitionService
             'cheating_percentage' => $cheaters->pluck('cheating_percentage')->unique()->values(),
             'number_of_cheating_questions' => $cheaters->pluck('number_of_cheating_questions')->unique()->values(),
         ];
+    }
+
+    /**
+     * Get cheating participants by group
+     * 
+     * @param int $group_id
+     * @param array $eagerLoad
+     * @return Illuminate\Support\Collection
+     */
+    public static function getCheatingParticipantsByGroup($group_id, $eagerLoad=[])
+    {
+        return Participants::distinct()
+            ->leftJoin('cheating_participants as cp1', 'cp1.participant_index', 'participants.index_no')
+            ->leftJoin('cheating_participants as cp2', 'cp2.cheating_with_participant_index', 'participants.index_no')
+            ->where('cp1.group_id', $group_id)
+            ->orWhere('cp2.group_id', $group_id)
+            ->select('participants.index_no', 'participants.name', 'participants.school_id', 'participants.country_id', 'participants.grade')
+            ->with($eagerLoad)
+            ->get();
     }
 }
