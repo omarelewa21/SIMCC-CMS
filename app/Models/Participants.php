@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Http\Requests\getParticipantListRequest;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Participants extends Base
@@ -132,6 +133,11 @@ class Participants extends Base
 
     public function competition_organization () {
         return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
+    }
+
+    public function isCheater()
+    {
+        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
     }
 
     public function answers()
