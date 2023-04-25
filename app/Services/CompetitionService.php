@@ -52,7 +52,7 @@ class CompetitionService
         if($cheatingStatus->status === 'Failed') {
             return response()->json([
                 'status'    => 500,
-                'message'   => sprintf("Generating cheating list failed at perentage %s with error: ", $cheatingStatus->progress_percentage, $cheatingStatus->compute_error_message)
+                'message'   => sprintf("Generating cheating list failed at perentage %s with error: %s", $cheatingStatus->progress_percentage, $cheatingStatus->compute_error_message)
             ], 500);
         }
 
