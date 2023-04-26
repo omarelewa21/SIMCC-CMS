@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Http\Requests\getParticipantListRequest;
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -142,7 +143,7 @@ class Participants extends Base
 
     public function answers()
     {
-        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no');
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
