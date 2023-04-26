@@ -1095,7 +1095,7 @@ class CompetitionController extends Controller
                    ORDER BY `competition_levels`.`id`, `competition_participants_results`.`award_id`, `competition_participants_results`.`points` DESC"));
   **/
           $query = DB::select( DB::raw("
-             SELECT CONCAT('\"',competition.name,'\"') as competition, CONCAT('\"',organization.name,'\"') as organization,CONCAT('\"',all_countries.display_name,'\"') as country, CONCAT('\"',competition_levels.name,'\"') as level, competition_levels.id as level_id, participants.grade, CONCAT('\"',schools.name,'\"') as school, CONCAT('\"',tuition_school.name,'\"') as tuition_centre, participants.index_no, CONCAT('\"',participants.name,'\"') as name, participants.certificate_no, competition_participants_results.points, CONCAT('\"',competition_participants_results.award,'\"') as award FROM `competition_participants_results`
+             SELECT CONCAT('\"',competition.name,'\"') as competition, CONCAT('\"',organization.name,'\"') as organization,CONCAT('\"',all_countries.display_name,'\"') as country, CONCAT('\"',competition_levels.name,'\"') as level, competition_levels.id as level_id, participants.grade, CONCAT('\"',schools.name_on_certificate,'\"') as school, CONCAT('\"',tuition_school.name,'\"') as tuition_centre, participants.index_no, CONCAT('\"',participants.name,'\"') as name, participants.certificate_no, competition_participants_results.points, CONCAT('\"',competition_participants_results.award,'\"') as award FROM `competition_participants_results`
                    LEFT JOIN competition_levels
                    ON competition_levels.id = competition_participants_results.level_id
                    LEFT JOIN competition_rounds
