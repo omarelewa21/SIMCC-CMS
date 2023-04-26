@@ -1390,7 +1390,7 @@ class CompetitionController extends Controller
     {
         return response()->json([
             'status'    => 200,
-            'data'      => CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers'])
+            'data'      => CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers', 'isCheater'])
         ], 200);
     }
 }
