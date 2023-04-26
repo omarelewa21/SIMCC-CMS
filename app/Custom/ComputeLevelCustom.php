@@ -51,14 +51,15 @@ class ComputeLevelCustom
     {
         DB::transaction(function(){
             ParticipantsAnswer::where('level_id', $this->level->id)
-                ->get()
-                ->each(function($participantAnswer){
-                    $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($this->level->id);
-                    $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
-                    $participantAnswer->save();
+                ->chunkById(50, function ($participantAnswers) {
+                    foreach ($participantAnswers as $participantAnswer) {
+                        $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($this->level->id);
+                        $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
+                        $participantAnswer->save();
+                    }
+                });
             });
-            $this->updateComputeProgressPercentage(20);
-        });
+        $this->updateComputeProgressPercentage(20);
     }
 
     public function setupCompetitionParticipantsResultsTable()
