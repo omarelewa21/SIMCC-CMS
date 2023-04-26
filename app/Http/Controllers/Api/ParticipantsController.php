@@ -629,4 +629,25 @@ class ParticipantsController extends Controller
             "message"   => "Participants eliminated successfully"
         ]);
     }
+
+    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            EliminatedCheatingParticipants::whereIn('participant_index',$request->participants)
+                ->delete();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants deletetion from elimination is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Participants deleted from elimination successfully"
+        ]);
+    }
 }
