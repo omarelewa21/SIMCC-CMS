@@ -1343,7 +1343,7 @@ class CompetitionController extends Controller
             if(CheatingStatus::where('competition_id',$competition->id)->exists())
                 return CompetitionService::returnCheatStatusAndData($competition, $request);
 
-            CompetitionService::validateIfCanGenerateCheatingPage($competition);
+            // CompetitionService::validateIfCanGenerateCheatingPage($competition);
 
             DB::beginTransaction();
 
