@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Http\Requests\getParticipantListRequest;
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Participants extends Base
@@ -134,9 +136,14 @@ class Participants extends Base
         return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
     }
 
+    public function isCheater()
+    {
+        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
+    }
+
     public function answers()
     {
-        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no');
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)

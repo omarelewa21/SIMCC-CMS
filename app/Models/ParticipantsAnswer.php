@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,6 +19,11 @@ class ParticipantsAnswer extends Model
     ];
 
     const CREATED_AT = 'created_date';
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+    }
 
     public function task()
     {

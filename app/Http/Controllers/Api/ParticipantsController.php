@@ -18,9 +18,11 @@ use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
+use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Http\Requests\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
@@ -215,7 +217,7 @@ class ParticipantsController extends Controller
 
             $availForSearch = array("name", "index_no", "school", "tuition_centre");
             $participantList = CollectionHelper::searchCollection('', $participantCollection, $availForSearch, $limits);
-
+            
             return response()->json([
                 "status"    => 200,
                 "data"      => [
@@ -227,7 +229,7 @@ class ParticipantsController extends Controller
                         'countries'     => $availCountry,
                         'competition'   => $availCompetition
                     ],
-                    "participantList" => $participantList
+                    "participantList" => $participantList->load('isCheater')
                 ]
             ]);
         }
@@ -394,5 +396,51 @@ class ParticipantsController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            foreach($request->participants as $participant_index){
+                EliminatedCheatingParticipants::updateOrCreate(
+                    ['participant_index' => $participant_index],
+                    ['reason' => $request->reason]
+                );
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants elimination is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Participants eliminated successfully"
+        ]);
+    }
+
+    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            EliminatedCheatingParticipants::whereIn('participant_index',$request->participants)
+                ->delete();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants deletetion from elimination is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Participants deleted from elimination successfully"
+        ]);
     }
 }
