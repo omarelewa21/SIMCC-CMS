@@ -57,6 +57,8 @@ class CompetitionService
         }
 
         if($cheatingStatus->status === 'Completed') {
+            if($request->csv == 1) return static::generateCheatersCSVFile($competition);
+
             $cheaters = static::getCheatingList($competition)
                 ->filterByRequest(
                     $request,
@@ -143,5 +145,67 @@ class CompetitionService
             ->select('participants.index_no', 'participants.name', 'participants.school_id', 'participants.country_id', 'participants.grade')
             ->with($eagerLoad)
             ->get();
+    }
+
+    /**
+     * Generate cheating list CSV file
+     * 
+     * @param Competition $competition
+     * @return Illuminate\Http\Response
+     */
+    public static function generateCheatersCSVFile(Competition $competition)
+    {
+        $cheaters =  Participants::select('index_no', 'name', 'school_id', 'country_id', 'grade')
+            ->where(function ($query) use ($competition) {
+                $query->whereIn('index_no', function ($subquery) use ($competition) {
+                    $subquery->select('participant_index')
+                        ->from('cheating_participants')
+                        ->where('competition_id', $competition->id);
+                })->orWhereIn('index_no', function ($subquery) use ($competition) {
+                    $subquery->select('cheating_with_participant_index')
+                        ->from('cheating_participants')
+                        ->where('competition_id', $competition->id);
+                });
+            })
+        ->groupBy('index_no', 'name', 'school_id', 'country_id', 'grade')
+        ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
+        ->withCount('answers')
+        ->get()
+        ->map(function($participant){
+            $questions = [];
+            for($i=1; $i<=$participant->answers_count; $i++){
+                $questions[sprintf("Question %s", $i)] =
+                    sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
+            }
+            $participant->school = $participant->school->name;
+            $participant->country = $participant->country->display_name;
+            return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade'), $questions);
+        });
+
+        return response()->json([
+            'headers'   => array_keys($cheaters->first()),
+            'data'      => $cheaters
+        ], 200);
+
+        // $filename = 'report.csv';
+        // $fp = fopen(public_path().'/'.$filename, 'w');
+        // fputcsv($fp, $cheaters[0]);
+        // foreach ($cheaters as $cheater) {
+        //     fputcsv($fp, $cheater);
+        // }
+        // fclose($fp);
+
+
+        // if (file_exists(public_path().'/'.$filename)) {
+        //     header('Content-Description: File Transfer');
+        //     header('Content-Type: application/octet-stream');
+        //     header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+        //     header('Expires: 0');
+        //     header('Cache-Control: must-revalidate');
+        //     header('Pragma: public');
+        //     header('Content-Length: ' . filesize($filename));
+        //     readfile($filename);
+        //     exit;
+        // }
     }
 }
