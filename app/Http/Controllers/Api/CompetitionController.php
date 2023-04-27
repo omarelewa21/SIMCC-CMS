@@ -1381,9 +1381,18 @@ class CompetitionController extends Controller
      */
     public function getcheatingParticipantsByGroup($group_id)
     {
-        return response()->json([
-            'status'    => 200,
-            'data'      => CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers', 'isCheater'])
-        ], 200);
+        try {
+            $data = CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers', 'isCheater']);
+            $headers = collect(['index_no', 'name'])->merge(
+                $data->first()->answers->map(function ($answer, $index) {
+                    return 'Q' . ($index + 1);
+                })
+            );
+
+            return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);   
+        }
     }
 }
