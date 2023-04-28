@@ -28,7 +28,7 @@ class CreateDomainTagRequest extends FormRequest
     {
         return [
             '*.is_tag'      => 'required_if:*.domain_id,null|boolean',
-            '*.domain_id'   => 'integer|exclude_if:*.is_tag,1|exists:domains_tags,id' ,
+            '*.domain_id'   => ['integer', 'exclude_if:*.is_tag,1', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')] ,
             '*.name'        => 'required|array',
             '*.name.*'      => [
                 'required',
