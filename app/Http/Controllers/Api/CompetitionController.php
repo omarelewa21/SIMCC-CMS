@@ -1382,7 +1382,21 @@ class CompetitionController extends Controller
     public function getcheatingParticipantsByGroup($group_id)
     {
         try {
-            $data = CompetitionService::getCheatingParticipantsByGroup($group_id, ['answers', 'isCheater']);
+            $data = Participants::whereIn('index_no', function ($query) use ($group_id) {
+                    $query->select('participant_index')
+                        ->from('cheating_participants')
+                        ->where('group_id', $group_id)
+                        ->union(function ($query) use ($group_id) {
+                            $query->select('cheating_with_participant_index')
+                                ->from('cheating_participants')
+                                ->where('group_id', $group_id);
+                        });
+                })
+                ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
+                ->with('answers', 'isCheater')
+                ->distinct()
+                ->get();
+
             $headers = collect(['index_no', 'name'])->merge(
                 $data->first()->answers->map(function ($answer, $index) {
                     return 'Q' . ($index + 1);

@@ -176,7 +176,7 @@ class ComputeCheatingParticipantsService
                 'competition_id'                    => $this->competition->id,
                 'participant_index'                 => $participant->index_no,
                 'cheating_with_participant_index'   => $otherParticipant->index_no,
-                'group_id'                          => $groupId ?? CheatingParticipants::$nextGroupId++,
+                'group_id'                          => $groupId ?? CheatingParticipants::generateNewGroupId(),
                 'number_of_cheating_questions'      => $numOfMatchAnswers,
                 'cheating_percentage'               => round(($numOfMatchAnswers/$countOfAllAnswers) * 100, 2)
             ]);
