@@ -415,7 +415,9 @@ class CompetitionService
                 $participant->school = $participant->school->name;
                 $participant->country = $participant->country->display_name;
                 return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
-            })->unique('index_no');
+            })->unique(function ($participant) {
+                return sprintf("%s-%s", $participant['index_no'], $participant['group_id']);
+            });
     }
 
     /**
