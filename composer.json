@@ -14,7 +14,9 @@
         "laravel/sanctum": "^2.14.1",
         "laravel/telescope": "^4.12",
         "laravel/tinker": "^2.7",
-        "mehdi-fathi/eloquent-filter": "^2.5"
+        "maatwebsite/excel": "^3.1",
+        "mehdi-fathi/eloquent-filter": "^2.5",
+        "psr/simple-cache": "2.0"
     },
     "require-dev": {
         "spatie/laravel-ignition": "^1.0",

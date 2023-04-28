@@ -3,11 +3,15 @@
 namespace App\Services;
 
 use App\Custom\Marking;
+use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Excel as ExcelExcel;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CompetitionService
 {
@@ -57,7 +61,7 @@ class CompetitionService
         }
 
         if($cheatingStatus->status === 'Completed') {
-            if($request->csv == 1) return static::generateCheatersCSVFile($competition);
+            if($request->csv == 1) return static::getCheatingCSVFile($competition);
 
             $cheaters = static::getCheatingList($competition)
                 ->filterByRequest(
@@ -155,6 +159,7 @@ class CompetitionService
      */
     public static function generateCheatersCSVFile(Competition $competition)
     {
+
         $cheaters =  Participants::select('index_no', 'name', 'school_id', 'country_id', 'grade')
             ->where(function ($query) use ($competition) {
                 $query->whereIn('index_no', function ($subquery) use ($competition) {
@@ -170,8 +175,9 @@ class CompetitionService
         ->groupBy('index_no', 'name', 'school_id', 'country_id', 'grade')
         ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
         ->withCount('answers')
-        ->get()
-        ->map(function($participant){
+        ->get();
+        dd($cheaters->toArray());
+        $cheaters->map(function($participant){
             $questions = [];
             for($i=1; $i<=$participant->answers_count; $i++){
                 $questions[sprintf("Question %s", $i)] =
@@ -181,31 +187,24 @@ class CompetitionService
             $participant->country = $participant->country->display_name;
             return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade'), $questions);
         });
+        dd($cheaters);
+        return $cheaters->prepend(array_keys($cheaters->first()));
+    }
 
-        return response()->json([
-            'headers'   => array_keys($cheaters->first()),
-            'data'      => $cheaters
-        ], 200);
+    /**
+     * Get cheating csv file
+     * 
+     * @param Competition $competition
+     * @return Illuminate\Http\Response
+     */
+    public static function getCheatingCSVFile(Competition $competition)
+    {
+        if (Excel::store(new CheatersExport($competition), 'cheaters.xlsx')) {
+            $response = response()->file(Storage::path('cheaters.csv'), [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 
-        // $filename = 'report.csv';
-        // $fp = fopen(public_path().'/'.$filename, 'w');
-        // fputcsv($fp, $cheaters[0]);
-        // foreach ($cheaters as $cheater) {
-        //     fputcsv($fp, $cheater);
-        // }
-        // fclose($fp);
-
-
-        // if (file_exists(public_path().'/'.$filename)) {
-        //     header('Content-Description: File Transfer');
-        //     header('Content-Type: application/octet-stream');
-        //     header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
-        //     header('Expires: 0');
-        //     header('Cache-Control: must-revalidate');
-        //     header('Pragma: public');
-        //     header('Content-Length: ' . filesize($filename));
-        //     readfile($filename);
-        //     exit;
-        // }
+            ]);
+            return $response;
+        }
     }
 }

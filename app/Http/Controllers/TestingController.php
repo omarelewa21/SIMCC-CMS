@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CheatersExport;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
@@ -10,6 +11,7 @@ use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TestingController extends Controller
 {
@@ -76,5 +78,10 @@ class TestingController extends Controller
             ], 500);
         }
         
+    }
+
+    public function generateCheatersCSV(Competition $competition)
+    {
+        return Excel::download(new CheatersExport($competition), 'cheaters.xlsx');
     }
 }
