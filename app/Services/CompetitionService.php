@@ -147,28 +147,28 @@ class CompetitionService
     {
         return Participants::distinct()
             ->join('cheating_participants', function (JoinClause $join) {
-                $join->on('participants.index_no', 'cheating_participants.participant_index')
-                    ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
-        })
-        ->where('cheating_participants.competition_id', $competition->id)
-        ->select(
-            'participants.index_no', 'participants.name', 'participants.school_id', 
-            'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
-            'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
-        )
-        ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
-        ->withCount('answers')
-        ->get()
-        ->map(function($participant) {
-            $questions = [];
-            for($i=1; $i<=$participant->answers_count; $i++){
-                $questions[sprintf("Question %s", $i)] =
-                    sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
-            }
-            $participant->school = $participant->school->name;
-            $participant->country = $participant->country->display_name;
-            return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
-        });
+                    $join->on('participants.index_no', 'cheating_participants.participant_index')
+                        ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->where('cheating_participants.competition_id', $competition->id)
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id', 
+                'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
+                'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
+            )
+            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
+            ->withCount('answers')
+            ->get()
+            ->map(function($participant) {
+                $questions = [];
+                for($i=1; $i<=$participant->answers_count; $i++){
+                    $questions[sprintf("Question %s", $i)] =
+                        sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
+                }
+                $participant->school = $participant->school->name;
+                $participant->country = $participant->country->display_name;
+                return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
+            })->unique('index_no');
     }
 
     /**
