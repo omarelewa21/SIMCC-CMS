@@ -24,7 +24,18 @@ class CheatersExport implements FromCollection, WithStyles
     */
     public function collection()
     {
-        return CompetitionService::generateCheatersCSVFile($this->competition);
+        $dataCollection = CompetitionService::getCheatersDataForCSV($this->competition);
+        $returnedCollection = collect();
+        $lastGroup = null;
+        foreach($dataCollection as $key=>$record) {
+            if($key !== 0 && $lastGroup !== $record['group_id']) {
+                $returnedCollection->push(['-'], $record);
+            }else{
+                $returnedCollection->push($record);
+            }
+            $lastGroup = $record['group_id'];
+        }
+        return $returnedCollection->prepend(array_keys($dataCollection->first()));
     }
 
     public function styles(Worksheet $sheet)
