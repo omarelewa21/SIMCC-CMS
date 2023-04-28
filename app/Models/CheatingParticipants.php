@@ -11,8 +11,6 @@ class CheatingParticipants extends Model
 
     protected $guarded = [];
 
-    public static $nextGroupId = 1;
-
     public function participant()
     {
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
@@ -26,5 +24,10 @@ class CheatingParticipants extends Model
     public function competition()
     {
         return $this->belongsTo(Competition::class);
+    }
+
+    public static function generateNewGroupId()
+    {
+        return static::orderBy('group_id', 'desc')->value('group_id') + 1;
     }
 }
