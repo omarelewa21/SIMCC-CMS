@@ -9,8 +9,8 @@ use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Excel as ExcelExcel;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CompetitionService
@@ -89,29 +89,34 @@ class CompetitionService
      */
     public static function getCheatingList(Competition $competition)
     {
-        return CheatingParticipants::where('competition_id', $competition->id)
-            ->selectRaw(
-                "*,
-                AVG(number_of_cheating_questions) AS avg_cheating_questions_number,
-                AVG(cheating_percentage) AS avg_cheating_percentage_percentage"
-            )->groupBy('group_id')
+        return Participants::distinct()
+            ->join('cheating_participants', function (JoinClause $join) {
+                $join->on('participants.index_no', 'cheating_participants.participant_index')
+                    ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->where('cheating_participants.competition_id', $competition->id)
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id', 
+                'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
+                'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
+            )
+            ->with('school', 'country')
+            ->withCount('answers')
             ->get()
-            ->mapWithKeys(function($group){
-                $cheatersGroupData = [];
-                $cheatingParticipants = static::getCheatingParticipantsByGroup($group->group_id, ['country', 'school']); 
-                $firstRecordParticipant = $cheatingParticipants->first();
-
-                $cheatersGroupData['number_of_questions'] = $firstRecordParticipant->answers()->count();
-                $cheatersGroupData['cheating_percentage'] = round($group->avg_cheating_percentage_percentage);
-                $cheatersGroupData['number_of_cheating_questions'] = round($group->avg_cheating_questions_number);
+            ->groupBy('group_id')
+            ->map(function($group, $group_id){
+                $firstRecordParticipant = $group->first();
+                $cheatersGroupData['number_of_questions'] = $firstRecordParticipant->answers_count;
+                $cheatersGroupData['cheating_percentage'] = round($group->avg('cheating_percentage'));
+                $cheatersGroupData['number_of_cheating_questions'] = round($group->avg('number_of_cheating_questions'));
                 $cheatersGroupData['school'] = $firstRecordParticipant->school->name;
                 $cheatersGroupData['country'] = $firstRecordParticipant->country->display_name;
                 $cheatersGroupData['grade'] = $firstRecordParticipant->grade;
-                $cheatersGroupData['group_id'] = $group->group_id;
-                $cheatersGroupData['participants'] = $cheatingParticipants->map(
+                $cheatersGroupData['group_id'] = $group_id;
+                $cheatersGroupData['participants'] = $group->map(
                     fn($cheatingParticipant) => $cheatingParticipant->only('index_no', 'name')
                 )->toArray();
-                return [$group->group_id => $cheatersGroupData];
+                return $cheatersGroupData;
             });
     }
 
@@ -133,51 +138,28 @@ class CompetitionService
     }
 
     /**
-     * Get cheating participants by group
-     * 
-     * @param int $group_id
-     * @param array $eagerLoad
-     * @return Illuminate\Support\Collection
-     */
-    public static function getCheatingParticipantsByGroup($group_id, $eagerLoad=[])
-    {
-        return Participants::distinct()
-            ->leftJoin('cheating_participants as cp1', 'cp1.participant_index', 'participants.index_no')
-            ->leftJoin('cheating_participants as cp2', 'cp2.cheating_with_participant_index', 'participants.index_no')
-            ->where('cp1.group_id', $group_id)
-            ->orWhere('cp2.group_id', $group_id)
-            ->select('participants.index_no', 'participants.name', 'participants.school_id', 'participants.country_id', 'participants.grade')
-            ->with($eagerLoad)
-            ->get();
-    }
-
-    /**
      * Generate cheating list CSV file
      * 
      * @param Competition $competition
      * @return Illuminate\Http\Response
      */
-    public static function generateCheatersCSVFile(Competition $competition)
+    public static function getCheatersDataForCSV(Competition $competition)
     {
-
-        $cheaters =  Participants::select('index_no', 'name', 'school_id', 'country_id', 'grade')
-            ->where(function ($query) use ($competition) {
-                $query->whereIn('index_no', function ($subquery) use ($competition) {
-                    $subquery->select('participant_index')
-                        ->from('cheating_participants')
-                        ->where('competition_id', $competition->id);
-                })->orWhereIn('index_no', function ($subquery) use ($competition) {
-                    $subquery->select('cheating_with_participant_index')
-                        ->from('cheating_participants')
-                        ->where('competition_id', $competition->id);
-                });
-            })
-        ->groupBy('index_no', 'name', 'school_id', 'country_id', 'grade')
+        return Participants::distinct()
+            ->join('cheating_participants', function (JoinClause $join) {
+                $join->on('participants.index_no', 'cheating_participants.participant_index')
+                    ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+        })
+        ->where('cheating_participants.competition_id', $competition->id)
+        ->select(
+            'participants.index_no', 'participants.name', 'participants.school_id', 
+            'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
+            'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
+        )
         ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
         ->withCount('answers')
-        ->get();
-        dd($cheaters->toArray());
-        $cheaters->map(function($participant){
+        ->get()
+        ->map(function($participant) {
             $questions = [];
             for($i=1; $i<=$participant->answers_count; $i++){
                 $questions[sprintf("Question %s", $i)] =
@@ -185,10 +167,8 @@ class CompetitionService
             }
             $participant->school = $participant->school->name;
             $participant->country = $participant->country->display_name;
-            return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade'), $questions);
+            return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
         });
-        dd($cheaters);
-        return $cheaters->prepend(array_keys($cheaters->first()));
     }
 
     /**
@@ -199,12 +179,12 @@ class CompetitionService
      */
     public static function getCheatingCSVFile(Competition $competition)
     {
-        if (Excel::store(new CheatersExport($competition), 'cheaters.xlsx')) {
-            $response = response()->file(Storage::path('cheaters.csv'), [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-
-            ]);
-            return $response;
+        $fileName = sprintf("cheaters_%s.xlsx", $competition->id);
+        if(Storage::disk('local')->exists($fileName)){
+            Storage::disk('local')->delete($fileName);
+        }
+        if (Excel::store(new CheatersExport($competition), $fileName)) {
+            return response(200);
         }
     }
 }
