@@ -44,7 +44,7 @@ class ComputeLevelCustom
         $this->setParticipantsAwards();
         $this->setParticipantsAwardsRank();
         $this->setParticipantsGlobalRank();
-        $this->setParticipantsReportColumn();
+        // $this->setParticipantsReportColumn();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
