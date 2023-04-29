@@ -7,6 +7,7 @@ use App\Models\CompetitionLevels;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
@@ -14,7 +15,8 @@ class ComputeLevel implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $level;
+    protected CompetitionLevels $level;
+    protected Request|null $request = null;
 
     public $timeout = 5000;
 
@@ -23,7 +25,7 @@ class ComputeLevel implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(CompetitionLevels $level)
+    public function __construct(CompetitionLevels $level, Request|null $request = null)
     {
         $this->level = $level;
     }
@@ -36,7 +38,10 @@ class ComputeLevel implements ShouldQueue
     public function handle()
     {
         try {
-            (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            if($this->request)
+                (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
+            else
+                (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
         } catch (\Exception $e) {
             $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e);
         }
