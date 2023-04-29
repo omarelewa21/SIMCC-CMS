@@ -28,6 +28,7 @@ class ComputeLevel implements ShouldQueue
     public function __construct(CompetitionLevels $level, Request|null $request = null)
     {
         $this->level = $level;
+        $this->request = $request;
     }
 
     /**
