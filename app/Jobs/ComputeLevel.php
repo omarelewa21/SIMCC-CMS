@@ -39,7 +39,7 @@ class ComputeLevel implements ShouldQueue
     public function handle()
     {
         try {
-            if($this->request)
+            if($this->request->hasAny(['score', 'groupRank', 'countryRank', 'schoolRank', 'awards', 'awardsRank', 'globalRank', 'reportColumn']))
                 (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
             else
                 (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
