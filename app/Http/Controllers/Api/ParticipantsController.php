@@ -584,7 +584,13 @@ class ParticipantsController extends Controller
             }
 
             if($request->has('as_pdf') && $request->as_pdf == 1){
-                $pdf = PDF::loadView('testPdf', $report);
+                $pdf = PDF::loadView('performance-report', [
+                    'general_data'                  => $report['general_data'],
+                    'performance_by_questions'      => $report['performance_by_questions'],
+                    'performance_by_topics'         => $report['performance_by_topics'],
+                    'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                    'analysis_by_questions'         => $report['analysis_by_questions']
+                ]);
                 return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
             }
 
