@@ -16,7 +16,7 @@ class ComputeLevel implements ShouldQueue
 
     protected $level;
 
-    public $timeout = 1000;
+    public $timeout = 5000;
 
     /**
      * Create a new job instance.
