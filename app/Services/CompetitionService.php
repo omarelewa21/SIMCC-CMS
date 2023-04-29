@@ -168,9 +168,10 @@ class CompetitionService
                 $participant->school = $participant->school->name;
                 $participant->country = $participant->country->display_name;
                 return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
-            })->unique(function ($participant) {
+            })->sortBy('group_id')
+            ->unique(function ($participant) {
                 return sprintf("%s-%s", $participant['index_no'], $participant['group_id']);
-            });
+            })->values();
     }
 
     /**
@@ -188,5 +189,6 @@ class CompetitionService
         if (Excel::store(new CheatersExport($competition), $fileName)) {
             return response(200);
         }
+        return response(500);
     }
 }
