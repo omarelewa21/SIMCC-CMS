@@ -1340,7 +1340,7 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if(CheatingStatus::where('competition_id',$competition->id)->exists())
+            if($request->recompute != 1 && CheatingStatus::where('competition_id',$competition->id)->exists())
                 return CompetitionService::returnCheatStatusAndData($competition, $request);
 
             // CompetitionService::validateIfCanGenerateCheatingPage($competition);
