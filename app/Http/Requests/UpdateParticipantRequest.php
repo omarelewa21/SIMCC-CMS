@@ -72,8 +72,9 @@ class UpdateParticipantRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validator) {
-            if($this->participant->status != 'active'){
+        $userRole = auth()->user()->role_id;
+        $validator->after(function (Validator $validator) use ($userRole) {
+            if($this->participant->status != 'active' && !in_array($userRole, [0,1])){
                 $validator->errors()->add('id', 'You can not update a participant that is not active.');
             }
         });

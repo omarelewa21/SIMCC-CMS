@@ -404,7 +404,7 @@ class ParticipantsController extends Controller
     public function update (Request $request) {
 
         //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
-        $participant = Participants::where(['id' => $request['id'],'status' => 'active',])->firstOrFail();
+        $participant = auth()->user()->hasRole(['Super Admin', 'Admin']) ? Participants::where(['id' => $request['id']])->firstOrFail() : Participants::where(['id' => $request['id'], 'status' => 'active'])->firstOrFail();
         $participantCountryId = $participant->country_id;
         $request['school_type'] = $participant->tuition_centre_id ? 1 : 0;
 
