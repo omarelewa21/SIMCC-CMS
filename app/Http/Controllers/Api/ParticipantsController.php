@@ -169,7 +169,7 @@ class ParticipantsController extends Controller
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
                 'organization.name as organization_name',
-                'competition_participants_results.award',
+                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award")
             )
             ->filterList($request)
             ->get();
