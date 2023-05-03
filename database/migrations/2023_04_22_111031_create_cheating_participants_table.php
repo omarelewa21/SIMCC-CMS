@@ -27,6 +27,11 @@ return new class extends Migration
             $table->foreign('cheating_with_participant_index')->references('index_no')->on('participants');
             $table->unsignedInteger('group_id');
             $table->unsignedTinyInteger('number_of_cheating_questions');
+            $table->unsignedTinyInteger('number_of_questions');
+            $table->unsignedTinyInteger('number_of_same_correct_answers');
+            $table->unsignedTinyInteger('number_of_same_incorrect_answers');
+            $table->unsignedTinyInteger('number_of_correct_answers');
+            $table->json('cheating_question_ids');
             $table->decimal('cheating_percentage', 5, 2);
             $table->timestamps();
         });
