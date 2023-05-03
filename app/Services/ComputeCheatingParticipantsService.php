@@ -12,13 +12,17 @@ use Illuminate\Support\Facades\DB;
 class ComputeCheatingParticipantsService
 {
     protected $cheatStatus;
+    protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
+    protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
 
     /**
      * @param Competition $competition
      */
-    public function __construct(protected Competition $competition)
+    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95)
     {
         $this->cheatStatus = CheatingStatus::findOrFail($this->competition->id);
+        $this->qNumber = $qNumber;
+        $this->percentage = $percentage;
     }
 
     /**
@@ -149,36 +153,29 @@ class ComputeCheatingParticipantsService
      * 
      * @return void
      */
-    private function compareAnswersBetweenTwoParticipants($participant, $otherParticipant)
+    private function compareAnswersBetweenTwoParticipants($participant1, $participant2)
     {
-        $numOfMatchAnswers = 0;
-        $countOfAllAnswers = $participant->answers->isNotEmpty() ? $participant->answers->count() : 1;
-        $participant->answers->each(function($participantAnswer) use($otherParticipant, &$numOfMatchAnswers){
-            $otherAnswer = $otherParticipant->answers->first(
-                fn($otherParticipantAnswer) => $participantAnswer->task_id === $otherParticipantAnswer->task_id
-            );
-            if(
-                $otherAnswer
-                && $participantAnswer->answer == $otherAnswer->answer
-                && $participantAnswer->is_correct === $otherAnswer->is_correct
-            ){
-                $numOfMatchAnswers++;
+        $dataArray = $this->getDefaultDataArray($participant1, $participant2);
+        $sameQuestionIds = [];
+        foreach($participant1->answers as $p1Answer){
+            $p2Answer = $participant2->answers
+                ->first(fn($answer)=> $p1Answer->task_id === $answer->task_id);
+
+            if( $this->isTwoAnswersMatch($p1Answer, $p2Answer) ) {
+                $dataArray['number_of_cheating_questions']++;
+                if ($p1Answer->is_correct) $dataArray['number_of_same_correct_answers']++;
+                else $dataArray['number_of_same_incorrect_answers']++;
+
+                $sameQuestionIds[] = $p1Answer->task_id;
             }
-        });
+        }
 
-        if($numOfMatchAnswers/$countOfAllAnswers >= 0.95){
-            $groupId = CheatingParticipants::where('participant_index', $participant->index_no)
-                ->orWhere('cheating_with_participant_index', $participant->index_no)
-                ->value('group_id');
+        if( $this->shouldCreateCheatingParticipant($dataArray) ) {
+            $dataArray['different_question_ids'] = $participant1->answers->whereNotIn('task_id', $sameQuestionIds)->pluck('task_id')->toArray();
+            $dataArray['group_id'] = $this->generateGroupId($participant1, $participant2, $dataArray);
+            $dataArray['cheating_percentage'] = ( $dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions'] ) * 100;
 
-            CheatingParticipants::create([
-                'competition_id'                    => $this->competition->id,
-                'participant_index'                 => $participant->index_no,
-                'cheating_with_participant_index'   => $otherParticipant->index_no,
-                'group_id'                          => $groupId ?? CheatingParticipants::generateNewGroupId(),
-                'number_of_cheating_questions'      => $numOfMatchAnswers,
-                'cheating_percentage'               => round(($numOfMatchAnswers/$countOfAllAnswers) * 100, 2)
-            ]);
+            CheatingParticipants::create($dataArray);
         }
     }
 
@@ -193,5 +190,107 @@ class ComputeCheatingParticipantsService
             ->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
             ->where('competition_organization.competition_id', $this->competition->id)
             ->delete();
+    }
+
+    /**
+     * Detect if two answers are match
+     * 
+     * @param ParticipantAnswer $p1Answer
+     * @param ParticipantAnswer|null $p2Answer
+     * 
+     * @return bool
+     */
+    private function isTwoAnswersMatch($p1Answer, $p2Answer)
+    {
+        return $p2Answer
+            && $p1Answer->answer == $p2Answer->answer
+            && $p1Answer->is_correct === $p2Answer->is_correct;
+    }
+
+    /**
+     * Get default data array
+     * 
+     * @param Participant $participant1
+     * @param Participant $participant2
+     * 
+     * @return array
+     */
+    private function getDefaultDataArray($participant1, $participant2)
+    {
+        return [
+            'competition_id'    => $this->competition->id,
+            'participant_index' => $participant1->index_no,
+            'cheating_with_participant_index' => $participant2->index_no,
+            'number_of_cheating_questions' => 0,
+            'number_of_questions' => $participant1->answers->count(),
+            'number_of_same_correct_answers' => 0,
+            'number_of_same_incorrect_answers' => 0,
+            'number_of_correct_answers' => $participant1->answers->where('is_correct', 1)->count(),
+            'different_question_ids' => [],
+            'cheating_percentage' => 0,
+        ];
+    }
+
+    /**
+     * Detect if a cheating participant should be created
+     * 
+     * @param array $dataArray
+     * 
+     * @return bool
+     */
+    private function shouldCreateCheatingParticipant($dataArray)
+    {
+        return 
+            (
+                $this->qNumber && $this->qNumber > 0
+                && $dataArray['number_of_cheating_questions'] >= $this->qNumber
+            )
+            ||
+            (
+                $dataArray['number_of_cheating_questions'] > 0 && $dataArray['number_of_questions'] > 0
+                && ($dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions']) * 100 >= $this->percentage
+            );
+    }
+
+    /**
+     * Generate group id
+     * 
+     * @param Participant $participant1
+     * @param Participant $participant2
+     * @param array $dataArray
+     * 
+     * @return string
+     */
+    private function generateGroupId($participant1, $participant2, $dataArray)
+    {
+        $cheatingParticipantRecords = CheatingParticipants::where('participant_index', $participant1->index_no)
+                ->orWhere('cheating_with_participant_index', $participant2->index_no)
+                ->get();
+
+        foreach($cheatingParticipantRecords as $cheatingParticipant){
+            if( $this->compareTwoDiffentQuestionArrays(
+                    $cheatingParticipant->different_question_ids->getArrayCopy(),
+                    $dataArray['different_question_ids']
+                )
+            ) {
+                return $cheatingParticipant->group_id;
+            }
+        }
+
+        return CheatingParticipants::generateNewGroupId();
+    }
+
+    /**
+     * Compare two different question arrays and return true if they are same
+     * 
+     * @param array $differntQuestionArray
+     * @param array $differentQuestionIds
+     * 
+     * @return bool
+     */
+    private function compareTwoDiffentQuestionArrays($differntQuestionArray, $differentQuestionIds)
+    {
+        if( count($differntQuestionArray) !== count($differentQuestionIds) ) return false;
+        return empty(array_diff($differntQuestionArray, $differentQuestionIds));
     }
 }
