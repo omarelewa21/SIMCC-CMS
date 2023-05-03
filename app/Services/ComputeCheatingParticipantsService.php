@@ -119,8 +119,8 @@ class ComputeCheatingParticipantsService
 
         $this->updateCheatStatus(60, 'In Progress');
         return $groups->lazy()->filter(function ($group) {
-                return $group->count() > 1;
-            });
+            return $group->count() > 1;
+        });
     }
 
     /**
