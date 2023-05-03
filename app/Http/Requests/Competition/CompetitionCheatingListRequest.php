@@ -24,12 +24,14 @@ class CompetitionCheatingListRequest extends FormRequest
     public function rules()
     {
         return [
-            'School'    => 'integer|exists:schools,id',
-            'Country'   => 'integer|exists:all_countries,id',
-            'Grade'     => 'integer|exists:participants,grade',
-            'cheat_percentage' => 'integer',
-            'group_id'  => 'integer|exists:cheating_participants,group_id',
-            'search'    => 'string',
+            'School'            => 'integer|exists:schools,id',
+            'Country'           => 'integer|exists:all_countries,id',
+            'Grade'             => 'integer|exists:participants,grade',
+            'cheat_percentage'  => 'integer',
+            'group_id'          => 'integer|exists:cheating_participants,group_id',
+            'search'            => 'string',
+            'percentage'        => 'numeric',
+            'question_number'   => 'integer',
         ];
     }
 }
