@@ -159,7 +159,6 @@ class ComputeCheatingParticipantsService
             );
             if(
                 $otherAnswer
-                && !is_null($participantAnswer->answer) && !empty($participantAnswer->answer) 
                 && $participantAnswer->answer == $otherAnswer->answer
                 && $participantAnswer->is_correct === $otherAnswer->is_correct
             ){
