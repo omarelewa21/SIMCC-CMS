@@ -9,11 +9,11 @@ use Illuminate\Http\Request;
 use App\Custom\Marking;
 use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
-use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -398,10 +398,12 @@ class CompetitionService
                         ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
             })
             ->where('cheating_participants.competition_id', $competition->id)
-            ->select(
-                'participants.index_no', 'participants.name', 'participants.school_id', 
-                'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
-                'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
+            ->selectRaw("
+                participants.index_no, CONCAT('\"', participants.index_no, '\"') AS participant_index,
+                participants.name, participants.school_id,
+                participants.country_id, participants.grade,
+                cheating_participants.group_id,
+                cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage"
             )
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
@@ -429,10 +431,15 @@ class CompetitionService
      */
     public static function getCheatingCSVFile(Competition $competition)
     {
-        $fileName = sprintf("cheaters_%s.xlsx", $competition->id);
+        $fileName = sprintf("cheaters_%s.csv", $competition->id);
+        if(Route::currentRouteName() === 'cheating-csv'){
+            return Excel::download(new CheatersExport($competition), $fileName);
+        }
+
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
         }
+        
         if (Excel::store(new CheatersExport($competition), $fileName)) {
             return response(200);
         }

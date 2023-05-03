@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\TestingController;
 use Illuminate\Support\Facades\Route;
+use App\Services\CompetitionService;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,3 +19,5 @@ Route::get('/', function () {
     abort(404);
     return view('welcome');
 });
+
+Route::get('/cheating-csv/{competition}', [CompetitionService::class, 'getCheatingCSVFile'])->name('cheating-csv');
