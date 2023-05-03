@@ -13,7 +13,7 @@ class CheatingParticipants extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'cheating_question_ids' => AsArrayObject::class,
+        'different_question_ids' => AsArrayObject::class,
     ];
 
     public function participant()

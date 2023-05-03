@@ -31,7 +31,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('number_of_same_correct_answers');
             $table->unsignedTinyInteger('number_of_same_incorrect_answers');
             $table->unsignedTinyInteger('number_of_correct_answers');
-            $table->json('cheating_question_ids');
+            $table->json('different_question_ids')->comment('JSON array of question ids that are not the same between two participants');
             $table->decimal('cheating_percentage', 5, 2);
             $table->timestamps();
         });
