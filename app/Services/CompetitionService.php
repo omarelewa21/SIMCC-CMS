@@ -9,6 +9,7 @@ use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -184,9 +185,14 @@ class CompetitionService
     public static function getCheatingCSVFile(Competition $competition)
     {
         $fileName = sprintf("cheaters_%s.csv", $competition->id);
+        if(Route::currentRouteName() === 'cheating-csv'){
+            return Excel::download(new CheatersExport($competition), $fileName);
+        }
+
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
         }
+        
         if (Excel::store(new CheatersExport($competition), $fileName)) {
             return response(200);
         }
