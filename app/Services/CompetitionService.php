@@ -174,9 +174,9 @@ class CompetitionService
                 $diffIds = json_decode($participant->different_question_ids, true);
 
                 for($i=1; $i<=$participant->answers_count; $i++){
-                    $questions["Q$i"] =
-                        sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
-                    if(in_array($participant->answers[$i-1]->task_id, $diffIds)) {
+                    $questions["Q$i"] = sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
+
+                    if(!$participant->answers[$i-1]->is_correct && !in_array($participant->answers[$i-1]->task_id, $diffIds)) {
                         $differentQuestions[] = "Q$i";
                     }
                 }
