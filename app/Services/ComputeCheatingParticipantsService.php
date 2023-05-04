@@ -14,15 +14,17 @@ class ComputeCheatingParticipantsService
     protected $cheatStatus;
     protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
     protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
+    protected $numberOFSameIncorrect; // If the number of same incorrect answers > $numberOFSameIncorrect, then the participant is considered as cheater
 
     /**
      * @param Competition $competition
      */
-    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95)
+    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95, $numberOFSameIncorrect = 1)
     {
         $this->cheatStatus = CheatingStatus::findOrFail($this->competition->id);
         $this->qNumber = $qNumber;
         $this->percentage = $percentage;
+        $this->numberOFSameIncorrect = $numberOFSameIncorrect;
     }
 
     /**
@@ -170,7 +172,7 @@ class ComputeCheatingParticipantsService
             }
         }
 
-        if( $this->shouldCreateCheatingParticipant($dataArray) ) {
+        if($dataArray['number_of_same_incorrect_answers'] > $this->numberOFSameIncorrect && $this->shouldCreateCheatingParticipant($dataArray) ) {
             $dataArray['different_question_ids'] = $participant1->answers->whereNotIn('task_id', $sameQuestionIds)->pluck('task_id')->toArray();
             $dataArray['group_id'] = $this->generateGroupId($participant1, $participant2, $dataArray);
             $dataArray['cheating_percentage'] = ( $dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions'] ) * 100;
@@ -225,7 +227,6 @@ class ComputeCheatingParticipantsService
             'number_of_questions' => $participant1->answers->count(),
             'number_of_same_correct_answers' => 0,
             'number_of_same_incorrect_answers' => 0,
-            'number_of_correct_answers' => $participant1->answers->where('is_correct', 1)->count(),
             'different_question_ids' => [],
             'cheating_percentage' => 0,
         ];

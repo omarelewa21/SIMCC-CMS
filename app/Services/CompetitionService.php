@@ -163,7 +163,6 @@ class CompetitionService
                 'cheating_participants.cheating_percentage',
                 'cheating_participants.number_of_same_correct_answers',
                 'cheating_participants.number_of_same_incorrect_answers',
-                'cheating_participants.number_of_correct_answers',
                 'cheating_participants.different_question_ids',
             )
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
@@ -184,6 +183,7 @@ class CompetitionService
                 $participant->different_questions = implode(', ', $differentQuestions);
                 $participant->school = $participant->school->name;
                 $participant->country = $participant->country->display_name;
+                $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
                 return array_merge($participant->only(
                         'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
                         'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
