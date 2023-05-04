@@ -264,7 +264,7 @@ class ComputeCheatingParticipantsService
     private function generateGroupId($participant1, $participant2, $dataArray)
     {
         $cheatingParticipantRecords = CheatingParticipants::where('participant_index', $participant1->index_no)
-                ->orWhere('cheating_with_participant_index', $participant2->index_no)
+                ->orWhere('cheating_with_participant_index', $participant1->index_no)
                 ->get();
 
         foreach($cheatingParticipantRecords as $cheatingParticipant){
