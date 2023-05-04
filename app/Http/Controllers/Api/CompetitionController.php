@@ -1348,15 +1348,15 @@ class CompetitionController extends Controller
             DB::beginTransaction();
 
             CheatingStatus::updateOrCreate(
-                    ['competition_id' => $competition->id],
-                    [
-                        'status' => 'In Progress',
-                        'progress_percentage' => 1,
-                        'compute_error_message' => null
-                    ]
-                );
+                ['competition_id' => $competition->id],
+                [
+                    'status' => 'In Progress',
+                    'progress_percentage' => 1,
+                    'compute_error_message' => null
+                ]
+            );
 
-            dispatch(new ComputeCheatingParticipants($competition));
+            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers));
             DB::commit();
 
             return response()->json([

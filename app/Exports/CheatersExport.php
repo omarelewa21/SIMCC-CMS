@@ -35,7 +35,21 @@ class CheatersExport implements FromCollection, WithStyles
             }
             $lastGroup = $record['group_id'];
         }
-        return $returnedCollection->prepend(array_keys($dataCollection->first()));
+        $header = array_keys($dataCollection->first());
+        $header[0] = 'Index';
+        $header[1] = 'Name';
+        $header[2] = 'School';
+        $header[3] = 'Country';
+        $header[4] = 'Grade';
+        $header[5] = 'Group ID';
+        $header[6] = 'No of qns';
+        $header[7] = 'No of qns with same answer';
+        $header[8] = 'No of qns with same answer percentage'; 
+        $header[9] = 'No of qns with same correct answer';
+        $header[10] = 'No of qns with same incorrect answer';
+        $header[11] = 'No of correct answers';
+        $header[12] = 'Qns with same incorrect answer';
+        return $returnedCollection->prepend($header);
     }
 
     public function styles(Worksheet $sheet)
