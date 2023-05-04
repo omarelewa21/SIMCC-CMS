@@ -151,25 +151,47 @@ class CompetitionService
                         ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
             })
             ->where('cheating_participants.competition_id', $competition->id)
-            ->selectRaw("
-                participants.index_no, CONCAT('\"', participants.index_no, '\"') AS participant_index,
-                participants.name, participants.school_id,
-                participants.country_id, participants.grade,
-                cheating_participants.group_id,
-                cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage"
+            ->select(
+                'participants.index_no',
+                'participants.name',
+                'participants.school_id',
+                'participants.country_id',
+                'participants.grade',
+                'cheating_participants.group_id',
+                'cheating_participants.number_of_questions',
+                'cheating_participants.number_of_cheating_questions',
+                'cheating_participants.cheating_percentage',
+                'cheating_participants.number_of_same_correct_answers',
+                'cheating_participants.number_of_same_incorrect_answers',
+                'cheating_participants.number_of_correct_answers',
+                'cheating_participants.different_question_ids',
             )
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
             ->get()
             ->map(function($participant) {
                 $questions = [];
+                $differentQuestions = [];
+                $diffIds = json_decode($participant->different_question_ids, true);
+
                 for($i=1; $i<=$participant->answers_count; $i++){
-                    $questions[sprintf("Question %s", $i)] =
+                    $questions[sprintf("Q %s", $i)] =
                         sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
+                    if(in_array($participant->answers[$i-1]->task_id, $diffIds)) {
+                        $differentQuestions[] = sprintf("Q %s", $i);
+                    }
                 }
+                $participant->different_questions = implode(', ', $differentQuestions);
                 $participant->school = $participant->school->name;
                 $participant->country = $participant->country->display_name;
-                return array_merge($participant->only('index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_cheating_questions', 'cheating_percentage'), $questions);
+                return array_merge($participant->only(
+                        'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
+                        'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
+                        'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
+                    ),
+                    $questions
+                );
+
             })->sortBy('group_id')
             ->unique(function ($participant) {
                 return sprintf("%s-%s", $participant['index_no'], $participant['group_id']);
