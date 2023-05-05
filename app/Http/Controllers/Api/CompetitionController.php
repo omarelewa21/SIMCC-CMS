@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -1348,7 +1349,7 @@ class CompetitionController extends Controller
     {
         try {
             if($request->recompute != 1 && CheatingStatus::where('competition_id',$competition->id)->exists())
-                return CompetitionService::returnCheatStatusAndData($competition, $request);
+                return CheatingListHelper::returnCheatStatusAndData($competition, $request);
 
             // CompetitionService::validateIfCanGenerateCheatingPage($competition);
 
