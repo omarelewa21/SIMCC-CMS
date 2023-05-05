@@ -2,8 +2,8 @@
 
 namespace App\Exports;
 
+use App\Helpers\CheatingListHelper;
 use App\Models\Competition;
-use App\Services\CompetitionService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -24,7 +24,7 @@ class CheatersExport implements FromCollection, WithStyles
     */
     public function collection()
     {
-        $dataCollection = CompetitionService::getCheatersDataForCSV($this->competition);
+        $dataCollection = CheatingListHelper::getCheatersDataForCSV($this->competition);
         $returnedCollection = collect();
         $lastGroup = null;
         foreach($dataCollection as $key=>$record) {

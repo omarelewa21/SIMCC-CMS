@@ -194,18 +194,25 @@ class CheatingListHelper
      */
     private static function getCheatingParticipantReadyForCSV($participant)
     {
-        [$questions, $participant->different_questions] = static::getQuestionsAndDifferentQuestions($participant);
+        [$participant->different_questions, $sections, $questions] = static::getQuestionsAndDifferentQuestions($participant);
 
         $participant->school = $participant->school->name;
         $participant->country = $participant->country->display_name;
         $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
+        
+        $formattedSections = [];
+        foreach ($sections as $key => $value) {
+            $newKey = range('A', 'Z')[$key];
+            $formattedSections["No of wrong answers in Section $newKey"] = $value;
+        }
 
         return array_merge($participant->only(
                 'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
                 'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
                 'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
             ),
-            $questions
+            $questions,
+            $formattedSections
         );
     }
     
@@ -217,20 +224,36 @@ class CheatingListHelper
      */
     private static function getQuestionsAndDifferentQuestions($participant)
     {
-        $questions = [];
         $differentQuestions = [];
-        $diffIds = json_decode($participant->different_question_ids, true);
-        $sections = $participant->answers->first()->level->collection->sections;
-        
-        dd(collect($sections->first()->tasks));
-        for($i=1; $i<=$participant->answers_count; $i++){
-            $questions["Q$i"] = sprintf("%s (%s)", $participant->answers[$i-1]->answer, $participant->answers[$i-1]->is_correct ? 'Correct' : 'Incorrect');
+        $questions = [];
+        $sections = [];
 
-            if(!$participant->answers[$i-1]->is_correct && !in_array($participant->answers[$i-1]->task_id, $diffIds)) {
+        $diffIds = json_decode($participant->different_question_ids, true);     // get the array of different questions
+        
+        $sectionTasks = $participant->answers->first()
+            ->level->collection->sections->pluck('tasks')
+            ->map(fn($tasksArrayObject) => collect($tasksArrayObject)->flatten());  // get a collection of task ids with section number as key
+
+        // Initialize sections array which will contain the number of wrong answer in each section
+        foreach($sectionTasks as $key => $value){
+            $sections[$key] = 0;
+        }
+
+        for($i=1; $i<=$participant->answers_count; $i++){
+            $participantAnswer = $participant->answers[$i-1];
+
+            $questions["Q$i"] = sprintf("%s (%s)", $participantAnswer->answer, $participantAnswer->is_correct ? 'Correct' : 'Incorrect');
+
+            if(!$participantAnswer->is_correct && !in_array($participantAnswer->task_id, $diffIds)) {
                 $differentQuestions[] = "Q$i";
             }
+
+            $sectionTasks->each(function($taskIdCollection, $key) use($participantAnswer, &$sections){
+                if(!$participantAnswer->is_correct && $taskIdCollection->contains($participantAnswer->task_id))
+                    $sections[$key]++;
+            });
         }
-        return [$questions, implode(', ', $differentQuestions)];
+        return [implode(', ', $differentQuestions), $sections, $questions];
     }
 
     /**
