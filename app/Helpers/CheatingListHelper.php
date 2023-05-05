@@ -224,20 +224,11 @@ class CheatingListHelper
      */
     private static function getQuestionsAndDifferentQuestions($participant)
     {
-        $differentQuestions = [];
+        $sameIncorrectQuestionNumbers = [];
         $questions = [];
         $sections = [];
 
         $diffIds = json_decode($participant->different_question_ids, true);     // get the array of different questions
-        
-        $sectionTasks = $participant->answers->first()
-            ->level->collection->sections->pluck('tasks')
-            ->map(fn($tasksArrayObject) => collect($tasksArrayObject)->flatten());  // get a collection of task ids with section number as key
-
-        // Initialize sections array which will contain the number of wrong answer in each section
-        foreach($sectionTasks as $key => $value){
-            $sections[$key] = 0;
-        }
 
         for($i=1; $i<=$participant->answers_count; $i++){
             $participantAnswer = $participant->answers[$i-1];
@@ -245,15 +236,37 @@ class CheatingListHelper
             $questions["Q$i"] = sprintf("%s (%s)", $participantAnswer->answer, $participantAnswer->is_correct ? 'Correct' : 'Incorrect');
 
             if(!$participantAnswer->is_correct && !in_array($participantAnswer->task_id, $diffIds)) {
-                $differentQuestions[] = "Q$i";
+                $sameIncorrectQuestionNumbers[$participantAnswer->task_id] = "Q$i";
             }
-
-            $sectionTasks->each(function($taskIdCollection, $key) use($participantAnswer, &$sections){
-                if(!$participantAnswer->is_correct && $taskIdCollection->contains($participantAnswer->task_id))
-                    $sections[$key]++;
-            });
         }
-        return [implode(', ', $differentQuestions), $sections, $questions];
+
+        $sections = static::getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers);
+        return [implode(', ', $sameIncorrectQuestionNumbers), $sections, $questions];
+    }
+
+    /**
+     * Get incorrect answers count per section
+     * 
+     * @param Participant $participant
+     * @param array $sameIncorrectQuestionNumbers
+     * @return array
+     */
+    private static function getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers)
+    {
+        $sectionTasks = $participant->answers->first()
+            ->level->collection->sections->pluck('tasks')
+            ->map(fn($tasksArrayObject) => collect($tasksArrayObject)->flatten());  // get a collection of task ids with section number as key
+
+        $sections = [];
+
+        foreach($sectionTasks as $key => $taskIdsCollection){
+            if(!isset($sections[$key])) $sections[$key] = 0;
+            foreach($taskIdsCollection as $taskId){
+                if(in_array($taskId, array_keys($sameIncorrectQuestionNumbers))) $sections[$key]++;
+            }
+        }
+
+        return $sections;
     }
 
     /**
