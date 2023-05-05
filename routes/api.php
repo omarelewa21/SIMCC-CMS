@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\CheatingListHelper;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SchoolController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
-use App\Services\CompetitionService;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +30,7 @@ use App\Services\CompetitionService;
 
 Route::post("login",[UserController::class,"login"]);
 Route::get("participant/report/by-certificate",[ParticipantsController::class,"performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
-Route::get('/cheating-csv/{competition}', [CompetitionService::class, 'getCheatingCSVFile'])->name('cheating-csv');
+Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 
 Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], function () {
 
