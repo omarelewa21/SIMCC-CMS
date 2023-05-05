@@ -56,7 +56,8 @@ class ComputeCheatingParticipantsService
                 ->pluck('levels')->flatten()
                 ->each(function($level){
                     ParticipantsAnswer::where('level_id', $level->id)
-                    ->chunkById(1000, function ($participantAnswers) use($level){
+                    ->whereNull('is_correct')
+                    ->chunkById(50000, function ($participantAnswers) use($level){
                         foreach ($participantAnswers as $participantAnswer) {
                             $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($level->id);
                             $participantAnswer->score = $participantAnswer->getAnswerMark($level->id);
