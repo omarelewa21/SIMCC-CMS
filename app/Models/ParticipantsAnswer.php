@@ -35,6 +35,11 @@ class ParticipantsAnswer extends Model
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
     }
 
+    public function level()
+    {
+        return $this->belongsTo(CompetitionLevels::class, 'level_id', 'id');
+    }
+
     public function getAnswer()
     {
         if($this->task->answer_type === 'mcq'){
