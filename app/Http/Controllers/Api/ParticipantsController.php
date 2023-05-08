@@ -28,7 +28,9 @@ use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
 use App\Rules\CheckOrganizationCompetitionValid;
 use App\Rules\CheckCompetitionEnded;
+use App\Rules\CheckParticipantGrade;
 use Exception;
+use Illuminate\Validation\Rule;
 use PDF;
 
 class ParticipantsController extends Controller
