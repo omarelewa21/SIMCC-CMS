@@ -6,6 +6,7 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelCustom
@@ -43,15 +44,32 @@ class ComputeLevelCustom
         $this->setParticipantsAwards();
         $this->setParticipantsAwardsRank();
         $this->setParticipantsGlobalRank();
-        $this->setParticipantsReportColumn();
+        // $this->setParticipantsReportColumn();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
+    }
+
+    /**
+     * Compute custom fields for single level based on request parameters
+     * 
+     * @param Request $request
+     */
+    public function computeCustomFieldsForSingleLevelBasedOnRequest(Request $request)
+    {
+        if($request->score) $this->computeParticipantAnswersScores();
+        if($request->groupRank) $this->setParticipantsGroupRank();
+        if($request->countryRank) $this->setParticipantsCountryRank();
+        if($request->schoolRank) $this->setParticipantsSchoolRank();
+        if($request->awards) $this->setParticipantsAwards();
+        if($request->awardsRank) $this->setParticipantsAwardsRank();
+        if($request->globalRank) $this->setParticipantsGlobalRank();
+        if($request->reportColumn) $this->setParticipantsReportColumn();
     }
 
     public function computeParticipantAnswersScores()
     {
         DB::transaction(function(){
             ParticipantsAnswer::where('level_id', $this->level->id)
-                ->chunkById(50, function ($participantAnswers) {
+                ->chunkById(1000, function ($participantAnswers) {
                     foreach ($participantAnswers as $participantAnswer) {
                         $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($this->level->id);
                         $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
