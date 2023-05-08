@@ -256,7 +256,7 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function computeResultsForSingleLevel(CompetitionLevels $level, Request|null $request = null)
+    public function computeResultsForSingleLevel(CompetitionLevels $level, Request|null $request)
     {
         try {
             ComputeLevelCustom::validateLevelForComputing($level);
@@ -359,7 +359,7 @@ class MarkingController extends Controller
                     'competition_participants_results.percentile',
                     DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
                 )
-                ->distinct('index')->orderBy('points', 'DESC')->get();
+                ->distinct('index')->orderBy('points', 'DESC')->orderBy('percentile', 'DESC')->get();
 
             return $data;
         }
@@ -369,7 +369,9 @@ class MarkingController extends Controller
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
-                ->orderBy('competition_participants_results.points', 'DESC')->get();
+                ->orderBy('competition_participants_results.points', 'DESC')
+                ->orderBy('competition_participants_results.percentile', 'DESC')
+                ->get();
         }
         
         try {

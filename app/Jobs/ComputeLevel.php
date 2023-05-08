@@ -16,7 +16,7 @@ class ComputeLevel implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected CompetitionLevels $level;
-    protected Request|null $request = null;
+    protected array|null $request;
 
     public $timeout = 5000;
 
@@ -25,10 +25,10 @@ class ComputeLevel implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(CompetitionLevels $level, Request|null $request = null)
+    public function __construct(CompetitionLevels $level, Request|null $request)
     {
         $this->level = $level;
-        $this->request = $request;
+        $this->request = $request->all();
     }
 
     /**
@@ -39,10 +39,13 @@ class ComputeLevel implements ShouldQueue
     public function handle()
     {
         try {
-            if($this->request && $this->request->hasAny(['score', 'groupRank', 'countryRank', 'schoolRank', 'awards', 'awardsRank', 'globalRank', 'reportColumn']))
+            if($this->request && !empty($this->request)){
                 (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
-            else
+
+            }
+            else{
                 (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            }
         } catch (\Exception $e) {
             $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e);
         }

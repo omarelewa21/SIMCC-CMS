@@ -51,10 +51,11 @@ class ComputeLevelCustom
     /**
      * Compute custom fields for single level based on request parameters
      * 
-     * @param Request $request
+     * @param array $request
      */
-    public function computeCustomFieldsForSingleLevelBasedOnRequest(Request $request)
+    public function computeCustomFieldsForSingleLevelBasedOnRequest($request)
     {
+        $request = (object) $request;
         if($request->score) $this->computeParticipantAnswersScores();
         if($request->groupRank) $this->setParticipantsGroupRank();
         if($request->countryRank) $this->setParticipantsCountryRank();
@@ -191,12 +192,14 @@ class ComputeLevelCustom
             ->where('points', $this->level->maxPoints())
             ->update([
                 'award'     => 'PERFECT SCORER',
-                'ref_award' => 'PERFECT SCORER'
+                'ref_award' => 'PERFECT SCORER',
+                'percentile'=> '100.00'
             ]);
 
         // Set participants awards
         $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->select('group_id')->distinct()->pluck('group_id')->toArray();
+
         foreach($groupIds as $group_id){
             $count = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $group_id)->whereNull('award')->count();
@@ -207,6 +210,10 @@ class ComputeLevelCustom
             $this->awards->each(function($award) use($group_id,$totalCount,&$count,&$awardPercentage){
                 $awardPercentage += $award->percentage;
                 $percentileCutoff = 100 - $awardPercentage;
+                $perfectScoreresCount = CompetitionParticipantsResults::where('level_id', $this->level->id)
+                    ->where('group_id', $group_id)
+                    ->where('award', 'PERFECT SCORER')
+                    ->count();
 
                 for($count;$count>0;$count--) {
                     $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
@@ -219,12 +226,12 @@ class ComputeLevelCustom
                             ->update([
                                 'award'     => $award->name,
                                 'ref_award' => $award->name,
-                                'percentile' => $positionPercentile,
+                                'percentile'=> $this->calculatePostionPercentile($group_id, $count, $totalCount, $perfectScoreresCount),
                             ]);
                     }
                     else
                     {
-                        $updatedCount = $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name, $totalCount, $count);
+                        $updatedCount = $this->updateParticipantsWhoShareSamePointsAsLastParticipant($group_id, $award->name, $totalCount, $count, $perfectScoreresCount);
                         $count = $updatedCount;
                         break;
                     }
@@ -235,7 +242,6 @@ class ComputeLevelCustom
             // Set default award
             for($count;$count>0;$count--)
             {
-                $positionPercentile = number_format(($count / $totalCount) * 100, 2, '.', '');
                 CompetitionParticipantsResults::where('level_id', $this->level->id)
                     ->where('group_id', $group_id)
                     ->whereNull('award')
@@ -244,7 +250,7 @@ class ComputeLevelCustom
                     ->update([
                         'award'     => $this->level->rounds->default_award_name,
                         'ref_award' => $this->level->rounds->default_award_name,
-                        'percentile' => $positionPercentile,
+                        'percentile' => $this->calculatePostionPercentile($group_id, $count, $totalCount),
                     ]);
 
                 $this->updateComputeProgressPercentage(70);
@@ -253,7 +259,7 @@ class ComputeLevelCustom
 
     }
 
-    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName, int $totalCount, int $currentCount)
+    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $group_id, string $awardName, int $totalCount, int $currentCount, int $perfectScoreresCount)
     {
         $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $group_id)
@@ -265,11 +271,11 @@ class ComputeLevelCustom
             ->whereNull('award');
 
         $competitionParticipantsQuery->get()
-            ->each(function ($row,$index) use($totalCount, &$currentCount, $competitionParticipantsQuery, $awardName ) {
+            ->each(function ($row,$index) use($totalCount, &$currentCount, $competitionParticipantsQuery, $awardName, $perfectScoreresCount ) {
                 CompetitionParticipantsResults::find($row->id)->update([
                     'award'     => $awardName,
                     'ref_award' => $awardName,
-                    'percentile' => number_format(($currentCount / $totalCount) * 100, 2, '.', ''),
+                    'percentile' => $this->calculatePostionPercentile($row->group_id, $currentCount, $totalCount, $perfectScoreresCount),
                 ]);
                 $currentCount--;
             });
@@ -339,5 +345,17 @@ class ComputeLevelCustom
             ->join('competition', 'competition.id', 'competition_organization.competition_id')
             ->where('competition.id', $this->level->rounds->competition_id)
             ->update(['participants.status' => 'active']);
+    }
+
+    private function calculatePostionPercentile($group_id, $count, $totalCount, $perfectScoreresCount=null)
+    {
+        $perfectScoreresCount = $perfectScoreresCount ?? CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $group_id)
+            ->where('award', 'PERFECT SCORER')
+            ->count();
+
+        $percentile = $count / ($totalCount + $perfectScoreresCount);
+
+        return number_format($percentile * 100, 2, '.', '');
     }
 }
