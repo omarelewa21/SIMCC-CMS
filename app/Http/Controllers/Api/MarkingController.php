@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use ResponseCache;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
@@ -263,6 +263,10 @@ class MarkingController extends Controller
 
             dispatch(new ComputeLevel($level, $request));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
+          
+            //ResponseCache::forget('api/marking/'.$competition->id); <-- need get competition id first before enable
+            ResponseCache::clear();
+          
             return response()->json([
                 "status"    => 200,
                 "message"   => "Level computing is in progress",
@@ -287,6 +291,7 @@ class MarkingController extends Controller
      */
     public function computeCompetitionResults(Competition $competition)
     {
+        
         try {
             if($competition->groups()->count() === 0){
                 return response()->json([
@@ -303,6 +308,9 @@ class MarkingController extends Controller
                     }
                 }
             }
+          
+            //ResponseCache::forget('api/marking/'.$competition->id);
+             ResponseCache::clear(); // <--this clear all pages cache;
 
             return response()->json([
                 "status"    => 200,
