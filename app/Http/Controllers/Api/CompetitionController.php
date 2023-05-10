@@ -1078,7 +1078,60 @@ class CompetitionController extends Controller
         return $data;
     }
 
-    public function report (Competition $competition) {
+    public function report(Competition $competition, Request $request)
+    {
+        try {
+            $header = [
+                'participant','index','certificate number','competition','organization','country',
+                'level','grade','school','tuition','points','award','school_rank','country_rank','global rank'
+            ];
+            $competitionService = new CompetitionService($competition);
+            $data = $competitionService->applyFilterToReport(
+                $competitionService->getReportQuery($request->mode ?? 'all'),
+                $request
+            )->get()->toArray();
+
+            if(count($data) === 0) return [];
+
+            $competitionService->setReportSchoolRanking($data, $participants, $currentLevel, $currentSchool, $currentPoints, $counter);
+            $competitionService->setReportCountryRanking($participants, $currentLevel, $currentCountry, $currentPoints, $counter);
+            $competitionService->setReportAwards($data, $noAwards, $awards, $output, $header, $participants, $currentLevel, $currentAward, $currentPoints, $globalRank, $counter);
+
+            DB::beginTransaction();
+            foreach ($participants as $participant) {
+                $participantResult = CompetitionParticipantsResults::where('participant_index',$participant['index_no'])->first();
+                $participantResult->school_rank = $participant['school_rank'];
+                $participantResult->country_rank = $participant['country_rank'];
+                $participantResult->global_rank = $participant['global_rank'] ?: null;
+                $participantResult->save();
+            }
+            DB::commit();
+
+            if($request->mode === 'csv') return Arr::prepend($output, $header);
+
+            $filterOptions = $competitionService->getReportFilterOptions($output);
+            $data = CollectionHelper::searchCollection(
+                $request->search,
+                collect($output),
+                array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
+                $request->limits ?? 10
+            );
+            return [
+                'filterOptions'     => $filterOptions,
+                'header'            => $header,
+                'data'              => $data,
+            ];
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => "Failed to fetch report",
+                'error'     => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function old_report (Competition $competition) {
 
       $competition_id = $competition->id;
 /**        $competition_id = $request->validate([
@@ -1341,7 +1394,7 @@ class CompetitionController extends Controller
 
     /**
      * Get all participants that are cheating
-     * 
+     *
      * @param Competition $competition
      * @return \Illuminate\Http\JsonResponse
      */
@@ -1383,7 +1436,7 @@ class CompetitionController extends Controller
 
     /**
      * Get all participants that are cheating by group
-     * 
+     *
      * @param int $group_id
      * @return \Illuminate\Http\JsonResponse
      */
@@ -1414,7 +1467,7 @@ class CompetitionController extends Controller
             return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);   
+            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
         }
     }
 }
