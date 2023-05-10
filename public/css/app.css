@@ -24,10 +24,14 @@ header h2 {
 .grade-school {
     margin-bottom: 7%;
 }
-.grade-school div {
+.grade-school {
     display: inline-block;
     color: #999;
-    width: 40%;
+    width: 100%;
+}
+.grade-school .horizontal {
+    position: absolute;
+    top: 200px;
 }
 .grade-school div .title {
     display: block;
@@ -44,7 +48,6 @@ header h2 {
     margin: 0;
     padding: 0;
     padding-bottom: 20px;
-    margin-bottom: 20px;
 }
 
 .section{
@@ -55,7 +58,7 @@ header h2 {
     display: grid;
     grid-template-columns: auto auto auto;
     box-sizing: border-box;
-    margin-top: 10px;
+    margin-top: 8px;
     align-items: center;
     width: 100%;
     padding-top: 20px;

@@ -575,6 +575,7 @@ class ParticipantsController extends Controller
             }
 
             if($request->has('as_pdf') && $request->as_pdf == 1){
+                $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
                 $pdf = PDF::loadView('performance-report', [
                     'general_data'                  => $report['general_data'],
                     'performance_by_questions'      => $report['performance_by_questions'],
