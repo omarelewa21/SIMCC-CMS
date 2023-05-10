@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TestingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,4 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     abort(404);
     return view('welcome');
+});
+
+Route::post('/upload-excel', [TestingController::class, "insertCsvIntoCompetitionParticipantResultsTable"])->name('uploadExcel');
+
+Route::get('/upload-excel', function () {
+    return view('upload-excel');
 });

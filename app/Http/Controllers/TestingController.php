@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\CheatersExport;
+use App\Imports\insertResults;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
@@ -83,5 +84,14 @@ class TestingController extends Controller
     public function generateCheatersCSV(Competition $competition)
     {
         return Excel::download(new CheatersExport($competition), 'cheaters.xlsx');
+    }
+
+    public function insertCsvIntoCompetitionParticipantResultsTable(Request $request)
+    {
+        if ($request->hasFile('excel_file')) {
+            Excel::import(new insertResults, $request->file('excel_file'));
+        }
+        // Redirect back to the form
+        return redirect()->back()->with('success', 'All good!');
     }
 }
