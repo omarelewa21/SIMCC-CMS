@@ -55,15 +55,16 @@ class ComputeLevelCustom
      */
     public function computeCustomFieldsForSingleLevelBasedOnRequest($request)
     {
-        $request = (object) $request;
-        if($request->score) $this->computeParticipantAnswersScores();
-        if($request->groupRank) $this->setParticipantsGroupRank();
-        if($request->countryRank) $this->setParticipantsCountryRank();
-        if($request->schoolRank) $this->setParticipantsSchoolRank();
-        if($request->awards) $this->setParticipantsAwards();
-        if($request->awardsRank) $this->setParticipantsAwardsRank();
-        if($request->globalRank) $this->setParticipantsGlobalRank();
-        if($request->reportColumn) $this->setParticipantsReportColumn();
+        $request = collect($request);
+        if($request->has('score')) $this->computeParticipantAnswersScores();
+        if($request->has('groupRank')) $this->setParticipantsGroupRank();
+        if($request->has('countryRank')) $this->setParticipantsCountryRank();
+        if($request->has('schoolRank')) $this->setParticipantsSchoolRank();
+        if($request->has('awards')) $this->setParticipantsAwards();
+        if($request->has('awardRank')) $this->setParticipantsAwardsRank();
+        if($request->has('globalRank')) $this->setParticipantsGlobalRank();
+        if($request->has('reportColumn')) $this->setParticipantsReportColumn();
+        $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
 
     public function computeParticipantAnswersScores()
