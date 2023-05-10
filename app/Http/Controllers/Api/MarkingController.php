@@ -289,7 +289,7 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function computeCompetitionResults(Competition $competition)
+    public function computeCompetitionResults(Competition $competition, Request|null $request)
     {
         
         try {
@@ -303,7 +303,7 @@ class MarkingController extends Controller
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
                     if(Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
-                        dispatch(new ComputeLevel($level));
+                        dispatch(new ComputeLevel($level, $request));
                         $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                     }
                 }
