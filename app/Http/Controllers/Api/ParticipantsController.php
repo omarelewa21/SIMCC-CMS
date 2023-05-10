@@ -231,7 +231,7 @@ class ParticipantsController extends Controller
                         'countries'     => $availCountry,
                         'competition'   => $availCompetition
                     ],
-                    "participantList" => CollectionHelper::paginate($participantList->load('isCheater'), $limits)
+                    "participantList" => $participantList
                 ]
             ]);
         }
