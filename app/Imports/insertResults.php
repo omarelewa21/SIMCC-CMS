@@ -13,7 +13,7 @@ class insertResults implements ToModel, WithHeadingRow
 
     public function model(array $row)
     {
-        CompetitionParticipantsResults::updateOrCreate(
+        $result = CompetitionParticipantsResults::updateOrCreate(
             ['participant_index' => $row['index_no'], 'level_id'  => $row['level_id']],
             [
             'ref_award' => $row['award'],
@@ -25,5 +25,6 @@ class insertResults implements ToModel, WithHeadingRow
             'published' => 1
             ]
         );
+        $result->participant->update(['status' => 'result computed']);
     }
 }
