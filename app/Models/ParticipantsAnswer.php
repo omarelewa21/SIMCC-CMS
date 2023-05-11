@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,7 +14,16 @@ class ParticipantsAnswer extends Model
     protected $guarded = [];
     public $timestamps = false;
 
+    protected $casts = [
+        'is_correct' => 'boolean',
+    ];
+
     const CREATED_AT = 'created_date';
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+    }
 
     public function task()
     {
@@ -23,6 +33,11 @@ class ParticipantsAnswer extends Model
     public function participant()
     {
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(CompetitionLevels::class, 'level_id', 'id');
     }
 
     public function getAnswer()

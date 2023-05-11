@@ -19,11 +19,17 @@
                   <p> {{ $general_data['particiapnt'] }} </p>
                </div>
                <div class="grade-school">
-                  <div>
-                     <span class="title">Grade</span>
-                     <span class="data"> {{ $general_data['grade'] }} </span>
+                  <div class="vertical">
+                     <div>
+                        <span class="title">Grade</span>
+                        <span class="data"> {{ $general_data['grade'] }} </span>
+                     </div>
+                     <div style="margin-top: 10px">
+                        <span class="title">Type Of Candidate</span>
+                        <span class="data">{{$general_data['is_private'] ? 'Private' : 'School'}} Candidate</span>
+                     </div>
                   </div>
-                  <div style="float: right">
+                  <div class="horizontal" style="float: right">
                      <span class="title">School</span>
                      <span class="data"> {{ $general_data['school'] }} </span>
                   </div>

@@ -10,7 +10,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use \Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
@@ -18,9 +17,11 @@ use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
+use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Http\Requests\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantRegistrationOpen;
@@ -168,7 +169,7 @@ class ParticipantsController extends Controller
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
                 'organization.name as organization_name',
-                'competition_participants_results.award',
+                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award")
             )
             ->filterList($request)
             ->get();
@@ -215,7 +216,7 @@ class ParticipantsController extends Controller
 
             $availForSearch = array("name", "index_no", "school", "tuition_centre");
             $participantList = CollectionHelper::searchCollection('', $participantCollection, $availForSearch, $limits);
-
+            
             return response()->json([
                 "status"    => 200,
                 "data"      => [
@@ -371,6 +372,7 @@ class ParticipantsController extends Controller
             }
 
             if($request->has('as_pdf') && $request->as_pdf == 1){
+                $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
                 $pdf = PDF::loadView('performance-report', [
                     'general_data'                  => $report['general_data'],
                     'performance_by_questions'      => $report['performance_by_questions'],
@@ -394,5 +396,51 @@ class ParticipantsController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            foreach($request->participants as $participant_index){
+                EliminatedCheatingParticipants::updateOrCreate(
+                    ['participant_index' => $participant_index],
+                    ['reason' => $request->reason]
+                );
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants elimination is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Participants eliminated successfully"
+        ]);
+    }
+
+    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            EliminatedCheatingParticipants::whereIn('participant_index',$request->participants)
+                ->delete();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants deletetion from elimination is unsuccessfull",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Participants deleted from elimination successfully"
+        ]);
     }
 }

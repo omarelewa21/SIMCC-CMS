@@ -63,6 +63,9 @@ class RouteServiceProvider extends ServiceProvider
         Route::bind('group', function ($value) {
             return \App\Models\CompetitionMarkingGroup::findOrFail($value);
         });
+        Route::bind('competition', function ($value) {
+            return \App\Models\Competition::findOrFail($value);
+        });
     }
 
     /**

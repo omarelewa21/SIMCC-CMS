@@ -5,10 +5,13 @@ namespace App\Helpers\General;
 
 
 use Illuminate\Container\Container;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
+
 
 class CollectionHelper
 {
@@ -61,4 +64,72 @@ class CollectionHelper
 
         return $userList;
     }
+
+    /**
+     * Adjust filters array to be used in Collection::filterByRequest
+     * 
+     * @param array $filters
+     */
+    public static function adjustFilters(array &$filters)
+    {
+        foreach($filters as $index => $value){
+            if(gettype($index) === 'integer'){
+                $filters[$value] = $value;
+                unset($filters[$index]);
+            }
+        }
+    }
+
+    /**
+     * Filter collection by request
+     * 
+     * @param \Illuminate\Support\Collection $collection
+     * @param array $filters
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Support\Collection
+     */
+    public static function filterColletion(Collection $collection, array $filters, Request $request)
+    {
+        foreach($filters as $filter => $column){
+            if($request->has($filter)){
+                $collection = $collection->where($column, $request->get($filter));
+            }
+        }
+        return $collection;
+    }
+
+    /**
+     * Search in collection
+     * 
+     * @param string $searchTerm
+     * @param \Illuminate\Support\Collection $collection
+     * @param array $searchAttributes
+     * @return \Illuminate\Support\Collection
+     */
+    public static function searchInCollection(string $searchTerm, Collection $collection, $searchAttributes = [])
+    {
+        return $collection->filter(function ($item) use ($searchTerm, $searchAttributes) {
+            foreach ($searchAttributes as $attribute) {
+                if(is_array($item[$attribute])){
+                    $value = Arr::flatten(Arr::get($item, $attribute));
+                } else {
+                    $value = $item[$attribute];
+                }
+
+                if (is_array($value)) {
+                    foreach ($value as $nestedItem) {
+                        if (str_contains(strtolower($nestedItem), strtolower($searchTerm))) {
+                            return true;
+                        }
+                    }
+                } else {
+                    if (str_contains(strtolower($value), strtolower($searchTerm))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
 }

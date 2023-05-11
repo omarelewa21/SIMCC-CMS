@@ -239,7 +239,6 @@ class CompetitionService
         ];
     }
 
-
     public static function addOrganizations(array $organizations, int $competition_id)
     {
         foreach($organizations as $organization){

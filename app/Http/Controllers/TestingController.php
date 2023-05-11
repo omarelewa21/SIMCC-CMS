@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\api\CompetitionController;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
+use App\Exports\CheatersExport;
 use App\Models\Competition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -15,6 +16,7 @@ use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TestingController extends Controller
 {
@@ -103,5 +105,10 @@ class TestingController extends Controller
             ], 500);
         }
         
+    }
+
+    public function generateCheatersCSV(Competition $competition)
+    {
+        return Excel::download(new CheatersExport($competition), 'cheaters.xlsx');
     }
 }

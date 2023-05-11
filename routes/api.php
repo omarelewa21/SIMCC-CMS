@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\CheatingListHelper;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SchoolController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Api\MarkingController;
 
 Route::post("login",[UserController::class,"login"]);
 Route::get("participant/report/by-certificate",[ParticipantsController::class,"performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
+Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 
 Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], function () {
 
@@ -93,6 +95,8 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("",[ParticipantsController::class,"update"])->name('participant.update');
         Route::delete("",[ParticipantsController::class,"delete"])->name('participant.delete');
         Route::patch("/swapIndex",[ParticipantsController::class,"swapIndex"])->name('participant.swapIndex');
+        Route::post("/compute/cheaters/eliminate",[ParticipantsController::class,"eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
+        Route::delete("/compute/cheaters/eliminate",[ParticipantsController::class,"deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
     });
 
     Route::group(["prefix" => "competition"],function () {
@@ -119,6 +123,8 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::delete("/overall_awards",[CompetitionController::class,"deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
         Route::get("/{competition}/report",[CompetitionController::class,"report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
+        Route::get("/compute/cheaters/{competition}",[CompetitionController::class,"getcheatingParticipants"])->name('competition.compute.cheaters');
+        Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
     });
 
     Route::group(["prefix" => "marking"],function () {
@@ -127,7 +133,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/preparation/{group}",[MarkingController::class,"editMarkingGroup"])->name('competition.marking.groups.edit');
         Route::delete("/preparation/{group}",[MarkingController::class,"deleteMarkingGroup"])->name('competition.marking.groups.delete');
         Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
-        Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
+        Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
         Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');

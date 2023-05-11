@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -30,11 +31,15 @@ use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\AddOrganizationRequest;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Rules\CheckLocalRegistrationDateAvail;
+use App\Jobs\ComputeCheatingParticipants;
+use App\Models\CheatingStatus;
+use App\Models\Participants;
 use App\Services\CompetitionService;
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -1068,7 +1073,7 @@ class CompetitionController extends Controller
         }
     }
 
-    public function old_report (Competition $competition) {
+    private function old_report (Competition $competition) {
 
         $competition_id = $competition->id;
   /**        $competition_id = $request->validate([
@@ -1326,6 +1331,85 @@ class CompetitionController extends Controller
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
             break;
+        }
+    }
+
+    /**
+     * Get all participants that are cheating
+     *
+     * @param Competition $competition
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            if($request->recompute != 1 && CheatingStatus::where('competition_id',$competition->id)->exists())
+                return CheatingListHelper::returnCheatStatusAndData($competition, $request);
+
+            // CompetitionService::validateIfCanGenerateCheatingPage($competition);
+
+            DB::beginTransaction();
+
+            CheatingStatus::updateOrCreate(
+                ['competition_id' => $competition->id],
+                [
+                    'status' => 'In Progress',
+                    'progress_percentage' => 1,
+                    'compute_error_message' => null
+                ]
+            );
+
+            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers));
+            DB::commit();
+
+            return response()->json([
+                'status'    => 201,
+                'message'   => 'Computing cheating participants has been started.'
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all participants that are cheating by group
+     *
+     * @param int $group_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipantsByGroup($group_id)
+    {
+        try {
+            $data = Participants::whereIn('index_no', function ($query) use ($group_id) {
+                    $query->select('participant_index')
+                        ->from('cheating_participants')
+                        ->where('group_id', $group_id)
+                        ->union(function ($query) use ($group_id) {
+                            $query->select('cheating_with_participant_index')
+                                ->from('cheating_participants')
+                                ->where('group_id', $group_id);
+                        });
+                })
+                ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
+                ->with('answers', 'isCheater')
+                ->distinct()
+                ->get();
+
+            $headers = collect(['index_no', 'name'])->merge(
+                $data->first()->answers->map(function ($answer, $index) {
+                    return 'Q' . ($index + 1);
+                })
+            );
+
+            return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
         }
     }
 }
