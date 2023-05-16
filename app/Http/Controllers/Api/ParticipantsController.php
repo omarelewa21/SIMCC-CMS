@@ -156,6 +156,9 @@ class ParticipantsController extends Controller
             ->leftJoin('organization','organization.id','=','competition_organization.organization_id')
             ->leftJoin('competition','competition.id','=','competition_organization.competition_id')
             ->leftJoin('competition_participants_results','competition_participants_results.participant_index','=','participants.index_no')
+            ->leftJoin('participant_answers', function($join) {
+                $join->on('participant_answers.participant_index', '=', 'participants.index_no');
+            })
             ->select(
                 'participants.*',
                 'all_countries.display_name as country_name',
@@ -169,9 +172,11 @@ class ParticipantsController extends Controller
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
                 'organization.name as organization_name',
-                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award")
+                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
+                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
             )
             ->filterList($request)
+            ->groupBy('participants.id')
             ->get();
         try {
             if($request->limits == "0") {
