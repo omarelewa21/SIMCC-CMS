@@ -41,19 +41,16 @@ class ApproveCollectionRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator){
-            foreach($this->ids as $collectionId){
-                CollectionSections::where('collection_id', $collectionId)->get()
+            foreach($this->ids as $index=>$collectionId){
+                $numberOfTasksNotActive = CollectionSections::where('collection_id', $collectionId)->get()
                 ->pluck('section_task')
                 ->flatten()
-                ->each(function($task) use($validator, $collectionId){
-                    if($task->status !== 'Active'){
-                        $collectionName = Collections::whereId($collectionId)->value('name');
-                        $validator->errors()->add(
-                            'Status',
-                            "Task '$task->identifier' in collection '$collectionName' is still in pending status, please approve all tasks first in this collection"
-                        );
-                    }
-                });
+                ->filter(fn($task) => $task->status !== 'Active')
+                ->count();
+                
+                if($numberOfTasksNotActive > 0){
+                    $validator->errors()->add('Status', sprintf("Collection %s has %s tasks that are not active yet", $index+1, $numberOfTasksNotActive));
+                }
             }
         });
     }
