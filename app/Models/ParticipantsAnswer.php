@@ -60,18 +60,26 @@ class ParticipantsAnswer extends Model
     {
         $taskAnswer = $this->getAnswer();
         if(is_null($taskAnswer)){
-            return 0;
+            // If answer is null, retrieve the mark from competition_task_difficulty table
+            $blankMark = CompetitionTaskDifficulty::where('level_id', $level_id)
+                                                  ->where('task_id', $task_id)
+                                                  ->value('blank_marks');
+            return $blankMark;
         }
+        
+        if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
+            return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
         
         if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
             return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
         }
 
-        $minMarks = CompetitionTasksMark::where('level_id', $level_id)
-            ->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id')->toArray() )
-            ->value('min_marks');
+        // $minMarks = CompetitionTasksMark::where('level_id', $level_id)
+        //     ->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id')->toArray() )
+        //     ->value('min_marks');
 
-        return $minMarks ?? 0;
+        // return $minMarks ?? 0;
+    }
     }
 
     public function getIsCorrectAnswer($level_id): bool
