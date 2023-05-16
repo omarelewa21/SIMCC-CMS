@@ -72,7 +72,13 @@ class ParticipantsAnswer extends Model
         
         if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
             return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
-        }
+        }else{
+            // If answer is wrong, retrieve the mark for wrong answer from competition_task_difficulty table
+           $wrongMark = CompetitionTaskDifficulty::where('level_id', $level_id)
+                                                 ->where('task_id', $this->task->id)
+                                                 ->value('wrong_marks');
+           return $wrongMark;
+        }   
 
         // $minMarks = CompetitionTasksMark::where('level_id', $level_id)
         //     ->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id')->toArray() )
