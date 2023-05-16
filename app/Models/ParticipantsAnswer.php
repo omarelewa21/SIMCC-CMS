@@ -62,7 +62,7 @@ class ParticipantsAnswer extends Model
         if(is_null($taskAnswer)){
             // If answer is null, retrieve the mark from competition_task_difficulty table
             $blankMark = CompetitionTaskDifficulty::where('level_id', $level_id)
-                                                  ->where('task_id', $task_id)
+                                                  ->where('task_id', $this->task->id)
                                                   ->value('blank_marks');
             return $blankMark;
         }
