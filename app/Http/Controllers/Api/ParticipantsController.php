@@ -176,7 +176,7 @@ class ParticipantsController extends Controller
                 'organization.id as organization_id',
                 'organization.name as organization_name',
                 DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
-                DB::raw('(COUNT(participant_answers.participant_index) > 0) as answers_uploaded')
+                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
             )
             ->filterList($request)
             ->groupBy('participants.id')
