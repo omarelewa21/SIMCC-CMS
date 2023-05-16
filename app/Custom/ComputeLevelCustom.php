@@ -13,10 +13,12 @@ class ComputeLevelCustom
 {
     private $level;
     private $awards;
+    private $collectionInitialPoints;
 
     function __construct(CompetitionLevels $level)
     {
         $this->level  = $level;
+        $this->collectionInitialPoints = $level->collection()->value('initial_points');
         $this->awards = $level->rounds->roundsAwards;
     }
 
@@ -94,7 +96,7 @@ class ComputeLevelCustom
                     CompetitionParticipantsResults::create([
                         'level_id'              => $participantAnswer->level_id,
                         'participant_index'     => $participantAnswer->participant_index,
-                        'points'                => $participantAnswer->points ? $participantAnswer->points : 0,
+                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
                     ]);
                     $attendeesIds[] = $participantAnswer->participant->id;
                 });
