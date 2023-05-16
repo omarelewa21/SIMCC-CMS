@@ -64,7 +64,7 @@ class ParticipantsAnswer extends Model
             return $this->getWrongOrBlankMarks($level_id);
         }
 
-        $competitionTaskMark = CompetitionTasksMark::where(['level_id' => $level_id, 'task_answers_id', $taskAnswer->id])
+        $competitionTaskMark = CompetitionTasksMark::where(['level_id' => $level_id, 'task_answers_id' => $taskAnswer->id])
             ->first();
         if($competitionTaskMark){                        // If answer is correct, return the mark for correct answer
             return $competitionTaskMark->marks;
