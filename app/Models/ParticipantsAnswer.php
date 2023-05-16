@@ -69,9 +69,6 @@ class ParticipantsAnswer extends Model
         
         if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
             return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
-        
-        if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
-            return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
         }else{
             // If answer is wrong, retrieve the mark for wrong answer from competition_task_difficulty table
            $wrongMark = CompetitionTaskDifficulty::where('level_id', $level_id)
@@ -85,7 +82,7 @@ class ParticipantsAnswer extends Model
         //     ->value('min_marks');
 
         // return $minMarks ?? 0;
-    }
+    
     }
 
     public function getIsCorrectAnswer($level_id): bool
