@@ -78,7 +78,7 @@ class CompetitionLevels extends Model
 
     public function maxPoints()
     {
-        return $this->taskMarks()->sum('competition_tasks_mark.marks');
+        return $this->taskMarks()->sum('competition_tasks_mark.marks') + $this->collection()->value('initial_points');
     }
 
     public function participantResults()
