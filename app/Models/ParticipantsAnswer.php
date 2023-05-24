@@ -35,6 +35,11 @@ class ParticipantsAnswer extends Model
         return $this->belongsTo(Participants::class, 'participant_index', 'index_no');
     }
 
+    public function level()
+    {
+        return $this->belongsTo(CompetitionLevels::class, 'level_id', 'id');
+    }
+
     public function getAnswer()
     {
         if($this->task->answer_type === 'mcq'){
@@ -54,19 +59,30 @@ class ParticipantsAnswer extends Model
     public function getAnswerMark($level_id)
     {
         $taskAnswer = $this->getAnswer();
+
         if(is_null($taskAnswer)){
-            return 0;
-        }
-        
-        if(CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->exists()){
-            return CompetitionTasksMark::where('level_id', $level_id)->where('task_answers_id', $taskAnswer->id)->value('marks');
+            return $this->getWrongOrBlankMarks($level_id);
         }
 
-        $minMarks = CompetitionTasksMark::where('level_id', $level_id)
-            ->whereIn('task_answers_id', $this->task->taskAnswers()->pluck('task_answers.id')->toArray() )
-            ->value('min_marks');
+        $competitionTaskMark = CompetitionTasksMark::where(['level_id' => $level_id, 'task_answers_id' => $taskAnswer->id])
+            ->first();
+        if($competitionTaskMark){                        // If answer is correct, return the mark for correct answer
+            return $competitionTaskMark->marks;
+        }
 
-        return $minMarks ?? 0;
+        return $this->getWrongOrBlankMarks($level_id);
+    }
+
+    public function getWrongOrBlankMarks($level_id)
+    {
+        $taskDiff = CompetitionTaskDifficulty::where('level_id', $level_id)
+                        ->where('task_id', $this->task_id)
+                        ->first();
+
+        if(is_null($this->answer) || empty($this->answer))  // If answer is empty, return blank marks
+            return $taskDiff ? -$taskDiff->blank_marks : 0;
+
+        return $taskDiff ? -$taskDiff->wrong_marks : 0;      // If answer is wrong, return wrong marks
     }
 
     public function getIsCorrectAnswer($level_id): bool

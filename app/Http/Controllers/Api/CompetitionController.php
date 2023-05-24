@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -1070,7 +1071,7 @@ class CompetitionController extends Controller
         }
     }
 
-    public function old_report (Competition $competition) {
+    private function old_report (Competition $competition) {
 
         $competition_id = $competition->id;
   /**        $competition_id = $request->validate([
@@ -1333,7 +1334,7 @@ class CompetitionController extends Controller
 
     /**
      * Get all participants that are cheating
-     * 
+     *
      * @param Competition $competition
      * @return \Illuminate\Http\JsonResponse
      */
@@ -1341,7 +1342,7 @@ class CompetitionController extends Controller
     {
         try {
             if($request->recompute != 1 && CheatingStatus::where('competition_id',$competition->id)->exists())
-                return CompetitionService::returnCheatStatusAndData($competition, $request);
+                return CheatingListHelper::returnCheatStatusAndData($competition, $request);
 
             // CompetitionService::validateIfCanGenerateCheatingPage($competition);
 
@@ -1375,7 +1376,7 @@ class CompetitionController extends Controller
 
     /**
      * Get all participants that are cheating by group
-     * 
+     *
      * @param int $group_id
      * @return \Illuminate\Http\JsonResponse
      */
@@ -1406,7 +1407,7 @@ class CompetitionController extends Controller
             return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);   
+            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
         }
     }
 }

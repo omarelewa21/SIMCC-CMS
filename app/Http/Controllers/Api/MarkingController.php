@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use ResponseCache;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
 use App\Http\Controllers\Controller;
@@ -256,13 +256,17 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function computeResultsForSingleLevel(CompetitionLevels $level)
+    public function computeResultsForSingleLevel(CompetitionLevels $level, Request|null $request)
     {
         try {
             ComputeLevelCustom::validateLevelForComputing($level);
-         
-            dispatch(new ComputeLevel($level));
+
+            dispatch(new ComputeLevel($level, $request));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
+          
+            //ResponseCache::forget('api/marking/'.$competition->id); <-- need get competition id first before enable
+            ResponseCache::clear();
+          
             return response()->json([
                 "status"    => 200,
                 "message"   => "Level computing is in progress",
@@ -285,8 +289,9 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function computeCompetitionResults(Competition $competition)
+    public function computeCompetitionResults(Competition $competition, Request|null $request)
     {
+        
         try {
             if($competition->groups()->count() === 0){
                 return response()->json([
@@ -298,11 +303,14 @@ class MarkingController extends Controller
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
                     if(Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
-                        dispatch(new ComputeLevel($level));
+                        dispatch(new ComputeLevel($level, $request));
                         $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                     }
                 }
             }
+          
+            //ResponseCache::forget('api/marking/'.$competition->id);
+             ResponseCache::clear(); // <--this clear all pages cache;
 
             return response()->json([
                 "status"    => 200,
@@ -359,7 +367,7 @@ class MarkingController extends Controller
                     'competition_participants_results.percentile',
                     DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
                 )
-                ->distinct('index')->orderBy('points', 'DESC')->get();
+                ->distinct('index')->orderBy('points', 'DESC')->orderBy('percentile', 'DESC')->get();
 
             return $data;
         }
@@ -369,7 +377,9 @@ class MarkingController extends Controller
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
-                ->orderBy('competition_participants_results.points', 'DESC')->get();
+                ->orderBy('competition_participants_results.points', 'DESC')
+                ->orderBy('competition_participants_results.percentile', 'DESC')
+                ->get();
         }
         
         try {

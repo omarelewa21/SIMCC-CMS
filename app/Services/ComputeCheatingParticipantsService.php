@@ -56,7 +56,8 @@ class ComputeCheatingParticipantsService
                 ->pluck('levels')->flatten()
                 ->each(function($level){
                     ParticipantsAnswer::where('level_id', $level->id)
-                    ->chunkById(50, function ($participantAnswers) use($level){
+                    ->whereNull('is_correct')
+                    ->chunkById(50000, function ($participantAnswers) use($level){
                         foreach ($participantAnswers as $participantAnswer) {
                             $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($level->id);
                             $participantAnswer->score = $participantAnswer->getAnswerMark($level->id);
@@ -174,7 +175,7 @@ class ComputeCheatingParticipantsService
 
         if($dataArray['number_of_same_incorrect_answers'] > $this->numberOFSameIncorrect && $this->shouldCreateCheatingParticipant($dataArray) ) {
             $dataArray['different_question_ids'] = $participant1->answers->whereNotIn('task_id', $sameQuestionIds)->pluck('task_id')->toArray();
-            $dataArray['group_id'] = $this->generateGroupId($participant1, $participant2, $dataArray);
+            $dataArray['group_id'] = $this->generateGroupId($participant1, $dataArray);
             $dataArray['cheating_percentage'] = ( $dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions'] ) * 100;
 
             CheatingParticipants::create($dataArray);
@@ -262,7 +263,7 @@ class ComputeCheatingParticipantsService
      * 
      * @return string
      */
-    private function generateGroupId($participant1, $participant2, $dataArray)
+    private function generateGroupId($participant1, $dataArray)
     {
         $cheatingParticipantRecords = CheatingParticipants::where('participant_index', $participant1->index_no)
                 ->orWhere('cheating_with_participant_index', $participant1->index_no)

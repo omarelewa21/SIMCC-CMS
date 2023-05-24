@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\CheatingListHelper;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SchoolController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
-use App\Services\CompetitionService;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +30,7 @@ use App\Services\CompetitionService;
 
 Route::post("login",[UserController::class,"login"]);
 Route::get("participant/report/by-certificate",[ParticipantsController::class,"performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
-Route::get('/cheating-csv/{competition}', [CompetitionService::class, 'getCheatingCSVFile'])->name('cheating-csv');
+Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 
 Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], function () {
 
@@ -133,6 +133,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("/preparation/{group}",[MarkingController::class,"editMarkingGroup"])->name('competition.marking.groups.edit');
         Route::delete("/preparation/{group}",[MarkingController::class,"deleteMarkingGroup"])->name('competition.marking.groups.delete');
         Route::post("/participants/country/{competition}",[MarkingController::class,"getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
+        // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');

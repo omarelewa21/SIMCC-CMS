@@ -10,7 +10,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use \Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
@@ -157,6 +156,9 @@ class ParticipantsController extends Controller
             ->leftJoin('organization','organization.id','=','competition_organization.organization_id')
             ->leftJoin('competition','competition.id','=','competition_organization.competition_id')
             ->leftJoin('competition_participants_results','competition_participants_results.participant_index','=','participants.index_no')
+            ->leftJoin('participant_answers', function($join) {
+                $join->on('participant_answers.participant_index', '=', 'participants.index_no');
+            })
             ->select(
                 'participants.*',
                 'all_countries.display_name as country_name',
@@ -170,9 +172,11 @@ class ParticipantsController extends Controller
                 'competition.alias as competition_alias',
                 'organization.id as organization_id',
                 'organization.name as organization_name',
-                'competition_participants_results.award',
+                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
+                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
             )
             ->filterList($request)
+            ->groupBy('participants.id')
             ->get();
         try {
             if($request->limits == "0") {
@@ -229,7 +233,7 @@ class ParticipantsController extends Controller
                         'countries'     => $availCountry,
                         'competition'   => $availCompetition
                     ],
-                    "participantList" => CollectionHelper::paginate($participantList->load('isCheater'), $limits)
+                    "participantList" => $participantList
                 ]
             ]);
         }
@@ -373,6 +377,7 @@ class ParticipantsController extends Controller
             }
 
             if($request->has('as_pdf') && $request->as_pdf == 1){
+                $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
                 $pdf = PDF::loadView('performance-report', [
                     'general_data'                  => $report['general_data'],
                     'performance_by_questions'      => $report['performance_by_questions'],
