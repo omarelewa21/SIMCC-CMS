@@ -39,13 +39,14 @@ class ComputeLevel implements ShouldQueue
     public function handle()
     {
         try {
-            if($this->request && !empty($this->request)){
-                (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
+            (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            // if($this->request && !empty($this->request)){
+            //     (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
 
-            }
-            else{
-                (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
-            }
+            // }
+            // else{
+            //     (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            // }
         } catch (\Exception $e) {
             $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e);
         }
