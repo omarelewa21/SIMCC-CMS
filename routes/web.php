@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MarkingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,4 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     abort(404);
     return view('welcome');
+});
+
+Route::post('/upload-answers-and-results', [MarkingController::class, "uploadUpdatedAnswersAndResultsCSV"])->name('upload-answer-and-results-csv');
+
+Route::get('/upload-answers-and-results', function () {
+    return view('upload-updated-answers-and-results');
 });
