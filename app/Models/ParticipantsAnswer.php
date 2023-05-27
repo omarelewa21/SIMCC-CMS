@@ -99,8 +99,9 @@ class ParticipantsAnswer extends Model
         else {
             $this->is_correct = false;
         }
-
-        $this->save();
+        if($this->isDirty('is_correct')){
+            $this->save();
+        }
         return $this->is_correct;
     }
 }
