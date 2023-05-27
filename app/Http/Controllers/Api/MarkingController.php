@@ -458,6 +458,6 @@ class MarkingController extends Controller
             Excel::import(new UploadUpdatedAnswersAndResults, $request->file('excel_file'));
         }
         // Redirect back to the form
-        return redirect()->back()->with('success', 'All good!');
+        return redirect()->back()->with('message', 'Upload Answers is successfull !');
     }
 }
