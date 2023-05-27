@@ -1089,38 +1089,61 @@ class CompetitionController extends Controller
             $data = $competitionService->applyFilterToReport(
                 $competitionService->getReportQuery($request->mode ?? 'all'),
                 $request
-            )->get()->toArray();
+            )->get();
+            
+            if($data->count() === 0) return [];
 
-            if(count($data) === 0) return [];
+            if($request->mode === 'csv') return $data->prepend($header);
 
-            $competitionService->setReportSchoolRanking($data, $participants, $currentLevel, $currentSchool, $currentPoints, $counter);
-            $competitionService->setReportCountryRanking($participants, $currentLevel, $currentCountry, $currentPoints, $counter);
-            $competitionService->setReportAwards($data, $noAwards, $awards, $output, $header, $participants, $currentLevel, $currentAward, $currentPoints, $globalRank, $counter);
-
-            DB::beginTransaction();
-            foreach ($participants as $participant) {
-                $participantResult = CompetitionParticipantsResults::where('participant_index',$participant['index_no'])->first();
-                $participantResult->school_rank = $participant['school_rank'];
-                $participantResult->country_rank = $participant['country_rank'];
-                $participantResult->global_rank = $participant['global_rank'] ?: null;
-                $participantResult->save();
-            }
-            DB::commit();
-
-            if($request->mode === 'csv') return Arr::prepend($output, $header);
-
-            $filterOptions = $competitionService->getReportFilterOptions($output);
+            $filterOptions = $competitionService->getReportFilterOptions($data->toArray());
             $data = CollectionHelper::searchCollection(
                 $request->search,
-                collect($output),
+                $data,
                 array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
                 $request->limits ?? 10
             );
+
             return [
                 'filterOptions'     => $filterOptions,
                 'header'            => $header,
                 'data'              => $data,
             ];
+
+            // return $data = CollectionHelper::searchCollection(
+            //     $request->search,
+            //     collect($output),
+            //     array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
+            //     $request->limits ?? 10
+            // );
+
+            // $competitionService->setReportSchoolRanking($data, $participants, $currentLevel, $currentSchool, $currentPoints, $counter);
+            // $competitionService->setReportCountryRanking($participants, $currentLevel, $currentCountry, $currentPoints, $counter);
+            // $competitionService->setReportAwards($data, $noAwards, $awards, $output, $header, $participants, $currentLevel, $currentAward, $currentPoints, $globalRank, $counter);
+
+            // DB::beginTransaction();
+            // foreach ($participants as $participant) {
+            //     $participantResult = CompetitionParticipantsResults::where('participant_index',$participant['index_no'])->first();
+            //     $participantResult->school_rank = $participant['school_rank'];
+            //     $participantResult->country_rank = $participant['country_rank'];
+            //     $participantResult->global_rank = $participant['global_rank'] ?: null;
+            //     $participantResult->save();
+            // }
+            // DB::commit();
+
+            // if($request->mode === 'csv') return Arr::prepend($output, $header);
+
+            // $filterOptions = $competitionService->getReportFilterOptions($output);
+            // $data = CollectionHelper::searchCollection(
+            //     $request->search,
+            //     collect($output),
+            //     array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
+            //     $request->limits ?? 10
+            // );
+            // return [
+            //     'filterOptions'     => $filterOptions,
+            //     'header'            => $header,
+            //     'data'              => $data,
+            // ];
 
         } catch (\Exception $e) {
             return response()->json([
