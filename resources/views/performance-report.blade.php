@@ -29,7 +29,7 @@
                         <span class="data">{{$general_data['is_private'] ? 'Private' : 'School'}} Candidate</span>
                      </div>
                   </div>
-                  <div class="horizontal" style="float: right">
+                  <div class="horizontal" style="float: right; width: 300px">
                      <span class="title">School</span>
                      <span class="data"> {{ $general_data['school'] }} </span>
                   </div>
