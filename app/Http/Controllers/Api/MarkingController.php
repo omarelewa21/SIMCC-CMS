@@ -13,11 +13,13 @@ use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
+use App\Imports\UploadUpdatedAnswersAndResults;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MarkingController extends Controller
 {
@@ -448,5 +450,14 @@ class MarkingController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function uploadUpdatedAnswersAndResultsCSV(Request $request)
+    {
+        if ($request->hasFile('excel_file')) {
+            Excel::import(new UploadUpdatedAnswersAndResults, $request->file('excel_file'));
+        }
+        // Redirect back to the form
+        return redirect()->back()->with('success', 'All good!');
     }
 }
