@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use ResponseCache;
 
 class CompetitionLevels extends Model
 {
@@ -74,6 +75,8 @@ class CompetitionLevels extends Model
             'compute_error_message'         => $error_message,
             'compute_progress_percentage'   => $progress
         ]);
+
+        ResponseCache::clear();
     }
 
     public function maxPoints()
