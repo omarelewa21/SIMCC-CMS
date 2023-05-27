@@ -47,6 +47,7 @@ class UploadUpdatedAnswersAndResults implements ToModel, WithHeadingRow
                 'country_rank'  => $row['updated_country_rank'],
                 'school_rank'   => $row['updated_school_rank'],
                 'global_rank'   => $row['updated_global_rank'],
+                'report'        => null,
             ]);
     }
 }
