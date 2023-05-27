@@ -26,6 +26,13 @@ class UploadUpdatedAnswersAndResults implements ToModel, WithHeadingRow
             ->orderBy('task_id')->get();
         
         foreach($participantAnswers as $key => $answer) {
+            if($row['grade'] === 'Grade 6' && $key+1 === 13 && $row['q13'] === 'A'){
+                $answer->answer = 'A';
+                $answer->score = 2;
+                $answer->is_correct = true;
+                $answer->save();
+                return;
+            }
             $answer->answer = $row["q" . $key+1];
             $newScore = $answer->getAnswerMark($answer->level_id);
             if($newScore < 0)
