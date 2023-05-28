@@ -92,7 +92,8 @@ class CompetitionService
             competition_participants_results.points,
             competition_participants_results.award as award,
             competition_participants_results.school_rank,
-            competition_participants_results.country_rank"
+            competition_participants_results.country_rank,
+            competition_participants_results.global_rank"
         );
     }
 
