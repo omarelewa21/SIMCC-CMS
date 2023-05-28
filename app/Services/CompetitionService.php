@@ -37,49 +37,63 @@ class CompetitionService
                 ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
                 ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
                 ->where('competition.id', $this->competition->id)
-                ->when($mode === 'csv', function($query){
-                    $query->selectRaw(
-                        "CONCAT('\"',competition.name,'\"') as competition,
-                        CONCAT('\"',organization.name,'\"') as organization,
-                        CONCAT('\"',all_countries.display_name,'\"') as country,
-                        CONCAT('\"',competition_levels.name,'\"') as level,
-                        competition_levels.id as level_id,
-                        participants.grade,
-                        participants.country_id,
-                        participants.school_id,
-                        CONCAT('\"',schools.name,'\"') as school,
-                        CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
-                        participants.index_no,
-                        CONCAT('\"',participants.name,'\"') as name,
-                        participants.certificate_no,
-                        competition_participants_results.points,
-                        CONCAT('\"',competition_participants_results.award,'\"') as award"
-                    );
-                })->when($mode === 'all', function($query){
-                    $query->selectRaw(
-                        "competition.name as competition,
-                        organization.name as organization,
-                        all_countries.display_name as country,
-                        competition_levels.name as level,
-                        competition_levels.id as level_id,
-                        participants.grade,
-                        participants.country_id,
-                        participants.school_id,
-                        schools.name as school,
-                        tuition_school.name as tuition_centre,
-                        participants.index_no,
-                        participants.name as name,
-                        participants.certificate_no,
-                        competition_participants_results.points,
-                        competition_participants_results.award as award,
-                        competition_participants_results.school_rank,
-                        competition_participants_results.country_rank"
-                    );
-                })->orderByRaw(
+                ->when(
+                    $mode === 'csv',
+                    fn($query) => $this->getCompetitionReportQueryForCSV($query),
+                    fn($query) => $this->getCompetitionReportQueryForAllMode($query)
+                )
+                ->orderByRaw(
                     "`competition_levels`.`id`,
                     FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'),
                     `competition_participants_results`.`points` desc;"
                 );
+    }
+
+    private function getCompetitionReportQueryForCSV(Builder $query): Builder
+    {
+        return $query->selectRaw(
+            "CONCAT('\"',competition.name,'\"') as competition,
+            CONCAT('\"',organization.name,'\"') as organization,
+            CONCAT('\"',all_countries.display_name,'\"') as country,
+            CONCAT('\"',competition_levels.name,'\"') as level,
+            competition_levels.id as level_id,
+            participants.grade,
+            participants.country_id,
+            participants.school_id,
+            CONCAT('\"',schools.name,'\"') as school,
+            CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
+            participants.index_no,
+            CONCAT('\"',participants.name,'\"') as name,
+            participants.certificate_no,
+            competition_participants_results.points,
+            CONCAT('\"',competition_participants_results.award,'\"') as award,
+            competition_participants_results.school_rank,
+            competition_participants_results.country_rank,
+            CONCAT('\"',competition_participants_results.global_rank,'\"') as global_rank"
+        );
+    }
+
+    private function getCompetitionReportQueryForAllMode(Builder $query): Builder
+    {
+        return $query->selectRaw(
+            "competition.name as competition,
+            organization.name as organization,
+            all_countries.display_name as country,
+            competition_levels.name as level,
+            competition_levels.id as level_id,
+            participants.grade,
+            participants.country_id,
+            participants.school_id,
+            schools.name as school,
+            tuition_school.name as tuition_centre,
+            participants.index_no,
+            participants.name as name,
+            participants.certificate_no,
+            competition_participants_results.points,
+            competition_participants_results.award as award,
+            competition_participants_results.school_rank,
+            competition_participants_results.country_rank"
+        );
     }
 
     /**
