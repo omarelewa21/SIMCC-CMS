@@ -13,6 +13,7 @@ use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
+use App\Imports\UploadResultsRanking;
 use App\Imports\UploadUpdatedAnswersAndResults;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
@@ -456,6 +457,15 @@ class MarkingController extends Controller
     {
         if ($request->hasFile('excel_file')) {
             Excel::import(new UploadUpdatedAnswersAndResults, $request->file('excel_file'));
+        }
+        // Redirect back to the form
+        return redirect()->back()->with('message', 'Upload Answers is successfull !');
+    }
+
+    public function updateResultsRanking(Request $request)
+    {
+        if ($request->hasFile('excel_file')) {
+            Excel::import(new UploadResultsRanking, $request->file('excel_file'));
         }
         // Redirect back to the form
         return redirect()->back()->with('message', 'Upload Answers is successfull !');

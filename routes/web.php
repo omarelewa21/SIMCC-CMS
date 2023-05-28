@@ -24,3 +24,9 @@ Route::post('/upload-answers-and-results', [MarkingController::class, "uploadUpd
 Route::get('/upload-answers-and-results', function () {
     return view('upload-updated-answers-and-results');
 });
+
+Route::post('/upload-results', [MarkingController::class, "updateResultsRanking"])->name('upload-results-csv');
+
+Route::get('/upload-results', function () {
+    return view('upload-results');
+});
