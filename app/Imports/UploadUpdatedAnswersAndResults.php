@@ -26,16 +26,22 @@ class UploadUpdatedAnswersAndResults implements ToModel, WithHeadingRow
             ->orderBy('task_id')->get();
         
         foreach($participantAnswers as $key => $answer) {
-            $answer->answer = $row["q" . $key+1];
-            $newScore = $answer->getAnswerMark($answer->level_id);
-            if($newScore < 0)
-                $newScore = 0;
-
-            if($answer->score != $newScore) {
-                $answer->score = $newScore;
+            if($answer->answer != $row["q" . $key+1]){
+                $answer->answer = $row["q" . $key+1];
+                $answer->score = $answer->getAnswerMark($answer->level_id);
                 $answer->is_correct = $answer->getIsCorrectAnswer($answer->level_id);
                 $answer->save();
             }
+            // $answer->answer = $row["q" . $key+1];
+            // $newScore = $answer->getAnswerMark($answer->level_id);
+            // if($newScore < 0)
+            //     $newScore = 0;
+
+            // if($answer->score != $newScore) {
+            //     $answer->score = $newScore;
+            //     $answer->is_correct = $answer->getIsCorrectAnswer($answer->level_id);
+            //     $answer->save();
+            // }
         }
     }
 
