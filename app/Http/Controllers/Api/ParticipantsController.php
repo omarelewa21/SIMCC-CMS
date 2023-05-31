@@ -651,4 +651,5 @@ class ParticipantsController extends Controller
             "message"   => "Participants deleted from elimination successfully"
         ]);
     }
+    
 }

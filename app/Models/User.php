@@ -47,7 +47,8 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        'loginattempts'
+        'loginattempts',
+        'email_verified_at'
     ];
 
     public function created_by ()
