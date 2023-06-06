@@ -34,7 +34,7 @@ class UploadUpdatedAnswersAndResults implements ToModel, WithHeadingRow
             // }
             $answer->setAttribute('answer', $row["q" . $key+1]);
             $newScore = $answer->getAnswerMark($answer->level_id);
-            if($answer->wasChanged('answer') && $newScore < 0)
+            if($newScore < 0)
                 $newScore = 0;
 
             if($answer->score != $newScore) {
