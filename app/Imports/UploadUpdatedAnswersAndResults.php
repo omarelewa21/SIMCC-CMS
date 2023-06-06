@@ -17,7 +17,7 @@ class UploadUpdatedAnswersAndResults implements ToModel, WithHeadingRow
     {
         $participantIndex = $row['index_number'];
         $this->updateParticipantsAnswers($participantIndex, $row);
-        // $this->updateParticipantsResults($participantIndex, $row);
+        $this->updateParticipantsResults($participantIndex, $row);
     }
 
     private function updateParticipantsAnswers($participantIndex, $row)
