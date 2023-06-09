@@ -8,11 +8,12 @@ use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Prunable;
 
 class Participants extends Base
 {
-    use HasFactory;
-    use Filterable;
+    use HasFactory, Filterable, SoftDeletes, Prunable;
 
     private static $whiteListFilter = [
         'status',
@@ -32,6 +33,16 @@ class Participants extends Base
         "last_modified_userid"
     ];
 
+     /**
+     * Get the prunable model query.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function prunable()
+    {
+        return static::where('deleted_at', '<=', now()->subMonths(2));
+    }
+
     public static function booted()
     {
         parent::booted();
@@ -42,6 +53,10 @@ class Participants extends Base
         
         static::creating(function($participant) {
             $participant->created_by_userid = auth()->id();
+        });
+
+        static::deleting(function($participant) {
+            $participant->last_modified_userid = auth()->id();
         });
     }
 
