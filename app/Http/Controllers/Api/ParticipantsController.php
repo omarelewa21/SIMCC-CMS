@@ -698,12 +698,7 @@ class ParticipantsController extends Controller
                         'progress' => $progress,
                     ], 500);
                 case 'Completed':
-                    return response()->json([
-                        'job_id' => $jobId,
-                        'status' => 'Completed',
-                        'file_path' => $job->file_path,
-                        'progress' => $progress,
-                    ], 200);
+                    return Response::download(storage_path('app/' . $job->file_path))->deleteFileAfterSend(true);
             }
         } else {
             return response()->json([

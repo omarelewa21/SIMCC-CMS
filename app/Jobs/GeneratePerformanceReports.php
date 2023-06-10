@@ -88,9 +88,9 @@ class GeneratePerformanceReports implements ShouldQueue
             }
 
             $zip->close();
-            $zipFullPath = storage_path('app/' . $zipPath);
+            // $zipFullPath = storage_path('app/' . $zipPath);
             Storage::deleteDirectory($pdfDirPath);
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFullPath);
+            $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipPath);
 
             // return Response::download(storage_path('app/' . $zipPath))->deleteFileAfterSend(false);
         } catch (Exception $e) {
