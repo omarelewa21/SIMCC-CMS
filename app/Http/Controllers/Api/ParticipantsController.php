@@ -698,7 +698,13 @@ class ParticipantsController extends Controller
                         'progress' => $progress,
                     ], 500);
                 case 'Completed':
-                    return Response::download(storage_path('app/' . $job->file_path))->deleteFileAfterSend(true);
+                    return response()->json([
+                        'job_id' => $jobId,
+                        'status' => 'Completed',
+                        'file_path' => route('participant.reports.bulk_download.download_file', ['file_name' => $job->file_path]),
+                        'progress' => $progress,
+                    ], 200);
+                    // return Response::download(storage_path('app/' . $job->file_path))->deleteFileAfterSend(true);
             }
         } else {
             return response()->json([
@@ -707,5 +713,10 @@ class ParticipantsController extends Controller
                 'message' => 'Job Not Found',
             ], 500);
         }
+    }
+
+    public function performanceReportsBulkDownloadFile($fileName)
+    {
+        return Response::download(storage_path('app/performance_reports/' . $fileName))->deleteFileAfterSend(true);
     }
 }
