@@ -709,9 +709,10 @@ class ParticipantsController extends Controller
         } else {
             return response()->json([
                 'job_id' => $jobId,
-                'status' => 'Failed',
-                'message' => 'Job Not Found',
-            ], 500);
+                'status' => 'Not Started',
+                'progress' => 0,
+                'message' => 'Job Not Started',
+            ], 201);
         }
     }
 
