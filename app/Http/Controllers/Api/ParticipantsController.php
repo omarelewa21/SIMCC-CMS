@@ -717,6 +717,13 @@ class ParticipantsController extends Controller
 
     public function performanceReportsBulkDownloadFile($fileName)
     {
-        return Response::download(storage_path('app/performance_reports/' . $fileName))->deleteFileAfterSend(true);
+        $filePath = storage_path('app/performance_reports/' . $fileName);
+    
+        if (!Storage::exists($filePath)) {
+            return response()->json([
+                'message' => 'File Not Found',
+            ], 500);        }
+    
+        return Response::download($filePath)->deleteFileAfterSend(true);
     }
 }
