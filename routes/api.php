@@ -33,7 +33,7 @@ Route::get("participant/report/by-certificate", [ParticipantsController::class, 
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 Route::post("participant/reports/bulk_download", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
 Route::get("participant/reports/bulk_download/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
-Route::get("participant/reports/bulk_download/download_file/{file_name}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
+Route::get("participant/reports/bulk_download/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
 
     Route::group(["prefix" => "info"], function () {
