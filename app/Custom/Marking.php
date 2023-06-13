@@ -4,6 +4,8 @@ namespace App\Custom;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\Countries;
+use Illuminate\Http\Request;
 
 class Marking
 {
@@ -119,5 +121,33 @@ class Marking
             $data[$award]['min'] = $filteredParticipants->last()->points;
         }
         return $data;
+    }
+
+    /**
+     * get participants count (with and without answers) by country and grade
+     * 
+     * @param App\Models\Competition $competition
+     * @param Illuminate\Http\Request $request
+     * 
+     * @return array
+     */
+    public static function getActiveParticipantsByCountryByGradeData(Competition $competition, Request $request)
+    {       
+        $countries = Countries::whereIn('id', $request->countries)->pluck('display_name', 'id');
+
+        $totalParticipants = $competition->participants()
+            ->whereIn('participants.country_id', $request->countries)
+            ->groupBy('participants.country_id', 'participants.grade')
+            ->selectRaw('participants.country_id, participants.grade, count(participants.id) as total_participants')
+            ->get();
+
+        $totalParticipantsWithAnswer = $competition->participants()
+            ->whereIn('participants.country_id', $request->countries)
+            ->has('answers')
+            ->groupBy('participants.country_id', 'participants.grade')
+            ->selectRaw('participants.country_id, participants.grade, count(participants.id) as total_participants_with_answers')
+            ->get();
+        
+        return [$countries, $totalParticipants, $totalParticipantsWithAnswer];
     }
 }
