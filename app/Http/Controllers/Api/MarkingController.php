@@ -216,26 +216,45 @@ class MarkingController extends Controller
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
-            $grades = $competition->participants()->whereIn('participants.country_id', $request->countries)
-                    ->where('participants.status', 'active')->distinct()->pluck('grade')->toArray();
+            [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
+                = Marking::getActiveParticipantsByCountryByGradeData($competition, $request);
 
-            $countries = [];
-            $data = [];
+            $data = [
+                'total' => [
+                    'total_participants' => 0,
+                    'total_participants_with_answers' => 0,
+                    'absentees' => 0
+                ]
+            ];  // Initialize data array
 
-            foreach($request->countries as $country_id){
-                $country = Countries::find($country_id);
-                $countries[] = $country->display_name;
-                foreach($grades as $grade){
-                    $data[$country->display_name][$grade] =
-                        $competition->participants()->where('participants.country_id', $country_id)
-                            ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
-                }
+            foreach($totalParticipants as $participants){
+                // Add total participants for each country and grade
+                $data[$participants->country_id][$participants->grade] = [
+                    'total_participants' => $participants->total_participants,
+                ];
+
+                $data['total']['total_participants'] += $participants->total_participants;  // Add total participants for all countries and grades
+            }
+
+            foreach($totalParticipantsWithAnswer as $participants){
+                // Add total participants with answers for each country and grade
+                $data[$participants->country_id][$participants->grade]['total_participants_with_answers']
+                    = $participants->total_participants_with_answers;
+
+                $data['total']['total_participants_with_answers'] += $participants->total_participants_with_answers;    // Add total participants with answers for all countries and grades
+
+
+                // Add total absentees for each country and grade
+                $data[$participants->country_id][$participants->grade]['absentees']
+                    = $data[$participants->country_id][$participants->grade]['total_participants'] - $participants->total_participants_with_answers;
+
+                $data['total']['absentees'] += $data[$participants->country_id][$participants->grade]['absentees'];     // Add total absentees for all countries and grades
             }
 
             return response()->json([
                 "status"        => 200,
                 "message"       => "Table retrieval was successful",
-                'grades'        => $grades,
+                'grades'        => $totalParticipants->pluck('grade')->unique(),
                 'countries'     => $countries,
                 'data'          => $data
             ]);
