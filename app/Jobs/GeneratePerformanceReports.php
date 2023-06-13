@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Custom\ParticipantReportService;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\ReportDownloadStatus;
-use Barryvdh\DomPDF\Facade\Pdf;
 use DateTime;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -18,6 +17,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
+use PDF;
+
 
 class GeneratePerformanceReports implements ShouldQueue
 {
@@ -76,7 +77,7 @@ class GeneratePerformanceReports implements ShouldQueue
 
                     $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
 
-                    $pdf = Pdf::loadView('performance-report', [
+                    $pdf = PDF::loadView('performance-report', [
                         'general_data'                  => $report['general_data'],
                         'performance_by_questions'      => $report['performance_by_questions'],
                         'performance_by_topics'         => $report['performance_by_topics'],
@@ -111,7 +112,7 @@ class GeneratePerformanceReports implements ShouldQueue
             }
 
             $zip->close();
-            Storage::deleteDirectory($pdfDirPath);
+            // Storage::deleteDirectory($pdfDirPath);
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename);
         } catch (Exception $e) {
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed' . $e->getMessage());
