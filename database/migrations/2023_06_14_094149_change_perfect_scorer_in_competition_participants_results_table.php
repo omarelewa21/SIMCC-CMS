@@ -24,11 +24,19 @@ return new class extends Migration
             );
 
             CompetitionParticipantsResults::where('global_rank', 'like', 'PERFECT SCORER%')
-                ->update(
-                    [
-                        'global_rank' => Str::replaceFirst('PERFECT SCORER', 'PERFECT SCORE', 'PERFECT SCORER')
-                    ]
-                );
+                ->chunkById(500, fn($results) => $results->each(
+                    fn($result) => $result->update(['global_rank' => Str::replaceFirst('PERFECT SCORER', 'PERFECT SCORE', $result->global_rank)])
+                ));
+            
+            CompetitionParticipantsResults::where('global_rank', 'like', '"PERFECT SCORER"%')
+                ->chunkById(500, fn($results) => $results->each(
+                    fn($result) => $result->update(['global_rank' => Str::replaceFirst('"PERFECT SCORER"', 'PERFECT SCORE', $result->global_rank)])
+                ));
+            
+            CompetitionParticipantsResults::where('global_rank', 'like', 'PERFECT SCORER%')
+                ->chunkById(500, fn($results) => $results->each(
+                    fn($result) => $result->update(['global_rank' => Str::replaceFirst('PERFECT SCORER', 'PERFECT SCORE', $result->global_rank)])
+                ));
         });
     }
 
@@ -48,11 +56,9 @@ return new class extends Migration
             );
 
             CompetitionParticipantsResults::where('global_rank', 'like', 'PERFECT SCORE%')
-                ->update(
-                    [
-                        'global_rank' => Str::replaceFirst('PERFECT SCORE', 'PERFECT SCORER', 'PERFECT SCORE')
-                    ]
-                );
+                ->chunkById(500, fn($results) => $results->each(
+                    fn($result) => $result->update(['global_rank' => Str::replaceFirst('PERFECT SCORE', 'PERFECT SCORER', $result->global_rank)])
+                ));
         });
     }
 };
