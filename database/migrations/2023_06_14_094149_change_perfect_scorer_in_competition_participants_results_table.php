@@ -4,6 +4,7 @@ use App\Models\CompetitionParticipantsResults;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -18,9 +19,16 @@ return new class extends Migration
             CompetitionParticipantsResults::where('award', 'PERFECT SCORER')->update(
                 [
                     'award' => 'PERFECT SCORE',
-                    'ref_award' => 'PERFECT SCORE'
+                    'ref_award' => 'PERFECT SCORE',
                 ]
             );
+
+            CompetitionParticipantsResults::where('global_rank', 'like', 'PERFECT SCORER%')
+                ->update(
+                    [
+                        'global_rank' => Str::replaceFirst('PERFECT SCORER', 'PERFECT SCORE', 'PERFECT SCORER')
+                    ]
+                );
         });
     }
 
@@ -38,6 +46,13 @@ return new class extends Migration
                     'ref_award' => 'PERFECT SCORER'
                 ]
             );
+
+            CompetitionParticipantsResults::where('global_rank', 'like', 'PERFECT SCORE%')
+                ->update(
+                    [
+                        'global_rank' => Str::replaceFirst('PERFECT SCORE', 'PERFECT SCORER', 'PERFECT SCORE')
+                    ]
+                );
         });
     }
 };
