@@ -15,7 +15,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('competition_participants_results', function (Blueprint $table) {
-            CompetitionParticipantsResults::where('award', 'PERFECT SCORER')->update(['award' => 'PERFECT SCORE']);
+            CompetitionParticipantsResults::where('award', 'PERFECT SCORER')->update(
+                [
+                    'award' => 'PERFECT SCORE',
+                    'ref_award' => 'PERFECT SCORE'
+                ]
+            );
         });
     }
 
@@ -27,7 +32,12 @@ return new class extends Migration
     public function down()
     {
         Schema::table('competition_participants_results', function (Blueprint $table) {
-            CompetitionParticipantsResults::where('award', 'PERFECT SCORE')->update(['award' => 'PERFECT SCORER']);
+            CompetitionParticipantsResults::where('award', 'PERFECT SCORE')->update(
+                [
+                    'award' => 'PERFECT SCORER',
+                    'ref_award' => 'PERFECT SCORER'
+                ]
+            );
         });
     }
 };
