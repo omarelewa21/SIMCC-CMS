@@ -112,7 +112,7 @@ class GeneratePerformanceReports implements ShouldQueue
             }
 
             $zip->close();
-            // Storage::deleteDirectory($pdfDirPath);
+            Storage::deleteDirectory($pdfDirPath);
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename);
         } catch (Exception $e) {
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed' . $e->getMessage());
