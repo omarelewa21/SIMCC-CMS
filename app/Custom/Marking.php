@@ -135,7 +135,12 @@ class Marking
     {       
         $countries = Countries::whereIn('id', $request->countries)->select('id', 'display_name')
             ->get()
-            ->mapWithKeys(fn($country)=>[$country->id => [$country->display_name, $country->id]]);
+            ->mapWithKeys(fn($country)=>[
+                $country->id => [
+                    'name' => $country->display_name,
+                    'id'   => $country->id
+                ]
+            ]);
 
         $totalParticipants = $competition->participants()
             ->whereIn('participants.country_id', $request->countries)
@@ -165,7 +170,7 @@ class Marking
     public static function setTotalParticipantsByCountryByGrade(&$data, $countries, $totalParticipants)
     {
         foreach($totalParticipants as $participants){
-            $country = $countries[$participants->country_id][0];
+            $country = $countries[$participants->country_id]['name'];
 
             // Add total participants for each country and grade
             $data[$participants->grade][$country] = [
@@ -199,7 +204,7 @@ class Marking
     public static function setTotalParticipantsWithAnswersAndAbsentees(&$data, $countries, $totalParticipantsWithAnswer)
     {
         foreach($totalParticipantsWithAnswer as $participants){
-            $country = $countries[$participants->country_id][0];
+            $country = $countries[$participants->country_id]['name'];
             // Add total participants with answers for each country and grade
             $data[$participants->grade][$country]['total_participants_with_answers']
                 = $participants->total_participants_with_answers;
