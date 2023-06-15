@@ -1201,7 +1201,7 @@ class CompetitionController extends Controller
                  LEFT JOIN all_countries
                  ON all_countries.id = schools.country_id
                  WHERE competition.id = ".$competition_id."
-                 ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
+                 ORDER BY `competition_levels`.`id`, FIELD(`competition_participants_results`.`award`,'PERFECT SCORE','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'), `competition_participants_results`.`points` desc;
         "));
 
         $filename = 'report.csv';

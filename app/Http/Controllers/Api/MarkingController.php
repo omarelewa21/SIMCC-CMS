@@ -410,7 +410,7 @@ class MarkingController extends Controller
     public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
     {
         try {
-            $awardsRankArray = collect(['PERFECT SCORER'])
+            $awardsRankArray = collect(['PERFECT SCORE'])
                     ->merge($level->rounds->roundsAwards->pluck('name'))
                     ->push($level->rounds->default_award_name);
 
@@ -419,7 +419,7 @@ class MarkingController extends Controller
                     ->firstOrFail();
                 $globalRankNumber = explode(" ", $participantResults->global_rank);
 
-                if($participantResults->award != "PERFECT SCORER"){
+                if($participantResults->award != "PERFECT SCORE"){
                     $participantResults->update([
                         'award'         => $data['award'],
                         'award_rank'    => $awardsRankArray->search($data['award']) + 1,
