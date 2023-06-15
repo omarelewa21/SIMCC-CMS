@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Custom\ParticipantReportService;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use App\Models\ReportDownloadStatus;
 use DateTime;
 use Exception;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -28,8 +30,9 @@ class GeneratePerformanceReports implements ShouldQueue
     public $totalProgress;
     public $progress;
     public $jobId;
-    public function __construct($participants)
+    public function __construct($request)
     {
+        $participants = $this->getParticipants($request);
         $this->participants = $participants;
         $this->totalProgress = count($participants);
     }
@@ -53,14 +56,14 @@ class GeneratePerformanceReports implements ShouldQueue
             foreach ($this->participants as $participant) {
 
                 try {
-                    $participantResult = CompetitionParticipantsResults::where('participant_index', $participant['index_no'])
+                    $participantResult = CompetitionParticipantsResults::where('participant_index', $participant)
                         ->with('participant')->firstOrFail()->makeVisible('report');
                 } catch (ModelNotFoundException $e) {
                     // Update the progress for this job
                     $this->progress++;
                     $this->updateJobProgress($this->progress, $this->totalProgress);
                     // Log the error and continue with the loop
-                    $logMessage = sprintf('%s ------- Failed ------- %s', $participant['index_no'], 'No Results Found For This Participant');
+                    $logMessage = sprintf('%s ------- Failed ------- %s', $participant, 'No Results Found For This Participant');
                     Storage::append($logPath, $logMessage);
                     continue;
                 }
@@ -90,7 +93,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     Storage::put($pdfPath, $pdf->output());
 
                     // Add a line to the log file for this participant
-                    $logMessage = sprintf('%s ------- Completed', $participant['index_no']);
+                    $logMessage = sprintf('%s ------- Completed', $participant);
                     Storage::append($logPath, $logMessage);
                 }
 
@@ -117,6 +120,43 @@ class GeneratePerformanceReports implements ShouldQueue
         } catch (Exception $e) {
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed' . $e->getMessage());
         }
+    }
+
+    public function getParticipants($request)
+    {
+        $participantCollection = Participants::leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
+            ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
+            ->leftJoin('all_countries', 'all_countries.id', '=', 'participants.country_id')
+            ->leftJoin('schools', 'schools.id', '=', 'participants.school_id')
+            ->leftJoin('schools as tuition_centre', 'tuition_centre.id', '=', 'participants.tuition_centre_id')
+            ->leftJoin('competition_organization', 'competition_organization.id', '=', 'participants.competition_organization_id')
+            ->leftJoin('organization', 'organization.id', '=', 'competition_organization.organization_id')
+            ->leftJoin('competition', 'competition.id', '=', 'competition_organization.competition_id')
+            ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', '=', 'participants.index_no')
+            ->leftJoin('participant_answers', function ($join) {
+                $join->on('participant_answers.participant_index', '=', 'participants.index_no');
+            })
+            ->select(
+                'participants.*',
+                'all_countries.display_name as country_name',
+                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
+                'schools.id as school_id',
+                'schools.name as school_name',
+                'tuition_centre.id as tuition_centre_id',
+                'tuition_centre.name as tuition_centre_name',
+                'competition.id as competition_id',
+                'competition.name as competition_name',
+                'competition.alias as competition_alias',
+                'organization.id as organization_id',
+                'organization.name as organization_name',
+                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
+                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
+            )
+            ->filterList($request)
+            ->groupBy('participants.id')
+            ->get();
+        $participants = $participantCollection->pluck('index_no')->toArray();
+        return $participants;
     }
 
     public function updateJobProgress($processedCount, $totalCount, $status = 'Pending', $file_path = null)
