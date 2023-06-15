@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\BulkReportsDownloadRequest;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
@@ -663,12 +664,10 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function performanceReportsBulkDownload(Request $request)
+    public function performanceReportsBulkDownload(getParticipantListRequest $request)
     {
-        $participants = $request->participants;
-        $job = new GeneratePerformanceReports($participants);
+        $job = new GeneratePerformanceReports($request);
         $job_id = $this->dispatch($job);
-
         return response()->json([
             "status"    => 200,
             'job_id' => $job_id,
@@ -736,4 +735,5 @@ class ParticipantsController extends Controller
 
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
     }
+    
 }
