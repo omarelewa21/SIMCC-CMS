@@ -18,8 +18,6 @@ class CompetitionParticipantsResults extends Model
         'report'    => AsArrayObject::class,
     ];
 
-    public $timestamps = false;
-
     public function competitionLevel()
     {
         return $this->belongsTo(CompetitionLevels::class, 'level_id');
