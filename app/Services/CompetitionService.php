@@ -44,7 +44,7 @@ class CompetitionService
                 )
                 ->orderByRaw(
                     "`competition_levels`.`id`,
-                    FIELD(`competition_participants_results`.`award`,'PERFECT SCORER','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'),
+                    FIELD(`competition_participants_results`.`award`,'PERFECT SCORE','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'),
                     `competition_participants_results`.`points` desc;"
                 );
     }
