@@ -226,7 +226,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status"        => 200,
                 "message"       => "Table retrieval was successful",
-                'grades'        => $totalParticipants->pluck('grade')->unique(),
+                'grades'        => $totalParticipants->pluck('grade')->unique()->values(),
                 'countries'     => $countries->values(),
                 'data'          => $data
             ]);
