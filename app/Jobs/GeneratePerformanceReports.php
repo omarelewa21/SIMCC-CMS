@@ -64,7 +64,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     $this->updateJobProgress($this->progress, $this->totalProgress);
                     // Log the error and continue with the loop
                     $logMessage = sprintf('%s ------- Failed ------- %s', $participant, 'No Results Found For This Participant');
-                    Storage::append($logPath, $logMessage);
+                    // Storage::append($logPath, $logMessage);
                     continue;
                 }
 
@@ -94,7 +94,7 @@ class GeneratePerformanceReports implements ShouldQueue
 
                     // Add a line to the log file for this participant
                     $logMessage = sprintf('%s ------- Completed', $participant);
-                    Storage::append($logPath, $logMessage);
+                    // Storage::append($logPath, $logMessage);
                 }
 
                 // Update the progress for this job
