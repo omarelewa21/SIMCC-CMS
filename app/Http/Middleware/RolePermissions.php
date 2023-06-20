@@ -42,7 +42,7 @@ class RolePermissions
             if($this->checkPermission()) return $next($request);
 
             if(!in_array(Route::currentRouteName(),$rolePermissions)) {
-                return response()->json(["status" => 405 ,"message" => "Unauthorized to perform this action" . Route::currentRouteName()]);
+                return response()->json(["status" => 405 ,"message" => "Unauthorized to perform this action" . Route::currentRouteName()], 405);
             }
         }
 
