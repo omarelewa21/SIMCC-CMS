@@ -71,14 +71,15 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
     });
 
     Route::group(["prefix" => "user"], function () {
-        Route::get("/profile", [UserController::class, "profile"])->name('user.profile');
-        Route::get("/logout", [UserController::class, "logout"])->name('user.logout');
-        Route::get("", [UserController::class, "list"])->name('user.list');
-        Route::post("", [UserController::class, "create"])->name('user.create');;
-        Route::delete("", [UserController::class, "delete"])->name('user.delete');
-        Route::patch("", [UserController::class, "update"])->name('user.update');
-        Route::patch("/disable", [UserController::class, "disable"])->name('user.disable');
-        Route::patch("/undisable", [UserController::class, "undisable"])->name('user.undisable');
+        Route::get("/profile",[UserController::class,"profile"])->name('user.profile');
+        Route::get("/logout",[UserController::class,"logout"])->name('user.logout');
+        Route::get("",[UserController::class,"list"])->name('user.list');
+        Route::post("",[UserController::class,"create"])->name('user.create');;
+        Route::delete("",[UserController::class,"delete"])->name('user.delete');
+        Route::patch("",[UserController::class,"update"])->name('user.update');
+        Route::patch("/disable",[UserController::class,"disable"])->name('user.disable');
+        Route::patch("/undisable",[UserController::class,"undisable"])->name('user.undisable');
+        Route::post("/register-new-route",[UserController::class,"registerNewRoutePermission"])->name('user.registerNewRoute');
     });
 
     Route::group(["prefix" => "school"], function () {
