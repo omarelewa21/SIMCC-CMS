@@ -77,6 +77,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("",[UserController::class,"update"])->name('user.update');
         Route::patch("/disable",[UserController::class,"disable"])->name('user.disable');
         Route::patch("/undisable",[UserController::class,"undisable"])->name('user.undisable');
+        Route::post("/register-new-route",[UserController::class,"registerNewRoutePermission"])->name('user.registerNewRoute');
     });
 
     Route::group(["prefix" => "school"], function () {

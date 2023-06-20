@@ -719,4 +719,28 @@ class UserController extends Controller
 
     }
 
+    /**
+     * Adds a new route permission to the database for the given roles.
+     * 
+     */
+    public function registerNewRoutePermission(Request $request)
+    {
+        $routeName = $request->route_name;
+        $roles = $request->roles;
+        if(DB::table('route_permissions')->where('route_name', $routeName)->doesntExist()) {
+            $routePermissionId = DB::table('route_permissions')->insertGetId([
+                'route_name' => $routeName,
+            ]);
+        } else {
+            $routePermissionId = DB::table('route_permissions')->where('route_name', $routeName)->value('id');
+        }
+
+        foreach($roles as $roleId){
+            DB::table('permissions')->updateOrInsert(
+                ['role_id' => $roleId, 'route_permission_id' => $routePermissionId],
+                []
+            );
+        }
+    }
+
 }

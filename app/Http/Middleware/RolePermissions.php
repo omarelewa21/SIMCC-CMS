@@ -39,11 +39,35 @@ class RolePermissions
 
         if(auth()->user()->role_id > 1 && !in_array(Route::currentRouteName(),$bypassRoute))
         {
-            if(!in_array(Route::currentRouteName(),$rolePermissions)) {
+            if(!in_array(Route::currentRouteName(),$rolePermissions) && $this->checkPermission()) {
                 return response()->json(["status" => 405 ,"message" => "Unauthorized to perform this action" . Route::currentRouteName()]);
             }
         }
 
         return $next($request);
+    }
+
+    /**
+     * This is the new way to register a user permission instead of the old complex way
+     */
+    private function checkPermission()
+    {
+        if(auth()->user()->role_id <= 1) {
+            // Super and Admin are allowed to do anything
+            return true;
+        }
+
+        if(DB::table('route_permissions')->where('route_name', Route::currentRouteName())->doesntExist()) {
+            // Route is not registered in the database
+            return false;
+        }
+
+        // Check if the user has permission to access the route
+        return DB::table('permissions')->where('role_id', auth()->user()->role_id)
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('route_permissions')
+                    ->whereColumn('route_permissions.id', 'permissions.route_permission_id');
+            })->exists();
     }
 }
