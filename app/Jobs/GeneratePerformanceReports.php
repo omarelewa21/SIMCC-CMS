@@ -48,9 +48,9 @@ class GeneratePerformanceReports implements ShouldQueue
         Storage::makeDirectory($pdfDirPath);
 
         // Create a log file for the job
-        $logFilename = sprintf('performance_reports_log_%s.txt', $time);
-        $logPath = $pdfDirPath . '/' . $logFilename;
-        $logFile = Storage::disk('local')->put($logPath, '');
+        // $logFilename = sprintf('performance_reports_log_%s.txt', $time);
+        // $logPath = $pdfDirPath . '/' . $logFilename;
+        // $logFile = Storage::disk('local')->put($logPath, '');
 
         try {
             foreach ($this->participants as $participant) {
@@ -107,7 +107,7 @@ class GeneratePerformanceReports implements ShouldQueue
             $zipFilename = sprintf('performance_reports_%s.zip', $time);
             $zipPath = 'performance_reports/' . $zipFilename;
             $zip->open(storage_path('app/' . $zipPath), ZipArchive::CREATE);
-            $zip->addFile(storage_path('app/' . $logPath), $logFilename);
+            // $zip->addFile(storage_path('app/' . $logPath), $logFilename);
 
             // Add all PDF files to the ZIP archive
             foreach (Storage::files($pdfDirPath) as $file) {
