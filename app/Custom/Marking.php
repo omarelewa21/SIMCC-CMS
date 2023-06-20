@@ -172,6 +172,8 @@ class Marking
         foreach($totalParticipants as $participants){
             $country = $countries[$participants->country_id]['name'];
 
+            static::inititializeCountryGrade($data, $participants->grade, $country);
+
             // Add total participants for each country and grade
             $data[$participants->grade][$country] = [
                 'total_participants' => $participants->total_participants,
@@ -179,16 +181,11 @@ class Marking
                 'grade'              => $participants->grade
             ];
 
-            if(!isset($data[$participants->grade]['total']['total_participants'])) {
-                $data[$participants->grade]['total'] = [
-                    'total_participants' => 0,
-                    'total_participants_with_answers' => 0,
-                    'absentees' => 0,
-                    'grade'     => $participants->grade
-                ];
-            }
+            // Add total participants for all grades per country
+            $data['total'][$country]['total_participants'] += $participants->total_participants;
 
-            $data[$participants->grade]['total']['total_participants'] += $participants->total_participants;  // Add total participants for all countries per grade
+             // Add total participants for all countries per grade
+            $data[$participants->grade]['total']['total_participants'] += $participants->total_participants;
         }
     }
 
@@ -215,6 +212,32 @@ class Marking
 
             $data[$participants->grade]['total']['total_participants_with_answers'] += $participants->total_participants_with_answers;    // Add total participants with answers for all countries per grade
             $data[$participants->grade]['total']['absentees'] += $data[$participants->grade][$country]['absentees'];     // Add total absentees for all countries per grade
+
+            // Add total participants for all grades per country
+            $data['total'][$country]['total_participants_with_answers'] += $participants->total_participants_with_answers;
+            $data['total'][$country]['absentees'] += $data[$participants->grade][$country]['absentees'];
+        }
+    }
+
+    private static function inititializeCountryGrade(&$data, $grade, $country)
+    {
+        if(!isset($data[$grade]['total']['total_participants'])) {
+            // Initialize total participants for all countries per grade
+            $data[$grade]['total'] = [
+                'total_participants' => 0,
+                'total_participants_with_answers' => 0,
+                'absentees' => 0,
+                'grade'     => $grade
+            ];
+        }
+
+        if(!isset($data['total'][$country])) {
+            $data['total'][$country] = [
+                'total_participants' => 0,
+                'total_participants_with_answers' => 0,
+                'absentees' => 0,
+                'country'   => $country
+            ];
         }
     }
 }
