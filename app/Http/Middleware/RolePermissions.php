@@ -39,7 +39,9 @@ class RolePermissions
 
         if(auth()->user()->role_id > 1 && !in_array(Route::currentRouteName(),$bypassRoute))
         {
-            if(!in_array(Route::currentRouteName(),$rolePermissions) && $this->checkPermission()) {
+            if($this->checkPermission()) return $next($request);
+
+            if(!in_array(Route::currentRouteName(),$rolePermissions)) {
                 return response()->json(["status" => 405 ,"message" => "Unauthorized to perform this action" . Route::currentRouteName()]);
             }
         }
