@@ -173,7 +173,7 @@ class Participants extends Base
         $searchIndex = $dial . $year . ($isPrivate ? '1' : '0');
 
         // Check if the latest participant is private or non-private
-        $latestParticipant = static::where('index_no', 'like', $searchIndex . '%')
+        $latestParticipant = static::withTrashed()->where('index_no', 'like', $searchIndex . '%')
             ->orderByDesc('id')
             ->first();
 
@@ -188,7 +188,7 @@ class Participants extends Base
 
     public static function generateCertificateNo()
     {
-        $lastCertificateNo = static::latest('certificate_no')->value('certificate_no') ?? 'A0000000';
+        $lastCertificateNo = static::withTrashed()->latest('certificate_no')->value('certificate_no') ?? 'A0000000';
 
         $lastCharacter = substr($lastCertificateNo, 0, 1);
         $lastNumber = substr($lastCertificateNo, 1);
