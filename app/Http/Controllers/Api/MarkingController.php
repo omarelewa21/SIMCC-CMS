@@ -216,27 +216,18 @@ class MarkingController extends Controller
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
-            $grades = $competition->participants()->whereIn('participants.country_id', $request->countries)
-                    ->where('participants.status', 'active')->distinct()->pluck('grade')->toArray();
+            [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
+                = Marking::getActiveParticipantsByCountryByGradeData($competition, $request);
 
-            $countries = [];
             $data = [];
-
-            foreach($request->countries as $country_id){
-                $country = Countries::find($country_id);
-                $countries[] = $country->display_name;
-                foreach($grades as $grade){
-                    $data[$country->display_name][$grade] =
-                        $competition->participants()->where('participants.country_id', $country_id)
-                            ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
-                }
-            }
+            Marking::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
+            Marking::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
 
             return response()->json([
                 "status"        => 200,
                 "message"       => "Table retrieval was successful",
-                'grades'        => $grades,
-                'countries'     => $countries,
+                'grades'        => $totalParticipants->pluck('grade')->unique()->values(),
+                'countries'     => $countries->values(),
                 'data'          => $data
             ]);
 
