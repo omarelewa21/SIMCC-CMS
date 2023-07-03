@@ -1496,7 +1496,6 @@ class CompetitionController extends Controller
 
     public function downloadParticipantAnswers(Competition $competition)
     {
-        try {
             $answers = ParticipantsAnswer::whereIn('level_id',
                     $competition->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
                         ->select('competition_levels.id')->pluck('id')->toArray()
@@ -1539,13 +1538,5 @@ class CompetitionController extends Controller
                 'headers' => $headers,
                 'data' => $data
             ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => '' . $e->getMessage(),
-                'error'     => $e->getTraceAsString()
-            ], 500);
-        }
     }
 }
