@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use ResponseCache;
 use App\Custom\ComputeLevelCustom;
 use App\Custom\Marking;
@@ -13,9 +14,14 @@ use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
+use App\Jobs\ComputeGroupAwardsStatics;
 use App\Jobs\ComputeLevel;
+use App\Models\AwardsStaticsResults;
+use App\Models\AwardsStaticsStatus;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
@@ -28,7 +34,8 @@ class MarkingController extends Controller
      *
      * @return Illuminate\Http\Response
      */
-    public function markingList(Competition $competition) {
+    public function markingList(Competition $competition)
+    {
         try {
             $markingList = (new Marking())->markList($competition->load('rounds.levels.collection.sections'));
             return response()->json([
@@ -36,7 +43,6 @@ class MarkingController extends Controller
                 "message"   => "Marking progress list retrieve successful",
                 "data"      => $markingList
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -59,7 +65,12 @@ class MarkingController extends Controller
             $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
 
             $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
-                        ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
+                ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
+
+            foreach ($data as $groupKey => $group) {
+                $awardStatics = AwardsStaticsResults::where('group_id', $group['id'])->first('result') ?? false;
+                $data[$groupKey]['award_statics'] = $awardStatics;
+            }
 
             return response()->json([
                 "status"        => 200,
@@ -94,7 +105,7 @@ class MarkingController extends Controller
                 'created_by_userid' => auth()->user()->id
             ]);
 
-            foreach($request->countries as $country_id){
+            foreach ($request->countries as $country_id) {
                 DB::table('competition_marking_group_country')->insert([
                     'marking_group_id'  => $markingGroup->id,
                     'country_id'        => $country_id,
@@ -126,7 +137,8 @@ class MarkingController extends Controller
      *
      * @return Illuminate\Http\Response
      */
-    public function editMarkingGroup(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request){
+    public function editMarkingGroup(CompetitionMarkingGroup $group, UpdateCompetitionMarkingGroupRequest $request)
+    {
         $group->undoComputedResults('active');
         try {
             $group->update([
@@ -135,7 +147,7 @@ class MarkingController extends Controller
             ]);
 
             DB::table('competition_marking_group_country')->where('marking_group_id', $group->id)->delete();
-            foreach($request->countries as $country_id){
+            foreach ($request->countries as $country_id) {
                 DB::table('competition_marking_group_country')->insert([
                     'marking_group_id'  => $group->id,
                     'country_id'        => $country_id,
@@ -167,16 +179,16 @@ class MarkingController extends Controller
     public function deleteMarkingGroup(CompetitionMarkingGroup $group)
     {
         try {
-            DB::transaction(function () use($group){
+            DB::transaction(function () use ($group) {
                 $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
                     ->select('participants.grade')->distinct()->pluck('participants.grade');
 
                 $levelIds = $group->competition->rounds()
                     ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
                     ->pluck('competition_levels.grades', 'competition_levels.id')
-                    ->filter(function ($levelGrades) use($grades){
-                        foreach(json_decode($levelGrades, true) as $grade){
-                            if($grades->contains($grade)){
+                    ->filter(function ($levelGrades) use ($grades) {
+                        foreach (json_decode($levelGrades, true) as $grade) {
+                            if ($grades->contains($grade)) {
                                 return $levelGrades;
                             }
                         }
@@ -195,7 +207,6 @@ class MarkingController extends Controller
                 "status"    => 200,
                 "message"   => "Marking group deleted successful"
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -216,7 +227,7 @@ class MarkingController extends Controller
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
-            [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
+            [$countries, $totalParticipants, $totalParticipantsWithAnswer]
                 = Marking::getActiveParticipantsByCountryByGradeData($competition, $request);
 
             $data = [];
@@ -230,7 +241,6 @@ class MarkingController extends Controller
                 'countries'     => $countries->values(),
                 'data'          => $data
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -254,15 +264,14 @@ class MarkingController extends Controller
 
             dispatch(new ComputeLevel($level, $request));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
-          
+
             //ResponseCache::forget('api/marking/'.$competition->id); <-- need get competition id first before enable
             ResponseCache::clear();
-          
+
             return response()->json([
                 "status"    => 200,
                 "message"   => "Level computing is in progress",
             ], 200);
-
         } catch (\Exception $e) {
             $level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e->getMessage());
             return response()->json([
@@ -282,32 +291,31 @@ class MarkingController extends Controller
      */
     public function computeCompetitionResults(Competition $competition, Request|null $request)
     {
-        
+
         try {
-            if($competition->groups()->count() === 0){
+            if ($competition->groups()->count() === 0) {
                 return response()->json([
                     "status"    => 412,
                     "message"   => "Competition has no groups, please add some country groups first",
                 ], 412);
             }
 
-            foreach($competition->rounds as $round){
-                foreach($round->levels as $level){
-                    if(Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
+            foreach ($competition->rounds as $round) {
+                foreach ($round->levels as $level) {
+                    if (Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS) {
                         dispatch(new ComputeLevel($level, $request));
                         $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                     }
                 }
             }
-          
+
             //ResponseCache::forget('api/marking/'.$competition->id);
-             ResponseCache::clear(); // <--this clear all pages cache;
+            ResponseCache::clear(); // <--this clear all pages cache;
 
             return response()->json([
                 "status"    => 200,
                 "message"   => "Competition computing is in progress",
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -328,9 +336,9 @@ class MarkingController extends Controller
     {
         $level->load('rounds.competition', 'participantResults');
 
-        if($request->has('is_for_report') && $request->is_for_report){
+        if ($request->has('is_for_report') && $request->is_for_report) {
             $data = CompetitionParticipantsResults::where('level_id', $level->id)
-                ->whereHas('participant', function($query)use($group){
+                ->whereHas('participant', function ($query) use ($group) {
                     $query->whereIn('country_id', $group->countries()->pluck('all_countries.id')->toArray());
                 })
                 ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
@@ -361,9 +369,7 @@ class MarkingController extends Controller
                 ->distinct('index')->orderBy('points', 'DESC')->orderBy('percentile', 'DESC')->get();
 
             return $data;
-        }
-
-        else{
+        } else {
             $data = $level->participantResults()
                 ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
@@ -372,14 +378,14 @@ class MarkingController extends Controller
                 ->orderBy('competition_participants_results.percentile', 'DESC')
                 ->get();
         }
-        
+
         try {
             $headerData = [
                 'competition'   => $level->rounds->competition->name,
                 'round'         => $level->rounds->name,
                 'level'         => $level->name,
                 'award_type'    => $level->rounds->award_type,
-                'cut_off_points'=> (new Marking())->getCutOffPoints($data),
+                'cut_off_points' => (new Marking())->getCutOffPoints($data),
                 'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
             ];
 
@@ -389,7 +395,6 @@ class MarkingController extends Controller
                 'header_data'   => $headerData,
                 'data'          => $data
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -411,15 +416,15 @@ class MarkingController extends Controller
     {
         try {
             $awardsRankArray = collect(['PERFECT SCORE'])
-                    ->merge($level->rounds->roundsAwards->pluck('name'))
-                    ->push($level->rounds->default_award_name);
+                ->merge($level->rounds->roundsAwards->pluck('name'))
+                ->push($level->rounds->default_award_name);
 
-            foreach($request->all() as $data){
+            foreach ($request->all() as $data) {
                 $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
                     ->firstOrFail();
                 $globalRankNumber = explode(" ", $participantResults->global_rank);
 
-                if($participantResults->award != "PERFECT SCORE"){
+                if ($participantResults->award != "PERFECT SCORE") {
                     $participantResults->update([
                         'award'         => $data['award'],
                         'award_rank'    => $awardsRankArray->search($data['award']) + 1,
@@ -431,13 +436,94 @@ class MarkingController extends Controller
                 "status"        => 200,
                 "message"       => "Participant results update successful",
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "Participant results update unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function computeGroupsAwardStatics(Competition $competition, Request $request)
+    {
+        try {
+            $groups = CompetitionMarkingGroup::whereIn('id', $request->groups)
+                ->select('id', 'name')
+                ->get()
+                ->mapWithKeys(function ($group) {
+                    return [
+                        $group->id => [
+                            'name' => $group->name,
+                            'id'   => $group->id,
+                            'totalParticipants' => 0,
+                            'grades' => []
+                        ]
+                    ];
+                })
+                ->toArray();
+            foreach ($groups as $group) {
+                $this->clearAwardsStaticsRecords($competition['id'], $group['id']);
+                $job = new ComputeGroupAwardsStatics($competition, $group);
+                $this->dispatch($job);
+            }
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Awards Computing Started Successfully",
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Awards Computing Failed To Start",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function getGroupAwardsStatics($groupId)
+    {
+        $awards = AwardsStaticsStatus::where('group_id', $groupId)->first();
+        if ($awards) {
+            $progress = $awards->progress_percentage;
+            $status = $awards->status;
+            switch ($status) {
+                case 'Processing':
+                    return response()->json([
+                        'status' => 'In Progress',
+                        'progress' => $progress,
+                        'data' => false,
+                    ], 201);
+                case 'Failed':
+                    return response()->json([
+                        'status' => 'Failed',
+                        'progress' => $progress,
+                        'data' => false,
+                    ], 500);
+                case 'Completed':
+                    $result = AwardsStaticsResults::where('group_id', $groupId)->first('result');
+                    return response()->json([
+                        'status' => 'Completed',
+                        'progress' => $progress,
+                        'data' => $result['result'] ?? false,
+                    ], 200);
+            }
+        } else {
+            return response()->json([
+                'status' => 'Not Computed',
+                'progress' => 0,
+                'message' => "awards statics doesn't exists",
+            ], 201);
+        }
+    }
+
+    public function clearAwardsStaticsRecords($competitionId, $groupId)
+    {
+        try {
+            AwardsStaticsResults::where('group_id', $groupId)
+                ->where('competition_id', $competitionId)
+                ->delete();
+            AwardsStaticsStatus::where('group_id', $groupId)
+                ->delete();
+        } catch (Exception $e) {
         }
     }
 }

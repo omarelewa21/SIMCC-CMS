@@ -144,6 +144,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/compute/{competition}", [MarkingController::class, "computeCompetitionResults"])->name('competition.marking.compute.competition');
         Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
+        Route::post("/competition/groups/award_statics/{competition}", [MarkingController::class, "computeGroupsAwardStatics"])->name('competition.marking.competition.groupsAwardStatics');
+        Route::get("/competition/groups/award_statics/{group_id}", [MarkingController::class, "getGroupAwardsStatics"])->name('competition.marking.competition.groupsAwardStatics.status');
     });
 
     Route::group(["prefix" => "tasks"], function () {
