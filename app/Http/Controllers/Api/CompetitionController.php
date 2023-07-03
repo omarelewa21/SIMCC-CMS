@@ -1541,7 +1541,11 @@ class CompetitionController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['status' => 500, 'message' => "{$e->getMessage()}"], 500);
+            return response()->json([
+                'status'    => 500,
+                'message'   => '' . $e->getMessage(),
+                'error'     => $e->getTraceAsString()
+            ], 500);
         }
     }
 }
