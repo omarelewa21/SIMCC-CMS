@@ -1514,19 +1514,21 @@ class CompetitionController extends Controller
             foreach($answers as $answer) {
                 if($previousParticipantIndex != $answer->participant_index) {
                     if($previousParticipantIndex) {
-                        $size = count($data[$previousParticipantIndex]);
+                        $size = count($data[$previousParticipantIndex]) - 2;
                         $maxSize = $size > $maxSize ? $size : $maxSize;
                     }
                     $counter = 1;
                     $previousParticipantIndex = $answer->participant_index;
+                    $data[$previousParticipantIndex] = [
+                        'Index No' => $answer->participant_index,
+                        'Grade' => $answer->grade
+                    ];
+
                 } else {
                     $counter++;
                 }
-                $data[$answer->participant_index][] = [
-                    'Index No' => $answer->participant_index,
-                    'Grade' => $answer->grade,
-                    "Q$counter" => sprintf("%s (%s)", $answer->answer, $answer->correct ? 'Correct' : 'Wrong'),
-                ];
+
+                $data[$previousParticipantIndex]["Q$counter"] = sprintf("%s (%s)", $answer->answer, $answer->correct ? 'Correct' : 'Wrong');
             }
 
             $headers = collect(['Index No', 'Grade'])->merge(
@@ -1537,7 +1539,7 @@ class CompetitionController extends Controller
 
             return response()->json([
                 'headers' => $headers,
-                'data' => $data
+                'data' => array_values($data)
             ]);
 
         } catch (\Exception $e) {
