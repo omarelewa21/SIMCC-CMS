@@ -5,10 +5,11 @@ namespace App\Jobs;
 use App\Models\AwardsStaticsResults;
 use App\Models\AwardsStaticsStatus;
 use App\Models\Competition;
-use App\Models\Participant;
+use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -19,44 +20,18 @@ class ComputeGroupAwardsStatics implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The competition instance.
-     *
-     * @var \App\Models\Competition
-     */
-    protected $competition;
-
-    /**
-     * The ID of the competition.
-     *
-     * @var int
-     */
-    protected $competitionId;
-
-    /**
-     * The group array.
-     *
-     * @var array
-     */
-    protected $group;
-
-    /**
-     * The ID of the group.
-     *
-     * @var int
-     */
-    protected $groupId;
-
-    /**
      * Create a new job instance.
      *
-     * @param  \App\Models\Competition  $competition
-     * @param  array  $group
      * @return void
      */
-    public function __construct(Competition $competition, array $group)
+    protected $competition;
+    protected $competitionId;
+    protected $group;
+    protected $groupId;
+    public function __construct(Competition $competition, $group)
     {
         $this->competition = $competition;
-        $this->competitionId = $competition->id;
+        $this->competitionId = $competition['id'];
         $this->group = $group;
         $this->groupId = $group['id'];
     }
@@ -69,85 +44,94 @@ class ComputeGroupAwardsStatics implements ShouldQueue
     public function handle()
     {
         try {
-            $participants = Participants::whereHas('country', function ($query) {
-                $query->where('marking_group_id', $this->groupId);
-            })->where('competition_id', $this->competitionId)->get();
+            $participantsQuery = $this->competition->participants()
+                ->join('competition_marking_group_country', 'participants.country_id', '=', 'competition_marking_group_country.country_id')
+                ->where('competition_marking_group_country.marking_group_id', $this->groupId);
 
-            $grades = $participants->groupBy('grade')->map(function ($gradeParticipants) {
-                $totalParticipants = $gradeParticipants->count();
-                $awards = $gradeParticipants->mapToGroups(function ($participant) {
-                    $result = $participant->result;
-                    if ($result && $result->award) {
-                        return [$result->award => $result->points];
+            $totalParticipants = $participantsQuery
+                ->groupBy('competition_marking_group_country.marking_group_id', 'participants.grade')
+                ->selectRaw('competition_marking_group_country.marking_group_id, participants.grade, count(participants.id) as total_participants, group_concat(participants.id) as participant_ids')
+                ->get();
+
+            $awardPoints = [];
+            $awardParticipants = [];
+
+            $totalGrades = count($totalParticipants);
+
+            foreach ($totalParticipants as $gradeData) {
+                $this->group['grades'][$gradeData->grade] = [
+                    'grade' => $gradeData->grade,
+                    'totalParticipants' => $gradeData->total_participants,
+                    'awards' => []
+                ];
+
+                $participantIds = explode(',', $gradeData->participant_ids);
+
+                foreach ($participantIds as $participantId) {
+                    $participant = Participants::find($participantId);
+                    $result = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+                    $award = $result ? $result->award : '';
+                    $points = $result ? $result->points : 0;
+                    if ($award) {
+                        $awardPoints[$award][$gradeData->grade][] = $points;
+                        $awardParticipants[$award][$gradeData->grade][] = $participantId;
                     }
-                })->map(function ($awardPoints) use ($totalParticipants) {
-                    $topPoints = $awardPoints->max();
-                    $leastPoints = $awardPoints->min();
-                    $participantsCount = $awardPoints->count();
-                    return [
+                }
+
+                $this->group['totalParticipants'] += $gradeData->total_participants;
+
+                // Update progress for each grade processed
+                $this->updateJobProgress(count($this->group['grades']), $totalGrades, 'Processing');
+            }
+
+            foreach ($awardPoints as $award => $gradePoints) {
+                foreach ($gradePoints as $grade => $points) {
+                    $topPoints = max($points);
+                    $leastPoints = min($points);
+                    $participantsCount = count($awardParticipants[$award][$grade]);
+                    $this->group['grades'][$grade]['awards'][$award] = [
                         'topPoints' => $topPoints,
                         'leastPoints' => $leastPoints,
                         'participantsCount' => $participantsCount,
-                        'participantsPercentage' => round(($participantsCount / $totalParticipants) * 100, 2),
-                        'awardsPercentage' => round(($participantsCount / $totalParticipants) * 100, 2),
+                        'participantsPercentage' => round(($participantsCount / $this->group['totalParticipants']) * 100, 2),
+                        'awardsPercentage' => round(($participantsCount / $this->group['totalParticipants']) * 100, 2)
                     ];
-                })->toArray();
+                }
+            }
 
-                return [
-                    'grade' => $gradeParticipants->first()->grade,
-                    'totalParticipants' => $totalParticipants,
-                    'awards' => $awards,
-                ];
-            })->values()->toArray();
-
-            $totalParticipants = $participants->count();
-            $this->group = [
-                'id' => $this->groupId,
-                'grades' => $grades,
-                'totalParticipants' => $totalParticipants,
-            ];
-
-            $this->updateJobProgress(count($grades), count($grades), 'Completed');
+            $this->updateJobProgress($totalGrades, $totalGrades, 'Completed');
             $this->updateAwardsStaticsResult($this->group);
-        } catch (Exception $e) {
-            $this->updateJobProgress(null, null, 'Failed', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->updateJobProgress($totalGrades, $totalGrades, 'Failed', $e->getMessage());
         }
     }
 
-    /**
-     * Update the job progress.
-     *
-     * @param  int|null  $processedCount
-     ** @param  int|null  $totalCount
-     * @param  string  $status
-     * @param  string  $error
-     * @return void
-     */
-    public function updateJobProgress(?int $processedCount, ?int $totalCount, string $status, string $error = '')
+    public function updateJobProgress($processedCount = null, $totalCount = null, $status = 'Pending', $error = '')
     {
-        $progress = $totalCount ? round(($processedCount / $totalCount) * 100) : 0;
+        $progress = 0;
+        if ($processedCount) {
+            $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
+        }
         AwardsStaticsStatus::updateOrCreate(
             ['group_id' => $this->groupId],
             [
                 'progress_percentage' => $progress,
                 'status' => $status,
-                'report' => $error,
+                'report' => $error
             ]
         );
     }
-
-    /**
-     * Update the awards statistics result.
-     *
-     * @param  array  $result
-     * @return void
-     */
-    public function updateAwardsStaticsResult(array $result)
+    public function updateAwardsStaticsResult($result)
     {
         try {
             AwardsStaticsResults::updateOrCreate(
-                ['group_id' => $this->groupId, 'competition_id' => $this->competitionId],
-                ['result' => $result]
+                [
+                    'group_id' => $this->groupId,
+                    'competition_id' => $this->competitionId,
+                ],
+                [
+                    'result' => $result
+                ]
             );
         } catch (Exception $e) {
             $this->updateJobProgress(null, null, '', $e->getMessage());
