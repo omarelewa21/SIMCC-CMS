@@ -69,12 +69,14 @@ class ComputeGroupAwardsStatics implements ShouldQueue
 
                 foreach ($participantIds as $participantId) {
                     $participant = Participants::find($participantId);
-                    $result = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
-                    $award = $result ? $result->award : '';
-                    $points = $result ? $result->points : 0;
-                    if ($award) {
-                        $awardPoints[$award][$gradeData->grade][] = $points;
-                        $awardParticipants[$award][$gradeData->grade][] = $participantId;
+                    if ($participant) {
+                        $result = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+                        $award = $result ? $result->award : '';
+                        $points = $result ? $result->points : 0;
+                        if ($award) {
+                            $awardPoints[$award][$gradeData->grade][] = $points;
+                            $awardParticipants[$award][$gradeData->grade][] = $participantId;
+                        }
                     }
                 }
 
