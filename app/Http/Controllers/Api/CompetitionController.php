@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Exports\ParticipantAnswersExport;
 use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
@@ -42,6 +43,7 @@ use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
+use Maatwebsite\Excel\Facades\Excel;
 
 //update participant session once competition mode change, add this changes once participant session done
 
@@ -1497,51 +1499,24 @@ class CompetitionController extends Controller
     public function downloadParticipantAnswers(Competition $competition)
     {
         try {
-            $answers = ParticipantsAnswer::whereIn('level_id',
-                    $competition->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
-                        ->select('competition_levels.id')->pluck('id')->toArray()
-                )
-                ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-                ->select('participants.grade', 'participant_answers.*')
-                ->orderBy('participant_index')
-                ->orderBy('task_id')
-                ->get();
-
-            $data = [];
-            $counter = 1;
-            $previousParticipantIndex = null;
-            $maxSize = 0;
-            foreach($answers as $answer) {
-                if($previousParticipantIndex != $answer->participant_index) {
-                    if($previousParticipantIndex) {
-                        $size = count($data[$previousParticipantIndex]) - 2;
-                        $maxSize = $size > $maxSize ? $size : $maxSize;
-                    }
-                    $counter = 1;
-                    $previousParticipantIndex = $answer->participant_index;
-                    $data[$previousParticipantIndex] = [
-                        'Index No' => $answer->participant_index,
-                        'Grade' => $answer->grade
-                    ];
-
-                } else {
-                    $counter++;
-                }
-
-                $data[$previousParticipantIndex]["Q$counter"] = sprintf("%s (%s)", $answer->answer, $answer->correct ? 'Correct' : 'Wrong');
-            }
-
-            $headers = collect(['Index No', 'Grade'])->merge(
-                collect(range(1, $maxSize))->map(function ($item) {
-                    return "Q$item";
-                })
-            );
-
+            [$data, $headers] = CompetitionService::getCompetitionAnswersData($competition);
             return response()->json([
                 'headers' => $headers,
                 'data' => array_values($data)
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => '' . $e->getMessage(),
+                'error'     => $e->getTraceAsString()
+            ], 500);
+        }
+    }
 
+    public function downloadParticipantAnswersFromDirectLink(Competition $competition)
+    {
+        try {
+            return Excel::download(new ParticipantAnswersExport($competition), "$competition->name - participant answers.csv", \Maatwebsite\Excel\Excel::CSV);
         } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,

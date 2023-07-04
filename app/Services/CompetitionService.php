@@ -7,6 +7,7 @@ use App\Models\CompetitionParticipantsResults;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use App\Models\Competition;
+use App\Models\ParticipantsAnswer;
 
 class CompetitionService
 {
@@ -267,5 +268,50 @@ class CompetitionService
                 ]));
             }
         }
+    }
+
+    public static function getCompetitionAnswersData(Competition $competition)
+    {
+        $answers = ParticipantsAnswer::whereIn('level_id',
+                $competition->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
+                    ->select('competition_levels.id')->pluck('id')->toArray()
+            )
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->select('participants.grade', 'participant_answers.*')
+            ->orderBy('participant_index')
+            ->orderBy('task_id')
+            ->get();
+
+        $data = [];
+        $counter = 1;
+        $previousParticipantIndex = null;
+        $maxSize = 0;
+        foreach($answers as $answer) {
+            if($previousParticipantIndex != $answer->participant_index) {
+                if($previousParticipantIndex) {
+                    $size = count($data[$previousParticipantIndex]) - 2;
+                    $maxSize = $size > $maxSize ? $size : $maxSize;
+                }
+                $counter = 1;
+                $previousParticipantIndex = $answer->participant_index;
+                $data[$previousParticipantIndex] = [
+                    'Index No' => $answer->participant_index,
+                    'Grade' => $answer->grade
+                ];
+
+            } else {
+                $counter++;
+            }
+
+            $data[$previousParticipantIndex]["Q$counter"] = sprintf("%s (%s)", $answer->answer, $answer->correct ? 'Correct' : 'Wrong');
+        }
+
+        $headers = collect(['Index No', 'Grade'])->merge(
+            collect(range(1, $maxSize))->map(function ($item) {
+                return "Q$item";
+            })
+        );
+
+        return [$data, $headers];
     }
 }
