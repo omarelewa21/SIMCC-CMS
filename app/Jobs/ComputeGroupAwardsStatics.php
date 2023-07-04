@@ -47,51 +47,59 @@ class ComputeGroupAwardsStatics implements ShouldQueue
             $participantsQuery = $this->competition->participants()
                 ->join('competition_marking_group_country', 'participants.country_id', '=', 'competition_marking_group_country.country_id')
                 ->where('competition_marking_group_country.marking_group_id', $this->groupId);
-
+        
             $totalParticipants = $participantsQuery
                 ->groupBy('competition_marking_group_country.marking_group_id', 'participants.grade')
                 ->selectRaw('competition_marking_group_country.marking_group_id, participants.grade, count(participants.id) as total_participants, group_concat(participants.id) as participant_ids')
                 ->get();
-
+        
             $awardPoints = [];
             $awardParticipants = [];
-
+        
             $totalGrades = count($totalParticipants);
-
+        
             foreach ($totalParticipants as $gradeData) {
-                $this->group['grades'][$gradeData->grade] = [
+                $this->group['grades'][] = [
                     'grade' => $gradeData->grade,
                     'totalParticipants' => $gradeData->total_participants,
                     'awards' => []
                 ];
-
+        
                 $participantIds = explode(',', $gradeData->participant_ids);
-
+        
                 foreach ($participantIds as $participantId) {
                     $participant = Participants::find($participantId);
                     if ($participant) {
                         $result = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
                         $award = $result ? $result->award : '';
                         $points = $result ? $result->points : 0;
+        
                         if ($award) {
+                            if(!isset($awardPoints[$award][$gradeData->grade])) {
+                                $awardPoints[$award][$gradeData->grade] = [];
+                            }
+                            if(!isset($awardParticipants[$award][$gradeData->grade])) {
+                                $awardParticipants[$award][$gradeData->grade] = [];
+                            }
                             $awardPoints[$award][$gradeData->grade][] = $points;
                             $awardParticipants[$award][$gradeData->grade][] = $participantId;
                         }
                     }
                 }
-
+        
                 $this->group['totalParticipants'] += $gradeData->total_participants;
-
+        
                 // Update progress for each grade processed
                 $this->updateJobProgress(count($this->group['grades']), $totalGrades, 'Processing');
             }
-
+        
             foreach ($awardPoints as $award => $gradePoints) {
                 foreach ($gradePoints as $grade => $points) {
                     $topPoints = max($points);
                     $leastPoints = min($points);
                     $participantsCount = count($awardParticipants[$award][$grade]);
-                    $this->group['grades'][$grade]['awards'][$award] = [
+                    $this->group['grades'][$grade-1]['awards'][] = [
+                        'award'=>$award,
                         'topPoints' => $topPoints,
                         'leastPoints' => $leastPoints,
                         'participantsCount' => $participantsCount,
@@ -100,7 +108,7 @@ class ComputeGroupAwardsStatics implements ShouldQueue
                     ];
                 }
             }
-
+        
             $this->updateJobProgress($totalGrades, $totalGrades, 'Completed');
             $this->updateAwardsStaticsResult($this->group);
         } catch (\Exception $e) {
