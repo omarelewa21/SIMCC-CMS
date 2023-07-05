@@ -666,7 +666,8 @@ class ParticipantsController extends Controller
 
     public function performanceReportsBulkDownload(getParticipantListRequest $request)
     {
-        $job = new GeneratePerformanceReports($request);
+        $user = auth()->user();
+        $job = new GeneratePerformanceReports($request, $user);
         $job_id = $this->dispatch($job);
         return response()->json([
             "status"    => 200,
@@ -735,5 +736,4 @@ class ParticipantsController extends Controller
 
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
     }
-    
 }

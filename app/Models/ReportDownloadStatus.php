@@ -9,5 +9,5 @@ class ReportDownloadStatus extends Model
 {
     use HasFactory;
     protected $table = 'report_download_status';
-    protected $fillable = ['job_id', 'progress_percentage', 'status', 'file_path'];
+    protected $fillable = ['job_id', 'progress_percentage', 'status', 'file_path', 'report'];
 }
