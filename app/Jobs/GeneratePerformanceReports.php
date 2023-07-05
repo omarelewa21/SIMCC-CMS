@@ -55,18 +55,18 @@ class GeneratePerformanceReports implements ShouldQueue
         try {
             foreach ($this->participants as $participant) {
 
-                try {
-                    $participantResult = CompetitionParticipantsResults::where('participant_index', $participant)
-                        ->with('participant')->firstOrFail()->makeVisible('report');
-                } catch (ModelNotFoundException $e) {
-                    // Update the progress for this job
-                    $this->progress++;
-                    $this->updateJobProgress($this->progress, $this->totalProgress);
-                    // Log the error and continue with the loop
-                    $logMessage = sprintf('%s ------- Failed ------- %s', $participant, 'No Results Found For This Participant');
-                    // Storage::append($logPath, $logMessage);
-                    continue;
-                }
+                // try {
+                $participantResult = CompetitionParticipantsResults::where('participant_index', $participant)
+                    ->with('participant')->first()->makeVisible('report');
+                // } catch (ModelNotFoundException $e) {
+                //     // Update the progress for this job
+                //     $this->progress++;
+                //     $this->updateJobProgress($this->progress, $this->totalProgress);
+                //     // Log the error and continue with the loop
+                //     $logMessage = sprintf('%s ------- Failed ------- %s', $participant, 'No Results Found For This Participant');
+                //     // Storage::append($logPath, $logMessage);
+                //     continue;
+                // }
 
                 if ($participantResult) {
                     if (is_null($participantResult->report)) {
@@ -118,7 +118,7 @@ class GeneratePerformanceReports implements ShouldQueue
             Storage::deleteDirectory($pdfDirPath);
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename);
         } catch (Exception $e) {
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed' . $e->getMessage());
+            $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', $e->getMessage());
         }
     }
 
@@ -159,7 +159,7 @@ class GeneratePerformanceReports implements ShouldQueue
         return $participants;
     }
 
-    public function updateJobProgress($processedCount, $totalCount, $status = 'Pending', $file_path = null)
+    public function updateJobProgress($processedCount, $totalCount, $status = 'Pending', $file_path = null, $report = null)
     {
         $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
         ReportDownloadStatus::updateOrCreate(
@@ -167,6 +167,7 @@ class GeneratePerformanceReports implements ShouldQueue
             [
                 'progress_percentage' => $progress,
                 'status' => $status,
+                'report' => $report,
                 'file_path' => $file_path
             ]
         );
