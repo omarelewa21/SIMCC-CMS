@@ -34,6 +34,7 @@ class ComputeGroupAwardsStatics implements ShouldQueue
         $this->competitionId = $competition['id'];
         $this->group = $group;
         $this->groupId = $group['id'];
+        $this->updateJobProgress(0, 100, AwardsStaticsStatus::STATUS_NOT_STARTED);
     }
 
     /**
@@ -47,38 +48,37 @@ class ComputeGroupAwardsStatics implements ShouldQueue
             $participantsQuery = $this->competition->participants()
                 ->join('competition_marking_group_country', 'participants.country_id', '=', 'competition_marking_group_country.country_id')
                 ->where('competition_marking_group_country.marking_group_id', $this->groupId);
-        
+
             $totalParticipants = $participantsQuery
                 ->groupBy('competition_marking_group_country.marking_group_id', 'participants.grade')
                 ->selectRaw('competition_marking_group_country.marking_group_id, participants.grade, count(participants.id) as total_participants, group_concat(participants.id) as participant_ids')
                 ->get();
-        
+
             $awardPoints = [];
             $awardParticipants = [];
-        
+
             $totalGrades = count($totalParticipants);
-        
+
             foreach ($totalParticipants as $gradeData) {
                 $this->group['grades'][] = [
                     'grade' => $gradeData->grade,
                     'totalParticipants' => $gradeData->total_participants,
                     'awards' => []
                 ];
-        
+
                 $participantIds = explode(',', $gradeData->participant_ids);
-        
+
                 foreach ($participantIds as $participantId) {
                     $participant = Participants::find($participantId);
                     if ($participant) {
                         $result = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
                         $award = $result ? $result->award : '';
                         $points = $result ? $result->points : 0;
-        
                         if ($award) {
-                            if(!isset($awardPoints[$award][$gradeData->grade])) {
+                            if (!isset($awardPoints[$award][$gradeData->grade])) {
                                 $awardPoints[$award][$gradeData->grade] = [];
                             }
-                            if(!isset($awardParticipants[$award][$gradeData->grade])) {
+                            if (!isset($awardParticipants[$award][$gradeData->grade])) {
                                 $awardParticipants[$award][$gradeData->grade] = [];
                             }
                             $awardPoints[$award][$gradeData->grade][] = $points;
@@ -86,20 +86,20 @@ class ComputeGroupAwardsStatics implements ShouldQueue
                         }
                     }
                 }
-        
+
                 $this->group['totalParticipants'] += $gradeData->total_participants;
-        
+
                 // Update progress for each grade processed
-                $this->updateJobProgress(count($this->group['grades']), $totalGrades, 'Processing');
+                $this->updateJobProgress(count($this->group['grades']), $totalGrades, AwardsStaticsStatus::STATUS_In_PROGRESS);
             }
-        
+
             foreach ($awardPoints as $award => $gradePoints) {
                 foreach ($gradePoints as $grade => $points) {
                     $topPoints = max($points);
                     $leastPoints = min($points);
                     $participantsCount = count($awardParticipants[$award][$grade]);
-                    $this->group['grades'][$grade-1]['awards'][] = [
-                        'award'=>$award,
+                    $this->group['grades'][$grade - 1]['awards'][] = [
+                        'award' => $award,
                         'topPoints' => $topPoints,
                         'leastPoints' => $leastPoints,
                         'participantsCount' => $participantsCount,
@@ -108,15 +108,15 @@ class ComputeGroupAwardsStatics implements ShouldQueue
                     ];
                 }
             }
-        
-            $this->updateJobProgress($totalGrades, $totalGrades, 'Completed');
+
+            $this->updateJobProgress(100, 100, AwardsStaticsStatus::STATUS_FINISHED);
             $this->updateAwardsStaticsResult($this->group);
         } catch (\Exception $e) {
-            $this->updateJobProgress($totalGrades, $totalGrades, 'Failed', $e->getMessage());
+            $this->updateJobProgress(0, 0, AwardsStaticsStatus::STATUS_BUG_DETECTED, $e->getMessage());
         }
     }
 
-    public function updateJobProgress($processedCount = null, $totalCount = null, $status = 'Pending', $error = '')
+    public function updateJobProgress($processedCount = null, $totalCount = null, $status = AwardsStaticsStatus::STATUS_In_PROGRESS, $error = '')
     {
         $progress = 0;
         if ($processedCount) {

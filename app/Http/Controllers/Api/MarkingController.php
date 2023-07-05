@@ -68,7 +68,7 @@ class MarkingController extends Controller
                 ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
 
             foreach ($data as $groupKey => $group) {
-                $awardStatics = AwardsStaticsResults::where('group_id', $group['id'])->first('result') ?? false;
+                $awardStatics = AwardsStaticsResults::where('group_id', $group['id'])->first('result') ? true : false;
                 $data[$groupKey]['award_statics'] = $awardStatics;
             }
 
@@ -479,38 +479,61 @@ class MarkingController extends Controller
             ], 500);
         }
     }
+
+    public function groupAwardsStaticsCheckProgress(Request $request)
+    {
+        $groupIds = $request->groups;
+        $groupJobs = AwardsStaticsStatus::whereIn('group_id', $groupIds)->get();
+        $totalPercentage = 0;
+        $totalJobsCount = count($groupJobs);
+        $totalCompletedJobsCount = 0;
+        $groupJobsProgress = $groupJobs->map(function ($groupAward) use (&$totalPercentage, &$totalJobsCount, &$totalCompletedJobsCount) {
+            $message = '';
+            if ($groupAward->status == AwardsStaticsStatus::STATUS_NOT_STARTED) {
+                $totalCompletedJobsCount++;
+                $message = "Job not started.";
+            } else if ($groupAward->status == AwardsStaticsStatus::STATUS_BUG_DETECTED) {
+                $totalJobsCount--;
+                $message = 'Bug detected.';
+            } else if ($groupAward->status == AwardsStaticsStatus::STATUS_FINISHED) {
+                $totalCompletedJobsCount++;
+                $message = "Job completed.";
+            } else if ($groupAward->status == AwardsStaticsStatus::STATUS_In_PROGRESS) {
+                $totalCompletedJobsCount++;
+                $message = "Job in progress.";
+            }
+            $percentage = $groupAward->progress_percentage;
+            $totalPercentage += $percentage;
+            return [
+                'id' => $groupAward->group_id,
+                'percentage' => $groupAward->progress_percentage,
+                'status' => $groupAward->status,
+                'message' => $message
+            ];
+        });
+        $totalPercentage = ($totalJobsCount > 0) ? round($totalPercentage / ($totalJobsCount * 100) * 100) : 0;
+
+        return [
+            'total_percentage' => $totalPercentage,
+            'status' => $totalPercentage == 100 ? AwardsStaticsStatus::STATUS_FINISHED : AwardsStaticsStatus::STATUS_In_PROGRESS,
+            'message' => $totalPercentage == 100 ? 'Job Completed' : 'Job In Progress',
+            'group_jobs' => $groupJobsProgress
+        ];
+    }
+
     public function getGroupAwardsStatics($groupId)
     {
-        $awards = AwardsStaticsStatus::where('group_id', $groupId)->first();
-        if ($awards) {
-            $progress = $awards->progress_percentage;
-            $status = $awards->status;
-            switch ($status) {
-                case 'Processing':
-                    return response()->json([
-                        'status' => 'In Progress',
-                        'progress' => $progress,
-                        'data' => false,
-                    ], 201);
-                case 'Failed':
-                    return response()->json([
-                        'status' => 'Failed',
-                        'progress' => $progress,
-                        'data' => false,
-                    ], 500);
-                case 'Completed':
-                    $result = AwardsStaticsResults::where('group_id', $groupId)->first('result');
-                    return response()->json([
-                        'status' => 'Completed',
-                        'progress' => $progress,
-                        'data' => $result['result'] ?? false,
-                    ], 200);
-            }
+        $result = AwardsStaticsResults::where('group_id', $groupId)->first('result');
+        if ($result) {
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Award statics retreived successfully",
+                'data' => $result['result'] ?? false,
+            ], 200);
         } else {
             return response()->json([
-                'status' => 'Not Computed',
-                'progress' => 0,
-                'message' => "awards statics doesn't exists",
+                'status' => 500,
+                'message' => "Awards statics doesn't exist",
             ], 201);
         }
     }
