@@ -201,4 +201,9 @@ class Competition extends Base
             );
         }
     }
+
+    public function levels()
+    {
+        return $this->hasManyThrough(CompetitionLevels::class, CompetitionRounds::class, 'competition_id', 'round_id', 'id', 'id');
+    }
 }
