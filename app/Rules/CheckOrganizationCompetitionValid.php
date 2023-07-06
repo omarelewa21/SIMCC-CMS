@@ -57,12 +57,32 @@ class CheckOrganizationCompetitionValid implements Rule, DataAwareRule
                 break;
         }
 
-        $query = CompetitionOrganization::where(['competition_id' => $value,'organization_id' => $organization_id,'country_id' => $country_id]);
-        $found = $query->count();
+        $competitionOrganization = CompetitionOrganization::where(
+            ['competition_id' => $value,'organization_id' => $organization_id,'country_id' => $country_id]
+        )->first();
 
-        if($found == 0) {
+        if(!$competitionOrganization) {
             $this->message = 'The selected competition does not exist or not available for this organization.';
             return false;
+        }
+
+        switch ($competitionOrganization->status) {
+            case 'active':
+                return true;
+                break;
+            case 'ready':
+                if(!auth()->user()->hasRole('super admin', 'admin', 'country partner')){
+                    $this->message = "your organization is ready, you can't add new participants to this competittion. please ask the admin to change the status or to add on your behalf.";
+                    return false;
+                }
+                break;
+            case 'lock':
+                if(!auth()->user()->hasRole('super admin', 'admin')){
+                    $this->message = "your organization is locked, you can't add new participants to this competittion. please ask the admin to change the status or to add on your behalf.";
+                    return false;
+                }
+            default:
+                break;
         }
 
         return true;
