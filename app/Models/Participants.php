@@ -6,7 +6,6 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
@@ -14,6 +13,8 @@ use Illuminate\Database\Eloquent\Prunable;
 class Participants extends Base
 {
     use HasFactory, Filterable, SoftDeletes, Prunable;
+
+    const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
     private static $whiteListFilter = [
         'status',
@@ -159,6 +160,11 @@ class Participants extends Base
     public function answers()
     {
         return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+    }
+
+    public function competition()
+    {
+        return $this->competition_organization()->with('competition')->first()->competition;
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
