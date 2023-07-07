@@ -71,16 +71,17 @@ class CheckOrganizationCompetitionValid implements Rule, DataAwareRule
                 return true;
                 break;
             case 'ready':
-                if(!auth()->user()->hasRole('super admin', 'admin', 'country partner')){
+                if(!auth()->user()->hasRole(['super admin', 'admin', 'country partner'])){
                     $this->message = "your organization is ready, you can't add new participants to this competittion. please ask the admin to change the status or to add on your behalf.";
                     return false;
                 }
                 break;
             case 'lock':
-                if(!auth()->user()->hasRole('super admin', 'admin')){
+                if(!auth()->user()->hasRole(['super admin', 'admin'])){
                     $this->message = "your organization is locked, you can't add new participants to this competittion. please ask the admin to change the status or to add on your behalf.";
                     return false;
                 }
+                break;
             default:
                 break;
         }
