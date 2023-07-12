@@ -19,19 +19,20 @@ class ComputeGroupAwardsStatics implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    protected $competition;
+    protected $competitionId;
+    protected $group;
+    protected $groupId;
+
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    protected $competition;
-    protected $competitionId;
-    protected $group;
-    protected $groupId;
     public function __construct(Competition $competition, $group)
     {
         $this->competition = $competition;
-        $this->competitionId = $competition['id'];
+        $this->competitionId = $competition->id;
         $this->group = $group;
         $this->groupId = $group['id'];
         $this->updateJobProgress(0, 100, AwardsStaticsStatus::STATUS_NOT_STARTED);
@@ -46,12 +47,12 @@ class ComputeGroupAwardsStatics implements ShouldQueue
     {
         try {
             $participantsQuery = $this->competition->participants()
-                ->join('competition_marking_group_country', 'participants.country_id', '=', 'competition_marking_group_country.country_id')
-                ->where('competition_marking_group_country.marking_group_id', $this->groupId);
+                ->join('competition_participants_results', 'participants.index_no', '=', 'competition_participants_results.participant_index')
+                ->where('competition_participants_results.group_id', $this->groupId);
 
             $totalParticipants = $participantsQuery
-                ->groupBy('competition_marking_group_country.marking_group_id', 'participants.grade')
-                ->selectRaw('competition_marking_group_country.marking_group_id, participants.grade, count(participants.id) as total_participants, group_concat(participants.id) as participant_ids')
+                ->groupBy('competition_participants_results.group_id', 'participants.grade')
+                ->selectRaw('competition_participants_results.group_id, participants.grade, count(participants.id) as total_participants, group_concat(participants.id) as participant_ids')
                 ->get();
 
             $awardPoints = [];
@@ -90,33 +91,36 @@ class ComputeGroupAwardsStatics implements ShouldQueue
                 $this->group['totalParticipants'] += $gradeData->total_participants;
 
                 // Update progress for each grade processed
-                $this->updateJobProgress(count($this->group['grades']), $totalGrades, AwardsStaticsStatus::STATUS_In_PROGRESS);
+                $this->updateJobProgress(count($this->group['grades']), $totalGrades, AwardsStaticsStatus::STATUS_IN_PROGRESS);
             }
-
-            foreach ($awardPoints as $award => $gradePoints) {
-                foreach ($gradePoints as $grade => $points) {
-                    $topPoints = max($points);
-                    $leastPoints = min($points);
-                    $participantsCount = count($awardParticipants[$award][$grade]);
-                    $this->group['grades'][$grade - 1]['awards'][] = [
-                        'award' => $award,
-                        'topPoints' => $topPoints,
-                        'leastPoints' => $leastPoints,
-                        'participantsCount' => $participantsCount,
-                        'participantsPercentage' => round(($participantsCount / $this->group['totalParticipants']) * 100, 2),
-                        'awardsPercentage' => round(($participantsCount / $this->group['totalParticipants']) * 100, 2)
-                    ];
+            try {
+                foreach ($awardPoints as $award => $gradePoints) {
+                    foreach ($gradePoints as $grade => $points) {
+                        $topPoints = max($points);
+                        $leastPoints = min($points);
+                        $participantsCount = count($awardParticipants[$award][$grade]);
+                        $this->group['grades'][$grade - 1]['awards'][] = [
+                            'award' => $award,
+                            'topPoints' => $topPoints,
+                            'leastPoints' => $leastPoints,
+                            'participantsCount' => $participantsCount,
+                            'participantsPercentage' => round(($participantsCount / $this->group['grades'][$grade - 1]['totalParticipants']) * 100, 2),
+                            'awardsPercentage' => round(($participantsCount / $this->group['totalParticipants']) * 100, 2)
+                        ];
+                    }
                 }
-            }
 
-            $this->updateJobProgress(100, 100, AwardsStaticsStatus::STATUS_FINISHED);
-            $this->updateAwardsStaticsResult($this->group);
+                $this->updateJobProgress(100, 100, AwardsStaticsStatus::STATUS_FINISHED);
+                $this->updateAwardsStaticsResult($this->group);
+            } catch (Exception $e) {
+                $this->updateJobProgress(0, 0, AwardsStaticsStatus::STATUS_BUG_DETECTED, $e->getMessage());
+            }
         } catch (\Exception $e) {
             $this->updateJobProgress(0, 0, AwardsStaticsStatus::STATUS_BUG_DETECTED, $e->getMessage());
         }
     }
 
-    public function updateJobProgress($processedCount = null, $totalCount = null, $status = AwardsStaticsStatus::STATUS_In_PROGRESS, $error = '')
+    public function updateJobProgress($processedCount = null, $totalCount = null, $status = AwardsStaticsStatus::STATUS_IN_PROGRESS, $error = '')
     {
         $progress = 0;
         if ($processedCount) {
@@ -131,6 +135,7 @@ class ComputeGroupAwardsStatics implements ShouldQueue
             ]
         );
     }
+
     public function updateAwardsStaticsResult($result)
     {
         try {

@@ -9,7 +9,7 @@ class AwardsStaticsStatus extends Model
 {
     use HasFactory;
     const STATUS_NOT_STARTED  = "Not Started";
-    const STATUS_In_PROGRESS  = "In Progress";
+    const STATUS_IN_PROGRESS  = "In Progress";
     const STATUS_FINISHED     = "Finished";
     const STATUS_BUG_DETECTED = "Bug Detected";
     protected $table = 'group_awards_statics_status';

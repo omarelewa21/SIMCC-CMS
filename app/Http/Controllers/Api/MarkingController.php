@@ -71,7 +71,7 @@ class MarkingController extends Controller
                 $awardStatics = AwardsStaticsResults::where('group_id', $group['id'])->first('result') ? true : false;
                 $data[$groupKey]['award_statics'] = $awardStatics;
             }
-
+            $headerData['computed'] = $this->checkCompetitionComputed($competition) == 1 ? true : false;
             return response()->json([
                 "status"        => 200,
                 "message"       => "Marking preparation list retrieve successful",
@@ -84,6 +84,20 @@ class MarkingController extends Controller
                 "message"   => "Marking preparation list retrieve unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
+        }
+    }
+    public function checkCompetitionComputed($competition)
+    {
+        $uncomputed_levels = DB::table('competition_levels')
+            ->join('competition_rounds', 'competition_levels.round_id', '=', 'competition_rounds.id')
+            ->where('competition_levels.computing_status', '<>', 'Finished')
+            ->where('competition_rounds.competition_id', '=', $competition->id)
+            ->count();
+
+        if ($uncomputed_levels == 0) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -447,37 +461,37 @@ class MarkingController extends Controller
 
     public function computeGroupsAwardStatics(Competition $competition, Request $request)
     {
-        try {
-            $groups = CompetitionMarkingGroup::whereIn('id', $request->groups)
-                ->select('id', 'name')
-                ->get()
-                ->mapWithKeys(function ($group) {
-                    return [
-                        $group->id => [
-                            'name' => $group->name,
-                            'id'   => $group->id,
-                            'totalParticipants' => 0,
-                            'grades' => []
-                        ]
-                    ];
-                })
-                ->toArray();
-            foreach ($groups as $group) {
-                $this->clearAwardsStaticsRecords($competition['id'], $group['id']);
-                $job = new ComputeGroupAwardsStatics($competition, $group);
-                $this->dispatch($job);
-            }
-            return response()->json([
-                "status"        => 200,
-                "message"       => "Awards Computing Started Successfully",
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                "status"    => 500,
-                "message"   => "Awards Computing Failed To Start",
-                "error"     => $e->getMessage()
-            ], 500);
+        // try {
+        $groups = CompetitionMarkingGroup::whereIn('id', $request->groups)
+            ->select('id', 'name')
+            ->get()
+            ->mapWithKeys(function ($group) {
+                return [
+                    $group->id => [
+                        'name' => $group->name,
+                        'id'   => $group->id,
+                        'totalParticipants' => 0,
+                        'grades' => []
+                    ]
+                ];
+            })
+            ->toArray();
+        foreach ($groups as $group) {
+            $this->clearAwardsStaticsRecords($competition['id'], $group['id']);
+            $job = new ComputeGroupAwardsStatics($competition, $group);
+            $this->dispatch($job);
         }
+        return response()->json([
+            "status"        => 200,
+            "message"       => "Awards Computing Started Successfully",
+        ], 200);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         "status"    => 500,
+        //         "message"   => "Awards Computing Failed To Start",
+        //         "error"     => $e->getMessage()
+        //     ], 500);
+        // }
     }
 
     public function groupAwardsStaticsCheckProgress(Request $request)
@@ -498,7 +512,7 @@ class MarkingController extends Controller
             } else if ($groupAward->status == AwardsStaticsStatus::STATUS_FINISHED) {
                 $totalCompletedJobsCount++;
                 $message = "Job completed.";
-            } else if ($groupAward->status == AwardsStaticsStatus::STATUS_In_PROGRESS) {
+            } else if ($groupAward->status == AwardsStaticsStatus::STATUS_IN_PROGRESS) {
                 $totalCompletedJobsCount++;
                 $message = "Job in progress.";
             }
@@ -515,7 +529,7 @@ class MarkingController extends Controller
 
         return [
             'total_percentage' => $totalPercentage,
-            'status' => $totalPercentage == 100 ? AwardsStaticsStatus::STATUS_FINISHED : AwardsStaticsStatus::STATUS_In_PROGRESS,
+            'status' => $totalPercentage == 100 ? AwardsStaticsStatus::STATUS_FINISHED : AwardsStaticsStatus::STATUS_IN_PROGRESS,
             'message' => $totalPercentage == 100 ? 'Job Completed' : 'Job In Progress',
             'group_jobs' => $groupJobsProgress
         ];
