@@ -149,6 +149,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
         Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
         Route::delete("",[TasksController::class,"delete"])->name('task.delete');
+        Route::post("duplicate/{task}",[TasksController::class,"duplicate"])->name('task.duplicate');
     });
 
     Route::group(["prefix" => "collection"], function () {
