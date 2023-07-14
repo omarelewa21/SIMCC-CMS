@@ -461,37 +461,38 @@ class MarkingController extends Controller
 
     public function computeGroupsAwardStatics(Competition $competition, Request $request)
     {
-        // try {
-        $groups = CompetitionMarkingGroup::whereIn('id', $request->groups)
-            ->select('id', 'name')
-            ->get()
-            ->mapWithKeys(function ($group) {
-                return [
-                    $group->id => [
-                        'name' => $group->name,
-                        'id'   => $group->id,
-                        'totalParticipants' => 0,
-                        'grades' => []
-                    ]
-                ];
-            })
-            ->toArray();
-        foreach ($groups as $group) {
-            $this->clearAwardsStaticsRecords($competition['id'], $group['id']);
-            $job = new ComputeGroupAwardsStatics($competition, $group);
-            $this->dispatch($job);
+        try {
+            $groups = CompetitionMarkingGroup::whereIn('id', $request->groups)
+                ->select('id', 'name')
+                ->get()
+                ->mapWithKeys(function ($group) {
+                    return [
+                        $group->id => [
+                            'name' => $group->name,
+                            'id'   => $group->id,
+                            'totalParticipants' => 0,
+                            'grades' => []
+                        ]
+                    ];
+                })
+                ->toArray();
+
+            foreach ($groups as $group) {
+                $this->clearAwardsStaticsRecords($competition['id'], $group['id']);
+                $job = new ComputeGroupAwardsStatics($competition, $group);
+                $this->dispatch($job);
+            }
+            return response()->json([
+                "status"        => 200,
+                "message"       => "Awards Computing Started Successfully",
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Awards Computing Failed To Start",
+                "error"     => $e->getMessage()
+            ], 500);
         }
-        return response()->json([
-            "status"        => 200,
-            "message"       => "Awards Computing Started Successfully",
-        ], 200);
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         "status"    => 500,
-        //         "message"   => "Awards Computing Failed To Start",
-        //         "error"     => $e->getMessage()
-        //     ], 500);
-        // }
     }
 
     public function groupAwardsStaticsCheckProgress(Request $request)
