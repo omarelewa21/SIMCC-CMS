@@ -99,6 +99,10 @@ class Tasks extends Base
         return $this->hasMany(TasksContent::class,'task_id','id');
     }
 
+    public function gradeDifficulty () {
+        return $this->morphMany(RecommendedDifficulty::class, 'gradeDifficulty');
+    }
+
     public function getAnswerTypeAttribute($value)
     {
         switch($value)

@@ -20,6 +20,7 @@ use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tasks\CreateTaskService;
+use App\Services\Tasks\DuplicateTaskService;
 
 class TasksController extends Controller
 {
@@ -351,50 +352,20 @@ class TasksController extends Controller
     {
         DB::beginTransaction();
         try {
-            $newTask = $task->replicate();
-            $newTask->identifier = $task->identifier . '-' . Tasks::where('identifier', 'like', $task->identifier . '%')->count();
-            $newTask->taskContents()->create([
-                'language_id' => env('APP_DEFAULT_LANG'),
-                'task_title' => $task->taskContents->first()->task_title,
-                'content' => $task->taskContents->first()->content,
-                'status' => auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending moderation',
-                'created_by_userid' => auth()->user()->id
-            ]);
-
-            $answers = $task->taskAnswers->map(function ($answer, $key) use ($task) {
-                $temp = array([
-                    'task_id' => $task->id,
-                    'lang_id' => env('APP_DEFAULT_LANG'),
-                    'answer' => $answer->answer,
-                    'position' => $key + 1,
-                ]);
-                return $temp;
-    
-            })->toArray();
-            // add task answers
-            $labels = $task->taskAnswers()->createMany(Arr::collapse($answers))->pluck('id')->map(function ($answerId, $key) use ($task) {
-                $temp = array([
-                    'task_answers_id' => $answerId,
-                    'lang_id' => env('APP_DEFAULT_LANG'),
-                    'content' => $task->taskAnswers[$key]->taskLabels->first()->content,
-                ]);
-                return $temp;
-            });
-            // add labels for task answers
-            TasksLabels::insert(Arr::collapse($labels));
-            $newTask->save();
-            return response()->json([
-                "status"    => 200,
-                "message"   => "Tasks duplicated successfully"
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
+            (new DuplicateTaskService($task))->duplicate();
+        } catch(\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks duplication was unsuccessful" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "message"   => "Tasks duplicate was unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => 'Tasks duplicated successfully'
+        ]);
     }
+
+
 }
