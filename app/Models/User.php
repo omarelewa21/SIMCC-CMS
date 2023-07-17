@@ -134,11 +134,6 @@ class User extends Authenticatable
         );
     }
 
-    /**
-     * set last modified by attribute
-     *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
-     */
     protected function lastModifiedBy(): Attribute
     {
         return Attribute::make(
@@ -153,14 +148,6 @@ class User extends Authenticatable
                 return '-';
             }
         );
-    }
-
-    public function getLastModifiedByAttribute() {
-        if (isset($this->last_modified_userid)){
-            $username = User::find($this->last_modified_userid)->username;
-            return $username . ' ' .$this->updated_at;
-        }
-        return '-';
     }
 
     /**

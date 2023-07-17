@@ -32,6 +32,16 @@ class Collections extends Base
     {
         parent::booted();
 
+        static::creating(function($collection) {
+            $collection->created_by_userid = auth()->id();
+            if(auth()->user()->hasRole(['super admin', 'admin'])) {
+                $collection->status = 'active';
+                $collection->approved_by_userid = auth()->id();
+            } else {
+                $collection->status = 'pending moderation';
+            }
+        });
+
         static::saving(function($collection) {
             $collection->last_modified_userid = auth()->id();
         });
