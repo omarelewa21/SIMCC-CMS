@@ -110,6 +110,7 @@ class ComputeGroupAwardsStatics implements ShouldQueue
                         });
                     }
                 }
+                $this->group['grades']=array_values($this->group['grades']);
                 $this->updateJobProgress(100, 100, AwardsStaticsStatus::STATUS_FINISHED);
                 $this->updateAwardsStaticsResult($this->group);
             } catch (Exception $e) {
