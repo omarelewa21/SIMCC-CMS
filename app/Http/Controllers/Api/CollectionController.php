@@ -11,18 +11,16 @@ use App\Models\CompetitionLevels;
 use App\Models\DomainsTags;
 use App\Models\Competition;
 use App\Models\Tasks;
-use App\Models\User;
 use App\Http\Requests\collection\DeleteCollectionsRequest;
 use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
 use App\Rules\CheckMultipleVaildIds;
 use App\Services\Collection\CreateCollectionService;
+use App\Services\Collection\DuplicateCollectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 
 class CollectionController extends Controller
@@ -372,5 +370,25 @@ class CollectionController extends Controller
     private function CheckUploadedAnswersCount($collection_id) {
         $uploadAnswersCount = CompetitionLevels::with(['participantsAnswersUploaded'])->where('collection_id',$collection_id)->get()->pluck('participantsAnswersUploaded')->flatten()->count();
         $uploadAnswersCount == 0 ?:  abort(403, 'Unauthorized action, Answers have been uploaded to collection');;
+    }
+
+    public function duplicate(Request $request, Collections $collection)
+    {
+        DB::beginTransaction();
+        try {
+            (new DuplicateCollectionService($request, $collection))->duplicate();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status"    => 500,
+                "message"   => "collection duplicate unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"  => 200,
+            "message" => "collection duplicate successful"
+        ]);
     }
 }

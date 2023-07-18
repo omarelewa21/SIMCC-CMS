@@ -161,6 +161,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::post("/sections",[CollectionController::class,"add_sections"])->name('collection.sections.add');
         Route::patch("/sections",[CollectionController::class,"update_sections"])->name('collection.sections.update');
         Route::delete("/section",[CollectionController::class,"delete_section"])->name('collection.section.delete');
+        Route::post("duplicate/{collection}",[CollectionController::class,"duplicate"])->name('collection.duplicate');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {

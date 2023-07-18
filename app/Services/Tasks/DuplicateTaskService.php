@@ -20,6 +20,7 @@ class DuplicateTaskService
         $newTask->identifier = "$newTask->identifier-" . ($counts + 1);
         $newTask->save();
         $this->syncRelations($newTask);
+        return $newTask;
     }
 
     private function syncRelations(Tasks $newTask)
