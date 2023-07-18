@@ -56,7 +56,7 @@ class CreateTaskService
     private function addTaskContent(Tasks $task, array $data)
     {
         $task->taskContents()->create([
-            'language_id' => env('APP_DEFAULT_LANG'),
+            'language_id' => env('APP_DEFAULT_LANG', 171),
             'task_title' => $data['title'],
             'content' => $data['content'],
             'status' => auth()->user()->hasRole(['super admin', 'admin']) ? 'active' : 'pending moderation',
@@ -69,7 +69,7 @@ class CreateTaskService
         $answers = collect($data['answers'])->map(function ($answer, $key) use ($task) {
             $temp = array([
                 'task_id' => $task->id,
-                'lang_id' => env('APP_DEFAULT_LANG'),
+                'lang_id' => env('APP_DEFAULT_LANG', 171),
                 'answer' => $answer,
                 'position' => $key + 1,
             ]);
@@ -81,7 +81,7 @@ class CreateTaskService
             ->map(function ($answerId, $key) use ($data) {
                 $temp = array([
                     'task_answers_id' => $answerId,
-                    'lang_id' => env('APP_DEFAULT_LANG'),
+                    'lang_id' => env('APP_DEFAULT_LANG', 171),
                     'content' => $data['labels'][$key] ?: '-',
                 ]);
                 return $temp;

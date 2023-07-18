@@ -225,7 +225,7 @@ class TasksController extends Controller
             if($request->get('re-moderate')) {
                 Tasks::findOrFail($request->id)
                     ->taskContents()
-                    ->where('language_id', '!=' ,env('APP_DEFAULT_LANG'))
+                    ->where('language_id', '!=' ,env('APP_DEFAULT_LANG', 171))
                     ->update(['status' => 'pending moderation']);
             }
 
@@ -284,7 +284,7 @@ class TasksController extends Controller
                 $answers = collect($request->answers)->map(function ($answer, $key) use($task){
                     return array([
                         'task_id'   => $task->id,
-                        'lang_id'   => env('APP_DEFAULT_LANG'),
+                        'lang_id'   => env('APP_DEFAULT_LANG', 171),
                         'answer'    => $answer,
                         'position'  => $key + 1,
                     ]);
@@ -296,7 +296,7 @@ class TasksController extends Controller
                     ->map(function ($answerId, $key) use($labels){
                         return array([
                             'task_answers_id'   => $answerId,
-                            'lang_id'           => env('APP_DEFAULT_LANG'),
+                            'lang_id'           => env('APP_DEFAULT_LANG', 171),
                             'content'           => $labels[$key],
                         ]);
                 });
