@@ -1,16 +1,13 @@
 <?php
 
-namespace App\Http\Requests\collection;
+namespace App\Http\Requests\Collection;
 
-use App\Rules\CheckCollectionUse;
 use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeleteCollectionsRequest extends FormRequest
+class DeleteSectionRequest extends FormRequest
 {
     use CollectionAuthorizeRequestTrait;
-
-    protected $mode = 'delete';
 
     /**
      * Get the validation rules that apply to the request.
@@ -20,8 +17,9 @@ class DeleteCollectionsRequest extends FormRequest
     public function rules()
     {
         return [
-            'id'    => 'required|array',
-            'id.*'  => ['required', 'integer', 'distinct', new CheckCollectionUse]
+            'collection_id' => 'required|integer|exists:collection,id',
+            'id'            => 'required|array',
+            'id.*'          => 'required|integer|distinct|exists:collection_sections,id'
         ];
     }
 }

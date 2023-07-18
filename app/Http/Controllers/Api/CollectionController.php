@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Collection\AddSectionRequest;
 use App\Http\Requests\Collection\CreateCollectionRequest;
 use App\Models\Collections;
 use App\Models\CollectionSections;
@@ -12,6 +13,7 @@ use App\Models\DomainsTags;
 use App\Models\Competition;
 use App\Models\Tasks;
 use App\Http\Requests\collection\DeleteCollectionsRequest;
+use App\Http\Requests\Collection\DeleteSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\collection\UpdateCollectionSettingsRequest;
@@ -219,17 +221,9 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function add_sections(Request $request)
+    public function add_sections(AddSectionRequest $request)
     {
-        $validated = $request->validate([
-            'collection_id' => 'required|integer|exists:collection,id',
-            'groups' => 'required|array',
-            'groups.*.task_id' => 'array|required',
-            'groups.*.task_id.*' => 'required|integer',//exists:tasks,id
-            'sort_randomly' => 'boolean|required',
-            'allow_skip' => 'boolean|required',
-            'description' => 'string|max:65535',
-        ]);
+        $validated = $request->all();
 
         try {
             $collection_id = Arr::pull($validated, 'collection_id');
@@ -306,12 +300,8 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function delete_section (Request $request) {
-        $validated = $request->validate([
-            'collection_id' => 'required|integer|exists:collection,id',
-            'id' => 'required|array',
-            'id.*' => 'required|integer|distinct|exists:collection_sections,id'
-        ]);
+    public function delete_section (DeleteSectionRequest $request) {
+        $validated = $request->all();
 
         $collection_id = Arr::pull($validated, 'collection_id');
         $sections_id = Arr::pull($validated, 'id');
@@ -339,9 +329,10 @@ class CollectionController extends Controller
         } catch(\Exception $e){
             // do task when error
             return response()->json([
-                "status" => 500,
-                "message" => "collection section delete unsuccessful"
-            ]);
+                "status"  => 500,
+                "message" => "collection section delete unsuccessful" . $e->getMessage(),
+                "error"   => strval($e)
+            ], 500);
         }
 
     }
@@ -389,6 +380,16 @@ class CollectionController extends Controller
         return response()->json([
             "status"  => 200,
             "message" => "collection duplicate successful"
+        ]);
+    }
+
+    public function verify(Collections $collection)
+    {
+        $collection->status = Collections::STATUS_VERIFIED;
+        $collection->save();
+        return response()->json([
+            "status"  => 200,
+            "message" => "collection verified successfully"
         ]);
     }
 }

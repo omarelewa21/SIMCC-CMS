@@ -2,21 +2,14 @@
 
 namespace App\Http\Requests\collection;
 
+use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateCollectionSettingsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
+    use CollectionAuthorizeRequestTrait;
 
     /**
      * Get the validation rules that apply to the request.

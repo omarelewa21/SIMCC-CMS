@@ -10,7 +10,7 @@ class Collections extends Base
 {
     use HasFactory,Filterable, SoftDeletes;
     
-    const STATUS_VERIFIED = "Verified";
+    const STATUS_VERIFIED = "verified";
     const STATUS_PENDING_MODERATION = "pending moderation";
     const STATUS_ACTIVE = "active";
 

@@ -3,19 +3,12 @@
 namespace App\Http\Requests\collection;
 
 use App\Models\Collections;
+use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCollectionSectionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
+    use CollectionAuthorizeRequestTrait;
 
     /**
      * Get the validation rules that apply to the request.
