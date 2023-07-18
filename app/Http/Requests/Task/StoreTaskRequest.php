@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\tasks;
+namespace App\Http\Requests\Task;
 
 use App\Http\Requests\CreateBaseRequest;
 use App\Rules\CheckAnswerLabelEqual;
