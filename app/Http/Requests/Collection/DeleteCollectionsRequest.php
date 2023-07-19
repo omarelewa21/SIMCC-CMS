@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\collection;
+namespace App\Http\Requests\Collection;
 
 use App\Rules\CheckCollectionUse;
 use App\Traits\CollectionAuthorizeRequestTrait;
