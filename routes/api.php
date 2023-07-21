@@ -105,7 +105,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::get("/{competition}",[CompetitionController::class,"show"])->name('competition.show');
         Route::patch("/edit-settings/{competition}",[CompetitionController::class,"update"])->name('competition.update');
         Route::delete("",[CompetitionController::class,"delete"])->name('competition.delete');
-        Route::post("/upload_answers",[CompetitionController::class,"upload_answers"])->name('competition.upload_answers');
+        Route::post("/upload_answers",[CompetitionController::class,"uploadAnswers"])->name('competition.upload_answers');
         Route::get("/difficultyandpoints/list",[AssignDifficultyPointsController::class,"list"])->name('competition.difficultyandpoints.list');
         Route::patch("/difficultyandpoints",[AssignDifficultyPointsController::class,"update"])->name('competition.difficultyandpoints.update');
         Route::post("/rounds",[CompetitionController::class,"addRoundsRoute"])->name('competition.rounds.add');

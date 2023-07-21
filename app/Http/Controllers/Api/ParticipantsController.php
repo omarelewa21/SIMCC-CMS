@@ -10,7 +10,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use \Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
@@ -20,7 +19,6 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
-use App\Http\Requests\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
@@ -248,166 +246,6 @@ class ParticipantsController extends Controller
             ], 500);
         }
     }
-
-//    public function list_orginial (Request $request) {
-//
-//        try {
-//            $validated = $request->validate([
-//                'index_no' => 'integer',
-//                'country_id' => 'integer',
-//                'organization_id' => 'integer',
-//                'competition_organization_id' => 'integer',
-//                'competition_id' => 'integer',
-//                'school_id' => 'integer',
-//                'status' => 'string',
-//                'private' => 'boolean',
-//                'limits' => 'integer',
-//                'page' => 'integer',
-//                'search' => 'max:255'
-//            ]);
-//
-//            if($request->limits == "0") {
-//                $limits = 99999999;
-//            } else {
-//                $limits = $request->limits ?? 10; //set default to 10 rows per page
-//            }
-//
-//            $searchKey = isset($validated['search']) ? $validated['search'] : null;
-//
-//            $eagerload = ['school:id,name','competition_organization.competition:id,name,alias','competition_organization.organization:id,name','tuition_centre:id,name'];
-//
-//            $countries = Countries::all()->keyBy('id')->toArray();
-//
-//            $participantModel = Participants::with($eagerload)
-//                ->AcceptRequest(['status', 'grade', 'country_id', 'index_no', 'competition_organization_id']);
-//
-//            switch(auth()->user()->role_id) {
-//                case 2:
-//                case 4:
-//                    $ids = CompetitionOrganization::where(['country_id' => auth()->user()->country_id,'organization_id' => auth()->user()->organization_id])->pluck('id')->toArray();
-//                    $participantModel->whereIn("competition_organization_id", $ids);
-//                    break;
-//                case 3:
-//                case 5:
-//                    $ids = CompetitionOrganization::where(['country_id' => auth()->user()->country_id,'organization_id' => auth()->user()->organization_id])->pluck('id')->toArray();
-//                    $participantModel->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
-//                        ->orWhere("school_id" , auth()->user()->school_id);
-//                    break;
-//            }
-//
-//            /* if filter by private school */
-//            if(isset($request['private'])) {
-//                if($request['private']) {
-//                    $participantModel->whereNotNull("tuition_centre_id");
-//                }
-//                else {
-//                    $participantModel->whereNull("tuition_centre_id");
-//                }
-//            }
-//
-//            $returnFiltered = $participantModel->filter()->get();
-//
-//            $participantCollection = collect($returnFiltered)->map(function ($item) use ($countries,$validated) { // match country id and add country name into the collection
-//
-//
-//                if ($item['country_id']) {
-//                    $item['country_name'] = $countries[$item['country_id']]['display_name'];
-//                }
-//
-//                if ($item['school_id']) {
-//                    $item['school_name'] = $item['school']['name'];
-//                }
-//
-//                if ($item['tuition_centre_id']) {
-//                    $item['tuition_centre_name'] = $item['tuition_centre']['name'];
-//                }
-//
-//                $item['private'] = isset($item['tuition_centre_id']) ? 1 : 0;
-//                $item['competition_name'] = $item['competition_organization']['competition']['name'];
-//                $item['competition_alias'] = $item['competition_organization']['competition']['alias'];
-//                $item['competition_id'] = $item['competition_organization']['competition']['id'];
-//                $item['competition_organization_id'] = $item['competition_organization']['id'];
-//                $item['organization_id'] = $item['competition_organization']['id'];
-//                $item['organization_name'] = $item['competition_organization']['organization']['name'];
-//
-//                unset($item['competition']); //remove nested roles
-//                unset($item['competition_organization']); //remove nested competition_partner
-//                unset($item['school']); //remove nested school
-//                unset($item['tuition_centre']); //remove nested tuition centre
-//
-//                if(isset($validated['organization_id'])) { //filter by organization id, since participant table dont dont organization_id, filter it row by row during mapping collection.
-//                    if($item['organization_id'] == $validated['organization_id']) {
-//                        return $item;
-//                    }
-//                } else {
-//                    return $item;
-//                }
-//
-//            })->filter();
-//
-//            /**
-//             * Lists of availabe filters
-//             */
-//            $availUserStatus = $participantCollection->map(function ($item) {
-//                return $item['status'];
-//            })->unique()->values();
-//            $availGrade = $participantCollection->map(function ($item) {
-//                return $item['grade'];
-//            })->unique()->sort()->values();
-//            $availPrivate = $participantCollection->map(function ($item) {
-//                return $item['private'];
-//            })->unique()->values();
-//            $availCountry = $participantCollection->map(function ($item) {
-//                return ["id" => $item['country_id'], "name" => $item['country_name']];
-//            })->unique()->sortBy('name')->values();
-//            $availCompetition = $participantCollection->map(function ($item) {
-//                return ["id" => $item['competition_id'], "name" => $item['competition_name']];
-//            })->unique()->sortBy('name')->values();
-//            $availOrganization = $participantCollection->map(function ($item) {
-//                return ['id' => $item['organization_id'], 'name' => $item['organization_name']];
-//            })->unique()->sortBy('name')->values();
-//
-//            /**
-//             * EOL Lists of availabe filters
-//             */
-//
-//            if($request->has('competition_id')) {
-//                /** addition filtering done in collection**/
-//                $participantCollection = $this->filterCollectionList($participantCollection,[
-//                    "0,competition_id" => $request->competition_id ?? false, // 0 = non-nested, 1 = nested
-//                ],"competition_id"
-//                );
-//            }
-//
-//            $availForSearch = array("name", "index_no", "school", "tuition_centre");
-//            $participantList = CollectionHelper::searchCollection($searchKey, $participantCollection, $availForSearch, $limits);
-//            $data = array("filterOptions" => ['status' => $availUserStatus,'organization' => $availOrganization, 'grade' => $availGrade, 'private' => $availPrivate, 'countries' => $availCountry, 'competition' => $availCompetition,], "participantList" => $participantList);
-//
-//            return response()->json([
-//                "status" => 200,
-//                "data" => $data
-//            ]);
-//        }
-//        catch(QueryException $e) {
-//            return response()->json([
-//                "status" => 500,
-//                "message" => "Retrieve participants retrieve unsuccessful"
-//            ]);
-//        }
-//        catch(ModelNotFoundException $e){
-//            // do task when error
-//            return response()->json([
-//                "status" => 500,
-//                "message" => "Retrieve users participants unsuccessful"
-//            ]);
-//        }
-////        catch (\Exception $e) {
-////            return response()->json([
-////                "status" => 500,
-////                "message" => "Retrieve users retrieve unsuccessful"
-////            ]);
-////        }
-//    }
 
     public function update (Request $request) {
 
