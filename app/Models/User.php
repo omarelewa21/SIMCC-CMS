@@ -150,6 +150,14 @@ class User extends Authenticatable
         );
     }
 
+    public function getLastModifiedByAttribute() {
+        if (isset($this->last_modified_userid)){
+            $username = User::find($this->last_modified_userid)->username;
+            return $username . ' ' .$this->updated_at;
+        }
+        return '-';
+    }
+
     /**
      * Check if authinticated user has given role
      * 
