@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
+use Illuminate\Validation\ValidationException;
 
 class ComputeAwardStatsService
 {
@@ -14,8 +15,18 @@ class ComputeAwardStatsService
         $this->group = $group->load(['competition:id,name', 'countries:id,display_name']);
     }
 
+    protected function validateCompetition()
+    {
+        if (!$this->group->competition->isComputed()) {
+            throw ValidationException::withMessages([
+                'Not all levels have been computed, please compute all levels first'
+            ])->status(406);
+        }
+    }
+
     public function getAwardsStats()
     {
+        $this->validateCompetition();
         $headers = $this->getHeaders();
         $data = $this->getData();
         return [$headers, $data];
