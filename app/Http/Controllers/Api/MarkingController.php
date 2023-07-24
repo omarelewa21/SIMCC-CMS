@@ -18,6 +18,7 @@ use App\Models\CompetitionParticipantsResults;
 use App\Services\ComputeAwardStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class MarkingController extends Controller
 {
@@ -57,6 +58,7 @@ class MarkingController extends Controller
     {
         try {
             $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            $headerData->isComputed = $competition->isComputed();
 
             $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
                         ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
@@ -457,12 +459,17 @@ class MarkingController extends Controller
                 "data"      => $data
             ], 200);
 
+        } catch(ValidationException $e){
+            return response()->json([
+                "status"    => $e->status,
+                "message"   => $e->getMessage(),
+            ], $e->status);
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "Awards stats retrival unsuccessful - " . $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
-        }
+        } 
     }
 }
