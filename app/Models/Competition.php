@@ -103,6 +103,11 @@ class Competition extends Base
         return $this->hasMany(CompetitionRounds::class, "competition_id");
     }
 
+    public function levels()
+    {
+        return $this->hasManyThrough(CompetitionLevels::class, CompetitionRounds::class, 'competition_id', 'round_id', 'id', 'id');
+    }
+
     public function groups ()
     {
         return $this->hasMany(CompetitionMarkingGroup::class, 'competition_id');
@@ -202,8 +207,8 @@ class Competition extends Base
         }
     }
 
-    public function levels()
+    public function isComputed()
     {
-        return $this->hasManyThrough(CompetitionLevels::class, CompetitionRounds::class, 'competition_id', 'round_id', 'id', 'id');
+        return $this->levels()->where('computing_status', '<>', CompetitionLevels::STATUS_FINISHED)->doesntExist();
     }
 }

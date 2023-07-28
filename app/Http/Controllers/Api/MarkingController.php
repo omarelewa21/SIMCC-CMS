@@ -9,15 +9,16 @@ use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
-use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Services\ComputeAwardStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class MarkingController extends Controller
 {
@@ -57,6 +58,7 @@ class MarkingController extends Controller
     {
         try {
             $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            $headerData->isComputed = $competition->isComputed();
 
             $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
                         ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
@@ -439,5 +441,35 @@ class MarkingController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * get participant results
+     * 
+     * @param \App\Models\CompetitionMarkingGroup $group
+     */
+    public function getAwardsStats(CompetitionMarkingGroup $group)
+    {
+        try {
+            [$headers, $data] = (new ComputeAwardStatsService($group))->getAwardsStats();
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Awards stats retrival successful",
+                "headers"   => $headers,
+                "data"      => $data
+            ], 200);
+
+        } catch(ValidationException $e){
+            return response()->json([
+                "status"    => $e->status,
+                "message"   => $e->getMessage(),
+            ], $e->status);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Awards stats retrival unsuccessful - " . $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        } 
     }
 }
