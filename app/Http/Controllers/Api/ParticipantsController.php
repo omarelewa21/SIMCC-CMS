@@ -46,8 +46,7 @@ class ParticipantsController extends Controller
 
         $validate = array(
             "role_id" => "nullable",
-            // "participant.*.competition_id" => ["required", "integer", "exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
-            "participant.*.competition_id" => ["required", "integer", "exists:competition,id"],
+            "participant.*.competition_id" => ["required", "integer", "exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
             "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
             "participant.*.name" => "required|string|max:255",
