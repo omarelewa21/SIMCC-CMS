@@ -64,86 +64,86 @@ class ParticipantsController extends Controller
         $validated = $request->validate($validate);
         $validated = data_fill($validated, 'participant.*.class', null); // add missing class attribute and set to null
 
-        // try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        $returnData = [];
-        $validated = collect($validated['participant'])->map(function ($row, $index) use ($ccode, &$returnData) {
+            $returnData = [];
+            $validated = collect($validated['participant'])->map(function ($row, $index) use ($ccode, &$returnData) {
 
-            switch (auth()->user()->role_id) {
-                case 0:
-                case 1:
-                    $organizationId = $row["organization_id"];
-                    $countryId = $row["country_id"];
-                case 2:
-                case 4:
-                    $organizationId = $organizationId ?? auth()->user()->organization_id;
-                    $countryId = $countryId ?? auth()->user()->country_id;
-                    $schoolId =  $row["school_id"];
-                    $tuitionCentreId = $row["tuition_centre_id"];
-                    break;
-                case 3:
-                case 5:
-                    $organizationId = auth()->user()->organization_id;
-                    $schoolId =  auth()->user()->school_id;
-                    break;
-            }
+                switch (auth()->user()->role_id) {
+                    case 0:
+                    case 1:
+                        $organizationId = $row["organization_id"];
+                        $countryId = $row["country_id"];
+                    case 2:
+                    case 4:
+                        $organizationId = $organizationId ?? auth()->user()->organization_id;
+                        $countryId = $countryId ?? auth()->user()->country_id;
+                        $schoolId =  $row["school_id"];
+                        $tuitionCentreId = $row["tuition_centre_id"];
+                        break;
+                    case 3:
+                    case 5:
+                        $organizationId = auth()->user()->organization_id;
+                        $schoolId =  auth()->user()->school_id;
+                        break;
+                }
 
-            if (isset($tuitionCentreId)) {
-                $row["tuition_centre_id"] = $tuitionCentreId;
-                $row["school_id"] = $schoolId;
-            } else {
-                $row["school_id"] = $schoolId;
-            }
+                if (isset($tuitionCentreId)) {
+                    $row["tuition_centre_id"] = $tuitionCentreId;
+                    $row["school_id"] = $schoolId;
+                } else {
+                    $row["school_id"] = $schoolId;
+                }
 
-            if (isset($row["for_partner"]) && $row["for_partner"] == 1) {
-                $row["tuition_centre_id"] = School::where(['name' => 'Organization School', 'organization_id' => $organizationId, 'country_id' => $countryId, 'province' => null])
-                    ->get()
-                    ->pluck('id')
-                    ->firstOrFail();
-            }
+                if (isset($row["for_partner"]) && $row["for_partner"] == 1) {
+                    $row["tuition_centre_id"] = School::where(['name' => 'Organization School', 'organization_id' => $organizationId, 'country_id' => $countryId, 'province' => null])
+                        ->get()
+                        ->pluck('id')
+                        ->firstOrFail();
+                }
 
-            $country_id  = in_array(auth()->user()->role_id, [2, 3, 4, 5]) ? auth()->user()->country_id : $row["country_id"];
-            $CountryCode = $ccode[$country_id];
+                $country_id  = in_array(auth()->user()->role_id, [2, 3, 4, 5]) ? auth()->user()->country_id : $row["country_id"];
+                $CountryCode = $ccode[$country_id];
 
-            /*Generate index no.*/
-            //$country = Countries::find($country_id);
-            $country = Countries::where(['dial' => $CountryCode, 'update_counter' => 1])->first();
-            $index = Participants::generateIndexNo($country, isset($row["tuition_centre_id"]) && $row["tuition_centre_id"]);
-            $certificate = Participants::generateCertificateNo();
+                /*Generate index no.*/
+                //$country = Countries::find($country_id);
+                $country = Countries::where(['dial' => $CountryCode, 'update_counter' => 1])->first();
+                $index = Participants::generateIndexNo($country, isset($row["tuition_centre_id"]) && $row["tuition_centre_id"]);
+                $certificate = Participants::generateCertificateNo();
 
-            $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
-            $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
-            $row["country_id"] = $country_id;
-            $row["created_by_userid"] =  auth()->id(); //assign entry creator user id
-            $row["index_no"] = $index;
-            $row["certificate_no"] = $certificate;
-            $row["passkey"] = Str::random(8);
-            $row["password"] = Hash::make($row["passkey"]);
-            unset($returnData[count($returnData) - 1]['password']);
-            unset($row['passkey']);
-            unset($row['competition_id']);
-            unset($row['for_partner']);
-            unset($row['organization_id']);
-            $participant = Participants::create($row);
-            $returnData[] = $participant;
-            return $row;
-        })->toArray();
+                $row['competition_organization_id'] = CompetitionOrganization::where(['competition_id' => $row['competition_id'], 'organization_id' => $organizationId])->firstOrFail()->id;
+                $row['session'] = Competition::findOrFail($row['competition_id'])->competition_mode == 0 ? 0 : null;
+                $row["country_id"] = $country_id;
+                $row["created_by_userid"] =  auth()->id(); //assign entry creator user id
+                $row["index_no"] = $index;
+                $row["certificate_no"] = $certificate;
+                $row["passkey"] = Str::random(8);
+                $row["password"] = Hash::make($row["passkey"]);
+                unset($returnData[count($returnData) - 1]['password']);
+                unset($row['passkey']);
+                unset($row['competition_id']);
+                unset($row['for_partner']);
+                unset($row['organization_id']);
+                $participant = Participants::create($row);
+                $returnData[] = $participant;
+                return $row;
+            })->toArray();
 
-        DB::commit();
+            DB::commit();
 
-        return response()->json([
-            "status" => 201,
-            "message" => "create Participants successful",
-            "data" => $returnData
-        ]);
-        // } catch (Exception $e) {
-        //     return response()->json([
-        //         "status"    => 500,
-        //         "message"   => "Create Participants unsuccessful",
-        //         "error"     => $e->getMessage()
-        //     ], 500);
-        // }
+            return response()->json([
+                "status" => 201,
+                "message" => "create Participants successful",
+                "data" => $returnData
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Create Participants unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function list(getParticipantListRequest $request)
