@@ -431,9 +431,7 @@ class ParticipantsController extends Controller
             "tuition_centre_id" => ['exclude_if:for_partner,1', 'exclude_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(1, $participantCountryId)],
             "school_id" => ['required_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(0, $participantCountryId)],
             'password' => ['confirmed', 'min:8', 'regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/'],
-            'identifier' => 'required|unique:participants,identifier,competition_organization_id,' . $participant->id,
             'identifier' => 'unique:participants,identifier,' . $participant->id . ',id,competition_organization_id,' . $participant->competition_organization_id,
-
         );
 
         switch (auth()->user()->role_id) {
