@@ -65,7 +65,7 @@ class ParticipantsController extends Controller
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            'participant.*.identifier' => 'required|unique:participants,identifier,competition_organization_id',
+            'participant.*.identifier' => 'unique:participants,identifier,competition_organization_id',
             // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
 
