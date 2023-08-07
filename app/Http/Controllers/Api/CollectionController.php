@@ -59,6 +59,8 @@ class CollectionController extends Controller
 
             $collections = $collectionModel
                 ->filter()
+                ->orderByRaw(sprintf("FIELD(status, '%s', '%s', '%s') ASC", Collections::STATUS_VERIFIED, Collections::STATUS_ACTIVE, Collections::STATUS_PENDING_MODERATION))
+                ->orderBy('created_at', 'DESC')
                 ->get()
                 ->map(function ($item) {
                         $section = $item->sections->map(function ($section)  {

@@ -18,7 +18,7 @@ class UpdateCollectionRecommendationsRequest extends FormRequest
     {
         return [
             'collection_id'                 => 'required|integer|exists:collection,id',
-            'recommendations'               => 'array|required',
+            'recommendations'               => 'array',
             'recommendations.*.grade'       => 'required_with:recommendation.*.difficulty|integer|distinct',
             'recommendations.*.difficulty'  => 'required_with:recommendation.*.grade|string'
         ];
