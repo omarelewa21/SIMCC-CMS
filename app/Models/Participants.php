@@ -48,11 +48,11 @@ class Participants extends Base
     {
         parent::booted();
 
-        static::saving(function($participant) {
+        static::saving(function ($participant) {
             $participant->last_modified_userid = auth()->id();
         });
-        
-        static::creating(function($participant) {
+
+        static::creating(function ($participant) {
             $participant->created_by_userid = auth()->id();
         });
 
@@ -70,7 +70,7 @@ class Participants extends Base
      */
     public function scopeFilterList($query, getParticipantListRequest $request)
     {
-        switch(auth()->user()->role_id) {
+        switch (auth()->user()->role_id) {
             case 2:
             case 4:
                 $ids = CompetitionOrganization::where('organization_id', auth()->user()->organization_id)->pluck('id');
@@ -83,17 +83,18 @@ class Participants extends Base
                     'country_id'        => auth()->user()->country_id,
                     'organization_id'   => auth()->user()->organization_id
                 ])->pluck('id')->toArray();
-                $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id" , auth()->user()->school_id)
-                    ->orWhere("schools.id" , auth()->user()->school_id);
+                $query->whereIn("competition_organization_id", $ids)->where("tuition_centre_id", auth()->user()->school_id)
+                    ->orWhere("schools.id", auth()->user()->school_id);
                 break;
         }
 
-        foreach($request->all() as $key=>$value){
-            switch($key) {
+        foreach ($request->all() as $key => $value) {
+            switch ($key) {
                 case 'search':
-                    $query->where(function($query) use($value){
+                    $query->where(function ($query) use ($value) {
                         $query->where('participants.index_no', $value)
                             ->orWhere('participants.name', 'like', "%$value%")
+                            ->orWhere('participants.identifier', $value)
                             ->orWhere('schools.name', 'like', "%$value%")
                             ->orWhere('tuition_centre.name', 'like', "%$value%");
                     });
@@ -122,34 +123,36 @@ class Participants extends Base
                     $query->where($key, $value);
             }
         }
-
     }
 
-    public function created_by () {
-        return $this->belongsTo(User::class,"created_by_userid","id");
-    }
-
-    public function modified_by () {
-        return $this->belongsTo(User::class,"last_modified_userid","id");
-    }
-
-    public function tuition_centre ()
+    public function created_by()
     {
-        return $this->belongsTo(School::class,"tuition_centre_id","id");
+        return $this->belongsTo(User::class, "created_by_userid", "id");
     }
 
-    public function school ()
+    public function modified_by()
     {
-        return $this->belongsTo(School::class,"school_id","id");
+        return $this->belongsTo(User::class, "last_modified_userid", "id");
     }
 
-    public function country ()
+    public function tuition_centre()
+    {
+        return $this->belongsTo(School::class, "tuition_centre_id", "id");
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(School::class, "school_id", "id");
+    }
+
+    public function country()
     {
         return $this->belongsTo(Countries::class, 'country_id');
     }
 
-    public function competition_organization () {
-        return $this->belongsTo(CompetitionOrganization::class,"competition_organization_id","id");
+    public function competition_organization()
+    {
+        return $this->belongsTo(CompetitionOrganization::class, "competition_organization_id", "id");
     }
 
     public function isCheater()
