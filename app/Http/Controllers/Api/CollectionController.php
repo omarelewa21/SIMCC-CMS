@@ -384,14 +384,4 @@ class CollectionController extends Controller
             "message" => "collection duplicate successful"
         ]);
     }
-
-    public function verify(Collections $collection)
-    {
-        $collection->status = Collections::STATUS_VERIFIED;
-        $collection->save();
-        return response()->json([
-            "status"  => 200,
-            "message" => "collection verified successfully"
-        ]);
-    }
 }
