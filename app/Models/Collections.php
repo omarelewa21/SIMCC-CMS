@@ -14,10 +14,6 @@ class Collections extends Base
     const STATUS_PENDING_MODERATION = "pending moderation";
     const STATUS_ACTIVE = "active";
 
-    const STATUS_VERIFIED = "verified";
-    const STATUS_PENDING_MODERATION = "pending moderation";
-    const STATUS_ACTIVE = "active";
-
     private static $whiteListFilter = [
         'name',
         'status',
