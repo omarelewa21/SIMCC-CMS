@@ -1,21 +1,14 @@
 <?php
 
-namespace App\Http\Requests\tasks;
+namespace App\Http\Requests\Task;
 
 use App\Rules\CheckMissingGradeDifficulty;
+use App\Traits\TaskAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateTaskRecommendationsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
+    use TaskAuthorizeRequestTrait;
 
     /**
      * Get the validation rules that apply to the request.

@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Collections extends Base
 {
     use HasFactory,Filterable, SoftDeletes;
+    
+    const STATUS_VERIFIED = "verified";
+    const STATUS_PENDING_MODERATION = "pending moderation";
+    const STATUS_ACTIVE = "active";
 
     const STATUS_VERIFIED = "verified";
     const STATUS_PENDING_MODERATION = "pending moderation";
@@ -35,6 +39,16 @@ class Collections extends Base
     public static function booted()
     {
         parent::booted();
+
+        static::creating(function($collection) {
+            $collection->created_by_userid = auth()->id();
+            if(auth()->user()->hasRole(['super admin', 'admin'])) {
+                $collection->status = 'active';
+                $collection->approved_by_userid = auth()->id();
+            } else {
+                $collection->status = 'pending moderation';
+            }
+        });
 
         static::saving(function($collection) {
             $collection->last_modified_userid = auth()->id();
