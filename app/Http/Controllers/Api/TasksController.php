@@ -361,6 +361,13 @@ class TasksController extends Controller
     }
     public function verify(Tasks $task)
     {
+        if (!auth()->user()->hasRole(['super admin', 'admin'])) {
+            return response()->json([
+                "status"  => 403,
+                "message" => "Only admins can verify collection"
+            ]);
+        }
+
         $task->status = Tasks::STATUS_VERIFIED;
         $task->save();
         return response()->json([
