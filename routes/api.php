@@ -173,6 +173,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("", [TaskDifficultyController::class, "update"])->name('taskdifficulty.update');
         Route::delete("difficulty", [TaskDifficultyController::class, "delete_difficulty"])->name('taskdifficulty.difficulty.delete');
         Route::delete("", [TaskDifficultyController::class, "delete"])->name('taskdifficulty.delete');
+        Route::post("verify/{taskdifficulty}", [TaskDifficultyController::class, "verify"])->name('taskdifficulty.verify');
+
     });
 
     include 'test-routes.php';
