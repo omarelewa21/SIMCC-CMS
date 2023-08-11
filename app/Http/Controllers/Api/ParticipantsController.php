@@ -23,9 +23,6 @@ use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
-use App\Rules\CheckParticipantRegistrationOpen;
-use App\Rules\CheckOrganizationCompetitionValid;
-use App\Rules\CheckCompetitionEnded;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use Exception;
@@ -250,8 +247,7 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function update(Request $request)
-    {
+    public function update (Request $request) {
         //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
         $participant = auth()->user()->hasRole(['Super Admin', 'Admin'])
             ? Participants::whereId($request['id'])->firstOrFail()
