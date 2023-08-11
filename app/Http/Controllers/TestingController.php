@@ -6,6 +6,7 @@ use App\Exports\CheatersExport;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
+use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
@@ -83,5 +84,23 @@ class TestingController extends Controller
     public function generateCheatersCSV(Competition $competition)
     {
         return Excel::download(new CheatersExport($competition), 'cheaters.xlsx');
+    }
+
+    public function fixGlobalRank(Competition $competition)
+    {
+        $levelIds = $competition->levels()->pluck('competition_levels.id');
+        CompetitionParticipantsResults::whereIn('level_id', $levelIds)
+            ->chunkById(1000, function ($results) {
+                foreach ($results as $result) {
+                    $globalRankNumber = preg_replace('/[^0-9]/', '', $result->global_rank);
+                    $result->update([
+                        'global_rank' => "$result->award $globalRankNumber"
+                    ]);
+                }
+            });
+
+        return response()->json([
+            'message' => 'Global rank fixed'
+        ]);
     }
 }
