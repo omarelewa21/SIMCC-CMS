@@ -388,11 +388,32 @@ class CollectionController extends Controller
                 "message" => "Only admins can verify collection"
             ]);
         }
+        $allTaksVerified = $this->checkCollectionTasksIsVerified($collection);
+        if (!$allTaksVerified) {
+            return response()->json([
+                "status"  => 201,
+                "message" => "all tasks of this collection must be verified first"
+            ]);
+        }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
         ]);
+    }
+
+    public function checkCollectionTasksIsVerified($collection)
+    {
+        $sections = $collection->sections;
+        foreach ($sections as $section) {
+            $sectionTasks = $section->getSectionTaskAttribute();
+            foreach ($sectionTasks as $task) {
+                if ($task->status !== Tasks::STATUS_VERIFIED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
