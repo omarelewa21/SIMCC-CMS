@@ -107,6 +107,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("", [CompetitionController::class, "delete"])->name('competition.delete');
         Route::post("/upload_answers", [CompetitionController::class, "upload_answers"])->name('competition.upload_answers');
         Route::get("/difficultyandpoints/list", [AssignDifficultyPointsController::class, "list"])->name('competition.difficultyandpoints.list');
+        Route::get("/difficultyandpoints/overview", [AssignDifficultyPointsController::class, "overview"])->name('competition.difficultyandpoints.overview');
         Route::patch("/difficultyandpoints", [AssignDifficultyPointsController::class, "update"])->name('competition.difficultyandpoints.update');
         Route::post("/rounds", [CompetitionController::class, "addRoundsRoute"])->name('competition.rounds.add');
         Route::patch("/rounds", [CompetitionController::class, "editRounds"])->name('competition.rounds.edit');
@@ -165,6 +166,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
         Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
         Route::post("verify/{collection}", [CollectionController::class, "verify"])->name('collection.verify');
+        Route::get("difficultyandpoints/overview/{collection}", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {
@@ -174,7 +176,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("difficulty", [TaskDifficultyController::class, "delete_difficulty"])->name('taskdifficulty.difficulty.delete');
         Route::delete("", [TaskDifficultyController::class, "delete"])->name('taskdifficulty.delete');
         Route::post("verify/{taskdifficulty}", [TaskDifficultyController::class, "verify"])->name('taskdifficulty.verify');
-
     });
 
     include 'test-routes.php';
