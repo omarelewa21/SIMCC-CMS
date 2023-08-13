@@ -252,20 +252,4 @@ class TaskDifficultyController extends Controller
             ]);
         }
     }
-
-    public function verify(TaskDifficultyGroup $taskdifficulty)
-    {
-        if (!auth()->user()->hasRole(['super admin', 'admin'])) {
-            return response()->json([
-                "status"  => 403,
-                "message" => "Only admins can verify collection"
-            ]);
-        }
-        $taskdifficulty->status = TaskDifficultyGroup::STATUS_VERIFIED;
-        $taskdifficulty->save();
-        return response()->json([
-            "status"  => 200,
-            "message" => "task difficulty verified successfully"
-        ]);
-    }
 }
