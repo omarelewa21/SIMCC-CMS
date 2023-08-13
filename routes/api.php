@@ -139,34 +139,38 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/participants/country/{competition}", [MarkingController::class, "getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}", [MarkingController::class, "markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
-        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
-        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
-        Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
-        Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
-        Route::get("awards/stats/{group}",[MarkingController::class,"getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::post("/compute/level/{level}", [MarkingController::class, "computeResultsForSingleLevel"])->name('competition.marking.compute.level');
+        Route::post("/compute/{competition}", [MarkingController::class, "computeCompetitionResults"])->name('competition.marking.compute.competition');
+        Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
+        Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
+        Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
     });
 
     Route::group(["prefix" => "tasks"], function () {
-        Route::post("",[TasksController::class,"create"])->name('task.create');
-        Route::get("",[TasksController::class,"list"])->name('task.list');
-        Route::patch("settings",[TasksController::class,"update_settings"])->name('task.update.settings');
-        Route::patch("recommendation",[TasksController::class,"update_recommendation"])->name('task.update.recommendation');
-        Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
-        Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
-        Route::delete("",[TasksController::class,"delete"])->name('task.delete');
-        Route::post("duplicate/{task}",[TasksController::class,"duplicate"])->name('task.duplicate');
+        Route::post("", [TasksController::class, "create"])->name('task.create');
+        Route::get("", [TasksController::class, "list"])->name('task.list');
+        Route::patch("settings", [TasksController::class, "update_settings"])->name('task.update.settings');
+        Route::patch("recommendation", [TasksController::class, "update_recommendation"])->name('task.update.recommendation');
+        Route::patch("content", [TasksController::class, "update_content"])->name('task.edit.content');
+        Route::patch("answer", [TasksController::class, "update_answer"])->name('task.edit.answer');
+        Route::delete("", [TasksController::class, "delete"])->name('task.delete');
+        Route::post("duplicate/{task}", [TasksController::class, "duplicate"])->name('task.duplicate');
+        Route::post("verify/{task}", [TasksController::class, "verify"])->name('task.verify');
     });
 
     Route::group(["prefix" => "collection"], function () {
-        Route::get("",[CollectionController::class,"list"])->name('collection.list');
-        Route::post("",[CollectionController::class,"create"])->name('collection.create');
-        Route::delete("",[CollectionController::class,"delete"])->name('collection.delete');
-        Route::patch("/settings",[CollectionController::class,"update_settings"])->name('collection.settings.update');
-        Route::patch("/recommendations",[CollectionController::class,"update_recommendations"])->name('collection.recommendations.update');
-        Route::post("/sections",[CollectionController::class,"add_sections"])->name('collection.sections.add');
-        Route::patch("/sections",[CollectionController::class,"update_sections"])->name('collection.sections.update');
-        Route::delete("/section",[CollectionController::class,"delete_section"])->name('collection.section.delete');
-        Route::post("duplicate/{collection}",[CollectionController::class,"duplicate"])->name('collection.duplicate');
+        Route::get("", [CollectionController::class, "list"])->name('collection.list');
+        Route::post("", [CollectionController::class, "create"])->name('collection.create');
+        Route::delete("", [CollectionController::class, "delete"])->name('collection.delete');
+        Route::patch("/settings", [CollectionController::class, "update_settings"])->name('collection.settings.update');
+        Route::patch("/recommendations", [CollectionController::class, "update_recommendations"])->name('collection.recommendations.update');
+        Route::post("/sections", [CollectionController::class, "add_sections"])->name('collection.sections.add');
+        Route::patch("/sections", [CollectionController::class, "update_sections"])->name('collection.sections.update');
+        Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
+        Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
+        Route::post("verify/{collection}", [CollectionController::class, "verify"])->name('collection.verify');
+        Route::get("difficultyandpoints/overview/{collection}", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
+        Route::post("/difficultyandpoints/verify", [AssignDifficultyPointsController::class, "verify"])->name('collection.difficultyandpoints.verify');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {

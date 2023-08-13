@@ -48,7 +48,6 @@ class TaskDifficultyController extends Controller
                 $group_id = TaskDifficultyGroup::create($row)->id;
 
                 TaskDifficultyGroup::find($group_id)->difficulty()->createMany($difficulty);
-
             });
 
             DB::commit();
@@ -65,7 +64,8 @@ class TaskDifficultyController extends Controller
         }
     }
 
-    public function list (Request $request) {
+    public function list(Request $request)
+    {
 
         $vaildate = $request->validate([
             'id' => "integer",
@@ -77,7 +77,7 @@ class TaskDifficultyController extends Controller
         ]);
 
         try {
-            if($request->limits == "0") {
+            if ($request->limits == "0") {
                 $limits = 99999999;
             } else {
                 $limits = $request->limits ?? 10; //set default to 10 rows per page
@@ -85,7 +85,7 @@ class TaskDifficultyController extends Controller
 
             $searchKey = isset($vaildate['search']) ? $vaildate['search'] : null;
 
-            $TaskDifficultyGroupModel = TaskDifficultyGroup::with(['difficulty' => function($query) {
+            $TaskDifficultyGroupModel = TaskDifficultyGroup::with(['difficulty' => function ($query) {
                 $query->orderBy('sort_order');
             }])->AcceptRequest(['status']);
 
@@ -115,29 +115,26 @@ class TaskDifficultyController extends Controller
                 "status" => 200,
                 "data" => $data
             ]);
-        }
-
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
                 "message" => "Retrieve difficulty group unsuccessful"
             ]);
         }
-
     }
 
     public function update(Request $request)
     {
 
         $validated = $request->validate([
-            'id' => ['required','regex:/^[\'\;\.\,\s\(\)\[\]\w-]*$/',Rule::exists('difficulty_groups',"id")->where(function ($query) {
-                $query->where('status','!=','deleted');
+            'id' => ['required', 'regex:/^[\'\;\.\,\s\(\)\[\]\w-]*$/', Rule::exists('difficulty_groups', "id")->where(function ($query) {
+                $query->where('status', '!=', 'deleted');
             })],
             'name' => 'sometimes|required|regex:/^[\.\,\s\(\)\[\]\w-]*$/|unique:difficulty_groups,name|min:3',
             'assign_marks' => 'required|boolean',
             'delete_id' => 'array',
-            'delete_id.*' => ['sometimes','required', 'integer', 'exists:difficulty,id', new CheckDifficultyIdUsed],
+            'delete_id.*' => ['sometimes', 'required', 'integer', 'exists:difficulty,id', new CheckDifficultyIdUsed],
             'difficulty' => 'required|array',
             'difficulty.*.id' => ['sometimes', 'required', 'integer', new CheckDifficultyIdInGroup],
             'difficulty.*.name' => 'required|regex:/^[\.\,\s\(\)\[\]\w-]*$/|min:3',
@@ -156,7 +153,7 @@ class TaskDifficultyController extends Controller
 
             DB::beginTransaction();
 
-            if(count($validated['delete_id']) > 0) {
+            if (count($validated['delete_id']) > 0) {
                 collect($validated['delete_id'])->map(function ($id) {
                     TaskDifficulty::findOrFail($id)->forceDelete();
                 });
@@ -187,7 +184,7 @@ class TaskDifficultyController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
-                'message' => 'update difficulty group unsuccessful' .$e
+                'message' => 'update difficulty group unsuccessful' . $e
             ]);
         }
     }
@@ -196,7 +193,7 @@ class TaskDifficultyController extends Controller
     {
         $validated = $request->validate([
             'id' => 'array|required',
-            'id.*' => ['required', 'integer', 'exists:difficulty,id', new CheckDifficultyIdUsed]// create a rule to check id alre
+            'id.*' => ['required', 'integer', 'exists:difficulty,id', new CheckDifficultyIdUsed] // create a rule to check id alre
         ]);
 
         try {
@@ -213,7 +210,6 @@ class TaskDifficultyController extends Controller
                 'status' => 200,
                 'message' => 'delete difficulty successful'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
@@ -227,7 +223,7 @@ class TaskDifficultyController extends Controller
 
         $validated = $request->validate([
             'id' => 'array|required',
-            'id.*' => ['required', 'integer', 'exists:difficulty_groups,id',new CheckDifficultyGroupUsed]// create a rule to check id alre
+            'id.*' => ['required', 'integer', 'exists:difficulty_groups,id', new CheckDifficultyGroupUsed] // create a rule to check id alre
         ]);
 
         try {
@@ -235,13 +231,12 @@ class TaskDifficultyController extends Controller
             DB::beginTransaction();
 
             collect(Arr::collapse($validated))->map(function ($id) {
-//                TaskDifficulty::where('difficulty_groups_id',$id)->forceDelete();
-//                TaskDifficultyGroup::findOrFail($id)->forceDelete();
+                //                TaskDifficulty::where('difficulty_groups_id',$id)->forceDelete();
+                //                TaskDifficultyGroup::findOrFail($id)->forceDelete();
 
                 $query = TaskDifficultyGroup::findOrfail($id);
                 $query->status = 'deleted';
                 $query->save();
-
             });
 
             DB::commit();
@@ -250,11 +245,10 @@ class TaskDifficultyController extends Controller
                 'status' => 200,
                 'message' => 'delete difficulty successful'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
-                'message' => 'delete difficulty  unsuccessful' .$e
+                'message' => 'delete difficulty  unsuccessful' . $e
             ]);
         }
     }
