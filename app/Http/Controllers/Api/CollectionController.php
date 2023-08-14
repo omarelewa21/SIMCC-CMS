@@ -398,7 +398,7 @@ class CollectionController extends Controller
         $allTaksVerified = $this->checkCollectionTasksIsVerified($collection);
         if (!$allTaksVerified) {
             return response()->json([
-                "status"  => 201,
+                "status"  => 500,
                 "message" => "all tasks of this collection must be verified first"
             ]);
         }
