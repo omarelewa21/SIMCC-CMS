@@ -27,10 +27,11 @@ use App\Models\TasksAnswers;
 use App\Rules\CheckMultipleVaildIds;
 use App\Services\Collection\CreateCollectionService;
 use App\Services\Collection\DuplicateCollectionService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
@@ -424,51 +425,86 @@ class CollectionController extends Controller
         return true;
     }
 
-    public function difficultyAndPointsOverview(Collections $collection)
+    public function difficultyAndPointsOverview(Request $request)
     {
-        $competitions = $collection->competitions->pluck('id');
-        $competitionWithRoundsAndLevels = [];
+        $competitionId = $request->validate([
+            'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
+        ])['competition_id'];
 
-        foreach ($competitions as $id) {
-            $competition = Competition::with(['rounds.levels.collection.sections', 'taskDifficulty'])
-                ->find($id);
+        $competition = Competition::with(['rounds.levels.collection.sections', 'taskDifficulty'])
+            ->find($competitionId);
 
+        try {
             $rounds = [];
             foreach ($competition->rounds as $round) {
-                $filteredLevels = $round->levels->where('collection_id', $collection->id);
-
-                foreach ($filteredLevels as $level) {
+                foreach ($round->levels as $level) {
                     $roundData = [
                         'round_id' => $round->id,
                         'round_name' => $round->name,
                         'level_id' => $level->id,
                         'level_name' => $level->name,
-                        'collection_id' => $level->collection->id,
-                        'collection_name' => $level->collection->name
+                        'collection_verified' => $level->collection->status == Collections::STATUS_VERIFIED,
                     ];
-                    $roundData['verified'] = $this->checkDifficultyIsVerified($roundData,$competition->id);
+
+                    $eagerload = [
+                        'reject_reason:reject_id,reason,created_at,created_by_userid',
+                        'reject_reason.user:id,username',
+                        'reject_reason.role:roles.name',
+                        'tags:id,name',
+                        'gradeDifficulty',
+                        'sections',
+                    ];
+
+                    $collectionModel = Collections::with($eagerload)
+                        ->AcceptRequest(['status', 'id', 'name', 'identifier']);
+
+                    $collection = $collectionModel
+                        ->find($level->collection->id);
+
+                    $collectionData = collect($collection)
+                        ->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']);
+
+                    $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData, $competition->id);
+                    $modifiedSectionTasks = [];
+                    foreach ($collection->sections as $section) {
+                        foreach ($section->section_task as $task) {
+                            $modifiedTask = clone $task;
+                            $modifiedTask->task_verified = $task->status === Tasks::STATUS_VERIFIED;
+                            $modifiedSectionTasks[] = $modifiedTask;
+                        }
+
+                        $sectionData = [
+                            'id' => $section->id,
+                            'tasks' => $modifiedSectionTasks
+                        ];
+                        $roundData['collection']['id'] =  $collectionData['id'];
+                        $roundData['collection']['name'] =  $collectionData['name'];
+                        $roundData['collection']['name'] =  $collectionData['name'];
+                        $roundData['collection']['identifier'] =  $collectionData['identifier'];
+                        $roundData['collection']['sections'][] = $sectionData;
+                    }
                     $rounds[] = $roundData;
                 }
             }
 
-            $competitionWithRoundsAndLevels[] = [
-                'id' => $id,
-                'competition_name' => $competition->name,
-                'rounds' => $rounds
-            ];
+            return response()->json([
+                'status' => 200,
+                'message' => 'competition collections retrieved successfully',
+                'data' => $rounds
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'error in retrieving competition collections: ' . $e->getMessage(),
+                'data' => []
+            ]);
         }
-
-        $collectionData = [
-            'id' => $collection->id,
-            'name' => $collection->name,
-            'collection_verified' => $collection->status == Collections::STATUS_VERIFIED,
-            'competitions' => $competitionWithRoundsAndLevels
-        ];
-
-        return $collectionData;
     }
 
-    public function checkDifficultyIsVerified($roundData,$competitionId)
+
+
+
+    public function checkDifficultyIsVerified($roundData, $competitionId)
     {
         $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('level_id', $roundData['level_id'])->where('round_id', $roundData['round_id'])->first();
         if ($taskDifficulty) {
