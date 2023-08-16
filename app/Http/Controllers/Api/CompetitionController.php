@@ -213,13 +213,13 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ]);
+            ],500);
         } catch (ModelNotFoundException $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ]);
+            ],500);
         }
     }
 
@@ -519,7 +519,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "add awards unsuccessful"
-            ]);
+            ],500);
         }
 
     }

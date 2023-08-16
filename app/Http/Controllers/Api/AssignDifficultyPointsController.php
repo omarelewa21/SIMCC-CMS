@@ -187,7 +187,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "Update competition task marks unsuccessful." . $e
-            ]);
+            ],500);
         }
     }
 
@@ -197,7 +197,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status"  => 403,
                 "message" => "Only admins can verify collection"
-            ]);
+            ],403);
         }
 
         $competitionId = $request->validate([
@@ -222,7 +222,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status"  => 403,
                 "message" => "This difficulty and points is already verified"
-            ]);
+            ],403);
         }
 
         TaskDifficultyVerification::create(

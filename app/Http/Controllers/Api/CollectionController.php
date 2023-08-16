@@ -141,7 +141,7 @@ class CollectionController extends Controller
                 "status"    => 500,
                 "message"   => "Retrieve collection unsuccessful",
                 "error"     => $e->getMessage()
-            ]);
+            ],500);
         }
     }
 
@@ -272,7 +272,7 @@ class CollectionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "collection section update unsuccessful " . $e
-            ]);
+            ],500);
         }
     }
 
@@ -401,7 +401,7 @@ class CollectionController extends Controller
             return response()->json([
                 "status"  => 500,
                 "message" => "all tasks of this collection must be verified first"
-            ]);
+            ],500);
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
@@ -486,7 +486,7 @@ class CollectionController extends Controller
                 'status' => 500,
                 'message' => 'error in retrieving competition collections: ' . $e->getMessage(),
                 'data' => []
-            ]);
+            ],500);
         }
     }
 

@@ -365,7 +365,7 @@ class TasksController extends Controller
             return response()->json([
                 "status"  => 403,
                 "message" => "Only admins can verify collection"
-            ]);
+            ],403);
         }
 
         $task->status = Tasks::STATUS_VERIFIED;
