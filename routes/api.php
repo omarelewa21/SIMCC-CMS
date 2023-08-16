@@ -169,7 +169,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
         Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
         Route::post("verify/{collection}", [CollectionController::class, "verify"])->name('collection.verify');
-        Route::get("difficultyandpoints/overview/{collection}", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
+        Route::get("difficultyandpoints/overview", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
         Route::post("/difficultyandpoints/verify", [AssignDifficultyPointsController::class, "verify"])->name('collection.difficultyandpoints.verify');
     });
 
