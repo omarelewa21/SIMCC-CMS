@@ -477,7 +477,7 @@ class CollectionController extends Controller
                 'data' => [
                     'competition_id' => $competition->id,
                     'competition_name' => $competition->name,
-                    'competition_data' => $roundData
+                    'competition_data' => $rounds
 
                 ]
             ]);
