@@ -42,6 +42,8 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
      */
     public function passes($attribute, $value)
     {
+        if (is_null($value)) return true;
+
         if (!$this->participant) {
             $rowNum = explode(".", $attribute)[1];
             switch (auth()->user()->role_id) {
