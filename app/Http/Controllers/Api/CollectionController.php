@@ -436,6 +436,7 @@ class CollectionController extends Controller
 
         try {
             $rounds = [];
+            $roundData=[];
             foreach ($competition->rounds as $round) {
                 foreach ($round->levels as $level) {
                     $roundData = [
@@ -465,24 +466,7 @@ class CollectionController extends Controller
                         ->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']);
 
                     $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData, $competition->id);
-                    $modifiedSectionTasks = [];
-                    foreach ($collection->sections as $section) {
-                        foreach ($section->section_task as $task) {
-                            $modifiedTask = clone $task;
-                            $modifiedTask->task_verified = $task->status === Tasks::STATUS_VERIFIED;
-                            $modifiedSectionTasks[] = $modifiedTask;
-                        }
-
-                        $sectionData = [
-                            'id' => $section->id,
-                            'tasks' => $modifiedSectionTasks
-                        ];
-                        $roundData['collection']['id'] =  $collectionData['id'];
-                        $roundData['collection']['name'] =  $collectionData['name'];
-                        $roundData['collection']['name'] =  $collectionData['name'];
-                        $roundData['collection']['identifier'] =  $collectionData['identifier'];
-                        $roundData['collection']['sections'][] = $sectionData;
-                    }
+                    $roundData['collection'] =  $collectionData;
                     $rounds[] = $roundData;
                 }
             }
@@ -490,7 +474,12 @@ class CollectionController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'competition collections retrieved successfully',
-                'data' => $rounds
+                'data' => [
+                    'competition_id' => $competition->id,
+                    'competition_name' => $competition->name,
+                    'competition_data' => $roundData
+
+                ]
             ]);
         } catch (Exception $e) {
             return response()->json([
