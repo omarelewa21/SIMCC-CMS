@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Task;
 
+use App\Models\Tasks;
 use App\Rules\CheckTaskUse;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -28,5 +29,21 @@ class DeleteTaskRequest extends FormRequest
             'id'    => 'required|array',
             'id.*'  => ['required', 'integer', 'distinct', new CheckTaskUse]
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $task = Tasks::find($this->id);
+        $validator->after(function ($validator) use ($task) {
+            if (!$task->status == Tasks::STATUS_VERIFIED) {
+                $validator->errors()->add('authorize', 'Task is verified, Deleting verified task is not allowed');
+            }
+        });
     }
 }
