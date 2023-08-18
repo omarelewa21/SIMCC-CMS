@@ -141,7 +141,7 @@ class CollectionController extends Controller
                 "status"    => 500,
                 "message"   => "Retrieve collection unsuccessful",
                 "error"     => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
@@ -272,7 +272,7 @@ class CollectionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "collection section update unsuccessful " . $e
-            ],500);
+            ], 500);
         }
     }
 
@@ -388,7 +388,7 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function verify(Collections $collection)
+    public function verify(Request $request)
     {
         if (!auth()->user()->hasRole(['super admin', 'admin'])) {
             return response()->json([
@@ -396,19 +396,54 @@ class CollectionController extends Controller
                 "message" => "Only admins can verify collection"
             ]);
         }
+
+        $competitionId = $request->validate([
+            'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
+        ])['competition_id'];
+
+        $competition = Competition::with(['rounds.levels.collection'])
+            ->find($competitionId);
+
+        $collectionId = $request->validate([
+            'collection_id' => ['required', Rule::in($competition->rounds->pluck('levels.*.collection.id')->flatten()->toArray())],
+        ])['collection_id'];
+
+        $collection = Collections::findorfail($collectionId);
+        if ($collection->status == Collections::STATUS_VERIFIED) {
+            return response()->json([
+                "status"  => 500,
+                "message" => "Collection already verified !"
+            ], 500);
+        }
         $allTaksVerified = $this->checkCollectionTasksIsVerified($collection);
         if (!$allTaksVerified) {
             return response()->json([
                 "status"  => 500,
-                "message" => "all tasks of this collection must be verified first"
-            ],500);
+                "message" => "All tasks of this collection must be verified first"
+            ], 500);
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
+        $this->competitionCollectionVerify($competition);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
         ]);
+    }
+
+    public function competitionCollectionVerify($competition)
+    {
+        $all_collections_verified = true;
+        $collections = $competition->rounds->pluck('levels.*.collection')->flatten()->toArray();
+        foreach ($collections as $collection) {
+            if ($collection['status'] !== Collections::STATUS_VERIFIED) {
+                $all_collections_verified = false;
+            }
+        }
+        if ($all_collections_verified) {
+            $competition->is_verified = true;
+            $competition->save();
+        }
     }
 
     public function checkCollectionTasksIsVerified($collection)
@@ -436,7 +471,7 @@ class CollectionController extends Controller
 
         try {
             $rounds = [];
-            $roundData=[];
+            $roundData = [];
             foreach ($competition->rounds as $round) {
                 foreach ($round->levels as $level) {
                     $roundData = [
@@ -486,12 +521,9 @@ class CollectionController extends Controller
                 'status' => 500,
                 'message' => 'error in retrieving competition collections: ' . $e->getMessage(),
                 'data' => []
-            ],500);
+            ], 500);
         }
     }
-
-
-
 
     public function checkDifficultyIsVerified($roundData, $competitionId)
     {

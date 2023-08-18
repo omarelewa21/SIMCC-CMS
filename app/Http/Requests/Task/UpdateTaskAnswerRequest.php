@@ -41,8 +41,8 @@ class UpdateTaskAnswerRequest extends FormRequest
     {
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
-            if (!$task->allowedToUpdateAll()) {
-                $validator->errors()->add('authorize', 'Task is in use by an active competition, No update to answers is allowed');
+            if (!$task->status==Tasks::STATUS_VERIFIED) {
+                $validator->errors()->add('authorize', 'Task is verified, No update to answers is allowed');
             }
         });
     }
