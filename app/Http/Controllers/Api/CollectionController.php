@@ -424,7 +424,7 @@ class CollectionController extends Controller
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
-        $this->competitionCollectionVerify($competition);
+        return $this->competitionCollectionVerify($competition);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
@@ -434,12 +434,15 @@ class CollectionController extends Controller
     public function competitionCollectionVerify($competition)
     {
         $all_collections_verified = true;
-        $collections = $competition->rounds->pluck('levels.*.collection')->flatten()->toArray();
+        $collections = $competition->rounds->pluck('levels.*.collection')->flatten();
+
         foreach ($collections as $collection) {
             if ($collection['status'] !== Collections::STATUS_VERIFIED) {
                 $all_collections_verified = false;
+                break; // No need to continue checking if one collection is not verified
             }
         }
+
         if ($all_collections_verified) {
             $competition->is_verified = true;
             $competition->save();
