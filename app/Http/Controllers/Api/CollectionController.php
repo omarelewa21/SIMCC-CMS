@@ -444,8 +444,7 @@ class CollectionController extends Controller
         }
 
         if ($all_collections_verified) {
-            $competition->is_verified = 1;
-            $competition->save();
+            $competition->update(['is_verified' => true]);
         }
     }
 
