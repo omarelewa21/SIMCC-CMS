@@ -415,8 +415,8 @@ class CollectionController extends Controller
                 "message" => "Collection already verified !"
             ], 500);
         }
-        $allTaksVerified = $this->checkCollectionTasksIsVerified($collection);
-        if (!$allTaksVerified) {
+        $allTasksVerified = $this->checkCollectionTasksIsVerified($collection);
+        if (!$allTasksVerified) {
             return response()->json([
                 "status"  => 500,
                 "message" => "All tasks of this collection must be verified first"
@@ -424,16 +424,19 @@ class CollectionController extends Controller
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
-        $this->competitionCollectionVerify($competition);
+        $this->competitionCollectionVerify($competitionId);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
         ]);
     }
 
-    public function competitionCollectionVerify($competition)
+    public function competitionCollectionVerify($competitionId)
     {
         $all_collections_verified = true;
+        $competition = Competition::with(['rounds.levels.collection'])
+            ->find($competitionId);
+
         $collections = $competition->rounds->pluck('levels.*.collection')->flatten();
 
         foreach ($collections as $collection) {
