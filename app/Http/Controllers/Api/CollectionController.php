@@ -424,7 +424,7 @@ class CollectionController extends Controller
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
-        return $this->competitionCollectionVerify($competition);
+        $this->competitionCollectionVerify($competition);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
@@ -444,7 +444,7 @@ class CollectionController extends Controller
         }
 
         if ($all_collections_verified) {
-            $competition->is_verified = true;
+            $competition->is_verified = 1;
             $competition->save();
         }
     }
