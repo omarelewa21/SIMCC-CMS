@@ -236,6 +236,15 @@ class AssignDifficultyPointsController extends Controller
                 'verified_by_userid' => auth()->user()->id
             ]
         );
+
+        $competition = Competition::with(['rounds.levels.collection'])
+            ->find($competitionId);
+        $all_collections_verified = $competition->isVerified();
+
+        if ($all_collections_verified) {
+            $competition->update(['is_verified' => true]);
+        }
+
         return response()->json(
             [
                 'status' => 200,
