@@ -400,7 +400,6 @@ class CollectionController extends Controller
         $competitionId = $request->validate([
             'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
         ])['competition_id'];
-        return $this->competitionCollectionVerify($competitionId);
 
         $competition = Competition::with(['rounds.levels.collection'])
             ->find($competitionId);
