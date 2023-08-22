@@ -424,7 +424,7 @@ class CollectionController extends Controller
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
-        $this->competitionCollectionVerify($competitionId);
+        return $this->competitionCollectionVerify($competitionId);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
@@ -436,11 +436,23 @@ class CollectionController extends Controller
         $all_collections_verified = true;
         $competition = Competition::with(['rounds.levels.collection'])
             ->find($competitionId);
+        $roundLevelPairs = [];
 
-        $collections = $competition->rounds->pluck('levels.*.collection')->flatten();
+        foreach ($competition->rounds as $round) {
+            foreach ($round->levels as $level) {
+                $collection = $level->collection;
+                $roundId = $round->id;
+                $levelId = $level->id;
+                $roundLevelPairs[] = [
+                    'round_id' => $roundId,
+                    'level_id' => $levelId,
+                    'collection_status' => $collection->status
+                ];
+            }
+        }
 
-        foreach ($collections as $collection) {
-            if ($collection['status'] !== Collections::STATUS_VERIFIED) {
+        foreach ($roundLevelPairs as $item) {
+            if ($item['collection_status'] !== Collections::STATUS_VERIFIED || !$this->checkDifficultyIsVerified($item['round_id'], $item['level_id'], $competition->id)) {
                 $all_collections_verified = false;
                 break; // No need to continue checking if one collection is not verified
             }
@@ -449,7 +461,10 @@ class CollectionController extends Controller
         if ($all_collections_verified) {
             $competition->update(['is_verified' => true]);
         }
+
+        return $all_collections_verified;
     }
+
 
     public function checkCollectionTasksIsVerified($collection)
     {
@@ -505,7 +520,7 @@ class CollectionController extends Controller
                     $collectionData = collect($collection)
                         ->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']);
 
-                    $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData, $competition->id);
+                    $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData['round_id'], $roundData['level_id'], $competition->id);
                     $roundData['collection'] =  $collectionData;
                     $rounds[] = $roundData;
                 }
@@ -530,9 +545,9 @@ class CollectionController extends Controller
         }
     }
 
-    public function checkDifficultyIsVerified($roundData, $competitionId)
+    public function checkDifficultyIsVerified($roundId, $levelId, $competitionId)
     {
-        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('level_id', $roundData['level_id'])->where('round_id', $roundData['round_id'])->first();
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('round_id', $roundId)->where('level_id', $levelId)->first();
         if ($taskDifficulty) {
             return true;
         }
