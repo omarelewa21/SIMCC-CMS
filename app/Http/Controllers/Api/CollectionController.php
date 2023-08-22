@@ -400,6 +400,7 @@ class CollectionController extends Controller
         $competitionId = $request->validate([
             'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
         ])['competition_id'];
+        return $this->competitionCollectionVerify($competitionId);
 
         $competition = Competition::with(['rounds.levels.collection'])
             ->find($competitionId);
@@ -424,7 +425,7 @@ class CollectionController extends Controller
         }
         $collection->status = Collections::STATUS_VERIFIED;
         $collection->save();
-        return $this->competitionCollectionVerify($competitionId);
+        $this->competitionCollectionVerify($competitionId);
         return response()->json([
             "status"  => 200,
             "message" => "collection verified successfully"
@@ -433,36 +434,13 @@ class CollectionController extends Controller
 
     public function competitionCollectionVerify($competitionId)
     {
-        $all_collections_verified = true;
         $competition = Competition::with(['rounds.levels.collection'])
             ->find($competitionId);
-        $roundLevelPairs = [];
-
-        foreach ($competition->rounds as $round) {
-            foreach ($round->levels as $level) {
-                $collection = $level->collection;
-                $roundId = $round->id;
-                $levelId = $level->id;
-                $roundLevelPairs[] = [
-                    'round_id' => $roundId,
-                    'level_id' => $levelId,
-                    'collection_status' => $collection->status
-                ];
-            }
-        }
-
-        foreach ($roundLevelPairs as $item) {
-            if ($item['collection_status'] !== Collections::STATUS_VERIFIED || !$this->checkDifficultyIsVerified($item['round_id'], $item['level_id'], $competition->id)) {
-                $all_collections_verified = false;
-                break; // No need to continue checking if one collection is not verified
-            }
-        }
+        $all_collections_verified = $competition->isVerified();
 
         if ($all_collections_verified) {
             $competition->update(['is_verified' => true]);
         }
-
-        return $all_collections_verified;
     }
 
 
