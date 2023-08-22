@@ -433,23 +433,15 @@ class CollectionController extends Controller
 
     public function competitionCollectionVerify($competitionId)
     {
-        $all_collections_verified = true;
         $competition = Competition::with(['rounds.levels.collection'])
             ->find($competitionId);
-
-        $collections = $competition->rounds->pluck('levels.*.collection')->flatten();
-
-        foreach ($collections as $collection) {
-            if ($collection['status'] !== Collections::STATUS_VERIFIED) {
-                $all_collections_verified = false;
-                break; // No need to continue checking if one collection is not verified
-            }
-        }
+        $all_collections_verified = $competition->isVerified();
 
         if ($all_collections_verified) {
             $competition->update(['is_verified' => true]);
         }
     }
+
 
     public function checkCollectionTasksIsVerified($collection)
     {
@@ -505,7 +497,7 @@ class CollectionController extends Controller
                     $collectionData = collect($collection)
                         ->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']);
 
-                    $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData, $competition->id);
+                    $roundData['difficulty_and_points_verified'] = $this->checkDifficultyIsVerified($roundData['round_id'], $roundData['level_id'], $competition->id);
                     $roundData['collection'] =  $collectionData;
                     $rounds[] = $roundData;
                 }
@@ -530,9 +522,9 @@ class CollectionController extends Controller
         }
     }
 
-    public function checkDifficultyIsVerified($roundData, $competitionId)
+    public function checkDifficultyIsVerified($roundId, $levelId, $competitionId)
     {
-        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('level_id', $roundData['level_id'])->where('round_id', $roundData['round_id'])->first();
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('round_id', $roundId)->where('level_id', $levelId)->first();
         if ($taskDifficulty) {
             return true;
         }

@@ -212,4 +212,28 @@ class Competition extends Base
     {
         return $this->levels()->where('computing_status', '<>', CompetitionLevels::STATUS_FINISHED)->doesntExist();
     }
+
+    public function isVerified()
+    {
+        $all_collections_verified = true;
+        foreach ($this->rounds as $round) {
+            foreach ($round->levels as $level) {
+                $collection = $level->collection;
+                if ($collection->status !== 'verified' || !$this->checkDifficultyIsVerified($round->id, $level->id, $this->id)) {
+                    $all_collections_verified = false;
+                    break 2; // Break out of both loops if one collection is not verified
+                }
+            }
+        }
+        return $all_collections_verified;
+    }
+
+    public function checkDifficultyIsVerified($roundId, $levelId, $competitionId)
+    {
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('round_id', $roundId)->where('level_id', $levelId)->first();
+        if ($taskDifficulty) {
+            return true;
+        }
+        return false;
+    }
 }
