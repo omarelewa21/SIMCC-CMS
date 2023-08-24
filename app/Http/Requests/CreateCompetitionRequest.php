@@ -40,6 +40,8 @@ class CreateCompetitionRequest extends FormRequest
             "allowed_grades.*"                      => "required|integer|min:1" ,
             "format"                                => "required|boolean",
             "re-run"                                => "required|boolean",
+            "tags"                                  => "array|nullable",
+            "tags.*"                                => ['integer',Rule::exists('domains_tags','id')->where('is_tag',1)],
             "parent_competition_id"                 => ["required_if:re-run,1", "integer", "nullable", Rule::exists('competition','id')->where(function(Builder $query){
                                                             return $query->where('format', 0)->where('status', 'closed');
                                                         })],    //use for re-run competition,
