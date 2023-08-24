@@ -55,6 +55,16 @@ class Competition extends Base
         "is_verified"
     ];
 
+    public static function scopeApplyFilter($query, $request)
+    {
+        return $query
+            ->when($request->filled("tag"), fn() => $query->whereHas('tags', function($query) use($request){
+                $query->where('domains_tags.id', $request->tag);
+            }))
+            ->when($request->filled("format"), fn() => $query->where('format', $request->format))
+            ->when($request->filled("status"), fn() => $query->where('status', $request->status));
+    }
+
     public static function booted()
     {
         parent::booted();
