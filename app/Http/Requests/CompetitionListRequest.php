@@ -30,7 +30,8 @@ class CompetitionListRequest extends FormRequest
             'status'    => 'alpha_dash',
             'limits'    => 'integer|min:10|max:50',
             'page'      => 'integer',
-            'search'    => 'max:255'
+            'search'    => 'max:255',
+            "tags"      => "string"
         ];
     }
 }

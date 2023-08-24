@@ -57,9 +57,11 @@ class Competition extends Base
     public static function scopeApplyFilter($query, $request)
     {
         return $query
-            ->when($request->filled("tag"), fn() => $query->whereHas('tags', function($query) use($request){
-                $query->where('domains_tags.id', $request->tag);
-            }))
+            ->when($request->filled("tags"), function($query) use($request){
+                $tags = json_decode($request->tags, true);
+                if(is_array($tags))
+                    $query->whereHas('tags', fn($query) => $query->whereIn('domains_tags.id', $tags));
+            })
             ->when($request->filled("format"), fn() => $query->where('format', $request->format))
             ->when($request->filled("status"), fn() => $query->where('status', $request->status));
     }
