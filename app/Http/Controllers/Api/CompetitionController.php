@@ -189,7 +189,7 @@ class CompetitionController extends Controller
 
             $competitionCollection = $competitionModel
                 ->applyFilter($request)
-                ->orderBy('updated_at')
+                ->orderBy('updated_at', 'DESC')
                 ->get()
                 ->filter(fn ($row) => count($row['competitionOrganization']) > 0);
 
