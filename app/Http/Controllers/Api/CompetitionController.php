@@ -187,9 +187,11 @@ class CompetitionController extends Controller
                     break;
             }
 
-            $competitionCollection = $competitionModel->applyFilter($request)->get()->filter(function ($row) {
-                return count($row['competitionOrganization']) > 0;
-            });
+            $competitionCollection = $competitionModel
+                ->applyFilter($request)
+                ->orderBy('updated_at')
+                ->get()
+                ->filter(fn ($row) => count($row['competitionOrganization']) > 0);
 
             /**
              * Lists of availabe filters
