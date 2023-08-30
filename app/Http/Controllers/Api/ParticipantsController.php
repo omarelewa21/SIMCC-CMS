@@ -156,34 +156,33 @@ class ParticipantsController extends Controller
 
     public function list(getParticipantListRequest $request)
     {
-        $participantCollection = Participants::leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
-            ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
-            ->leftJoin('all_countries', 'all_countries.id', '=', 'participants.country_id')
-            ->leftJoin('schools', 'schools.id', '=', 'participants.school_id')
-            ->leftJoin('schools as tuition_centre', 'tuition_centre.id', '=', 'participants.tuition_centre_id')
-            ->leftJoin('competition_organization', 'competition_organization.id', '=', 'participants.competition_organization_id')
-            ->leftJoin('organization', 'organization.id', '=', 'competition_organization.organization_id')
-            ->leftJoin('competition', 'competition.id', '=', 'competition_organization.competition_id')
-            ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', '=', 'participants.index_no')
-            ->leftJoin('participant_answers', function ($join) {
-                $join->on('participant_answers.participant_index', '=', 'participants.index_no');
-            })
-            ->select(
-                'participants.*',
-                'all_countries.display_name as country_name',
-                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
-                'schools.id as school_id',
-                'schools.name as school_name',
-                'tuition_centre.id as tuition_centre_id',
-                'tuition_centre.name as tuition_centre_name',
-                'competition.id as competition_id',
-                'competition.name as competition_name',
-                'competition.alias as competition_alias',
-                'organization.id as organization_id',
-                'organization.name as organization_name',
-                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
-                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
+        $participantCollection = Participants::leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
+            ->leftJoin('schools', 'schools.id', 'participants.school_id')
+            ->leftJoin('schools as tuition_centre', 'tuition_centre.id', 'participants.tuition_centre_id')
+            ->leftJoin('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
+            ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
+            ->leftJoin('competition', 'competition.id', 'competition_organization.competition_id')
+            ->leftJoin('taggables', fn($join) =>
+                $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
             )
+            ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
+            ->leftJoin('participant_answers', 'participant_answers.participant_index', 'participants.index_no')
+            ->selectRaw("
+                participants.*,
+                all_countries.display_name as country_name,
+                CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private,
+                schools.id as school_id,
+                schools.name as school_name,
+                tuition_centre.id as tuition_centre_id,
+                tuition_centre.name as tuition_centre_name,
+                competition.id as competition_id,
+                competition.name as competition_name,
+                competition.alias as competition_alias,
+                organization.id as organization_id,
+                organization.name as organization_name,
+                IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award,
+                COUNT(participant_answers.participant_index) > 0 as is_answers_uploaded
+            ")
             ->filterList($request)
             ->groupBy('participants.id')
             ->get();
@@ -216,6 +215,16 @@ class ParticipantsController extends Controller
                 return ['id' => $item->organization_id, 'name' => $item->organization_name];
             })->unique()->sortBy('name')->values();
 
+            $availTags = Competition::whereIn('competition.id', $availCompetition->pluck('id'))
+                ->join('taggables', fn($join) =>
+                    $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
+                )
+                ->join('domains_tags', 'domains_tags.id', 'taggables.domains_tags_id')
+                ->select('domains_tags.id', 'domains_tags.name')
+                ->groupBy('domains_tags.id')
+                ->get()
+                ->toArray();
+
             /**
              * EOL Lists of availabe filters
              */
@@ -243,7 +252,8 @@ class ParticipantsController extends Controller
                         'grade'         => $availGrade,
                         'private'       => $availPrivate,
                         'countries'     => $availCountry,
-                        'competition'   => $availCompetition
+                        'competition'   => $availCompetition,
+                        'tags'          => $availTags
                     ],
                     "participantList" => $participantList
                 ]
