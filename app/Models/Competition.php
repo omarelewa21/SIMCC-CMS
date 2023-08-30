@@ -211,4 +211,12 @@ class Competition extends Base
     {
         return $this->levels()->where('computing_status', '<>', CompetitionLevels::STATUS_FINISHED)->doesntExist();
     }
+
+    public function hasUploadedAnswers()
+    {
+        $tasks = $this->rounds->pluck('levels')->flatten()->pluck('tasks')->flatten();
+        $taskIds = $tasks->pluck('id');
+        $uploadedAnswersCount = DB::table('task_answers')->whereIn('task_id', $taskIds)->count();
+        return $uploadedAnswersCount > 0;
+    }
 }
