@@ -125,6 +125,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}",[CompetitionController::class,"getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
+        Route::post("/send_participants_verification_emails",[CompetitionController::class,"sendParticipantsVerificationEmails"])->name('competition.send_participants_verification_emails');
     });
 
     Route::group(["prefix" => "marking"],function () {

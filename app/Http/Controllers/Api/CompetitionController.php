@@ -37,6 +37,7 @@ use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ComputeCheatingParticipants;
+use App\Mail\ParticipantsVerificationEmail;
 use App\Models\CheatingStatus;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
@@ -44,6 +45,8 @@ use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 use App\Services\ParticipantService;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 //update participant session once competition mode change, add this changes once participant session done
@@ -1215,5 +1218,39 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function sendParticipantsVerificationEmails(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'competition_id' => 'required|exists:competition,id',
+            'verification_deadline' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        $competition = Competition::findOrFail($request->competition_id);
+        $organizations = $competition->organizations;
+
+        $competition->verification_deadline = $request->verification_deadline;
+        $competition->save();
+
+        foreach ($organizations as $organization) {
+            $cps = $organization->countryPartners;
+            foreach ($cps as $cp) {
+                Mail::to($cp->email)->send(new ParticipantsVerificationEmail($competition));
+            }
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Emails sent successfully'
+        ]);
     }
 }
