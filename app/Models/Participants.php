@@ -116,6 +116,10 @@ class Participants extends Base
                 case 'competition_id':
                     $query->where('competition.id', $value);
                     break;
+                case 'tag_id':
+                    $tags = explode(',', $value);
+                    $query->whereIn('taggables.domains_tags_id', $tags);
+                    break;
                 case 'page':
                 case 'limits':
                     break;
