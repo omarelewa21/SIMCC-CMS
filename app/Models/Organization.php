@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Organization extends Base
 {
-    use HasFactory,Filterable;
+    use HasFactory, Filterable;
 
     private static $whiteListFilter = [
         'name',
@@ -19,14 +19,23 @@ class Organization extends Base
     ];
 
     protected $table = 'organization';
-    public $hidden = ['updated_at','created_at','modified_by_userid','created_by_userid'];
+    public $hidden = ['updated_at', 'created_at', 'modified_by_userid', 'created_by_userid'];
     protected $appends = array(
         'created_by',
         'last_modified_by',
     );
     protected $guarded = [];
 
-    public function users () {
-        return $this->hasMany(User::class,'organization_id','id');
+    public function users()
+    {
+        return $this->hasMany(User::class, 'organization_id', 'id');
+    }
+
+    public function countryPartners()
+    {
+        return $this->hasMany(User::class, 'organization_id', 'id')
+            ->whereHas('role', function ($query) {
+                $query->where('role_id', 2);
+            });
     }
 }
