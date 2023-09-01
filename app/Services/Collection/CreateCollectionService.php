@@ -20,7 +20,7 @@ class CreateCollectionService
 
     private function addTags(Collections $collection, array $data)
     {
-        if (Arr::has($data, 'tags')) {
+        if (Arr::has($data, 'tags') && !empty($data['tags'])) {
             $collection->tags()->attach($data['tags']);
         }
     }
