@@ -54,7 +54,7 @@ class CheckSchoolUnique implements Rule,DataAwareRule
         ])->first();
 
         if($school) {
-            $this->message = "School with name '$school->name' already exists with status $school->status";
+            $this->message = "School name '$school->name' already exists with status $school->status";
             return false;
         }
 
