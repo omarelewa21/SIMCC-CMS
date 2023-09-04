@@ -204,7 +204,7 @@ class CompetitionController extends Controller
              * EOL Lists of availabe filters
              */
 
-            $availForSearch = array("name");
+            $availForSearch = array("name", "alias");
             $competitionList = CollectionHelper::searchCollection($searchKey, $competitionCollection, $availForSearch, $limits);
             $data = array("filterOptions" => ['status' => $availUserStatus, 'format' => $availFormat], "competitionList" => $competitionList);
 
