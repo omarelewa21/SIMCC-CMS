@@ -37,8 +37,8 @@ class SchoolController extends Controller
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Create school unsuccessful",
-                "error"     => $e->getMessage()
+                "message"   => "Create school unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
 
