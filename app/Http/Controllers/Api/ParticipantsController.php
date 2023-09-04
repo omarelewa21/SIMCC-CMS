@@ -19,6 +19,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
+use App\Jobs\GeneratePerformanceReports;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Models\ReportDownloadStatus;
