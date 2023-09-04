@@ -216,4 +216,15 @@ class Participants extends Base
 
         return $newCharacter . $newNumber;
     }
+
+    public static function generatePassword()
+    {
+        $characters = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        $charactersLength = strlen($characters);
+        $password = '';
+        for ($i = 0; $i < 8; $i++) {
+            $password .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return encrypt($password);
+    }
 }

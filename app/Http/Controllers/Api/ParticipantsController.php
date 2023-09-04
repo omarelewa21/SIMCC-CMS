@@ -126,10 +126,9 @@ class ParticipantsController extends Controller
                 $row["created_by_userid"] =  auth()->id(); //assign entry creator user id
                 $row["index_no"] = $index;
                 $row["certificate_no"] = $certificate;
-                $row["passkey"] = Str::random(8);
-                $row["password"] = Hash::make($row["passkey"]);
+                // $row["password"] = Hash::make($filteredPasskey);
+                $row["password"] = Participants::generatePassword();
                 unset($returnData[count($returnData) - 1]['password']);
-                unset($row['passkey']);
                 unset($row['competition_id']);
                 unset($row['for_partner']);
                 unset($row['organization_id']);
@@ -148,7 +147,7 @@ class ParticipantsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Create Participants unsuccessful",
+                "message"   => "Create Participants unsuccessful" . $e->getMessage(),
                 "error"     => $e->getMessage()
             ], 500);
         }
