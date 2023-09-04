@@ -10,7 +10,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
@@ -36,11 +35,6 @@ use PDF;
 
 class ParticipantsController extends Controller
 {
-    const STATUS_NOT_STARTED  = "Not Started";
-    const STATUS_In_PROGRESS  = "In Progress";
-    const STATUS_FINISHED     = "Finished";
-    const STATUS_BUG_DETECTED = "Bug Detected";
-
     public function create(Request $request)
     {
 
