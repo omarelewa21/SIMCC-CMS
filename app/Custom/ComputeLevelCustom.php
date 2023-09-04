@@ -190,12 +190,12 @@ class ComputeLevelCustom
 
     protected function setParticipantsAwards()
     {
-        // Set Perfect Scorer
+        // Set PERFECT SCORE
         CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('points', $this->level->maxPoints())
             ->update([
-                'award'     => 'PERFECT SCORER',
-                'ref_award' => 'PERFECT SCORER',
+                'award'     => 'PERFECT SCORE',
+                'ref_award' => 'PERFECT SCORE',
                 'percentile'=> '100.00'
             ]);
 
@@ -215,7 +215,7 @@ class ComputeLevelCustom
                 $percentileCutoff = 100 - $awardPercentage;
                 $perfectScoreresCount = CompetitionParticipantsResults::where('level_id', $this->level->id)
                     ->where('group_id', $group_id)
-                    ->where('award', 'PERFECT SCORER')
+                    ->where('award', 'PERFECT SCORE')
                     ->count();
 
                 for($count;$count>0;$count--) {
@@ -288,7 +288,7 @@ class ComputeLevelCustom
 
     public function setParticipantsAwardsRank()
     {
-        $awardsRankArray = collect(['PERFECT SCORER'])
+        $awardsRankArray = collect(['PERFECT SCORE'])
             ->merge($this->awards->pluck('name'))
             ->push($this->level->rounds->default_award_name);
 
@@ -310,7 +310,7 @@ class ComputeLevelCustom
         foreach($participantResults as $index=>$participantResult){
             if($index === 0){
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
-            }elseif($participantResult->points === $participantResults[$index-1]->points){
+            }elseif($participantResult->points === $participantResults[$index-1]->points && $participantResults[$index-1]->group_id === $participantResult->group_id){
                 $participantResult->setAttribute('global_rank', $participantResults[$index-1]->global_rank);
             }else{
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
@@ -354,7 +354,7 @@ class ComputeLevelCustom
     {
         $perfectScoreresCount = $perfectScoreresCount ?? CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $group_id)
-            ->where('award', 'PERFECT SCORER')
+            ->where('award', 'PERFECT SCORE')
             ->count();
 
         $percentile = $count / ($totalCount + $perfectScoreresCount);

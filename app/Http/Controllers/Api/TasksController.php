@@ -11,19 +11,19 @@ use App\Models\TasksLabels;
 use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\tasks\DeleteTaskRequest;
-use App\Http\Requests\tasks\StoreTaskRequest;
-use App\Http\Requests\tasks\UpdateTaskAnswerRequest;
-use App\Http\Requests\tasks\UpdateTaskContentRequest;
-use App\Http\Requests\tasks\UpdateTaskRecommendationsRequest;
-use App\Http\Requests\tasks\UpdateTaskSettingsRequest;
+use App\Http\Requests\Task\DeleteTaskRequest;
+use App\Http\Requests\Task\StoreTaskRequest;
+use App\Http\Requests\Task\UpdateTaskAnswerRequest;
+use App\Http\Requests\Task\UpdateTaskContentRequest;
+use App\Http\Requests\Task\UpdateTaskRecommendationsRequest;
+use App\Http\Requests\Task\UpdateTaskSettingsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
+use App\Services\Tasks\CreateTaskService;
+use App\Services\Tasks\DuplicateTaskService;
 
 class TasksController extends Controller
 {
-
     /**
      * Show the form for creating a new resource.
      *
@@ -31,90 +31,22 @@ class TasksController extends Controller
      */
     public function create(StoreTaskRequest $request)
     {
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
-            $counter = 0;
-
-            User::find(auth()->user()->id)->tasks()->createMany($request->all())->map(function ($row) use(&$counter, $request){
-                $row = collect(array_merge($request->all()[$counter], $row->toArray()));
-
-                //add image entry via polymorphic relationship (one to one)
-                if ($row->has('image')) {
-                    Tasks::find($row->get('id'))->taskImage()->create([
-                        'image_string' => $row->get('image')
-                    ]);
-                }
-
-                //add tag entry via polymorphic relationship (many to many)
-                if ($row->has('tag_id')) {
-                    Tasks::find($row->get('id'))->tags()->attach($row->get('tag_id'));
-                }
-
-                //add recommended difficulty entry via polymorphic relationship (one to many)
-                if ($row->has('recommended_grade')) {
-                    if (count($row->get('recommended_grade')) > 0) {
-                        for ($i = 0; $i < count($request->all()[$counter]['recommended_grade']); $i++) {
-                            Tasks::find($row->get('id'))->gradeDifficulty()->create(
-                                [
-                                    "grade" => $row->get('recommended_grade')[$i],
-                                    "difficulty" => $row->get('recommended_difficulty')[$i],
-                                ]);
-                        }
-                    }
-                };
-
-                //add task content
-                Tasks::findOrFail($row->get('id'))->taskContents()->create([
-                    'language_id' => env('APP_DEFAULT_LANG'),
-                    'task_title' => $row->get('title'),
-                    'content' => $row->get('content'),
-                    'status' => auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? 'active' : 'pending moderation',
-                    'created_by_userid' => auth()->user()->id
-                ]);
-
-                $answers = collect($row->get('answers'))->map(function ($answer, $key) use ($row) {
-                    $temp = array([
-                        'task_id' => $row->get('id'),
-                        'lang_id' => env('APP_DEFAULT_LANG'),
-                        'answer' => $answer,
-                        'position' => $key + 1,
-                    ]);
-                    return $temp;
-
-                })->toArray();
-              
-
-                // add task answers
-                $labels = Tasks::find($row->get('id'))->taskAnswers()->createMany(Arr::collapse($answers))->pluck('id')->map(function ($answerId, $key) use ($row) {
-                    $temp = array([
-                        'task_answers_id' => $answerId,
-                        'lang_id' => env('APP_DEFAULT_LANG'),
-                        'content' => $row->get('labels')[$key] ?: '-',
-                    ]);
-                    return $temp;
-
-                });
-
-                // add labels for task answers
-                TasksLabels::insert(Arr::collapse($labels));
-
-                $counter++;
-            });
-
-            DB::commit();
-            return response()->json([
-                "status" => 200,
-                "message" => 'Tasks created successfully'
-            ]);
-
-        }catch(\Exception $e){
+            (new CreateTaskService())->create($request->all());
+        } catch(\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks create was unsuccessful",
-                "error"     => $e->getMessage()
+                "message"   => "Tasks create was unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => 'Tasks created successfully'
+        ]);
     }
 
     public function list(Request $request)
@@ -293,7 +225,7 @@ class TasksController extends Controller
             if($request->get('re-moderate')) {
                 Tasks::findOrFail($request->id)
                     ->taskContents()
-                    ->where('language_id', '!=' ,env('APP_DEFAULT_LANG'))
+                    ->where('language_id', '!=' ,env('APP_DEFAULT_LANG', 171))
                     ->update(['status' => 'pending moderation']);
             }
 
@@ -352,7 +284,7 @@ class TasksController extends Controller
                 $answers = collect($request->answers)->map(function ($answer, $key) use($task){
                     return array([
                         'task_id'   => $task->id,
-                        'lang_id'   => env('APP_DEFAULT_LANG'),
+                        'lang_id'   => env('APP_DEFAULT_LANG', 171),
                         'answer'    => $answer,
                         'position'  => $key + 1,
                     ]);
@@ -364,7 +296,7 @@ class TasksController extends Controller
                     ->map(function ($answerId, $key) use($labels){
                         return array([
                             'task_answers_id'   => $answerId,
-                            'lang_id'           => env('APP_DEFAULT_LANG'),
+                            'lang_id'           => env('APP_DEFAULT_LANG', 171),
                             'content'           => $labels[$key],
                         ]);
                 });
@@ -415,4 +347,25 @@ class TasksController extends Controller
             "message" => "Tasks deleted successfully"
         ]);
     }
+
+    public function duplicate(Tasks $task)
+    {
+        DB::beginTransaction();
+        try {
+            (new DuplicateTaskService($task))->duplicate();
+        } catch(\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Tasks duplicate was unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        }
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => 'Tasks duplicated successfully'
+        ]);
+    }
+
+
 }

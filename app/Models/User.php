@@ -134,11 +134,6 @@ class User extends Authenticatable
         );
     }
 
-    /**
-     * set last modified by attribute
-     *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
-     */
     protected function lastModifiedBy(): Attribute
     {
         return Attribute::make(

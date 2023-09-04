@@ -4,6 +4,8 @@ namespace App\Custom;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\Countries;
+use Illuminate\Http\Request;
 
 class Marking
 {
@@ -119,5 +121,123 @@ class Marking
             $data[$award]['min'] = $filteredParticipants->last()->points;
         }
         return $data;
+    }
+
+    /**
+     * get participants count (with and without answers) by country and grade
+     * 
+     * @param App\Models\Competition $competition
+     * @param Illuminate\Http\Request $request
+     * 
+     * @return array
+     */
+    public static function getActiveParticipantsByCountryByGradeData(Competition $competition, Request $request)
+    {       
+        $countries = Countries::whereIn('id', $request->countries)->select('id', 'display_name')
+            ->get()
+            ->mapWithKeys(fn($country)=>[
+                $country->id => [
+                    'name' => $country->display_name,
+                    'id'   => $country->id
+                ]
+            ]);
+
+        $totalParticipants = $competition->participants()
+            ->whereIn('participants.country_id', $request->countries)
+            ->groupBy('participants.country_id', 'participants.grade')
+            ->selectRaw('participants.country_id, participants.grade, count(participants.id) as total_participants')
+            ->get();
+
+        $totalParticipantsWithAnswer = $competition->participants()
+            ->whereIn('participants.country_id', $request->countries)
+            ->has('answers')
+            ->groupBy('participants.country_id', 'participants.grade')
+            ->selectRaw('participants.country_id, participants.grade, count(participants.id) as total_participants_with_answers')
+            ->get();
+
+        return [$countries, $totalParticipants, $totalParticipantsWithAnswer];
+    }
+
+    /**
+     * get all participants count by country and grade
+     * 
+     * @param array $data by reference
+     * @param Illuminate\Database\Eloquent\Collection $countries
+     * @param Illuminate\Database\Eloquent\Collection $totalParticipants
+     * 
+     * @return void
+     */
+    public static function setTotalParticipantsByCountryByGrade(&$data, $countries, $totalParticipants)
+    {
+        foreach($totalParticipants as $participants){
+            $country = $countries[$participants->country_id]['name'];
+
+            static::inititializeCountryGrade($data, $participants->grade, $country);
+
+            // Add total participants for each country and grade
+            $data[$participants->grade][$country] = [
+                'total_participants' => $participants->total_participants,
+                'country'            => $country,
+                'grade'              => $participants->grade
+            ];
+
+            // Add total participants for all grades per country
+            $data['total'][$country]['total_participants'] += $participants->total_participants;
+
+             // Add total participants for all countries per grade
+            $data[$participants->grade]['total']['total_participants'] += $participants->total_participants;
+        }
+    }
+
+    /**
+     * get participants (with answers) and absentees count by country and grade
+     * 
+     * @param array $data by reference
+     * @param Illuminate\Database\Eloquent\Collection $countries
+     * @param Illuminate\Database\Eloquent\Collection $totalParticipantsWithAnswer
+     * 
+     * @return void
+     */
+    public static function setTotalParticipantsWithAnswersAndAbsentees(&$data, $countries, $totalParticipantsWithAnswer)
+    {
+        foreach($totalParticipantsWithAnswer as $participants){
+            $country = $countries[$participants->country_id]['name'];
+            // Add total participants with answers for each country and grade
+            $data[$participants->grade][$country]['total_participants_with_answers']
+                = $participants->total_participants_with_answers;
+
+            // Add total absentees for each country and grade
+            $data[$participants->grade][$country]['absentees']
+                = $data[$participants->grade][$country]['total_participants'] - $participants->total_participants_with_answers;
+
+            $data[$participants->grade]['total']['total_participants_with_answers'] += $participants->total_participants_with_answers;    // Add total participants with answers for all countries per grade
+            $data[$participants->grade]['total']['absentees'] += $data[$participants->grade][$country]['absentees'];     // Add total absentees for all countries per grade
+
+            // Add total participants for all grades per country
+            $data['total'][$country]['total_participants_with_answers'] += $participants->total_participants_with_answers;
+            $data['total'][$country]['absentees'] += $data[$participants->grade][$country]['absentees'];
+        }
+    }
+
+    private static function inititializeCountryGrade(&$data, $grade, $country)
+    {
+        if(!isset($data[$grade]['total']['total_participants'])) {
+            // Initialize total participants for all countries per grade
+            $data[$grade]['total'] = [
+                'total_participants' => 0,
+                'total_participants_with_answers' => 0,
+                'absentees' => 0,
+                'grade'     => $grade
+            ];
+        }
+
+        if(!isset($data['total'][$country])) {
+            $data['total'][$country] = [
+                'total_participants' => 0,
+                'total_participants_with_answers' => 0,
+                'absentees' => 0,
+                'country'   => $country
+            ];
+        }
     }
 }

@@ -9,15 +9,16 @@ use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
-use App\Models\Countries;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Services\ComputeAwardStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 class MarkingController extends Controller
 {
@@ -57,6 +58,7 @@ class MarkingController extends Controller
     {
         try {
             $headerData = Competition::whereId($competition->id)->select('id as competition_id', 'name', 'format')->first()->setAppends([]);
+            $headerData->isComputed = $competition->isComputed();
 
             $data = CompetitionMarkingGroup::where('competition_id', $competition->id)
                         ->with('countries:id,display_name as name')->get()->append('totalParticipantsCount');
@@ -216,27 +218,18 @@ class MarkingController extends Controller
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
-            $grades = $competition->participants()->whereIn('participants.country_id', $request->countries)
-                    ->where('participants.status', 'active')->distinct()->pluck('grade')->toArray();
+            [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
+                = Marking::getActiveParticipantsByCountryByGradeData($competition, $request);
 
-            $countries = [];
             $data = [];
-
-            foreach($request->countries as $country_id){
-                $country = Countries::find($country_id);
-                $countries[] = $country->display_name;
-                foreach($grades as $grade){
-                    $data[$country->display_name][$grade] =
-                        $competition->participants()->where('participants.country_id', $country_id)
-                            ->where('participants.status', 'active')->where('participants.grade', $grade)->count();
-                }
-            }
+            Marking::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
+            Marking::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
 
             return response()->json([
                 "status"        => 200,
                 "message"       => "Table retrieval was successful",
-                'grades'        => $grades,
-                'countries'     => $countries,
+                'grades'        => $totalParticipants->pluck('grade')->unique()->values(),
+                'countries'     => $countries->values(),
                 'data'          => $data
             ]);
 
@@ -419,7 +412,7 @@ class MarkingController extends Controller
     public function editParticipantAward(CompetitionLevels $level, EditParticipantAwardRequest $request)
     {
         try {
-            $awardsRankArray = collect(['PERFECT SCORER'])
+            $awardsRankArray = collect(['PERFECT SCORE'])
                     ->merge($level->rounds->roundsAwards->pluck('name'))
                     ->push($level->rounds->default_award_name);
 
@@ -428,7 +421,7 @@ class MarkingController extends Controller
                     ->firstOrFail();
                 $globalRankNumber = explode(" ", $participantResults->global_rank);
 
-                if($participantResults->award != "PERFECT SCORER"){
+                if($participantResults->award != "PERFECT SCORE"){
                     $participantResults->update([
                         'award'         => $data['award'],
                         'award_rank'    => $awardsRankArray->search($data['award']) + 1,
@@ -448,5 +441,35 @@ class MarkingController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * get participant results
+     * 
+     * @param \App\Models\CompetitionMarkingGroup $group
+     */
+    public function getAwardsStats(CompetitionMarkingGroup $group)
+    {
+        try {
+            [$headers, $data] = (new ComputeAwardStatsService($group))->getAwardsStats();
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Awards stats retrival successful",
+                "headers"   => $headers,
+                "data"      => $data
+            ], 200);
+
+        } catch(ValidationException $e){
+            return response()->json([
+                "status"    => $e->status,
+                "message"   => $e->getMessage(),
+            ], $e->status);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Awards stats retrival unsuccessful - " . $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        } 
     }
 }
