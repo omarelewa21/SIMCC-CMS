@@ -14,7 +14,7 @@ class Participants extends Base
 {
     use HasFactory, Filterable, SoftDeletes, Prunable;
 
-    const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+    const ALLOWED_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
     private static $whiteListFilter = [
         'status',
@@ -34,7 +34,7 @@ class Participants extends Base
         "last_modified_userid"
     ];
 
-     /**
+    /**
      * Get the prunable model query.
      *
      * @return \Illuminate\Database\Eloquent\Builder
@@ -56,7 +56,7 @@ class Participants extends Base
             $participant->created_by_userid = auth()->id();
         });
 
-        static::deleting(function($participant) {
+        static::deleting(function ($participant) {
             $participant->last_modified_userid = auth()->id();
         });
     }
@@ -170,7 +170,7 @@ class Participants extends Base
         return $this->competition_organization()->with('competition')->first()->competition;
     }
 
-    public static function generateIndexNo(Countries $country, $isPrivate=false)
+    public static function generateIndexNo(Countries $country, $isPrivate = false)
     {
         // Get the dial code for the country
         $dial = str_pad($country->Dial, 3, '0', STR_PAD_LEFT);
@@ -211,5 +211,10 @@ class Participants extends Base
         }
 
         return $newCharacter . $newNumber;
+    }
+
+    public function changes()
+    {
+        return $this->hasMany(ParticipantEdit::class, 'participant_id');
     }
 }
