@@ -11,12 +11,10 @@ return new class extends Migration
         Schema::create('participant_edits', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('participant_id');
-            $table->string('field_name');
-            $table->string('old_value');
-            $table->string('new_value');
+            $table->text('changes');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->unsignedBigInteger('reject_reason')->nullable();
             $table->unsignedBigInteger('created_by_userid');
-            $table->unsignedBigInteger('reject_reason');
             $table->unsignedBigInteger('approved_by_userid')->nullable();
             $table->timestamps();
             $table->foreign('participant_id')->references('id')->on('participants')->onDelete('cascade');
