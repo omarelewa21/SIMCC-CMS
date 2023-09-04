@@ -100,7 +100,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
         Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
         Route::get("/reports/bulk_download", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
-
     });
 
     Route::group(["prefix" => "competition"], function () {
