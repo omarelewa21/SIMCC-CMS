@@ -6,6 +6,8 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
@@ -137,6 +139,21 @@ class Participants extends Base
     public function modified_by()
     {
         return $this->belongsTo(User::class, "last_modified_userid", "id");
+    }
+
+    protected function password(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                try {
+                    return decrypt($value);
+                } catch (DecryptException $e) {
+                    $this->password = self::generatePassword();
+                    $this->save();
+                    return $this->password;
+                } 
+            },
+        );
     }
 
     public function tuition_centre()
