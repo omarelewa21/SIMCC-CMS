@@ -29,6 +29,7 @@ class RolePermissions
 
     /**
      * Check if user is authorized to perform action
+     * To add new route, add route name to routes table, then add route_id, role_id to permissions table
      * 
      * @return bool
      */
