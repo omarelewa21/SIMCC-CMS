@@ -39,10 +39,15 @@ use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Mail\ParticipantsVerificationEmail;
 use App\Models\CheatingStatus;
+use App\Models\ParticipantEdit;
 use App\Models\Participants;
+use App\Models\School;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
+use App\Rules\CheckParticipantGrade;
+use App\Rules\CheckSchoolStatus;
+use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\CompetitionService;
 use App\Services\ParticipantService;
 use Illuminate\Support\Facades\Mail;
@@ -1252,5 +1257,64 @@ class CompetitionController extends Controller
             'status' => 200,
             'message' => 'Emails sent successfully'
         ]);
+    }
+
+    public function updateParticipant(Request $request)
+    {
+        $participant = Participants::whereId($request['id'])->firstOrFail();
+        $participantCountryId = $participant->country_id;
+        $request['school_type'] = $participant->tuition_centre_id ? 1 : 0;
+
+        $validate = array(
+            'for_partner' => 'required_if:school_type,1|exclude_if:school_type,0|boolean',
+            'name' => 'required|string|min:3|max:255',
+            'class' => "max:20",
+            'grade' => ['required', 'integer', 'min:1', 'max:99', new CheckParticipantGrade],
+            'school_type' => ['required', Rule::in(0, 1)],
+            'email' => ['sometimes', 'email', 'nullable'],
+            "tuition_centre_id" => ['exclude_if:for_partner,1', 'exclude_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(1, $participantCountryId)],
+            "school_id" => ['required_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(0, $participantCountryId)],
+            "identifier" => [new CheckUniqueIdentifierWithCompetitionID($participant)],
+        );
+
+        $organizationId = auth()->user()->organization_id;
+        $countryId = auth()->user()->country_id;
+        $activeCompetitionOrganizationIds = CompetitionOrganization::where(['organization_id' => $organizationId, 'status' => 'active'])->pluck('id')->toArray();
+        // $validate['id'] = ["required", "integer", Rule::exists('participants', 'id')->where("country_id", $countryId)->whereIn("competition_organization_id", $activeCompetitionOrganizationIds)];
+        $validated = $request->validate($validate);
+        try {
+            $changes = [];
+            foreach ($request->except('id') as $paramName => $paramValue) {
+                $changes[] = [
+                    'field_name' => $paramName,
+                    'old_value' => $participant->{$paramName},
+                    'new_value' => $paramValue,
+                ];
+            }
+            $participant->name  = $request->name;
+            $participant->grade = $request->grade;
+            $participant->class = $request->class;
+            $participant->email = $request->email;
+            $participant->identifier = $request->identifier;
+            $participant->school_id = $request->school_id;
+            $participant->save();
+
+            ParticipantEdit::updateOrCreate([
+                'participant_id' => $participant->id
+            ], [
+                ''
+            ]);
+
+            return response()->json([
+                "status" => 200,
+                "message" => "participant update successful"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "participannt update unsuccessful",
+                "error"     => $e->getMessage()
+            ], 500);
+        }
     }
 }
