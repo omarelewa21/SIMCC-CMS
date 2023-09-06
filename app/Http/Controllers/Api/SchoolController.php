@@ -55,6 +55,7 @@ class SchoolController extends Controller
             $school->update([
                 'status'    => auth()->user()->hasRole(['Super Admin', 'Admin']) ? 'active' : 'pending',
                 'name'      => $request->name ?? $school->name,
+                'name_in_certificate' => $request->name_in_certificate ?? $school->name_in_certificate,
                 'province'  => $request->province ?? $school->province,
                 'address'   => $request->address ?? $school->address,
                 'email'     => $request->email ?? $school->email,

@@ -13,6 +13,7 @@ class School extends Model
 
     private static $whiteListFilter = [
         'name',
+        'name_in_certificate',
         'status',
         'country_id',
         'private'
