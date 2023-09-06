@@ -556,8 +556,7 @@ class CompetitionController extends Controller
 
                 $roundsAwards = CompetitionRoundsAwards::find($row['id']);
                 $roundsAwards->name = $row['name'];
-//                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
-                $roundsAwards->min_marks = isset($row['min_points']) ? $row['min_points'] : null; // to remove after hassan change the attribute name from min_points to min_marks
+                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
                 $roundsAwards->percentage = isset($row['percentage']) ? $row['percentage'] : null;
                 $roundsAwards->award_points = isset($row['award_points']) ? $row['award_points'] : null;
                 $roundsAwards->save();
