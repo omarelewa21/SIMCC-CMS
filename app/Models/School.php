@@ -13,6 +13,19 @@ class School extends Model
 
     private static $whiteListFilter = [
         'name',
+        'public function up()
+        {
+            Schema::table('school', function (Blueprint $table) {
+                $table->string('name_on_certificate')->nullable();
+            });
+        }
+    
+        public function down()
+        {
+            Schema::table('school', function (Blueprint $table) {
+                $table->dropColumn('name_on_certificate');
+            });
+        }',
         'status',
         'country_id',
         'private'
