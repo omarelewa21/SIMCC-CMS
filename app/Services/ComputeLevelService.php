@@ -35,15 +35,15 @@ class ComputeLevelService
 
     public function computeResutlsForSingleLevel()
     {
-        // $this->clearRecords();
-        // $this->computeParticipantAnswersScores();
-        // $this->setupCompetitionParticipantsResultsTable();
-        // $this->setParticipantsGroupRank();
-        // $this->setParticipantsCountryRank();
-        // $this->setParticipantsSchoolRank();
+        $this->clearRecords();
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
+        $this->setParticipantsGroupRank();
+        $this->setParticipantsCountryRank();
+        $this->setParticipantsSchoolRank();
         $this->setParticipantsAwards();
-        // $this->setParticipantsAwardsRank();
-        // $this->setParticipantsGlobalRank();
+        $this->setParticipantsAwardsRank();
+        $this->setParticipantsGlobalRank();
         // $this->setParticipantsReportColumn();
         $this->level->updateStatus(CompetitionLevels::STATUS_FINISHED);
     }
