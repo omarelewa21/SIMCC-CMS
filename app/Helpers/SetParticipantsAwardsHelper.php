@@ -18,7 +18,7 @@ class SetParticipantsAwardsHelper
 
     public function setParticipantsAwards()
     {
-        $this->level->rounds->award_type === CompetitionRounds::AWARD_TYPE_POSITION
+        $this->level->rounds->award_type === "Position"
             ? $this->setParticipantsAwardsByPosition()
             : $this->setParticipantsAwardsByPercentage();
     }

@@ -9,8 +9,8 @@ class CompetitionRounds extends Model
 {
     use HasFactory;
 
-    const AWARD_TYPE_POSITION = 1;
-    const AWARD_TYPE_PERCENTAGE = 0;
+    const AWARD_TYPE_POSITION = 0;
+    const AWARD_TYPE_PERCENTAGE = 1;
 
     Protected $table = 'competition_rounds';
     protected $guarded = [];
