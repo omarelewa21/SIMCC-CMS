@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 use ResponseCache;
-use App\Custom\ComputeLevelCustom;
-use App\Custom\Marking;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
@@ -16,6 +14,8 @@ use App\Jobs\ComputeLevel;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use App\Services\ComputeAwardStatsService;
+use App\Services\ComputeLevelService;
+use App\Services\MarkingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +31,7 @@ class MarkingController extends Controller
      */
     public function markingList(Competition $competition) {
         try {
-            $markingList = (new Marking())->markList($competition->load('rounds.levels.collection.sections'));
+            $markingList = (new MarkingService())->markList($competition->load('rounds.levels.collection.sections'));
             return response()->json([
                 "status"    => 200,
                 "message"   => "Marking progress list retrieve successful",
@@ -210,8 +210,8 @@ class MarkingController extends Controller
     /**
      * Get active participants per country per grade
      *
-     * @param App\Models\Competition $competition
-     * @param App\Http\Requests\getActiveParticipantsByCountryRequest $request
+     * @param \App\Models\Competition $competition
+     * @param \App\Http\Requests\getActiveParticipantsByCountryRequest $request
      *
      * @return Illuminate\Http\Response
      */
@@ -219,11 +219,11 @@ class MarkingController extends Controller
     {
         try {
             [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
-                = Marking::getActiveParticipantsByCountryByGradeData($competition, $request);
+                = MarkingService::getActiveParticipantsByCountryByGradeData($competition, $request);
 
             $data = [];
-            Marking::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
-            Marking::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
+            MarkingService::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
+            MarkingService::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
 
             return response()->json([
                 "status"        => 200,
@@ -252,7 +252,12 @@ class MarkingController extends Controller
     public function computeResultsForSingleLevel(CompetitionLevels $level, Request|null $request)
     {
         try {
-            ComputeLevelCustom::validateLevelForComputing($level);
+            (new ComputeLevelService($level))->computeResutlsForSingleLevel();
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Level computing is in progress",
+            ], 200);
+            ComputeLevelService::validateLevelForComputing($level);
 
             dispatch(new ComputeLevel($level, $request));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
@@ -270,7 +275,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => $e->getCode(),
                 "message"   => "Level couldn't be computed",
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }
@@ -295,7 +300,7 @@ class MarkingController extends Controller
 
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
-                    if(Marking::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
+                    if(MarkingService::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
                         dispatch(new ComputeLevel($level, $request));
                         $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
                     }
@@ -381,7 +386,7 @@ class MarkingController extends Controller
                 'round'         => $level->rounds->name,
                 'level'         => $level->name,
                 'award_type'    => $level->rounds->award_type,
-                'cut_off_points'=> (new Marking())->getCutOffPoints($data),
+                'cut_off_points'=> (new MarkingService())->getCutOffPoints($data),
                 'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
             ];
 
