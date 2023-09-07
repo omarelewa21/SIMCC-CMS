@@ -31,8 +31,6 @@ use App\Http\Controllers\Api\MarkingController;
 Route::post("login", [UserController::class, "login"]);
 Route::get("participant/report/by-certificate", [ParticipantsController::class, "performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
-Route::get("participant/reports/bulk_download/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
-Route::get("participant/reports/bulk_download/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
 
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
 
@@ -99,33 +97,36 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
         Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
         Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
-        Route::get("/reports/bulk_download", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
-
+        Route::group(["prefix" => "/reports/bulk_download"], function () {
+            Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
+            Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
+            Route::get("/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
+        });
     });
 
-    Route::group(["prefix" => "competition"],function () {
-        Route::post("",[CompetitionController::class,"create"])->name('competition.create');
-        Route::get("",[CompetitionController::class,"list"])->name('competition.list');
-        Route::get("/{competition}",[CompetitionController::class,"show"])->name('competition.show');
-        Route::patch("/edit-settings/{competition}",[CompetitionController::class,"update"])->name('competition.update');
-        Route::delete("",[CompetitionController::class,"delete"])->name('competition.delete');
-        Route::post("/upload_answers",[CompetitionController::class,"uploadAnswers"])->name('competition.upload_answers');
-        Route::get("/difficultyandpoints/list",[AssignDifficultyPointsController::class,"list"])->name('competition.difficultyandpoints.list');
-        Route::patch("/difficultyandpoints",[AssignDifficultyPointsController::class,"update"])->name('competition.difficultyandpoints.update');
-        Route::post("/rounds",[CompetitionController::class,"addRoundsRoute"])->name('competition.rounds.add');
-        Route::patch("/rounds",[CompetitionController::class,"editRounds"])->name('competition.rounds.edit');
-        Route::delete("/rounds",[CompetitionController::class,"deleteRounds"])->name('competition.rounds.delete');
-        Route::post("/organization",[CompetitionController::class,"addOrganizationRoute"])->name('competition.organization.add');
-        Route::delete("/organization",[CompetitionController::class,"deleteOrganization"])->name('competition.organization.delete');
-        Route::patch("/organization",[CompetitionController::class,"updateOrganizationDate"])->name('competition.organization.update.date');
-        Route::get("/awards/{round}",[CompetitionController::class,"getRoundAwards"])->name('competition.round.award.add');
-        Route::post("/awards",[CompetitionController::class,"addRoundAwards"])->name('competition.round.award.add');
-        Route::patch("/awards",[CompetitionController::class,"editRoundAwards"])->name('competition.round.award.edit');
-        Route::delete("/awards",[CompetitionController::class,"deleteRoundAwards"])->name('competition.round.award.delete');
-        Route::post("/overall_awards",[CompetitionController::class,"addOverallAwards"])->name('competition.overall.award.add');
-        Route::patch("/overall_awards",[CompetitionController::class,"editOverallAwards"])->name('competition.overall.award.edit');
-        Route::delete("/overall_awards",[CompetitionController::class,"deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
-        Route::get("/{competition}/report",[CompetitionController::class,"report"])->name('competition.report');
+    Route::group(["prefix" => "competition"], function () {
+        Route::post("", [CompetitionController::class, "create"])->name('competition.create');
+        Route::get("", [CompetitionController::class, "list"])->name('competition.list');
+        Route::get("/{competition}", [CompetitionController::class, "show"])->name('competition.show');
+        Route::patch("/edit-settings/{competition}", [CompetitionController::class, "update"])->name('competition.update');
+        Route::delete("", [CompetitionController::class, "delete"])->name('competition.delete');
+        Route::post("/upload_answers", [CompetitionController::class, "uploadAnswers"])->name('competition.upload_answers');
+        Route::get("/difficultyandpoints/list", [AssignDifficultyPointsController::class, "list"])->name('competition.difficultyandpoints.list');
+        Route::patch("/difficultyandpoints", [AssignDifficultyPointsController::class, "update"])->name('competition.difficultyandpoints.update');
+        Route::post("/rounds", [CompetitionController::class, "addRoundsRoute"])->name('competition.rounds.add');
+        Route::patch("/rounds", [CompetitionController::class, "editRounds"])->name('competition.rounds.edit');
+        Route::delete("/rounds", [CompetitionController::class, "deleteRounds"])->name('competition.rounds.delete');
+        Route::post("/organization", [CompetitionController::class, "addOrganizationRoute"])->name('competition.organization.add');
+        Route::delete("/organization", [CompetitionController::class, "deleteOrganization"])->name('competition.organization.delete');
+        Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date');
+        Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.add');
+        Route::post("/awards", [CompetitionController::class, "addRoundAwards"])->name('competition.round.award.add');
+        Route::patch("/awards", [CompetitionController::class, "editRoundAwards"])->name('competition.round.award.edit');
+        Route::delete("/awards", [CompetitionController::class, "deleteRoundAwards"])->name('competition.round.award.delete');
+        Route::post("/overall_awards", [CompetitionController::class, "addOverallAwards"])->name('competition.overall.award.add');
+        Route::patch("/overall_awards", [CompetitionController::class, "editOverallAwards"])->name('competition.overall.award.edit');
+        Route::delete("/overall_awards", [CompetitionController::class, "deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
+        Route::get("/{competition}/report", [CompetitionController::class, "report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
@@ -139,34 +140,34 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/participants/country/{competition}", [MarkingController::class, "getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}", [MarkingController::class, "markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
-        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
-        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
-        Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
-        Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
-        Route::get("awards/stats/{group}",[MarkingController::class,"getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::post("/compute/level/{level}", [MarkingController::class, "computeResultsForSingleLevel"])->name('competition.marking.compute.level');
+        Route::post("/compute/{competition}", [MarkingController::class, "computeCompetitionResults"])->name('competition.marking.compute.competition');
+        Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
+        Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
+        Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
     });
 
     Route::group(["prefix" => "tasks"], function () {
-        Route::post("",[TasksController::class,"create"])->name('task.create');
-        Route::get("",[TasksController::class,"list"])->name('task.list');
-        Route::patch("settings",[TasksController::class,"update_settings"])->name('task.update.settings');
-        Route::patch("recommendation",[TasksController::class,"update_recommendation"])->name('task.update.recommendation');
-        Route::patch("content",[TasksController::class,"update_content"])->name('task.edit.content');
-        Route::patch("answer",[TasksController::class,"update_answer"])->name('task.edit.answer');
-        Route::delete("",[TasksController::class,"delete"])->name('task.delete');
-        Route::post("duplicate/{task}",[TasksController::class,"duplicate"])->name('task.duplicate');
+        Route::post("", [TasksController::class, "create"])->name('task.create');
+        Route::get("", [TasksController::class, "list"])->name('task.list');
+        Route::patch("settings", [TasksController::class, "update_settings"])->name('task.update.settings');
+        Route::patch("recommendation", [TasksController::class, "update_recommendation"])->name('task.update.recommendation');
+        Route::patch("content", [TasksController::class, "update_content"])->name('task.edit.content');
+        Route::patch("answer", [TasksController::class, "update_answer"])->name('task.edit.answer');
+        Route::delete("", [TasksController::class, "delete"])->name('task.delete');
+        Route::post("duplicate/{task}", [TasksController::class, "duplicate"])->name('task.duplicate');
     });
 
     Route::group(["prefix" => "collection"], function () {
-        Route::get("",[CollectionController::class,"list"])->name('collection.list');
-        Route::post("",[CollectionController::class,"create"])->name('collection.create');
-        Route::delete("",[CollectionController::class,"delete"])->name('collection.delete');
-        Route::patch("/settings",[CollectionController::class,"update_settings"])->name('collection.settings.update');
-        Route::patch("/recommendations",[CollectionController::class,"update_recommendations"])->name('collection.recommendations.update');
-        Route::post("/sections",[CollectionController::class,"add_sections"])->name('collection.sections.add');
-        Route::patch("/sections",[CollectionController::class,"update_sections"])->name('collection.sections.update');
-        Route::delete("/section",[CollectionController::class,"delete_section"])->name('collection.section.delete');
-        Route::post("duplicate/{collection}",[CollectionController::class,"duplicate"])->name('collection.duplicate');
+        Route::get("", [CollectionController::class, "list"])->name('collection.list');
+        Route::post("", [CollectionController::class, "create"])->name('collection.create');
+        Route::delete("", [CollectionController::class, "delete"])->name('collection.delete');
+        Route::patch("/settings", [CollectionController::class, "update_settings"])->name('collection.settings.update');
+        Route::patch("/recommendations", [CollectionController::class, "update_recommendations"])->name('collection.recommendations.update');
+        Route::post("/sections", [CollectionController::class, "add_sections"])->name('collection.sections.add');
+        Route::patch("/sections", [CollectionController::class, "update_sections"])->name('collection.sections.update');
+        Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
+        Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {
