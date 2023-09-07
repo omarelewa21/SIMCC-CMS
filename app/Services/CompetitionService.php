@@ -61,6 +61,7 @@ class CompetitionService
             participants.country_id,
             participants.school_id,
             CONCAT('\"',schools.name,'\"') as school,
+            CONCAT('\"',COALESCE(schools.name_in_certificate, schools.name),'\"') as `school name in certificate`,
             CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
             participants.index_no,
             CONCAT('\"',participants.name,'\"') as name,
@@ -72,6 +73,7 @@ class CompetitionService
             CONCAT('\"',competition_participants_results.global_rank,'\"') as global_rank"
         );
     }
+    
 
     private function getCompetitionReportQueryForAllMode(Builder $query): Builder
     {
@@ -85,6 +87,7 @@ class CompetitionService
             participants.country_id,
             participants.school_id,
             schools.name as school,
+            CONCAT('\"',COALESCE(schools.name_in_certificate, schools.name),'\"') as `school name in certificate`,
             tuition_school.name as tuition_centre,
             participants.index_no,
             participants.name as name,
