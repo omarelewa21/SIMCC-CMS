@@ -36,6 +36,7 @@ class SetParticipantsAwardsHelper
                 CompetitionParticipantsResults::where('level_id', $this->level->id)
                     ->where('group_id', $groupId)
                     ->whereNull('award')
+                    ->where('points', '>=', $award->min_marks)
                     ->orderBy('points', 'DESC')
                     ->limit(1)
                     ->update([
