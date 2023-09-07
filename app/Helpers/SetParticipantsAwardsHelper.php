@@ -55,10 +55,10 @@ class SetParticipantsAwardsHelper
     {
         $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->select('group_id')->distinct()->pluck('group_id')->toArray();
-
+        
         foreach($groupIds as $groupId){
             [$totalCount, $perfectScoreresCount] = $this->getTotalCountAndPerfectScoreresCount($groupId);
-
+            
             $awardPercentage = 0;
             $count = $totalCount;
 
@@ -74,10 +74,9 @@ class SetParticipantsAwardsHelper
                         if(!$participantResult) break;
 
                         $participantDeservedAward = $this->getParticipantDeservedAward($participantResult, $award, $key);
-
                         $participantResult->update([
-                                'award'     => $participantDeservedAward->name,
-                                'ref_award' => $participantDeservedAward->name,
+                                'award'     => $participantDeservedAward,
+                                'ref_award' => $participantDeservedAward,
                                 'percentile'=> $this->calculatePostionPercentile($count, $totalCount, $perfectScoreresCount),
                             ]);
 
@@ -93,7 +92,7 @@ class SetParticipantsAwardsHelper
         }
     }
 
-    private function getTotalCountAndPerfectScoreresCount(int $groupId)
+    private function getTotalCountAndPerfectScoreresCount(int $groupId): array
     {
         $totalCount = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $groupId)->count();
@@ -106,7 +105,7 @@ class SetParticipantsAwardsHelper
         return [$totalCount, $perfectScoreresCount];
     }
 
-    private function getParticipantResult(int $groupId)
+    private function getParticipantResult(int $groupId): CompetitionParticipantsResults|null
     {
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $groupId)
@@ -116,9 +115,9 @@ class SetParticipantsAwardsHelper
             ->first();
     }
 
-    private function getParticipantDeservedAward(CompetitionParticipantsResults $participantResult, CompetitionRoundsAwards $award, int $key)
+    private function getParticipantDeservedAward(CompetitionParticipantsResults $participantResult, CompetitionRoundsAwards $award, int $key): string
     {
-        if($participantResult->points >= $award->min_marks) return $award;
+        if($participantResult->points >= $award->min_marks) return $award->name;
 
         if($this->awards->has($key + 1)) {
             $nextAward = $this->awards->get($key + 1);
@@ -144,7 +143,7 @@ class SetParticipantsAwardsHelper
         }
     }
 
-    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $groupId, string $awardName, int $totalCount, int $currentCount, int $perfectScoreresCount)
+    private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $groupId, string $awardName, int $totalCount, int $currentCount, int $perfectScoreresCount): int
     {
         $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $groupId)
@@ -168,7 +167,7 @@ class SetParticipantsAwardsHelper
         return $currentCount;
     }
 
-    private function calculatePostionPercentile(int $count, int $totalCount, int $perfectScoreresCount)
+    private function calculatePostionPercentile(int $count, int $totalCount, int $perfectScoreresCount): string
     {
         $percentile = $count / ($totalCount + $perfectScoreresCount);
         return number_format($percentile * 100, 2, '.', '');
