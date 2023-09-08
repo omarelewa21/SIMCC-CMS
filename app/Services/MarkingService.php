@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Custom;
+namespace App\Services;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\Countries;
 use Illuminate\Http\Request;
 
-class Marking
+class MarkingService
 {
     /**
      * Get mark list
