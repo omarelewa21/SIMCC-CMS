@@ -549,7 +549,7 @@ class CompetitionController extends Controller
             "award" => "required|array",
             "award.*.id" => "required|integer|exists:competition_rounds_awards,id",
             "award.*.name" => "required|string|min:3|max:255",
-            "award.*.min_marks" => "integer|min:1",
+            "award.*.min_marks" => "integer|min:0",
             "award.*.percentage" => "required_if:award_type,0|exclude_if:award_type,1|integer|min:1|max:100",
             "award.*.award_points" => "required_if:assign_award_points,1|exclude_if:assign_award_points,0|integer|nullable",
         ]);
