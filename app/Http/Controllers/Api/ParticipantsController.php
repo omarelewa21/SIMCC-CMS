@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Custom\ParticipantReportService;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\CompetitionOrganization;
@@ -26,6 +25,7 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
+use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;

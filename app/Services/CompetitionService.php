@@ -26,6 +26,11 @@ class CompetitionService
      */
     public function getReportQuery(string $mode): Builder
     {
+        $round = $this->competition->rounds->first();
+        $awardsRankArray = collect(['PERFECT SCORE'])
+                    ->merge($round->roundsAwards->pluck('name'))
+                    ->push($round->default_award_name);
+
         return
             CompetitionParticipantsResults::leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
                 ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
@@ -43,9 +48,9 @@ class CompetitionService
                     fn($query) => $this->getCompetitionReportQueryForAllMode($query)
                 )
                 ->orderByRaw(
-                    "`competition_levels`.`id`,
-                    FIELD(`competition_participants_results`.`award`,'PERFECT SCORE','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'),
-                    `competition_participants_results`.`points` desc;"
+                    "competition_levels.id,
+                    FIELD(competition_participants_results.award, '". $awardsRankArray->implode("','") ."'),
+                    competition_participants_results.points desc;"
                 );
     }
 
