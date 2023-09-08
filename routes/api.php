@@ -31,8 +31,6 @@ use App\Http\Controllers\Api\MarkingController;
 Route::post("login", [UserController::class, "login"]);
 Route::get("participant/report/by-certificate", [ParticipantsController::class, "performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
-Route::get("participant/reports/bulk_download/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
-Route::get("participant/reports/bulk_download/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
 
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
 
@@ -99,7 +97,11 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
         Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
         Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
-        Route::get("/reports/bulk_download", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
+        Route::group(["prefix" => "/reports/bulk_download"], function () {
+            Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
+            Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
+            Route::get("/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
+        });
     });
 
     Route::group(["prefix" => "competition"], function () {
