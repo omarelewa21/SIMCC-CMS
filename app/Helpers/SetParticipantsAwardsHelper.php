@@ -33,13 +33,17 @@ class SetParticipantsAwardsHelper
             $count = $totalCount;
 
             $this->awards->each(function($award) use($groupId, &$count, $totalCount, $perfectScoreresCount){
-                CompetitionParticipantsResults::where('level_id', $this->level->id)
+                $participantResult = CompetitionParticipantsResults::where('level_id', $this->level->id)
                     ->where('group_id', $groupId)
                     ->whereNull('award')
                     ->where('points', '>=', $award->min_marks)
                     ->orderBy('points', 'DESC')
                     ->limit(1)
-                    ->update([
+                    ->first();
+                
+                if(!$participantResult) return;
+
+                $participantResult->update([
                         'award'     => $award->name,
                         'ref_award' => $award->name,
                         'percentile'=> $this->calculatePostionPercentile($count, $totalCount, $perfectScoreresCount),
