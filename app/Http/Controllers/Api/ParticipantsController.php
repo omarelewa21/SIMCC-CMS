@@ -537,6 +537,15 @@ class ParticipantsController extends Controller
                         'progress' => $progress,
                     ], 500);
                 case 'Completed':
+                    $filePath = 'performance_reports/' . $job->file_path;
+                    if (!Storage::exists($filePath)) {
+                        return response()->json([
+                            'job_id' => $jobId,
+                            'status' => 'No Reports Found',
+                            'file_path' => '',
+                            'progress' => 0,
+                        ], 500);
+                    }
                     return response()->json([
                         'job_id' => $jobId,
                         'status' => 'Completed',
@@ -563,16 +572,15 @@ class ParticipantsController extends Controller
                 'message' => 'Job not found',
             ], 404);
         }
-    
+
         $filePath = 'performance_reports/' . $job->file_path;
-    
+
         if (!Storage::exists($filePath)) {
             return response()->json([
                 'message' => 'File not found',
             ], 404);
         }
-    
+
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
     }
-    
 }
