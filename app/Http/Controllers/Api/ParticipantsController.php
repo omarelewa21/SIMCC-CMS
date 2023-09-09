@@ -261,7 +261,8 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function update (Request $request) {
+    public function update(Request $request)
+    {
         //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
         $participant = auth()->user()->hasRole(['Super Admin', 'Admin'])
             ? Participants::whereId($request['id'])->firstOrFail()
@@ -521,7 +522,7 @@ class ParticipantsController extends Controller
             $progress = $job->progress_percentage;
             $status = $job->status;
             switch ($status) {
-                case 'Pending':
+                case 'In Progress':
                     return response()->json([
                         'job_id' => $jobId,
                         'status' => 'In Progress',
@@ -549,7 +550,7 @@ class ParticipantsController extends Controller
                 'job_id' => $jobId,
                 'status' => 'Not Started',
                 'progress' => 0,
-                'message' => 'Job Not Started',
+                'message' => 'Not Started',
             ], 201);
         }
     }

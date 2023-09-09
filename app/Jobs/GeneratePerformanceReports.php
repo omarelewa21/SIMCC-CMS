@@ -49,39 +49,35 @@ class GeneratePerformanceReports implements ShouldQueue
             $this->totalProgress = count($this->participantResults);
             $this->progress = 0;
             $this->jobId = $this->job->getJobId();
-            $this->updateJobProgress($this->progress, $this->totalProgress);
+            $this->updateJobProgress($this->progress, $this->totalProgress, 'In Progress');
             $time = (new DateTime)->format('d_m_Y_H_i');
             $pdfDirname = sprintf('performance_reports_%s', $time);
             $pdfDirPath = 'performance_reports/' . $pdfDirname;
             Storage::makeDirectory($pdfDirPath);
             foreach ($this->participantResults as $participantResult) {
-                if ($participantResult && !is_null($participantResult->report)) {
-                    // if (is_null($participantResult->report)) {
-                    //     $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
-                    //     $report = $__report->getJsonReport();
-                    //     $participantResult->report = $report;
-                    //     $participantResult->save();
-                    // } else {
+                if (is_null($participantResult->report)) {
+                    $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                    $report = $__report->getJsonReport();
+                    $participantResult->report = $report;
+                    $participantResult->save();
+                } else {
                     $report = $participantResult->report;
-                    // }
-
-                    $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
-
-                    $pdf = PDF::loadView('performance-report', [
-                        'general_data'                  => $report['general_data'],
-                        'performance_by_questions'      => $report['performance_by_questions'],
-                        'performance_by_topics'         => $report['performance_by_topics'],
-                        'grade_performance_analysis'    => $report['grade_performance_analysis'],
-                        'analysis_by_questions'         => $report['analysis_by_questions']
-                    ]);
-
-                    $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . str_replace(' ', '_', $participantResult->participant['name']));
-                    $pdfPath = $pdfDirPath . '/' . $pdfFilename;
-                    Storage::put($pdfPath, $pdf->output());
                 }
-                // Update the progress for this job
+                $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
+
+                $pdf = PDF::loadView('performance-report', [
+                    'general_data'                  => $report['general_data'],
+                    'performance_by_questions'      => $report['performance_by_questions'],
+                    'performance_by_topics'         => $report['performance_by_topics'],
+                    'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                    'analysis_by_questions'         => $report['analysis_by_questions']
+                ]);
+
+                $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . str_replace(' ', '_', $participantResult->participant['name']));
+                $pdfPath = $pdfDirPath . '/' . $pdfFilename;
+                Storage::put($pdfPath, $pdf->output());
                 $this->progress++;
-                $this->updateJobProgress($this->progress, $this->totalProgress);
+                $this->updateJobProgress($this->progress, $this->totalProgress, 'In Progress');
             }
 
             // Add the log file to the ZIP archive
@@ -98,9 +94,9 @@ class GeneratePerformanceReports implements ShouldQueue
 
             $zip->close();
             Storage::deleteDirectory($pdfDirPath);
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename);
+            $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename, null);
         } catch (Exception $e) {
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', $e->getMessage());
+            $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', null, $e);
         }
     }
 
@@ -187,7 +183,11 @@ class GeneratePerformanceReports implements ShouldQueue
                 case 'grade':
                 case 'status':
                 case 'page':
+                case 'limit':
+                    $participants->limit($this->request->limit);
+                    break;
                 case 'limits':
+                    $participants->limit($this->request['limits']);
                     break;
                 default:
                     $participants->where($key, $value);
@@ -209,14 +209,15 @@ class GeneratePerformanceReports implements ShouldQueue
                     $participantResults[] = $result->makeVisible('report');
                 }
             } catch (Exception $e) {
-                $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', $e->getMessage());
+                // $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', null, $e);
                 continue;
             }
         }
         return $participantResults;
     }
 
-    public function updateJobProgress($processedCount, $totalCount, $status = 'Pending', $file_path = null, $report = null)
+
+    public function updateJobProgress($processedCount, $totalCount, $status = 'In Progress', $file_path = null, $report = null)
     {
         try {
             $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
