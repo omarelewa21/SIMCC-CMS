@@ -56,6 +56,7 @@ class GeneratePerformanceReports implements ShouldQueue
             Storage::makeDirectory($pdfDirPath);
             foreach ($this->participantResults as $participantResult) {
                 if (is_null($participantResult->report)) {
+                    continue;
                     $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
                     $report = $__report->getJsonReport();
                     $participantResult->report = $report;
