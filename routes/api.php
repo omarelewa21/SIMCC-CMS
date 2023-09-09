@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\MarkingController;
 
 Route::post("login", [UserController::class, "login"]);
 Route::get("participant/report/by-certificate", [ParticipantsController::class, "performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
+Route::get("participant/reports/bulk_download/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
@@ -100,7 +101,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::group(["prefix" => "/reports/bulk_download"], function () {
             Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
             Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
-            Route::get("/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
         });
     });
 
@@ -119,7 +119,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/organization", [CompetitionController::class, "addOrganizationRoute"])->name('competition.organization.add');
         Route::delete("/organization", [CompetitionController::class, "deleteOrganization"])->name('competition.organization.delete');
         Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date');
-        Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.add');
+        Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.get');
         Route::post("/awards", [CompetitionController::class, "addRoundAwards"])->name('competition.round.award.add');
         Route::patch("/awards", [CompetitionController::class, "editRoundAwards"])->name('competition.round.award.edit');
         Route::delete("/awards", [CompetitionController::class, "deleteRoundAwards"])->name('competition.round.award.delete');
