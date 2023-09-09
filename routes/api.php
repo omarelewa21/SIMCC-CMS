@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\MarkingController;
 
 Route::post("login", [UserController::class, "login"]);
 Route::get("participant/report/by-certificate", [ParticipantsController::class, "performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
+Route::get("participant/reports/bulk_download/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
 
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
@@ -100,7 +101,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::group(["prefix" => "/reports/bulk_download"], function () {
             Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
             Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
-            Route::get("/download_file/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadFile"])->name('participant.reports.bulk_download.download_file');
         });
     });
 

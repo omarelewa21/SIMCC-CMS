@@ -548,21 +548,21 @@ class ParticipantsController extends Controller
     public function performanceReportsBulkDownloadFile($id)
     {
         $job = ReportDownloadStatus::where('job_id', $id)->first();
-
         if (!$job) {
             return response()->json([
                 'message' => 'Job not found',
             ], 404);
         }
-
+    
         $filePath = 'performance_reports/' . $job->file_path;
-
+    
         if (!Storage::exists($filePath)) {
             return response()->json([
                 'message' => 'File not found',
             ], 404);
         }
-
+    
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
     }
+    
 }
