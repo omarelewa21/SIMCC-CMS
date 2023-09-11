@@ -522,7 +522,8 @@ class ParticipantsController extends Controller
                 case 'Failed':
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'Failed to generate',
+                        'status' => 'Failed',
+                        'message' => 'Failed to generate',
                         'file_path' => '',
                         'progress' => $progress,
                     ], 500);
@@ -531,7 +532,8 @@ class ParticipantsController extends Controller
                     if (!Storage::exists($filePath)) {
                         return response()->json([
                             'job_id' => $jobId,
-                            'status' => 'No Reports Found',
+                            'status' => 'Failed',
+                            'message' => 'No Reports Found',
                             'file_path' => '',
                             'progress' => 0,
                         ], 500);

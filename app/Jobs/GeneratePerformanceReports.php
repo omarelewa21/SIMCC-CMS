@@ -58,10 +58,10 @@ class GeneratePerformanceReports implements ShouldQueue
                 if (is_null($participantResult->report)) {
                     $this->progress++;
                     continue;
-                    $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
-                    $report = $__report->getJsonReport();
-                    $participantResult->report = $report;
-                    $participantResult->save();
+                    // $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                    // $report = $__report->getJsonReport();
+                    // $participantResult->report = $report;
+                    // $participantResult->save();
                 } else {
                     $report = $participantResult->report;
                 }
