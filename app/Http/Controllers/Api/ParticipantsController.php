@@ -247,7 +247,8 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function update (Request $request) {
+    public function update(Request $request)
+    {
         //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
         $participant = auth()->user()->hasRole(['Super Admin', 'Admin'])
             ? Participants::whereId($request['id'])->firstOrFail()

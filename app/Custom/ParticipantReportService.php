@@ -22,18 +22,22 @@ class ParticipantReportService
         $this->getAnalysisByQuestionData = $this->getAnalysisByQuestionsData();
     }
 
-    public function getGeneralData(): array
+    public function getGeneralData()
     {
+        $schoolName = $this->participant->school();
+        if ($schoolName->exists()) {
+            $schoolName = $schoolName->value('name_in_certificate') ?? $schoolName->value('name');
+        } else {
+            $schoolName = 'No school specified for this participant';
+        }
         return [
             'competition' => $this->level->rounds->competition->name,
             'participant' => $this->participant->name,
-            'school' => $this->participant->school()->exists()
-                ? ($this->participant->school()->value('name_in_certificate') ?? $this->participant->school()->value('name'))
-                : 'No school specified for this participant',
+            'school' => $schoolName,
             'grade' => sprintf("Grade %s", $this->participant->grade)
         ];
     }
-    
+
 
     public function getPerformanceByQuestionsData(): Collection
     {
