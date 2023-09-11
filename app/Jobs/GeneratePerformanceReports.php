@@ -2,11 +2,11 @@
 
 namespace App\Jobs;
 
-use App\Custom\ParticipantReportService;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ReportDownloadStatus;
+use App\Services\ParticipantReportService;
 use DateTime;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -56,12 +56,12 @@ class GeneratePerformanceReports implements ShouldQueue
             Storage::makeDirectory($pdfDirPath);
             foreach ($this->participantResults as $participantResult) {
                 if (is_null($participantResult->report)) {
-                    $this->progress++;
-                    continue;
-                    // $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
-                    // $report = $__report->getJsonReport();
-                    // $participantResult->report = $report;
-                    // $participantResult->save();
+                    // $this->progress++;
+                    // continue;
+                    $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                    $report = $__report->getJsonReport();
+                    $participantResult->report = $report;
+                    $participantResult->save();
                 } else {
                     $report = $participantResult->report;
                 }
