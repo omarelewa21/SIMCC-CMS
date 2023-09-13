@@ -55,27 +55,30 @@ class GeneratePerformanceReports implements ShouldQueue
             $pdfDirPath = 'performance_reports/' . $pdfDirname;
             Storage::makeDirectory($pdfDirPath);
             foreach ($this->participantResults as $participantResult) {
-                if (is_null($participantResult->report)) {
-                    // $this->progress++;
-                    // continue;
-                    $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
-                    $report = $__report->getJsonReport();
-                    $participantResult->report = $report;
-                    $participantResult->save();
-                } else {
-                    $report = $participantResult->report;
+                try {
+                    if (is_null($participantResult->report)) {
+                        $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                        $report = $__report->getJsonReport();
+                        $participantResult->report = $report;
+                        $participantResult->save();
+                    } else {
+                        $report = $participantResult->report;
+                    }
+                    $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
+                    $cleanedName = preg_replace('/\s+/', '_', $participantResult->participant['name']);
+                    $pdf = PDF::loadView('performance-report', [
+                        'general_data'                  => $report['general_data'],
+                        'performance_by_questions'      => $report['performance_by_questions'],
+                        'performance_by_topics'         => $report['performance_by_topics'],
+                        'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                        'analysis_by_questions'         => $report['analysis_by_questions']
+                    ]);
+                } catch (Exception $e) {
+                    $this->progress++;
+                    continue;
                 }
-                $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
 
-                $pdf = PDF::loadView('performance-report', [
-                    'general_data'                  => $report['general_data'],
-                    'performance_by_questions'      => $report['performance_by_questions'],
-                    'performance_by_topics'         => $report['performance_by_topics'],
-                    'grade_performance_analysis'    => $report['grade_performance_analysis'],
-                    'analysis_by_questions'         => $report['analysis_by_questions']
-                ]);
-
-                $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . str_replace(' ', '_', $participantResult->participant['name']));
+                $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . $cleanedName);
                 $pdfPath = $pdfDirPath . '/' . $pdfFilename;
                 Storage::put($pdfPath, $pdf->output());
                 $this->progress++;
@@ -101,6 +104,7 @@ class GeneratePerformanceReports implements ShouldQueue
             $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', null, $e);
         }
     }
+
 
     public function getParticipants()
     {
@@ -186,7 +190,7 @@ class GeneratePerformanceReports implements ShouldQueue
                 case 'status':
                 case 'page':
                 case 'limit':
-                    $participants->limit($this->request->limit);
+                    $participants->limit($this->request['limit']);
                     break;
                 case 'limits':
                     $participants->limit($this->request['limits']);
