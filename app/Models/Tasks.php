@@ -12,7 +12,13 @@ class Tasks extends Base
 {
     use HasFactory, Filterable;
 
-    Protected $Table = "task";
+    const STATUS_VERIFIED = "Verified";
+    const STATUS_PENDING_MODERATION = "Pending Moderation";
+    const STATUS_ACTIVE = "Active";
+    const STATUS_Rejected = "Rejected";
+    const STATUS_Deleted = "Deleted";
+
+    protected $Table = "task";
     protected $fillable = [
         "id",
         "identifier",
@@ -38,7 +44,7 @@ class Tasks extends Base
         'allow_delete',
         'allow_update_answer',
     );
-    public $hidden = ['updated_at','created_at'];
+    public $hidden = ['updated_at', 'created_at'];
     private static $whiteListFilter = [
         'id',
         'lang_id',
@@ -50,13 +56,13 @@ class Tasks extends Base
     {
         parent::booted();
 
-        static::creating(function($task) {
+        static::creating(function ($task) {
             $task->created_by_userid = auth()->user()->id;
         });
 
-        static::deleting(function($task) {
+        static::deleting(function ($task) {
             $task->taskImage()->delete();
-            
+
             DB::table('taggables')->where([
                 ['taggable_type', 'App\Models\Tasks'],
                 ['taggable_id', $task->id],
@@ -69,44 +75,50 @@ class Tasks extends Base
 
             $task->taskContents()->delete();
 
-            foreach($task->taskAnswers as $task_answer){
+            foreach ($task->taskAnswers as $task_answer) {
                 $task_answer->delete();
             }
         });
     }
 
-    public function taskTags() {
+    public function taskTags()
+    {
         return $this->morphToMany(DomainsTags::class, 'taggable')->withTrashed();
     }
 
-    public function taskAnswers () {
-        return $this->hasMany(TasksAnswers::class, 'task_id','id');
+    public function taskAnswers()
+    {
+        return $this->hasMany(TasksAnswers::class, 'task_id', 'id');
     }
 
-    public function taskImage () {
-        return $this->morphOne(Image::class,'image');
+    public function taskImage()
+    {
+        return $this->morphOne(Image::class, 'image');
     }
 
-    public function created_by () {
+    public function created_by()
+    {
         return $this->belongsTo(User::class, 'created_by_userid', 'id');
     }
 
-    public function moderation () {
+    public function moderation()
+    {
         return $this->morphMany(Moderation::class, 'moderation')->limit(5);;
     }
 
-    public function taskContents () {
-        return $this->hasMany(TasksContent::class,'task_id','id');
+    public function taskContents()
+    {
+        return $this->hasMany(TasksContent::class, 'task_id', 'id');
     }
 
-    public function gradeDifficulty () {
+    public function gradeDifficulty()
+    {
         return $this->morphMany(RecommendedDifficulty::class, 'gradeDifficulty');
     }
 
     public function getAnswerTypeAttribute($value)
     {
-        switch($value)
-        {
+        switch ($value) {
             case 1:
                 return 'mcq';
                 break;
@@ -121,8 +133,7 @@ class Tasks extends Base
 
     public function getAnswerStructureAttribute($value)
     {
-        switch($value)
-        {
+        switch ($value) {
             case 1:
                 return 'default';
                 break;
@@ -140,8 +151,7 @@ class Tasks extends Base
 
     public function getAnswerLayoutAttribute($value)
     {
-        switch($value)
-        {
+        switch ($value) {
             case 1:
                 return 'vertical';
                 break;
@@ -153,8 +163,7 @@ class Tasks extends Base
 
     public function getAnswerSortingAttribute($value)
     {
-        switch($value)
-        {
+        switch ($value) {
             case 1:
                 return 'fix';
                 break;
@@ -184,13 +193,15 @@ class Tasks extends Base
         return $this->attributes['answer_sorting'];
     }
 
-    public function getLanguagesAttribute() {
-        return TasksContent::join('all_languages', 'all_languages.id', '=', 'task_contents.language_id')->where('task_id',$this->id)->get(['all_languages.id','all_languages.name','task_title','content','status']);
+    public function getLanguagesAttribute()
+    {
+        return TasksContent::join('all_languages', 'all_languages.id', '=', 'task_contents.language_id')->where('task_id', $this->id)->get(['all_languages.id', 'all_languages.name', 'task_title', 'content', 'status']);
     }
 
-    public function getImageAttribute () {
-        return Image::where('image_type','App\Models\Tasks')
-            ->where('image_id',$this->id)
+    public function getImageAttribute()
+    {
+        return Image::where('image_type', 'App\Models\Tasks')
+            ->where('image_id', $this->id)
             ->limit(1)
             ->get()
             ->pluck('image_string')
@@ -209,13 +220,13 @@ class Tasks extends Base
 
     public static function applyFilter($query, Request $request)
     {
-        if($request->filled("domains") || $request->filled("tags")){
-            $query->when($request->filled("domains"), function($query)use($request){
-                $query->whereHas('tags', function($query)use($request){
+        if ($request->filled("domains") || $request->filled("tags")) {
+            $query->when($request->filled("domains"), function ($query) use ($request) {
+                $query->whereHas('tags', function ($query) use ($request) {
                     $query->whereIn('domains_tags.id', explode(',', $request->domains));
                 });
-            })->when($request->filled("tags"), function($query)use($request){
-                $query->whereHas('tags', function($query)use($request){
+            })->when($request->filled("tags"), function ($query) use ($request) {
+                $query->whereHas('tags', function ($query) use ($request) {
                     $query->whereIn('domains_tags.id', explode(',', $request->tags));
                 });
             });

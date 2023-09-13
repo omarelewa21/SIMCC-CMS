@@ -23,16 +23,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SchoolController extends Controller
 {
-    public function create (CreateSchoolRequest $request)
+    public function create(CreateSchoolRequest $request)
     {
         DB::beginTransaction();
 
-        try{
+        try {
             collect($request->school)->unique('name')
-                ->each(function($school){
+                ->each(function ($school) {
                     School::create($school);
                 });
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -61,7 +60,8 @@ class SchoolController extends Controller
                 'address'   => $request->address ?? $school->address,
                 'email'     => $request->email ?? $school->email,
                 'phone'     => $request->phone ?? $school->phone,
-                'postal'    => $request->postal ?? $school->postal
+                'postal'    => $request->postal ?? $school->postal,
+                'private'    => auth()->user()->hasRole(['Super Admin', 'Admin', 'Country Partner', 'Country Partner Assistant']) ? $request->private : $school->private
             ]);
 
             return response()->json([
@@ -69,9 +69,7 @@ class SchoolController extends Controller
                 "message"   => "School update successful",
                 "data"      => $school
             ]);
-
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "School update unsuccessful",
@@ -80,9 +78,10 @@ class SchoolController extends Controller
         }
     }
 
-    public function list (SchoolListRequest $request) {
+    public function list(SchoolListRequest $request)
+    {
         try {
-            if($request->limits == "0") {
+            if ($request->limits == "0") {
                 $limits = 99999999;
             } else {
                 $limits = $request->limits ?? 10; //set default to 10 rows per page
@@ -100,12 +99,12 @@ class SchoolController extends Controller
                 'teachers'
             ];
 
-            $schoolModel = School::has('organization','=',0)
+            $schoolModel = School::has('organization', '=', 0)
                 ->with($eagerload)
                 ->withCount('participants')
                 ->AcceptRequest(['status', 'country_id', 'name', 'private']);
 
-            switch(auth()->user()->role_id) {
+            switch (auth()->user()->role_id) {
                 case 2:
                 case 4:
                     $schoolModel->where("country_id", auth()->user()->country_id)->where('status', '!=', 'deleted');
@@ -117,10 +116,10 @@ class SchoolController extends Controller
             }
 
             $returnFiltered = $schoolModel
-                ->when($request->mode === 'csv', function(Builder $query){
+                ->when($request->mode === 'csv', function (Builder $query) {
                     $query->join('all_countries', 'all_countries.id', 'schools.country_id')
-                    ->selectRaw(
-                        "CONCAT('\"',schools.name,'\"') as name,
+                        ->selectRaw(
+                            "CONCAT('\"',schools.name,'\"') as name,
                         CONCAT('\"',all_countries.display_name,'\"') as country,
                         schools.status,
                         schools.email,
@@ -128,12 +127,12 @@ class SchoolController extends Controller
                         CONCAT('\"',schools.postal,'\"') as postal,
                         CONCAT('\"',schools.province,'\"') as province,
                         schools.phone"
-                    );
+                        );
                 })
                 ->filter()
                 ->get();
 
-            if($request->mode === 'csv'){
+            if ($request->mode === 'csv') {
                 return $returnFiltered;
             }
 
@@ -146,7 +145,7 @@ class SchoolController extends Controller
                 $item['rejected_by_username'] = !empty($item['rejected_by']) ? $item['rejected_by']['username'] : null;
 
 
-//                unset($item['created_by_userid']);
+                //                unset($item['created_by_userid']);
                 unset($item['last_modified_userid']);
                 unset($item['approved_by_userid']);
                 unset($item['rejected_by_userid']);
@@ -183,79 +182,80 @@ class SchoolController extends Controller
                 "status" => 200,
                 "data" => $data
             ]);
-        }
-
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve school unsuccessful" .$e
+                "message" => "Retrieve school unsuccessful" . $e
             ]);
         }
-
     }
 
-    public function reject (Request $request) {
+    public function reject(Request $request)
+    {
 
         $vaildated = $request->validate([
             "id" => "required|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')->whereNotIn('created_by_userid',[auth()->user()->id])],
+            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')->whereNotIn('created_by_userid', [auth()->user()->id])],
             "reject_reason" => "required|array",
             "reject_reason.*" => 'nullable|regex:/[a-zA-Z0-9\s]+/'
         ]);
 
-        return $this->_updateStatus($vaildated,"rejected", "rejected,deleted,active");
+        return $this->_updateStatus($vaildated, "rejected", "rejected,deleted,active");
     }
 
-    public function approve (Request $request) {
+    public function approve(Request $request)
+    {
 
         $vaildated = $request->validate([
             "id" => "required|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')->whereNotIn('created_by_userid',[auth()->user()->id])],
-//            "id.*" => ['required','integer','exists:schools,id'],
+            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')->whereNotIn('created_by_userid', [auth()->user()->id])],
+            //            "id.*" => ['required','integer','exists:schools,id'],
         ]);
 
 
-        return $this->_updateStatus($vaildated,"active", "active,deleted");
+        return $this->_updateStatus($vaildated, "active", "active,deleted");
     }
 
-    public function undelete (Request $request) {
+    public function undelete(Request $request)
+    {
 
         $vaildated = $request->validate([
             "id" => "required|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')],
+            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')],
         ]);
 
-        return $this->_updateStatus($vaildated,"active", "active,pending");
+        return $this->_updateStatus($vaildated, "active", "active,pending");
     }
 
-    public function delete (Request $request) {
+    public function delete(Request $request)
+    {
 
         $vaildated = $request->validate([
             "id" => "array|array",
-            "id.*" => ['required','integer',Rule::exists('schools','id')],
+            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')],
         ]);
 
-        return $this->_updateStatus($vaildated,"deleted", "deleted");
+        return $this->_updateStatus($vaildated, "deleted", "deleted");
     }
 
-    private function _updateStatus ($vaildated, $status, $exclude) {
+    private function _updateStatus($vaildated, $status, $exclude)
+    {
 
         $userId = auth()->user()->id;
 
         $reject_reason = isset($vaildated["reject_reason"][0]) ? $vaildated["reject_reason"][0] : null;
         $update = ["status" => $status];
 
-        if(Route::currentRouteName() == "school.approve")
-        {
-            $schoolCount = School::whereIn("id",$vaildated['id'])
+        if (Route::currentRouteName() == "school.approve") {
+            $schoolCount = School::whereIn("id", $vaildated['id'])
                 ->where([
                     ['created_by_userid', '!=', $userId],
                     ['status', '=', 'pending']
                 ])
                 ->count();
 
-            if($schoolCount !== count($vaildated['id'])) {
+            if ($schoolCount !== count($vaildated['id'])) {
                 return response()->json([
                     "status" => 401,
                     "message" => "School, Unable to approve.",
@@ -267,19 +267,18 @@ class SchoolController extends Controller
             $notificationBody = 'School, Has been approved';
         }
 
-        if(Route::currentRouteName() == "school.delete")
-        {
+        if (Route::currentRouteName() == "school.delete") {
             DB::beginTransaction();
-            $hardDeleted = School::whereIn('id',Arr::collapse($vaildated))->whereIn('status',['pending','rejected'])->forceDelete();
+            $hardDeleted = School::whereIn('id', Arr::collapse($vaildated))->whereIn('status', ['pending', 'rejected'])->forceDelete();
             DB::commit();
-            if($hardDeleted > 0) {
+            if ($hardDeleted > 0) {
                 return response()->json([
                     "status" => 200,
                     "message" => "School status update successful"
                 ]);
             }
 
-            if (in_array(auth()->user()->role_id,[2,4])) {
+            if (in_array(auth()->user()->role_id, [2, 4])) {
                 return response()->json([
                     "status" => 500,
                     "message" => "The selected school id is invalid."
@@ -290,14 +289,12 @@ class SchoolController extends Controller
             $notificationBody = ' School, Has been deleted';
         }
 
-        if(Route::currentRouteName() == "school.undelete")
-        {
+        if (Route::currentRouteName() == "school.undelete") {
             $update['status'] = 'active';
             $notificationBody = ' School, Has been recover from deleted';
         }
 
-        if(Route::currentRouteName() == "school.reject")
-        {
+        if (Route::currentRouteName() == "school.reject") {
             $update['status'] = 'rejected';
             $notificationBody = 'School, Has been rejected, please edit school info and submit again';
         }
@@ -311,19 +308,18 @@ class SchoolController extends Controller
             // Start the transaction
             $school =  DB::table("schools")
                 ->whereIn("id", $vaildated["id"])
-                ->whereNotIn ("status",[$exclude]);
+                ->whereNotIn("status", [$exclude]);
 
             $result = $school->update($update);
 
-            if($reject_reason) {
+            if ($reject_reason) {
                 School::find($vaildated["id"][0])->reject_reason()->create([
                     'reason' => $reject_reason,
                     'created_by_userid' => auth()->user()->id
                 ]);
             }
 
-            if($result != count($vaildated['id']))
-            {
+            if ($result != count($vaildated['id'])) {
                 DB::rollback();
 
                 return response()->json([
@@ -334,10 +330,10 @@ class SchoolController extends Controller
 
             DB::commit();
 
-            if(isset($notificationBody)) {  //send notification to the user that create the school entry
-                $info = $school->get(['created_by_userid','name']);
+            if (isset($notificationBody)) {  //send notification to the user that create the school entry
+                $info = $school->get(['created_by_userid', 'name']);
 
-                foreach($info as $row) {
+                foreach ($info as $row) {
                     $user = User::find($row->created_by_userid);
                     $schoolName = $row->name;
 
@@ -357,8 +353,7 @@ class SchoolController extends Controller
                 "status" => 200,
                 "message" => "School status update successful"
             ]);
-
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollback();
 
             return response()->json([
@@ -367,5 +362,4 @@ class SchoolController extends Controller
             ]);
         }
     }
-
 }

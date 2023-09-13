@@ -26,27 +26,32 @@ class CompetitionService
      */
     public function getReportQuery(string $mode): Builder
     {
+        $round = $this->competition->rounds->first();
+        $awardsRankArray = collect(['PERFECT SCORE'])
+                    ->merge($round->roundsAwards->pluck('name'))
+                    ->push($round->default_award_name);
+
         return
             CompetitionParticipantsResults::leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-            ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-            ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
-            ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-            ->leftJoin('schools', 'participants.school_id', 'schools.id')
-            ->leftJoin('schools AS tuition_school', 'participants.tuition_centre_id', 'tuition_school.id')
-            ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
-            ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-            ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
-            ->where('competition.id', $this->competition->id)
-            ->when(
-                $mode === 'csv',
-                fn ($query) => $this->getCompetitionReportQueryForCSV($query),
-                fn ($query) => $this->getCompetitionReportQueryForAllMode($query)
-            )
-            ->orderByRaw(
-                "`competition_levels`.`id`,
-                    FIELD(`competition_participants_results`.`award`,'PERFECT SCORE','GOLD','SILVER','BRONZE','HONORABLE MENTION','Participation'),
-                    `competition_participants_results`.`points` desc;"
-            );
+                ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+                ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
+                ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                ->leftJoin('schools', 'participants.school_id', 'schools.id')
+                ->leftJoin('schools AS tuition_school', 'participants.tuition_centre_id', 'tuition_school.id')
+                ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
+                ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+                ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
+                ->where('competition.id', $this->competition->id)
+                ->when(
+                    $mode === 'csv',
+                    fn($query) => $this->getCompetitionReportQueryForCSV($query),
+                    fn($query) => $this->getCompetitionReportQueryForAllMode($query)
+                )
+                ->orderByRaw(
+                    "competition_levels.id,
+                    FIELD(competition_participants_results.award, '". $awardsRankArray->implode("','") ."'),
+                    competition_participants_results.points desc;"
+                );
     }
 
     private function getCompetitionReportQueryForCSV(Builder $query): Builder

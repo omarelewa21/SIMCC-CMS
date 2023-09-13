@@ -9,7 +9,6 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
-use App\Models\CompetitionParticipantsResults;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
@@ -46,8 +45,6 @@ use App\Services\CompetitionService;
 use App\Services\ParticipantService;
 use Illuminate\Validation\ValidationException;
 
-//update participant session once competition mode change, add this changes once participant session done
-
 class CompetitionController extends Controller
 {
     /**
@@ -66,6 +63,7 @@ class CompetitionController extends Controller
             $competition = Competition::create($request->all());
             $this->addOrganization($request->organizations, $competition->id);
             $this->addRounds($request->rounds, $competition);
+            $this->addTags($competition, $request->tags ?? []);
 
         }catch(\Exception $e) {
             DB::rollBack();
@@ -138,6 +136,9 @@ class CompetitionController extends Controller
                     }
                     break;
             }
+
+            $this->addTags($competition, $request->tags ?? []);
+
             $competition->save();
 
             return response()->json([
@@ -173,7 +174,7 @@ class CompetitionController extends Controller
                 case 1:
                     $competitionModel->with(['competitionOrganization','overallAwardsGroups.overallAwards','rounds.roundsAwards','rounds.levels' => function($query) {
                         $query->orderBy('id');
-                    }]);
+                    }, "tags:id,name"]);
                     break;
                 case 2:
                 case 4:
@@ -186,9 +187,11 @@ class CompetitionController extends Controller
                     break;
             }
 
-            $competitionCollection = $competitionModel->get()->filter(function ($row) {
-                return count($row['competitionOrganization']) > 0;
-            });
+            $competitionCollection = $competitionModel
+                ->applyFilter($request)
+                ->orderBy('updated_at', 'DESC')
+                ->get()
+                ->filter(fn ($row) => count($row['competitionOrganization']) > 0);
 
             /**
              * Lists of availabe filters
@@ -199,14 +202,17 @@ class CompetitionController extends Controller
             $availFormat = $competitionCollection->map(function ($item) {
                 return $item['format'];
             })->unique()->values();
+            $tags = $competitionCollection->map(function ($item) {
+                return $item['tags'];
+            })->flatten(1)->unique('id')->values();
 
             /**
              * EOL Lists of availabe filters
              */
 
-            $availForSearch = array("name");
+            $availForSearch = array("name", "alias");
             $competitionList = CollectionHelper::searchCollection($searchKey, $competitionCollection, $availForSearch, $limits);
-            $data = array("filterOptions" => ['status' => $availUserStatus, 'format' => $availFormat], "competitionList" => $competitionList);
+            $data = array("filterOptions" => ['status' => $availUserStatus, 'format' => $availFormat, "tags" => $tags], "competitionList" => $competitionList);
 
             return response()->json([
                 "status" => 200,
@@ -216,13 +222,13 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ]);
+            ],500);
         } catch (ModelNotFoundException $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ]);
+            ],500);
         }
     }
 
@@ -233,7 +239,7 @@ class CompetitionController extends Controller
                 $query->where(['organization_id' => auth()->user()->organization_id])
                     ->where('country_id', auth()->user()->country_id);
             }
-        } , 'taskDifficultyGroup', 'taskDifficulty']);
+        } , 'taskDifficultyGroup', 'taskDifficulty', "tags:id,name"]);
 
         return response()->json([
             "status"    => 200,
@@ -522,7 +528,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "add awards unsuccessful"
-            ]);
+            ],500);
         }
 
     }
@@ -543,7 +549,7 @@ class CompetitionController extends Controller
             "award" => "required|array",
             "award.*.id" => "required|integer|exists:competition_rounds_awards,id",
             "award.*.name" => "required|string|min:3|max:255",
-            "award.*.min_marks" => "integer|min:1",
+            "award.*.min_marks" => "integer|min:0",
             "award.*.percentage" => "required_if:award_type,0|exclude_if:award_type,1|integer|min:1|max:100",
             "award.*.award_points" => "required_if:assign_award_points,1|exclude_if:assign_award_points,0|integer|nullable",
         ]);
@@ -556,8 +562,7 @@ class CompetitionController extends Controller
 
                 $roundsAwards = CompetitionRoundsAwards::find($row['id']);
                 $roundsAwards->name = $row['name'];
-//                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
-                $roundsAwards->min_marks = isset($row['min_points']) ? $row['min_points'] : null; // to remove after hassan change the attribute name from min_points to min_marks
+                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
                 $roundsAwards->percentage = isset($row['percentage']) ? $row['percentage'] : null;
                 $roundsAwards->award_points = isset($row['award_points']) ? $row['award_points'] : null;
                 $roundsAwards->save();
@@ -802,7 +807,6 @@ class CompetitionController extends Controller
 
     private function addOrganization(array $organizations, int $competition_id)
     {
-
         foreach($organizations as $organization){
             if(CompetitionOrganization::where('competition_id', $competition_id)->where('organization_id', $organization['organization_id'])->where('country_id', $organization['country_id'])->doesntExist()){
                 CompetitionOrganization::create(
@@ -811,6 +815,14 @@ class CompetitionController extends Controller
                         'created_by_userid' => auth()->user()->id,
                 ]));
             }
+        }
+    }
+
+    public function addTags(Competition $competition, array|null $tags)
+    {
+        $competition->tags()->detach();
+        foreach($tags as $tagId){
+            $competition->tags()->attach($tagId);
         }
     }
 

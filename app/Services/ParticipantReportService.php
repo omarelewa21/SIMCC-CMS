@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Custom;
+namespace App\Services;
 
 use App\Models\CompetitionLevels;
 use App\Models\DomainsTags;

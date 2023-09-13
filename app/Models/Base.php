@@ -59,11 +59,13 @@ class Base extends Model
         );
     }
 
-    public function tags () {
+    public function tags()
+    {
         return $this->morphToMany(DomainsTags::class, 'taggable');
     }
 
-    public function gradeDifficulty () {
+    public function gradeDifficulty()
+    {
         return $this->morphMany(RecommendedDifficulty::class,'gradeDifficulty');
     }
 }

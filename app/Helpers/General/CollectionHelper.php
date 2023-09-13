@@ -54,7 +54,7 @@ class CollectionHelper
                     return collect($availForSearch)->map(
                         fn($item)=> $row[$item]
                     )->contains(
-                        fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower($searchTerm)) : false
+                        fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower(str_replace('%', ' ', $searchTerm))) : false
                     );
 
                 }), $limit);

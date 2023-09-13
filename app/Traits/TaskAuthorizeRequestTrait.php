@@ -1,8 +1,6 @@
 <?php
 namespace App\Traits;
 
-use App\Models\Collections;
-use App\Models\CollectionSections;
 use App\Models\Tasks;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -17,12 +15,12 @@ trait TaskAuthorizeRequestTrait
 
     protected function authorizeTaskId($taskId = null)
     {
-        if(!$taskId) return true;
+        if (!$taskId) return true;
 
         $task = Tasks::find($taskId);
-        if(!$task) return true;
+        if (!$task) return true;
 
-        if($this->checkIfTaskIsIncludedInVerifiedCollection($task)){
+        if ($this->isTaskVerified($task)) {
             $this->failedTaskName = $task->identifier;
             return false;
         }
@@ -32,14 +30,11 @@ trait TaskAuthorizeRequestTrait
 
     public function failedAuthorization()
     {
-        throw new AuthorizationException("Task '$this->failedTaskName' is included in a verified collection, you cannot modify/delete it.");
+        throw new AuthorizationException("Task '$this->failedTaskName' is verified, you cannot modify it.");
     }
 
-    public function checkIfTaskIsIncludedInVerifiedCollection(Tasks $task)
+    public function isTaskVerified(Tasks $task)
     {
-        return CollectionSections::join('collection', 'collection.id', '=', 'collection_sections.collection_id')
-            ->where('collection.status', Collections::STATUS_VERIFIED)
-            ->where('collection_sections.tasks', 'LIKE', "%$task->id%")
-            ->exists();
+        return $task->status === Tasks::STATUS_VERIFIED;
     }
 }
