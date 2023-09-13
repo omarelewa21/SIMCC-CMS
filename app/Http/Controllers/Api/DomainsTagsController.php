@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use App\Notifications\SendNotification;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,10 +10,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Models\DomainsTags;
-use App\Rules\CheckDomainTagsExist;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\CreateDomainTagRequest;
 use App\Http\Requests\UpdateTagStatusRequest;
+use App\Services\DomainTagsService;
 
 class DomainsTagsController extends Controller
 {
@@ -26,67 +25,34 @@ class DomainsTagsController extends Controller
      */
     public function create(CreateDomainTagRequest $request)
     {
+        DB::beginTransaction();
+
         try {
-            DB::beginTransaction();
-            collect($request->all())->map(function ($row) {
-                $row['created_by_userid'] = auth()->id();
-                $row['status'] = auth()->user()->hasRole(['super admin', 'admin']) ? 'active' : 'pending';
-                $row['deleted_at'] = null;
-                if(isset($row['domain_id']) || $row['is_tag'] == 1) {
-                    //insert new topics or tag
-                    if(count($row['name']) > 0) {
-                        foreach ($row['name'] as $item) {
-                            $row['name'] = $item;
-                            DomainsTags::withTrashed()->updateOrCreate([
-                                'name'      => $row['name'],
-                                'is_tag'    => $row['is_tag'],
-                                'domain_id' => isset($row['domain_id']) ? $row['domain_id'] : null
-                            ], $row);
-                        }
-                    }
+            collect($request->all())->each(function ($row) {
+                if(isset($row['is_tag']) && $row['is_tag'] == 1){
+                    DomainTagsService::createTag($row);
                 }
-
-                if(!isset($row['domain_id']) && $row['is_tag'] == 0) {
-                    //new domain with/without topics attach to it, need to create the domain first then insert topic with the new domain id
-                    $domain = $row;
-                    $domain["name"] = $domain["name"][0];                       //first element of name array is reserve for domain
-                    $domain = DomainsTags::withTrashed()->updateOrCreate([
-                        'name'      => $domain['name'],
-                    ], $domain);
-                    $row['domain_id'] = $domain->id;
-                    $topics = $row['name'];
-
-                    foreach ($topics as $topic) {
-                        $row['name'] = $topic;
-                        DomainsTags::withTrashed()->updateOrCreate([
-                            'name'      => $row['name'],
-                            'is_tag'    => $row['is_tag'],
-                            'domain_id' => isset($row['domain_id']) ? $row['domain_id'] : null
-                        ], $row);
-                    }
+                elseif(isset($row['domain_id']) && $row['domain_id'] != null) {
+                    DomainTagsService::createTopics($row);
                 }
-                DB::commit();
-
+                else {
+                    DomainTagsService::createDomain($row);
+                }
             });
 
-            return response()->json([
-                'status'    => 201,
-                'message'   => 'add domain/topic/tag successful'
-            ], 201);
-        }
-        catch (ModelNotFoundException $e){
-             return response()->json([
-                 'status'   => 404,
-                 'message'  => 'add domain/topic/tag unsuccessful'
-             ], 404);
-        }
-        catch (\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,
                 'message'   => 'Unknown Error',
                 'error'     => $e->getMessage()
             ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            'status'    => 201,
+            'message'   => 'add domain/topic/tag successful'
+        ], 201);
     }
 
     public function list (Request $request) {
@@ -106,7 +72,7 @@ class DomainsTagsController extends Controller
 
             $limits = $request->limits ? $request->limits : 500;
 
-            if(route::currentRouteName() == "tag.list" ) {
+            if(Route::currentRouteName() == "tag.list" ) {
                 $limits = 99999;
             }
 
@@ -207,28 +173,23 @@ class DomainsTagsController extends Controller
     public function delete(UpdateTagStatusRequest $request)
     {
         DB::beginTransaction();
-
         try {
-            DomainsTags::whereIn('id', $request->id)
-                ->update([
-                    'status'                => 'deleted',
-                    'last_modified_userid'  => auth()->id()
-                ]);
-            DomainsTags::whereIn('id', $request->id)->delete();
+            DomainsTags::whereIn('id', $request->id)->get()
+                ->each(fn($domainTag) => $domainTag->delete());
 
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
                 "status"    => 500,
-                "message"   => "delete unsuccessful" . $e->getMessage(),
+                "message"   => "Delete unsuccessful" . $e->getMessage(),
                 "error"     => $e->getMessage()
             ], 500);
         }
 
         DB::commit();
         return response()->json([
-            "status" => 200,
-            "message" => "Tag deleted successfully"
+            "status"    => 200,
+            "message"   => "Deleted successfully"
         ]);       
     }
 
@@ -261,4 +222,3 @@ class DomainsTagsController extends Controller
         ]);
     }
 }
-
