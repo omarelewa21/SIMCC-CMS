@@ -43,8 +43,8 @@ class DomainsTagsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,
-                'message'   => 'Unknown Error',
-                'error'     => $e->getMessage()
+                'message'   => 'Operation Error' . $e->getMessage(),
+                'error'     => strval($e)
             ], 500);
         }
 
@@ -128,14 +128,16 @@ class DomainsTagsController extends Controller
         catch(QueryException $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve tag retrieve unsuccessful",
+                "message" => "Retrieve tag retrieve unsuccessful" . $e->getMessage(),
+                "error" => strval($e)
             ]);
         }
         catch(ModelNotFoundException $e){
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Retrieve tag retrieve unsuccessful"
+                "message" => "Retrieve tag retrieve unsuccessful" . $e->getMessage(),
+                "error" => strval($e)
             ]);
         }
     }
@@ -165,7 +167,8 @@ class DomainsTagsController extends Controller
             // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "Tag update unsuccessful"
+                "message" => "Tag update unsuccessful" . $e->getMessage(),
+                "error" => strval($e)
             ]);
         }
     }
@@ -182,7 +185,7 @@ class DomainsTagsController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Delete unsuccessful" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
 
@@ -211,7 +214,7 @@ class DomainsTagsController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Error encountered while trying to approve" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
 
