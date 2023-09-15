@@ -225,7 +225,7 @@
         <div class="container">
             <div class="general-info">
                 <div class="name">
-                    <p> {{ $general_data['particiapnt'] }} </p>
+                    <p> {{ $general_data['participant'] }} </p>
                 </div>
                 <div class="grade-school">
                     <div class="vertical">
