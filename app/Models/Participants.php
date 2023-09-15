@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
 {
@@ -126,7 +127,7 @@ class Participants extends Base
                 case 'limits':
                     break;
                 default:
-                    $query->where($key, $value);
+                    Schema::hasColumn(self::getTable(), $key) && $query->where($key, $value);
             }
         }
     }
