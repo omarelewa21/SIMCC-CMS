@@ -19,15 +19,20 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
+use App\Jobs\GeneratePerformanceReports;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
+use App\Models\ReportDownloadStatus;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use Exception;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use PDF;
+
 
 class ParticipantsController extends Controller
 {
@@ -116,10 +121,9 @@ class ParticipantsController extends Controller
                 $row["created_by_userid"] =  auth()->id(); //assign entry creator user id
                 $row["index_no"] = $index;
                 $row["certificate_no"] = $certificate;
-                $row["passkey"] = Str::random(8);
-                $row["password"] = Hash::make($row["passkey"]);
+                // $row["password"] = Hash::make($filteredPasskey);
+                $row["password"] = Participants::generatePassword();
                 unset($returnData[count($returnData) - 1]['password']);
-                unset($row['passkey']);
                 unset($row['competition_id']);
                 unset($row['for_partner']);
                 unset($row['organization_id']);
@@ -247,7 +251,8 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function update (Request $request) {
+    public function update(Request $request)
+    {
         //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
         $participant = auth()->user()->hasRole(['Super Admin', 'Admin'])
             ? Participants::whereId($request['id'])->firstOrFail()
@@ -486,5 +491,88 @@ class ParticipantsController extends Controller
             "status"    => 200,
             "message"   => "Participants deleted from elimination successfully"
         ]);
+    }
+
+    public function performanceReportsBulkDownload(getParticipantListRequest $request)
+    {
+        $user = auth()->user();
+        $job = new GeneratePerformanceReports($request, $user);
+        $job_id = $this->dispatch($job);
+        return response()->json([
+            "status"    => 200,
+            'job_id' => $job_id,
+            "message"   => "Report generation job dispatched"
+        ]);
+    }
+
+    public function performanceReportsBulkDownloadCheckProgress($jobId)
+    {
+        $job = ReportDownloadStatus::where('job_id', $jobId)->first();
+        if ($job) {
+            $progress = $job->progress_percentage;
+            $status = $job->status;
+            switch ($status) {
+                case 'In Progress':
+                    return response()->json([
+                        'job_id' => $jobId,
+                        'status' => 'In Progress',
+                        'file_path' => '',
+                        'progress' => $progress,
+                    ], 201);
+                case 'Failed':
+                    return response()->json([
+                        'job_id' => $jobId,
+                        'status' => 'Failed',
+                        'message' => 'Failed to generate',
+                        'file_path' => '',
+                        'progress' => $progress,
+                    ], 500);
+                case 'Completed':
+                    $filePath = 'performance_reports/' . $job->file_path;
+                    if (!Storage::exists($filePath)) {
+                        return response()->json([
+                            'job_id' => $jobId,
+                            'status' => 'Failed',
+                            'message' => 'No Reports Found',
+                            'file_path' => '',
+                            'progress' => 0,
+                        ], 500);
+                    }
+                    return response()->json([
+                        'job_id' => $jobId,
+                        'status' => 'Completed',
+                        'file_path' => route('participant.reports.bulk_download.download_file', ['job_id' => $job->job_id]),
+                        'progress' => $progress,
+                    ], 200);
+                    // return Response::download(storage_path('app/' . $job->file_path))->deleteFileAfterSend(true);
+            }
+        } else {
+            return response()->json([
+                'job_id' => $jobId,
+                'status' => 'Not Started',
+                'progress' => 0,
+                'message' => 'Not Started',
+            ], 201);
+        }
+    }
+
+    public function performanceReportsBulkDownloadFile($id)
+    {
+        $job = ReportDownloadStatus::where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json([
+                'message' => 'Job not found',
+            ], 404);
+        }
+
+        $filePath = 'performance_reports/' . $job->file_path;
+
+        if (!Storage::exists($filePath)) {
+            return response()->json([
+                'message' => 'File not found',
+            ], 404);
+        }
+
+        return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
@@ -136,6 +138,21 @@ class Participants extends Base
         return $this->belongsTo(User::class, "last_modified_userid", "id");
     }
 
+    protected function password(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                try {
+                    return decrypt($value);
+                } catch (DecryptException $e) {
+                    $this->password = self::generatePassword();
+                    $this->save();
+                    return $this->password;
+                } 
+            },
+        );
+    }
+
     public function tuition_centre()
     {
         return $this->belongsTo(School::class, "tuition_centre_id", "id");
@@ -212,5 +229,16 @@ class Participants extends Base
         }
 
         return $newCharacter . $newNumber;
+    }
+
+    public static function generatePassword()
+    {
+        $characters = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        $charactersLength = strlen($characters);
+        $password = '';
+        for ($i = 0; $i < 8; $i++) {
+            $password .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return encrypt($password);
     }
 }
