@@ -9,7 +9,6 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
-use App\Models\CompetitionParticipantsResults;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 use App\Models\CompetitionTasksMark;
@@ -543,7 +542,7 @@ class CompetitionController extends Controller
             "award" => "required|array",
             "award.*.id" => "required|integer|exists:competition_rounds_awards,id",
             "award.*.name" => "required|string|min:3|max:255",
-            "award.*.min_marks" => "integer|min:1",
+            "award.*.min_marks" => "integer|min:0",
             "award.*.percentage" => "required_if:award_type,0|exclude_if:award_type,1|integer|min:1|max:100",
             "award.*.award_points" => "required_if:assign_award_points,1|exclude_if:assign_award_points,0|integer|nullable",
         ]);
@@ -556,8 +555,7 @@ class CompetitionController extends Controller
 
                 $roundsAwards = CompetitionRoundsAwards::find($row['id']);
                 $roundsAwards->name = $row['name'];
-//                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
-                $roundsAwards->min_marks = isset($row['min_points']) ? $row['min_points'] : null; // to remove after hassan change the attribute name from min_points to min_marks
+                $roundsAwards->min_marks = isset($row['min_marks']) ? $row['min_marks'] : null;
                 $roundsAwards->percentage = isset($row['percentage']) ? $row['percentage'] : null;
                 $roundsAwards->award_points = isset($row['award_points']) ? $row['award_points'] : null;
                 $roundsAwards->save();
