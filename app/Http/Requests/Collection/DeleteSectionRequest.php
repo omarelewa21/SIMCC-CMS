@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Collection;
 
+use App\Models\Collections;
 use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -21,5 +22,15 @@ class DeleteSectionRequest extends FormRequest
             'id'            => 'required|array',
             'id.*'          => 'required|integer|distinct|exists:collection_sections,id'
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $collection = Collections::find($this->collection_id);
+        $validator->after(function ($validator) use ($collection) {
+            if (!$collection->status == Collections::STATUS_VERIFIED) {
+                $validator->errors()->add('authorize', 'Collection is verified, Deleting sections is not allowed');
+            }
+        });
     }
 }

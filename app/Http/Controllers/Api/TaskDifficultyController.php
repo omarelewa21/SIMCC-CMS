@@ -60,7 +60,7 @@ class TaskDifficultyController extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'add difficulty group unsuccessful'
-            ]);
+            ],500);
         }
     }
 
@@ -120,7 +120,7 @@ class TaskDifficultyController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "Retrieve difficulty group unsuccessful"
-            ]);
+            ],500);
         }
     }
 
@@ -185,7 +185,7 @@ class TaskDifficultyController extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'update difficulty group unsuccessful' . $e
-            ]);
+            ],500);
         }
     }
 
@@ -214,7 +214,7 @@ class TaskDifficultyController extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'delete difficulty  unsuccessful'
-            ]);
+            ],500);
         }
     }
 
@@ -249,7 +249,7 @@ class TaskDifficultyController extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'delete difficulty  unsuccessful' . $e
-            ]);
+            ],500);
         }
     }
 }

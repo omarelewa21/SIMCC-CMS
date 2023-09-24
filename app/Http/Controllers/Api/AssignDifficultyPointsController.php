@@ -25,11 +25,13 @@ class AssignDifficultyPointsController extends Controller
     public function list(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|integer|exists:competition,id',
+            'competition_id' => 'required|integer|exists:competition,id',
+            'level_id' => 'required|integer|exists:competition_levels,id',
+            'round_id' => 'required|integer|exists:competition_rounds,id',
         ]);
 
         try {
-            $competition = Competition::AcceptRequest(['id'])->with(['rounds.levels.collection.sections', 'taskDifficulty'])->find($validated['id']);
+            $competition = Competition::AcceptRequest(['competition_id'])->with(['rounds.levels.collection.sections', 'taskDifficulty'])->find($validated['competition_id']);
             $TaskDifficultyGroupId = $competition->difficulty_group_id;
             $difficultyList = TaskDifficultyGroup::whereId($TaskDifficultyGroupId)->exists() ? TaskDifficultyGroup::with('difficulty')->find($TaskDifficultyGroupId)->toArray() : [];
             $competitionRounds = CompetitionRounds::where('competition_id', $competition->id)->get()->map(function ($round) {
@@ -96,7 +98,7 @@ class AssignDifficultyPointsController extends Controller
                 'rounds' => $competitionRounds->toArray()
             ];
 
-            $data = array("difficultyList" => $difficultyList, "competitionTask" => $competitionAssignTaskDifficultyMarks);
+            $data = array("difficultyList" => $difficultyList, "competitionTask" => $competitionAssignTaskDifficultyMarks, 'is_verified' => $this->checkDifficultyIsVerified($request));
 
             return response()->json([
                 "status" => 200,
@@ -187,7 +189,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "Update competition task marks unsuccessful." . $e
-            ]);
+            ], 500);
         }
     }
 
@@ -197,7 +199,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status"  => 403,
                 "message" => "Only admins can verify collection"
-            ]);
+            ], 403);
         }
 
         $competitionId = $request->validate([
@@ -222,7 +224,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status"  => 403,
                 "message" => "This difficulty and points is already verified"
-            ]);
+            ], 403);
         }
 
         TaskDifficultyVerification::create(
@@ -234,11 +236,29 @@ class AssignDifficultyPointsController extends Controller
                 'verified_by_userid' => auth()->user()->id
             ]
         );
+
+        $competition = Competition::with(['rounds.levels.collection'])
+            ->find($competitionId);
+        $all_collections_verified = $competition->isVerified();
+
+        if ($all_collections_verified) {
+            $competition->update(['is_verified' => true]);
+        }
+
         return response()->json(
             [
                 'status' => 200,
                 'message' => 'difficulty and points verified successfully'
             ]
         );
+    }
+
+    public function checkDifficultyIsVerified($request)
+    {
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $request->competition_id)->where('level_id', $request->level_id)->where('round_id', $request->round_id)->first();
+        if ($taskDifficulty) {
+            return true;
+        }
+        return false;
     }
 }
