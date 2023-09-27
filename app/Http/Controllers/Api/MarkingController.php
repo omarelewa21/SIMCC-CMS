@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
+use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
 use App\Services\ComputeAwardStatsService;
+use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
 use App\Services\MarkingService;
 use Illuminate\Http\Request;
@@ -41,8 +43,8 @@ class MarkingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Marking progress list retrieve unsuccessful",
-                "error"     => $e->getMessage()
+                "message"   => "Marking progress list retrieve unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
     }
@@ -240,6 +242,18 @@ class MarkingController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
+    {
+        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Level computing is in progress",
+        ], 200);
+
     }
 
     /**
