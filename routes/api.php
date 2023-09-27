@@ -136,6 +136,7 @@ Route::group(["middleware" => ["cors","auth:sanctum","rolePermissions"]], functi
         Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
+        Route::post("/compute/level/{level}/{group}",[MarkingController::class,"computeResultsForSingleLevelGroup"])->name('competition.marking.compute.level.group');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
         Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
