@@ -3,31 +3,33 @@
 namespace App\Helpers;
 
 use App\Models\CompetitionLevels;
+use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
 
 class SetParticipantsAwardsHelper
 {
     private $awards;
 
-    function __construct(public CompetitionLevels $level)
+    function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup|null $group=null)
     {
         $this->awards = $level->rounds->roundsAwards;
     }
 
     public function setParticipantsAwards()
     {
+        $groupIds = $this->group
+            ? [$this->group->id]
+            : CompetitionParticipantsResults::where('level_id', $this->level->id)
+                ->select('group_id')->distinct()->pluck('group_id')->toArray();
+
         $this->level->rounds->award_type === "Position"
-            ? $this->setParticipantsAwardsByPosition()
-            : $this->setParticipantsAwardsByPercentage();
+            ? $this->setParticipantsAwardsByPosition($groupIds)
+            : $this->setParticipantsAwardsByPercentage($groupIds);
     }
 
-    private function setParticipantsAwardsByPosition()
+    private function setParticipantsAwardsByPosition($groupIds)
     {
-        $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->select('group_id')->distinct()->pluck('group_id')->toArray();
-
         foreach($groupIds as $groupId){
             [$totalCount, $perfectScoreresCount] = $this->getTotalCountAndPerfectScoreresCount($groupId);
             $count = $totalCount;
@@ -56,11 +58,8 @@ class SetParticipantsAwardsHelper
         }
     }
 
-    private function setParticipantsAwardsByPercentage()
+    private function setParticipantsAwardsByPercentage($groupIds)
     {
-        $groupIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->select('group_id')->distinct()->pluck('group_id')->toArray();
-        
         foreach($groupIds as $groupId){
             [$totalCount, $perfectScoreresCount] = $this->getTotalCountAndPerfectScoreresCount($groupId);
             
