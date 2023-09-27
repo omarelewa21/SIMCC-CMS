@@ -13,15 +13,20 @@ class LevelGroupCompute extends Model
 
     protected $guarded = [];
 
+    public $timestamps = false;
+    public $incrementing = false;
+
+    protected $primaryKey = 'group_id';
+
     const STATUS_NOT_STARTED  = "Not Started";
-    const STATUS_In_PROGRESS  = "In Progress";
+    const STATUS_IN_PROGRESS  = "In Progress";
     const STATUS_FINISHED     = "Finished";
     const STATUS_BUG_DETECTED = "Bug Detected";
 
     public function updateStatus($status, $error_message=null)
     {
         switch ($status) {
-            case self::STATUS_In_PROGRESS:
+            case self::STATUS_IN_PROGRESS:
                 $progress = 1;
                 break;
             case self::STATUS_FINISHED:
@@ -36,5 +41,7 @@ class LevelGroupCompute extends Model
             'compute_error_message'         => $error_message,
             'compute_progress_percentage'   => $progress
         ]);
+
+        \ResponseCache::clear();
     }
 }
