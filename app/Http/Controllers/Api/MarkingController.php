@@ -254,6 +254,8 @@ class MarkingController extends Controller
             ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
         );
 
+        \ResponseCache::clear();
+
         return response()->json([
             "status"    => 200,
             "message"   => "Level computing is in progress",
@@ -323,6 +325,8 @@ class MarkingController extends Controller
                     }
                 }
             }
+
+            \ResponseCache::clear();
 
             return response()->json([
                 "status"    => 200,
