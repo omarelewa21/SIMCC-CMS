@@ -307,7 +307,7 @@ class MarkingController extends Controller
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
                     foreach($competition->groups as $group){
-                        if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group)) {
+                        if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));       
                         }
                     }
