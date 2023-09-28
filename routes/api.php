@@ -118,8 +118,9 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/rounds", [CompetitionController::class, "deleteRounds"])->name('competition.rounds.delete');
         Route::post("/organization", [CompetitionController::class, "addOrganizationRoute"])->name('competition.organization.add');
         Route::delete("/organization", [CompetitionController::class, "deleteOrganization"])->name('competition.organization.delete');
-        Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date');
-        Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.get');
+        Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date'); 
+        Route::patch("/organization/update_extended_end_date", [CompetitionController::class, "updateExtendedEndDate"])->name('competition.organization.update.extended_end_date');
+        Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.add');
         Route::post("/awards", [CompetitionController::class, "addRoundAwards"])->name('competition.round.award.add');
         Route::patch("/awards", [CompetitionController::class, "editRoundAwards"])->name('competition.round.award.edit');
         Route::delete("/awards", [CompetitionController::class, "deleteRoundAwards"])->name('competition.round.award.delete');
