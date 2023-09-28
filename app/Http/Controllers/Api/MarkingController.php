@@ -13,6 +13,7 @@ use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\LevelGroupCompute;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -248,6 +249,11 @@ class MarkingController extends Controller
         ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
         dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
 
+        LevelGroupCompute::updateOrCreate(
+            ['level_id' => $level->id, 'group_id' => $group->id],
+            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+        );
+
         return response()->json([
             "status"    => 200,
             "message"   => "Level computing is in progress",
@@ -308,7 +314,11 @@ class MarkingController extends Controller
                 foreach($round->levels as $level){
                     foreach($competition->groups as $group){
                         if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
-                            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));       
+                            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+                            LevelGroupCompute::updateOrCreate(
+                                ['level_id' => $level->id, 'group_id' => $group->id],
+                                ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+                            );
                         }
                     }
                 }
