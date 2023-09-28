@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-use ResponseCache;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
@@ -270,10 +269,7 @@ class MarkingController extends Controller
 
             dispatch(new ComputeLevel($level, $request));
             $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
-          
-            //ResponseCache::forget('api/marking/'.$competition->id); <-- need get competition id first before enable
-            ResponseCache::clear();
-          
+
             return response()->json([
                 "status"    => 200,
                 "message"   => "Level computing is in progress",
@@ -296,11 +292,12 @@ class MarkingController extends Controller
      *
      * @return response
      */
-    public function computeCompetitionResults(Competition $competition, Request|null $request)
+    public function computeCompetitionResults(Competition $competition, Request $request)
     {
-        
+        $competition->load('rounds.levels', 'groups');
+
         try {
-            if($competition->groups()->count() === 0){
+            if($competition->groups->count() === 0){
                 return response()->json([
                     "status"    => 412,
                     "message"   => "Competition has no groups, please add some country groups first",
@@ -309,15 +306,13 @@ class MarkingController extends Controller
 
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
-                    if(MarkingService::isLevelReadyToCompute($level) && $level->computing_status != CompetitionLevels::STATUS_In_PROGRESS){
-                        dispatch(new ComputeLevel($level, $request));
-                        $level->updateStatus(CompetitionLevels::STATUS_In_PROGRESS);
+                    foreach($competition->groups as $group){
+                        if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group)) {
+                            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));       
+                        }
                     }
                 }
             }
-          
-            //ResponseCache::forget('api/marking/'.$competition->id);
-             ResponseCache::clear(); // <--this clear all pages cache;
 
             return response()->json([
                 "status"    => 200,
