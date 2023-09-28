@@ -28,12 +28,14 @@ class ComputeLevelGroupService
             $throwError = true
     ) {
         $levelGroupCompute = $group->levelGroupCompute($level->id)->first();
-        if( !$levelGroupCompute ) return true;
 
-        if($levelGroupCompute->computing_status === 'In Progress'){
-            if($throwError) throw new \Exception("Grades {$level->name} is already under computing for this group {$group->name}, please wait till finished", 409);
-            return false;
-        }
+        if( $levelGroupCompute ) {
+            if($levelGroupCompute->computing_status === 'In Progress'){
+                if($throwError) throw new \Exception("Grades {$level->name} is already under computing for this group {$group->name}, please wait till finished", 409);
+                return false;
+            }
+        };
+
         if( ! MarkingService::isLevelReadyToCompute($level) ){
             if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
             return false;
