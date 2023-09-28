@@ -22,16 +22,24 @@ class ComputeLevelGroupService
         $this->groupCountriesIds = $group->countries()->pluck('id')->toArray();
     }
 
-    public static function validateLevelGroupForComputing(CompetitionLevels $level, CompetitionMarkingGroup $group)
-    {
+    public static function validateLevelGroupForComputing(
+            CompetitionLevels $level,
+            CompetitionMarkingGroup $group,
+            $throwError = true
+    ) {
         $levelGroupCompute = $group->levelGroupCompute($level->id)->first();
-        if( !$levelGroupCompute ) return;
+        if( !$levelGroupCompute ) return true;
+
         if($levelGroupCompute->computing_status === 'In Progress'){
-            throw new \Exception("Grades {$level->name} is already under computing for this group {$group->name}, please wait till finished", 409);
+            if($throwError) throw new \Exception("Grades {$level->name} is already under computing for this group {$group->name}, please wait till finished", 409);
+            return false;
         }
         if( ! MarkingService::isLevelReadyToCompute($level) ){
-            throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            return false;
         }
+
+        return true;
     }
     
     public function computeResutlsForGroupLevel(array $request)
