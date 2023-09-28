@@ -18,6 +18,8 @@ class MarkingService
      */
     public function markList(Competition $competition)
     {
+        $competition->load('rounds.levels.levelGroupComputes', 'groups.countries:id,display_name');
+
         $countries = $competition->groups->load('countries:id,display_name')->pluck('countries', 'id');
         
         $rounds = $competition->rounds->mapWithKeys(function ($round) use($countries){
@@ -36,14 +38,16 @@ class MarkingService
                         ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
                         ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
                         ->select('participant_answers.participant_index')->distinct()->count('participant_index');
-    
+                    
+                    $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first(); 
+
                     $levels[$level->id][] = [
                         'level_id'                      => $level->id,
                         'name'                          => $level->name,
                         'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
-                        'computing_status'              => $level->computing_status,
-                        'compute_progress_percentage'   => $level->compute_progress_percentage,
-                        'compute_error_message'         => $level->compute_error_message,
+                        'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
+                        'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
+                        'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
                         'total_participants'            => $totalParticipants,
                         'answers_uploaded'              => $answersUploaded,
                         'marked_participants'           => $markedParticipants,
