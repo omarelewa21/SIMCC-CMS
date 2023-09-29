@@ -249,11 +249,6 @@ class MarkingController extends Controller
         ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
         dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
 
-        LevelGroupCompute::updateOrCreate(
-            ['level_id' => $level->id, 'group_id' => $group->id],
-            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-        );
-
         \ResponseCache::clear();
 
         return response()->json([
