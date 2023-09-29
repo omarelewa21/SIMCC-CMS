@@ -14,9 +14,6 @@ class LevelGroupCompute extends Model
     protected $guarded = [];
 
     public $timestamps = false;
-    public $incrementing = false;
-
-    protected $primaryKey = 'group_id';
 
     const STATUS_NOT_STARTED  = "Not Started";
     const STATUS_IN_PROGRESS  = "In Progress";

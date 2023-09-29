@@ -84,6 +84,6 @@ class CompetitionMarkingGroup extends Base
         if($levelId) {
             return $this->hasOne(LevelGroupCompute::class, 'group_id')->where('level_id', $levelId);
         }
-        return $this->hasMany(LevelGroupCompute::class);
+        return $this->hasMany(LevelGroupCompute::class, 'group_id');
     }
 }
