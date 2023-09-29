@@ -244,20 +244,6 @@ class MarkingController extends Controller
         }
     }
 
-    public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
-    {
-        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
-        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-
-        \ResponseCache::clear();
-
-        return response()->json([
-            "status"    => 200,
-            "message"   => "Level computing is in progress",
-        ], 200);
-
-    }
-
     /**
      * Compute single level results
      *
@@ -289,6 +275,32 @@ class MarkingController extends Controller
     }
 
     /**
+     * Compute single level group results
+     * @param \App\Models\CompetitionLevels $level
+     * @param \App\Models\CompetitionMarkingGroup $group
+     * 
+     * @return response
+     */
+    public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
+    {
+        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+
+        LevelGroupCompute::updateOrCreate(
+            ['level_id' => $level->id, 'group_id' => $group->id],
+            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+        );
+
+        \ResponseCache::clear();
+
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Level computing is in progress",
+        ], 200);
+
+    }
+
+    /**
      * Compute results for the competition
      *
      * @param \App\Models\Competition $competition
@@ -298,7 +310,7 @@ class MarkingController extends Controller
     public function computeCompetitionResults(Competition $competition, Request $request)
     {
         $competition->load('rounds.levels', 'groups');
-
+    
         try {
             if($competition->groups->count() === 0){
                 return response()->json([
@@ -312,6 +324,10 @@ class MarkingController extends Controller
                     foreach($competition->groups as $group){
                         if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+                            LevelGroupCompute::updateOrCreate(
+                                ['level_id' => $level->id, 'group_id' => $group->id],
+                                ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+                            );
                         }
                     }
                 }
