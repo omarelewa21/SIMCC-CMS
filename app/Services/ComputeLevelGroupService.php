@@ -276,18 +276,15 @@ class ComputeLevelGroupService
     private function updateParticipantsStatus()
     {
         // update attendees
-        $this->level->participants()
-            ->whereRelation('results', 'group_id', $this->group->id)
+        Participants::join('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
+            ->where('competition_participants_results.level_id', $this->level->id)
+            ->where('competition_participants_results.group_id', $this->group->id)
             ->update(['participants.status' => 'result computed']);
 
         // update absentees
         $this->level->participants()
-            ->whereNotIn('participants.id', function($query){
-                $query->select('participant_id')->from('competition_participants_results')
-                    ->where('level_id', $this->level->id)
-                    ->where('group_id', $this->group->id);
-            })
             ->whereIn('participants.country_id', $this->groupCountriesIds)
+            ->where('participants.status', 'active')
             ->update(['participants.status' => 'absent']);
     }
 }
