@@ -59,6 +59,7 @@ class ComputeLevelGroupService
             }
         };
         $this->setParticipantsAwardsRank();
+        $this->updateParticipantsStatus();
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -268,9 +269,25 @@ class ComputeLevelGroupService
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
             }
             $participantResult->save();
-            $participantResult->participant->setAttribute('status', 'result computed');
-            $participantResult->participant->save();
         }
         $this->updateComputeProgressPercentage(80);
+    }
+
+    private function updateParticipantsStatus()
+    {
+        // update attendees
+        $this->level->participants()
+            ->whereRelation('results', 'group_id', $this->group->id)
+            ->update(['participants.status' => 'result computed']);
+
+        // update absentees
+        $this->level->participants()
+            ->whereNotIn('participants.id', function($query){
+                $query->select('participant_id')->from('competition_participants_results')
+                    ->where('level_id', $this->level->id)
+                    ->where('group_id', $this->group->id);
+            })
+            ->whereIn('participants.country_id', $this->groupCountriesIds)
+            ->update(['participants.status' => 'absent']);
     }
 }
