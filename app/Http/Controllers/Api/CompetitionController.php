@@ -139,7 +139,19 @@ class CompetitionController extends Controller
                     break;
             }
             $competition->save();
-
+            if ($request->has('competition_end_date')) {
+                $newCompeitionEndDate = date('Y-m-d', strtotime($request->competition_end_date));
+                foreach ($competition->competitionOrganization as $organization) {
+                    // Update competition organization extended date to null case the date before the new global end date
+                    if ($organization->extended_end_date <= $newCompeitionEndDate) {
+                        $organization->update(['extended_end_date' => null]);
+                    }
+                    // Discard competition dates that exceed the new end date
+                    CompetitionOrganizationDate::where('competition_organization_id', $organization->id)
+                        ->whereDate('competition_date', '>', $newCompeitionEndDate)
+                        ->delete();
+                }
+            }
             return response()->json([
                 "status"    => 200,
                 "message"   => "Competition update successful",
