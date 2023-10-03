@@ -53,8 +53,10 @@ class ComputeLevelGroupService
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
-            in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
+            if(!in_array('award', $request['not_to_compute'])) {
+                $this->setParticipantsAwards();
+                in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
+            }
         };
         $this->setParticipantsAwardsRank();
         $this->updateComputeProgressPercentage(100);
@@ -254,7 +256,7 @@ class ComputeLevelGroupService
     private function setParticipantsGlobalRank()
     {
         $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+            ->where('award', '<>', $this->level->rounds->default_award_name)
             ->orderBy('points', 'DESC')->get();
 
         foreach($participantResults as $index => $participantResult){
