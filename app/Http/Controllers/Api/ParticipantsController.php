@@ -16,7 +16,6 @@ use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Jobs\GeneratePerformanceReports;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
@@ -209,6 +208,9 @@ class ParticipantsController extends Controller
             $availOrganization = $participantCollection->map(function ($item) {
                 return ['id' => $item->organization_id, 'name' => $item->organization_name];
             })->unique()->sortBy('name')->values();
+            $availSchools = $participantCollection->map(function ($item) {
+                return ['id' => $item->school_id, 'name' => $item->school_name];
+            })->whereNotNull('id')->unique()->sortBy('name')->values();
 
             $availTags = Competition::whereIn('competition.id', $availCompetition->pluck('id'))
                 ->join(
@@ -250,7 +252,8 @@ class ParticipantsController extends Controller
                         'private'       => $availPrivate,
                         'countries'     => $availCountry,
                         'competition'   => $availCompetition,
-                        'tags'          => $availTags
+                        'tags'          => $availTags,
+                        'schools'       => $availSchools,
                     ],
                     "participantList" => $participantList
                 ]
