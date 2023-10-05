@@ -9,7 +9,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
@@ -208,6 +207,9 @@ class ParticipantsController extends Controller
             $availOrganization = $participantCollection->map(function ($item) {
                 return ['id' => $item->organization_id, 'name' => $item->organization_name];
             })->unique()->sortBy('name')->values();
+            $availSchools = $participantCollection->map(function ($item) {
+                return ['id' => $item->school_id, 'name' => $item->school_name];
+            })->whereNotNull('id')->unique()->sortBy('name')->values();
 
             $availTags = Competition::whereIn('competition.id', $availCompetition->pluck('id'))
                 ->join('taggables', fn($join) =>
@@ -247,7 +249,8 @@ class ParticipantsController extends Controller
                         'private'       => $availPrivate,
                         'countries'     => $availCountry,
                         'competition'   => $availCompetition,
-                        'tags'          => $availTags
+                        'tags'          => $availTags,
+                        'schools'       => $availSchools,
                     ],
                     "participantList" => $participantList
                 ]
