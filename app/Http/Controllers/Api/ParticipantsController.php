@@ -205,6 +205,9 @@ class ParticipantsController extends Controller
             $availOrganization = $participantCollection->map(function ($item) {
                 return ['id' => $item->organization_id, 'name' => $item->organization_name];
             })->unique()->sortBy('name')->values();
+            $availSchools = $participantCollection->map(function ($item) {
+                return ['id' => $item->school_id, 'name' => $item->school_name];
+            })->whereNotNull('id')->unique()->sortBy('name')->values();
 
             /**
              * EOL Lists of availabe filters
@@ -233,7 +236,8 @@ class ParticipantsController extends Controller
                         'grade'         => $availGrade,
                         'private'       => $availPrivate,
                         'countries'     => $availCountry,
-                        'competition'   => $availCompetition
+                        'competition'   => $availCompetition,
+                        'schools'       => $availSchools
                     ],
                     "participantList" => $participantList
                 ]
