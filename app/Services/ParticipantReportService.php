@@ -50,19 +50,19 @@ class ParticipantReportService
     {
         return
             $this->getAnalysisByQuestionData->pluck('topic')
-                ->flatten()
-                ->unique('id')
-                ->values()
-                ->map(function($topic){
-                    $filteredData = $this->getFilteredAnalysisByQuestionDataByTopicName($topic->id);
-                    return [
-                        'domain'        => $topic->domain->name,
-                        'topic'         => $topic->name,
-                        'participant'   => round($filteredData->sum('is_correct')/$filteredData->count() * 100),
-                        'school'        => round($filteredData->sum('correct_in_school')/$filteredData->count()),
-                        'country'       => round($filteredData->sum('correct_in_country')/$filteredData->count())
-                    ];
-                });        
+            ->flatten()
+            ->unique('id')
+            ->values()
+            ->map(function ($topic) {
+                $filteredData = $this->getFilteredAnalysisByQuestionDataByTopicName($topic->id);
+                return [
+                    'domain'        => $topic->topic_domain,
+                    'topic'         => $topic->name,
+                    'participant'   => round($filteredData->sum('is_correct') / $filteredData->count() * 100),
+                    'school'        => round($filteredData->sum('correct_in_school') / $filteredData->count()),
+                    'country'       => round($filteredData->sum('correct_in_country') / $filteredData->count())
+                ];
+            });
     }
 
     public function getGradePerformanceAnalysisData()
