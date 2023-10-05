@@ -63,7 +63,7 @@ class ParticipantReportService
             ->map(function ($topic) {
                 $filteredData = $this->getFilteredAnalysisByQuestionDataByTopicName($topic->id);
                 return [
-                    'domain'        => $topic->domain->name,
+                    'domain'        => $topic->topic_domain,
                     'topic'         => $topic->name,
                     'participant'   => round($filteredData->sum('is_correct') / $filteredData->count() * 100),
                     'school'        => round($filteredData->sum('correct_in_school') / $filteredData->count()),

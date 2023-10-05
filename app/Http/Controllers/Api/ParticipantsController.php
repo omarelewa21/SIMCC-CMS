@@ -155,7 +155,9 @@ class ParticipantsController extends Controller
             ->leftJoin('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
             ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
             ->leftJoin('competition', 'competition.id', 'competition_organization.competition_id')
-            ->leftJoin('taggables', fn($join) =>
+            ->leftJoin(
+                'taggables',
+                fn ($join) =>
                 $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
             )
             ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
@@ -212,7 +214,9 @@ class ParticipantsController extends Controller
             })->whereNotNull('id')->unique()->sortBy('name')->values();
 
             $availTags = Competition::whereIn('competition.id', $availCompetition->pluck('id'))
-                ->join('taggables', fn($join) =>
+                ->join(
+                    'taggables',
+                    fn ($join) =>
                     $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
                 )
                 ->join('domains_tags', 'domains_tags.id', 'taggables.domains_tags_id')
@@ -419,13 +423,15 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
+
+    public function performanceReportWithIndexAndCertificate(Request $request)
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $request->index_no)
                 ->with('participant')->firstOrFail()->makeVisible('report');
 
             if (is_null($participantResult->report)) {
+                // Generate the report data
                 $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
                 $report = $__report->getJsonReport();
                 $participantResult->report = $report;
@@ -433,7 +439,6 @@ class ParticipantsController extends Controller
             } else {
                 $report = $participantResult->report;
             }
-
             if ($request->has('as_pdf') && $request->as_pdf == 1) {
                 $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
                 $pdf = PDF::loadView('performance-report', [
@@ -443,7 +448,9 @@ class ParticipantsController extends Controller
                     'grade_performance_analysis'    => $report['grade_performance_analysis'],
                     'analysis_by_questions'         => $report['analysis_by_questions']
                 ]);
-                return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
+                $filename = $participantResult->participant->name . '-report.pdf';
+                $pdfContent = $pdf->output();
+                return view('performance-report-pdf')->with('pdfContent', $pdfContent)->with('filename', $filename);
             }
 
             return response()->json([
@@ -454,11 +461,12 @@ class ParticipantsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Report generation is unsuccessfull",
+                "message"   => "Report generation is unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
     {
