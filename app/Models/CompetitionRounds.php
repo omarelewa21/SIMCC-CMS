@@ -9,6 +9,9 @@ class CompetitionRounds extends Model
 {
     use HasFactory;
 
+    const AWARD_TYPE_POSITION = 0;
+    const AWARD_TYPE_PERCENTAGE = 1;
+
     Protected $table = 'competition_rounds';
     protected $guarded = [];
 
@@ -30,7 +33,7 @@ class CompetitionRounds extends Model
     public function getAwardTypeAttribute($value)
     {
         switch ($value) {
-            case 1:
+            case self::AWARD_TYPE_POSITION:
                 return 'Position';
                 break;
             default:

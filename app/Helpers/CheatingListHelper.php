@@ -3,12 +3,12 @@
 
 namespace App\Helpers;
 
-use App\Custom\Marking;
 use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
+use App\Services\MarkingService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +26,7 @@ class CheatingListHelper
         $competition->rounds()->with('levels')->get()
             ->pluck('levels')->flatten()
             ->each(function($level){
-                if(Marking::isLevelReadyToCompute($level) === false) {
+                if(MarkingService::isLevelReadyToCompute($level) === false) {
                     throw new \Exception(
                         sprintf("Level %s is not ready to compute. Check that all tasks has correct answers, round has awards and answers are uploaded to that level", $level->name),
                         400
