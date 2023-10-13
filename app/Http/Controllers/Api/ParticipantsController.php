@@ -608,8 +608,15 @@ class ParticipantsController extends Controller
             DB::beginTransaction();
 
             foreach ($participantData as $participant) {
-                $participantId = $participant['id'];
-                $participantToUpdate = Participants::findOrFail($participantId);
+                $participantIndex = $participant['index_no'];
+                $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
+                if(!$participantToUpdate){
+                    $response[] = [
+                        'index_no' => $participantIndex,
+                        'message' => 'Participant doesn\'t exists',
+                    ];
+                    continue;
+                }
                 $participantCountryId = $participantToUpdate->country_id;
 
                 $validate = [
@@ -643,7 +650,7 @@ class ParticipantsController extends Controller
                 $participantToUpdate->update($participant);
                 $participantToUpdate->save();
                 $response[] = [
-                    'id' => $participantId,
+                    'index_no' => $participantIndex,
                     'message' => 'Participant updated successfully',
                 ];
             }
