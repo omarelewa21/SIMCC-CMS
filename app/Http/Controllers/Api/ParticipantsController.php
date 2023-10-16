@@ -17,6 +17,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Jobs\GeneratePerformanceReports;
+use App\Jobs\RecaculateShoolRankJob;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Models\ReportDownloadStatus;
@@ -28,6 +29,7 @@ use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use PDF;
 
@@ -596,5 +598,84 @@ class ParticipantsController extends Controller
         }
 
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
+    }
+    public function bulkUpdateParticipants(Request $request)
+    {
+        $participantData = $request->json()->all();
+        $response = [];
+        $changedSchoolsIds = [];
+        $participantsWithNewSchoolId = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($participantData as $participant) {
+                $participantIndex = $participant['index_no'];
+                $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
+                if(!$participantToUpdate){
+                    $response[] = [
+                        'index_no' => $participantIndex,
+                        'message' => 'Participant doesn\'t exists',
+                    ];
+                    continue;
+                }
+                $participantCountryId = $participantToUpdate->country_id;
+
+                $validate = [
+                    'name' => 'string|min:3|max:255',
+                    'school_id' => ['integer', 'nullable', new CheckSchoolStatus(0, $participantCountryId)],
+                    'email' => ['sometimes', 'email', 'nullable'],
+                    'identifier' => [new CheckUniqueIdentifierWithCompetitionID($participantToUpdate)],
+                ];
+
+                $validator = Validator::make($participant, $validate);
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Validation error',
+                        'errors' => $validator->errors(),
+                    ], 400);
+                }
+
+                $originalSchoolId = $participantToUpdate->school_id;
+                $newSchoolId = $participant['school_id'];
+
+                // Check if the school is being changed
+                if ($originalSchoolId != $newSchoolId) {
+                    $changedSchoolsIds[] = $originalSchoolId;
+                    $changedSchoolsIds[] = $newSchoolId;
+                    $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+                }
+
+                // Update the participant with the validated data
+                $participantToUpdate->update($participant);
+                $participantToUpdate->save();
+                $response[] = [
+                    'index_no' => $participantIndex,
+                    'message' => 'Participant updated successfully',
+                ];
+            }
+
+            DB::commit();
+            $changedSchoolsIds = array_unique($changedSchoolsIds);
+            // Dispatch the job to recalculate school ranks and generate reports
+            if (!empty($changedSchoolsIds)) {
+                RecaculateShoolRankJob::dispatch($changedSchoolsIds, $participantsWithNewSchoolId);
+            }
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Bulk update of participants completed successfully',
+                'data' => $response,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to update participants in bulk',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
