@@ -11,6 +11,8 @@ class School extends Model
     use HasFactory;
     use Filterable;
 
+    const DEFAULT_TUITION_CENTRE_ID = 2;
+
     private static $whiteListFilter = [
         'name',
         'status',
@@ -81,5 +83,4 @@ class School extends Model
     {
         return $this->hasMany(Participants::class);
     }
-
 }
