@@ -98,7 +98,7 @@ class ParticipantsController extends Controller
                         ->firstOrFail();
                 }
 
-                if($row['is_private'] == 1 && (!isset($row['tuition_centre_id']) || is_null($row['tuition_centre_id'])) ) {
+                if($row['is_private'] == 1 && is_null($row['tuition_centre_id']) ) {
                     $row['tuition_centre_id'] = School::DEFAULT_TUITION_CENTRE_ID;
                 }
 
@@ -141,7 +141,7 @@ class ParticipantsController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Create Participants unsuccessful" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }
