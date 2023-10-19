@@ -315,7 +315,11 @@ class ParticipantsController extends Controller
                     )
                         ->value('id');
                 }
-                $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
+                if($participant->is_private && is_null($request->tuition_centre_id)) {
+                    $participant->tuition_centre_id = School::DEFAULT_TUITION_CENTRE_ID;
+                } else {
+                    $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
+                }
                 if ($request->school_id) {
                     $participant->school_id = $request->school_id;
                 }
