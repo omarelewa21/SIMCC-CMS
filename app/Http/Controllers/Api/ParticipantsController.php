@@ -124,7 +124,6 @@ class ParticipantsController extends Controller
                 unset($row['competition_id']);
                 unset($row['for_partner']);
                 unset($row['organization_id']);
-                unset($row['is_private']);
                 $participant = Participants::create($row);
                 $returnData[] = $participant;
                 return $row;
