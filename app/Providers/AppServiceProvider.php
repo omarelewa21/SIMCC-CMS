@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Helpers\General\CollectionHelper;
+use App\Models\School;
+use App\Observers\SchoolObserver;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -50,5 +52,8 @@ class AppServiceProvider extends ServiceProvider
             ];
             return new LengthAwarePaginator($results, $this->count(), $perPage, $page, $options);
         });
+
+        School::observe(SchoolObserver::class);
+
     }
 }
