@@ -11,6 +11,8 @@ class School extends Model
     use HasFactory;
     use Filterable;
 
+    const DEFAULT_TUITION_CENTRE_ID = 2;
+
     private static $whiteListFilter = [
         'name',
         'name_in_certificate',
@@ -27,6 +29,8 @@ class School extends Model
         parent::booted();
 
         static::creating(function($school) {
+            if($school->is_system_school) return;
+
             $school->created_by_userid = Auth()->id();
             if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
                 $school->status = 'pending';
@@ -80,5 +84,4 @@ class School extends Model
     {
         return $this->hasMany(Participants::class);
     }
-
 }

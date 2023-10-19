@@ -44,10 +44,10 @@ class ParticipantsController extends Controller
             $ccode[$row->id] = $row->Dial;
         });
 
-        $validate = array(
+        $validated = $request->validate(array(
             "role_id" => "nullable",
-            // "participant.*.competition_id" => ["required", "integer", "exists:competition,id", new CheckOrganizationCompetitionValid, new CheckCompetitionEnded('create'), new CheckParticipantRegistrationOpen],
             "participant.*.competition_id" => ["required"],
+            "participant.*.is_private" => "required|boolean",
             "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
             "participant.*.name" => "required|string|max:255",
@@ -58,12 +58,9 @@ class ParticipantsController extends Controller
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)]
+        ));
 
-            // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
-        );
-
-        $validated = $request->validate($validate);
         $validated = data_fill($validated, 'participant.*.class', null); // add missing class attribute and set to null
 
         try {
@@ -105,6 +102,10 @@ class ParticipantsController extends Controller
                         ->firstOrFail();
                 }
 
+                if($row['is_private'] == 1 && is_null($row['tuition_centre_id']) ) {
+                    $row['tuition_centre_id'] = School::DEFAULT_TUITION_CENTRE_ID;
+                }
+
                 $country_id  = in_array(auth()->user()->role_id, [2, 3, 4, 5]) ? auth()->user()->country_id : $row["country_id"];
                 $CountryCode = $ccode[$country_id];
 
@@ -142,7 +143,7 @@ class ParticipantsController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Create Participants unsuccessful" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }
@@ -331,7 +332,11 @@ class ParticipantsController extends Controller
                     )
                         ->value('id');
                 }
-                $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
+                if($participant->is_private && is_null($request->tuition_centre_id)) {
+                    $participant->tuition_centre_id = School::DEFAULT_TUITION_CENTRE_ID;
+                } else {
+                    $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
+                }
                 if ($request->school_id) {
                     $participant->school_id = $request->school_id;
                 }
