@@ -500,78 +500,78 @@ class ParticipantsController extends Controller
 
     public function bulkUpdateParticipants(Request $request)
     {
-        // try {
-        DB::beginTransaction();
-        $validator = Validator::make($request->all(), [
-            'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
-            'participants.*.name' => 'required|string|min:3|max:255',
-            'participants.*.email' => 'sometimes|email|nullable',
-            'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
-            'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
-                $request->input('participants.*.index_no')
-            )],
-        ]);
+        try {
+            DB::beginTransaction();
+            $validator = Validator::make($request->all(), [
+                'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
+                'participants.*.name' => 'required|string|min:3|max:255',
+                'participants.*.email' => 'sometimes|email|nullable',
+                'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
+                'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
+                    $request->input('participants.*.index_no')
+                )],
+            ]);
 
-        if ($validator->fails()) {
-            $errorMessages = $validator->errors();
-            $errorData = [
-                'message' => $errorMessages->first() . ' (' . ($errorMessages->count() - 1) . ' more errors)',
-                'errors' => $errorMessages,
-            ];
-            return response()->json($errorData, 400);
-        }
-
-        $participantData = $request->participants;
-        $response = [];
-        $changedSchoolsIds = [];
-        $participantsWithNewSchoolId = [];
-
-        foreach ($participantData as $participant) {
-            $participantIndex = $participant['index_no'];
-            $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
-
-            $participantCountryId = $participantToUpdate->country_id;
-            $originalSchoolId = $participantToUpdate->school_id;
-            $newSchoolId = $this->getSchoolIdBySchoolName($participant['school_name'], $participantCountryId);
-            $participant['school_id'] = $newSchoolId;
-            // Check if the school is being changed
-            if ($originalSchoolId != $newSchoolId) {
-                $changedSchoolsIds[] = $originalSchoolId;
-                $changedSchoolsIds[] = $newSchoolId;
-                $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+            if ($validator->fails()) {
+                $errorMessages = $validator->errors();
+                $errorData = [
+                    'message' => $errorMessages->first() . ' (' . ($errorMessages->count() - 1) . ' more errors)',
+                    'errors' => $errorMessages,
+                ];
+                return response()->json($errorData, 400);
             }
 
-            // Update the participant with the validated data
-            unset($participant['school_name']);
+            $participantData = $request->participants;
+            $response = [];
+            $changedSchoolsIds = [];
+            $participantsWithNewSchoolId = [];
 
-            $participantToUpdate->update($participant);
-            $participantToUpdate->save();
-            $response[] = [
-                'index_no' => $participantIndex,
-                'message' => 'Participant updated successfully',
-            ];
+            foreach ($participantData as $participant) {
+                $participantIndex = $participant['index_no'];
+                $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
+
+                $participantCountryId = $participantToUpdate->country_id;
+                $originalSchoolId = $participantToUpdate->school_id;
+                $newSchoolId = $this->getSchoolIdBySchoolName($participant['school_name'], $participantCountryId);
+                $participant['school_id'] = $newSchoolId;
+                // Check if the school is being changed
+                if ($originalSchoolId != $newSchoolId) {
+                    $changedSchoolsIds[] = $originalSchoolId;
+                    $changedSchoolsIds[] = $newSchoolId;
+                    $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+                }
+
+                // Update the participant with the validated data
+                unset($participant['school_name']);
+
+                $participantToUpdate->update($participant);
+                $participantToUpdate->save();
+                $response[] = [
+                    'index_no' => $participantIndex,
+                    'message' => 'Participant updated successfully',
+                ];
+            }
+
+            DB::commit();
+            $changedSchoolsIds = array_unique($changedSchoolsIds);
+            // Dispatch the job to recalculate school ranks and generate reports
+            if (!empty($changedSchoolsIds)) {
+                RecaculateShoolRankJob::dispatch($changedSchoolsIds, $participantsWithNewSchoolId);
+            }
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Bulk update of participants completed successfully',
+                'data' => $response,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to update participants in bulk',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        DB::commit();
-        $changedSchoolsIds = array_unique($changedSchoolsIds);
-        // Dispatch the job to recalculate school ranks and generate reports
-        if (!empty($changedSchoolsIds)) {
-            RecaculateShoolRankJob::dispatch($changedSchoolsIds, $participantsWithNewSchoolId);
-        }
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'Bulk update of participants completed successfully',
-            'data' => $response,
-        ]);
-        // } catch (\Exception $e) {
-        //     DB::rollBack();
-        //     return response()->json([
-        //         'status' => 500,
-        //         'message' => 'Failed to update participants in bulk',
-        //         'error' => $e->getMessage(),
-        //     ], 500);
-        // }
     }
 
     public function getSchoolIdBySchoolName($schoolName, $participantCountryId)
