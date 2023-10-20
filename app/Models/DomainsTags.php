@@ -31,6 +31,35 @@ class DomainsTags extends Model
         "deleted_at"
     ];
 
+    
+    public static function boot() {
+        parent::boot();
+
+        static::saving(function (DomainsTags $domainTag) {
+            $domainTag->last_modified_userid = auth()->id();
+            $domainTag->status = auth()->user()->hasRole(['super admin', 'admin']) ? 'active' : 'pending';
+            $domainTag->deleted_at = null;
+        });
+
+        static::creating(function (DomainsTags $domainTag) {
+            $domainTag->created_by_userid = auth()->id();
+        });
+
+        static::deleting(function (DomainsTags $domainTag) {
+            if(is_null($domainTag->domain_id) && $domainTag->is_tag == 0){
+                $domainTag->topics()->update([
+                    'status'                => 'deleted',
+                    'last_modified_userid'  => auth()->id()
+                ]);
+                $domainTag->topics()->delete();
+            }
+            DomainsTags::whereId($domainTag->id)->update([
+                'status'                => 'deleted',
+                'last_modified_userid'  => auth()->id()
+            ]);
+        });
+    }
+
     public function created_by ()
     {
         return $this->belongsTo(User::class,"created_by_userid","id");
