@@ -28,17 +28,33 @@ class CreateDomainTagRequest extends FormRequest
     {
         return [
             '*.is_tag'      => 'required_if:*.domain_id,null|boolean',
-            '*.domain_id'   => ['integer', 'exclude_if:*.is_tag,1', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')] ,
+            '*.domain_id'   => ['integer', 'exclude_if:*.is_tag,1', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')],
             '*.name'        => 'required|array',
             '*.name.*'      => [
                 'required',
                 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
                 new CheckDomainTagsExist,
-                Rule::unique('domains_tags','name')
-                    ->where(function(Builder $query){
+                Rule::unique('domains_tags', 'name')
+                    ->where(function (Builder $query) {
                         return $query->whereNull('domain_id')->whereNull('deleted_at');
-                })
+                    })
             ],
         ];
+    }
+
+    public function messages()
+    {
+        $isTag = $this->input('*.is_tag');
+
+        if ($isTag && $isTag[0]) {
+            return [
+                '0.name.0' => 'Tag :input already exists',
+            ];
+        } else {
+            return [
+                '*.name.0' => 'Domain :input already exists',
+                '*.name.1' => 'Topic :input already exists',
+            ];
+        }
     }
 }
