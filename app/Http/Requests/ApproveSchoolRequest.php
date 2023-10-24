@@ -46,10 +46,10 @@ class ApproveSchoolRequest extends FormRequest
                 foreach($this->id as $schoolId){
                     $userWhoCreatedSchool = User::findOrFail(School::whereId($schoolId)->value('created_by_userid'));
                     if(Auth()->user()->organization_id != $userWhoCreatedSchool->organization_id){
-                        $validator->errors()->add('id', 'Not authorized to approve this school because it belongs to another organization.');
+                        $validator->errors()->add('id', 'Un-authorized to approve this school created by another organization.');
                     }
                     if(Auth()->id() == $userWhoCreatedSchool->id){
-                        $validator->errors()->add('id', 'Not authorized to approve your own school.');
+                        $validator->errors()->add('id', 'Un-authorized to approve your own school.');
                     }
                 }
             });
