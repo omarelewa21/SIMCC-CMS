@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Roles;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -19,8 +20,10 @@ return new class extends Migration
             ['route_name' => 'school.reject']
         );
         DB::table('permissions')->insert([
-            ['route_id' => $schoolApproveRouteId, 'role_id' => 2],
-            ['route_id' => $schoolRejectRouteId, 'role_id' => 2]
+            ['route_id' => $schoolApproveRouteId, 'role_id' => Roles::COUNTRY_PARTNER_ID],
+            ['route_id' => $schoolRejectRouteId, 'role_id' => Roles::COUNTRY_PARTNER_ID],
+            ['route_id' => $schoolApproveRouteId, 'role_id' => Roles::COUNTRY_PARTNER_ASSISTANT_ID],
+            ['route_id' => $schoolRejectRouteId, 'role_id' => Roles::COUNTRY_PARTNER_ASSISTANT_ID]
         ]);
     }
 
