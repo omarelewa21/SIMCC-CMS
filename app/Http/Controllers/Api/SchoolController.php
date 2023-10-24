@@ -203,19 +203,17 @@ class SchoolController extends Controller
         return $this->_updateStatus($request->all(), "rejected", "rejected,deleted,active");
     }
 
-    public function undelete(Request $request)
-    {
+    public function undelete (Request $request) {
 
         $vaildated = $request->validate([
             "id" => "required|array",
-            "id.*" => ['required', 'integer', Rule::exists('schools', 'id')],
+            "id.*" => ['required','integer',Rule::exists('schools','id')],
         ]);
 
-        return $this->_updateStatus($vaildated, "active", "active,pending");
+        return $this->_updateStatus($vaildated,"active", "active,pending");
     }
 
-    public function delete(Request $request)
-    {
+    public function delete (Request $request) {
 
         $vaildated = $request->validate([
             "id" => "array|array",
