@@ -14,9 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('schools', function (Blueprint $table) {
-            $table->string('name_in_certificate')->nullable()
-                ->charset('utf8mb4')
-                ->collation('utf8mb4_unicode_ci');
+            $table->string('name_in_certificate')->nullable();
         });
     }
 

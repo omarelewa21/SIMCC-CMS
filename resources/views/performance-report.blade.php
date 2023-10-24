@@ -224,26 +224,25 @@
 
         <div class="container">
             <div class="general-info">
-                <div class="name">
-                    <p> {{ $general_data['participant'] }} </p>
-                </div>
-                <div class="grade-school">
-                    <div class="vertical">
-                        <div>
-                            <span class="title">Grade</span>
-                            <span class="data"> {{ $general_data['grade'] }} </span>
-                        </div>
-                        <div style="margin-top: 10px">
-                            <span class="title">Type Of Candidate</span>
-                            <span class="data">{{ $general_data['is_private'] ? 'Private' : 'School' }}
-                                Candidate</span>
-                        </div>
-                    </div>
-                    <div class="horizontal" style="float: right; width: 300px">
-                        <span class="title">School</span>
-                        <span class="data"> {{ $general_data['school'] }} </span>
-                    </div>
-                </div>
+               <div class="name">
+                  <p> {{ $general_data['participant'] }} </p>
+               </div>
+               <div class="grade-school">
+                  <div class="vertical">
+                     <div>
+                        <span class="title">Grade</span>
+                        <span class="data"> {{ $general_data['grade'] }} </span>
+                     </div>
+                     <div style="margin-top: 10px">
+                        <span class="title">Type Of Candidate</span>
+                        <span class="data">{{$general_data['is_private'] ? 'Private' : 'School'}} Candidate</span>
+                     </div>
+                  </div>
+                  <div class="horizontal" style="float: right; width: 300px">
+                     <span class="title">School</span>
+                     <span class="data"> {{ $general_data['school'] }} </span>
+                  </div>
+               </div>
             </div>
 
             <div class="section performance-by-questions">
