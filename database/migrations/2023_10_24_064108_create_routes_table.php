@@ -13,7 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('routes');
+        Schema::enableForeignKeyConstraints();
         Schema::create('routes', function (Blueprint $table) {
             $table->unsignedSmallInteger("id")->autoIncrement();
             $table->string("route_name")->unique()->max(100);
