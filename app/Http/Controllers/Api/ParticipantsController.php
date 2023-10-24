@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Custom\ParticipantReportService;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\CompetitionOrganization;
@@ -27,6 +26,7 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
+use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -209,6 +209,9 @@ class ParticipantsController extends Controller
             $availOrganization = $participantCollection->map(function ($item) {
                 return ['id' => $item->organization_id, 'name' => $item->organization_name];
             })->unique()->sortBy('name')->values();
+            $availSchools = $participantCollection->map(function ($item) {
+                return ['id' => $item->school_id, 'name' => $item->school_name];
+            })->whereNotNull('id')->unique()->sortBy('name')->values();
 
             /**
              * EOL Lists of availabe filters
@@ -237,7 +240,8 @@ class ParticipantsController extends Controller
                         'grade'         => $availGrade,
                         'private'       => $availPrivate,
                         'countries'     => $availCountry,
-                        'competition'   => $availCompetition
+                        'competition'   => $availCompetition,
+                        'schools'       => $availSchools
                     ],
                     "participantList" => $participantList
                 ]
@@ -406,13 +410,15 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function performanceReportWithIndexAndCertificate(ParticipantReportWithCertificateRequest $request)
+
+    public function performanceReportWithIndexAndCertificate(Request $request)
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $request->index_no)
                 ->with('participant')->firstOrFail()->makeVisible('report');
 
             if (is_null($participantResult->report)) {
+                // Generate the report data
                 $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
                 $report = $__report->getJsonReport();
                 $participantResult->report = $report;
@@ -420,7 +426,6 @@ class ParticipantsController extends Controller
             } else {
                 $report = $participantResult->report;
             }
-
             if ($request->has('as_pdf') && $request->as_pdf == 1) {
                 $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
                 $pdf = PDF::loadView('performance-report', [
@@ -430,7 +435,9 @@ class ParticipantsController extends Controller
                     'grade_performance_analysis'    => $report['grade_performance_analysis'],
                     'analysis_by_questions'         => $report['analysis_by_questions']
                 ]);
-                return $pdf->download(sprintf("%s-report.pdf", $participantResult->participant->name));
+                $filename = $participantResult->participant->name . '-report.pdf';
+                $pdfContent = $pdf->output();
+                return view('performance-report-pdf')->with('pdfContent', $pdfContent)->with('filename', $filename);
             }
 
             return response()->json([
@@ -441,11 +448,12 @@ class ParticipantsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Report generation is unsuccessfull",
+                "message"   => "Report generation is unsuccessful",
                 "error"     => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
     {

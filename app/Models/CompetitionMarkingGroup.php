@@ -78,4 +78,12 @@ class CompetitionMarkingGroup extends Base
     public function getParticitpantsIndexNoListAttribute () {
         return $this->participants()->pluck('index_no');
     }
+
+    public function levelGroupCompute($levelId=null)
+    {
+        if($levelId) {
+            return $this->hasOne(LevelGroupCompute::class, 'group_id')->where('level_id', $levelId);
+        }
+        return $this->hasMany(LevelGroupCompute::class, 'group_id');
+    }
 }

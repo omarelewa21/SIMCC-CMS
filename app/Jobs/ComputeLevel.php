@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Custom\ComputeLevelCustom;
 use App\Models\CompetitionLevels;
+use App\Services\ComputeLevelService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -39,13 +39,13 @@ class ComputeLevel implements ShouldQueue
     public function handle()
     {
         try {
-            (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            (new ComputeLevelService($this->level))->computeResutlsForSingleLevel();
             // if($this->request && !empty($this->request)){
-            //     (new ComputeLevelCustom($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
+            //     (new ComputeLevelService($this->level))->computeCustomFieldsForSingleLevelBasedOnRequest($this->request);
 
             // }
             // else{
-            //     (new ComputeLevelCustom($this->level))->computeResutlsForSingleLevel();
+            //     (new ComputeLevelService($this->level))->computeResutlsForSingleLevel();
             // }
         } catch (\Exception $e) {
             $this->level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e);

@@ -17,6 +17,7 @@ class CompetitionOrganization extends Base
         'competition_id',
         'country_id',
         "registration_open_date",
+        'extended_end_date',
         "organization_id",
         "competition_mode",
         "translate",

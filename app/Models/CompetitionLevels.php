@@ -42,6 +42,11 @@ class CompetitionLevels extends Model
         return $this->hasMany(ParticipantsAnswer::class,'level_id','id');
     }
 
+    public function levelGroupComputes ()
+    {
+        return $this->hasMany(LevelGroupCompute::class, 'level_id');
+    }
+
     public function setGradesAttribute ($value) {
         $value = array_unique($value);
         return $this->attributes['grades'] = json_encode($value);
