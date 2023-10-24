@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('permissions');
         Schema::create('permissions', function (Blueprint $table) {
             $table->unsignedBigInteger('role_id');
             $table->unsignedSmallInteger('route_id');

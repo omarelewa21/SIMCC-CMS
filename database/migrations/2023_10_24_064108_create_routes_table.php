@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('routes');
         Schema::create('routes', function (Blueprint $table) {
             $table->unsignedSmallInteger("id")->autoIncrement();
             $table->string("route_name")->unique()->max(100);
