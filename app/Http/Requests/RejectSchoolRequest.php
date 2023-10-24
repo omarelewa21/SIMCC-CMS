@@ -43,7 +43,7 @@ class RejectSchoolRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-        if(Auth()->user()->hasRole('Country Partner')){
+        if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])){
             $validator->after(function ($validator) {
                 foreach($this->id as $schoolId){
                     $userWhoCreatedSchool = User::findOrFail(School::whereId($schoolId)->value('created_by_userid'));
