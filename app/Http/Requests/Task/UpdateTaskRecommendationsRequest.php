@@ -19,9 +19,9 @@ class UpdateTaskRecommendationsRequest extends FormRequest
     {
         return [
             'id'                        => 'required|integer|exists:tasks,id',
-            'recommended_grade'         => 'required|array',
+            'recommended_grade'         => 'array',
             'recommended_grade.*'       => ['integer', new CheckMissingGradeDifficulty('recommended_difficulty')],
-            'recommended_difficulty'    => 'required|array',
+            'recommended_difficulty'    => 'array',
             'recommended_difficulty.*'  => ['string', 'max:255', new CheckMissingGradeDifficulty('recommended_grade')]
         ];
     }
