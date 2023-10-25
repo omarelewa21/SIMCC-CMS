@@ -194,17 +194,18 @@ class CheatingListHelper
      */
     private static function getCheatingParticipantReadyForCSV($participant)
     {
-        [$participant->different_questions, $sections, $questions] = static::getQuestionsAndDifferentQuestions($participant);
+        // [$participant->different_questions, $sections, $questions] = static::getQuestionsAndDifferentQuestions($participant);
+        [$participant->different_questions, $questions] = static::getQuestionsAndDifferentQuestions($participant);
 
         $participant->school = $participant->school->name;
         $participant->country = $participant->country->display_name;
         $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
         
         $formattedSections = [];
-        foreach ($sections as $key => $value) {
-            $newKey = range('A', 'Z')[$key];
-            $formattedSections["No of wrong answers in Section $newKey"] = $value;
-        }
+        // foreach ($sections as $key => $value) {
+        //     $newKey = range('A', 'Z')[$key];
+        //     $formattedSections["No of wrong answers in Section $newKey"] = $value;
+        // }
 
         return array_merge($participant->only(
                 'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
@@ -226,7 +227,7 @@ class CheatingListHelper
     {
         $sameIncorrectQuestionNumbers = [];
         $questions = [];
-        $sections = [];
+        // $sections = [];
 
         $diffIds = json_decode($participant->different_question_ids, true);     // get the array of different questions
 
@@ -240,8 +241,9 @@ class CheatingListHelper
             }
         }
 
-        $sections = static::getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers);
-        return [implode(', ', $sameIncorrectQuestionNumbers), $sections, $questions];
+        // $sections = static::getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers);
+        // return [implode(', ', $sameIncorrectQuestionNumbers), $sections, $questions];
+        return [implode(', ', $sameIncorrectQuestionNumbers), $questions];
     }
 
     /**
