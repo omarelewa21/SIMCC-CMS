@@ -1058,17 +1058,18 @@ class CompetitionController extends Controller
 
             foreach ($request->participants as $participantData) {
                 $level = $levels[$participantData['grade']];
-                if ($level->tasks->count() > count($participantData['answers'])) {
+                $levelTaskCount = $level->tasks->count();
+                if ($levelTaskCount > count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
                 ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
-                foreach ($participantData['answers'] as $index => $answer) {
+                for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
-                        'task_id'   => $level->tasks[$index],
+                        'task_id'   => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    => $answer,
+                        'answer'    =>$participantData['answers'][$i],
                         'created_by_userid' => $createdBy,
                         'created_at'    => $createdAt
                     ]);
@@ -1090,7 +1091,7 @@ class CompetitionController extends Controller
             DB::rollBack();
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful' . $e->getMessage()
+                "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
             ], 500);
         }
     }
