@@ -564,12 +564,12 @@ class ParticipantsController extends Controller
                 'message' => 'Bulk update of participants completed successfully',
                 'data' => $response,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => 500,
-                'message' => 'Failed to update participants in bulk',
-                'error' => $e->getMessage(),
+                'message' => 'Failed to update participants in bulk' . $e->getMessage(),
+                'error' => $e,
             ], 500);
         }
     }
