@@ -37,6 +37,7 @@ class School extends Model
             if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
                 $school->status = 'pending';
                 $school->country_id = Auth()->user()->country_id;
+                $school->organization_id = Auth()->user()->organization_id;
             } else {
                 $school->approved_by_userid = Auth()->id();
                 $school->status = 'active';
@@ -53,8 +54,11 @@ class School extends Model
         return Attribute::make(function ($value, $attributes) {
             if($attributes['status'] !== 'pending') return false;
             if(auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
-                return auth()->user()->organization_id === $attributes['organization_id']
-                    && auth()->id() !== $attributes['created_by_userid'];
+                return auth()->id() !== $attributes['created_by_userid'] && (
+                    is_null($attributes['organization_id'])
+                    ? auth()->user()->country_id === $attributes['country_id']
+                    : auth()->user()->organization_id === $attributes['organization_id']
+                );
             }
             return true;
         });
