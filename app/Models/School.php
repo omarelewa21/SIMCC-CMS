@@ -33,7 +33,6 @@ class School extends Model
             if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
                 $school->status = 'pending';
                 $school->country_id = Auth()->user()->country_id;
-                $school->organization_id = Auth()->user()->organization_id;
             } else {
                 $school->approved_by_userid = Auth()->id();
                 $school->status = 'active';
