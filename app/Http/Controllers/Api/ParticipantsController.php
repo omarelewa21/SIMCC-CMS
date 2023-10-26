@@ -48,7 +48,7 @@ class ParticipantsController extends Controller
             $ccode[$row->id] = $row->Dial;
         });
 
-        $validated = $request->validate(array(
+        $validate = array(
             "role_id" => "nullable",
             "participant.*.competition_id" => ["required"],
             "participant.*.is_private" => "required|boolean",
@@ -65,12 +65,13 @@ class ParticipantsController extends Controller
             "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
             "participant.*.online_based" => 'nullable|in:null,y',
             // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
-        ));
+        );
 
         $messages = [
             "participant.*.online_based.in" => "The Online Based field must be 'null' or 'y'.",
         ];
-        $validated = $request->validate($validated, $messages);
+
+        $validated = $request->validate($validate, $messages);
 
         $validated = data_fill($validated, 'participant.*.class', null); // add missing class attribute and set to null
 
@@ -113,7 +114,7 @@ class ParticipantsController extends Controller
                         ->firstOrFail();
                 }
 
-                if($row['is_private'] == 1 && is_null($row['tuition_centre_id']) ) {
+                if ($row['is_private'] == 1 && is_null($row['tuition_centre_id'])) {
                     $row['tuition_centre_id'] = School::DEFAULT_TUITION_CENTRE_ID;
                 }
 
@@ -343,7 +344,7 @@ class ParticipantsController extends Controller
                     )
                         ->value('id');
                 }
-                if($participant->is_private && is_null($request->tuition_centre_id)) {
+                if ($participant->is_private && is_null($request->tuition_centre_id)) {
                     $participant->tuition_centre_id = School::DEFAULT_TUITION_CENTRE_ID;
                 } else {
                     $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
