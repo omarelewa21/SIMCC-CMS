@@ -62,8 +62,15 @@ class ParticipantsController extends Controller
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)]
+            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            "participant.*.online_based" => 'nullable|in:null,y',
+            // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         ));
+
+        $messages = [
+            "participant.*.online_based.in" => "The Online Based field must be 'null' or 'y'.",
+        ];
+        $validated = $request->validate($validated, $messages);
 
         $validated = data_fill($validated, 'participant.*.class', null); // add missing class attribute and set to null
 
