@@ -18,17 +18,22 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Jobs\GeneratePerformanceReports;
+use App\Jobs\RecaculateShoolRankJob;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Models\ReportDownloadStatus;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
+use App\Rules\CheckParticipantIndexNo;
+use App\Rules\CheckParticipantIndexNoUniqueIdentifier;
+use App\Rules\CheckSchoolName;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use PDF;
 
@@ -102,7 +107,7 @@ class ParticipantsController extends Controller
                         ->firstOrFail();
                 }
 
-                if($row['is_private'] == 1 && is_null($row['tuition_centre_id']) ) {
+                if ($row['is_private'] == 1 && is_null($row['tuition_centre_id'])) {
                     $row['tuition_centre_id'] = School::DEFAULT_TUITION_CENTRE_ID;
                 }
 
@@ -332,7 +337,7 @@ class ParticipantsController extends Controller
                     )
                         ->value('id');
                 }
-                if($participant->is_private && is_null($request->tuition_centre_id)) {
+                if ($participant->is_private && is_null($request->tuition_centre_id)) {
                     $participant->tuition_centre_id = School::DEFAULT_TUITION_CENTRE_ID;
                 } else {
                     $participant->tuition_centre_id = $tuition_centre_id ?? $request->tuition_centre_id;
@@ -600,5 +605,105 @@ class ParticipantsController extends Controller
         }
 
         return Response::download(Storage::path($filePath))->deleteFileAfterSend(true);
+    }
+
+    public function bulkUpdateParticipants(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $validator = Validator::make($request->all(), [
+                'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
+                'participants.*.name' => 'required|string|min:3|max:255',
+                'participants.*.email' => 'sometimes|email|nullable',
+                'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
+                'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
+                    $request->input('participants.*.index_no')
+                )],
+            ]);
+
+            if ($validator->fails()) {
+                $errorMessages = $validator->errors();
+                $errorData = [
+                    'message' => $errorMessages->first() . ' (' . ($errorMessages->count() - 1) . ' more errors)',
+                    'errors' => $errorMessages,
+                ];
+                return response()->json($errorData, 400);
+            }
+
+            $participantData = $request->participants;
+            $response = [];
+            $changedSchoolsIds = [];
+            $participantsWithNewSchoolId = [];
+
+            foreach ($participantData as $participant) {
+                $participantIndex = $participant['index_no'];
+                $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
+
+                $participantCountryId = $participantToUpdate->country_id;
+                $originalSchoolId = $participantToUpdate->school_id;
+                $newSchoolId = $this->getSchoolIdBySchoolName($participant['school_name'], $participantCountryId);
+                $participant['school_id'] = $newSchoolId;
+                // Check if the school is being changed
+                if ($originalSchoolId != $newSchoolId) {
+                    $changedSchoolsIds[] = $originalSchoolId;
+                    $changedSchoolsIds[] = $newSchoolId;
+                    $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+                }
+
+                // Update the participant with the validated data
+                unset($participant['school_name']);
+
+                $participantToUpdate->update($participant);
+                $participantToUpdate->save();
+                $response[] = [
+                    'index_no' => $participantIndex,
+                    'message' => 'Participant updated successfully',
+                ];
+            }
+
+            DB::commit();
+            $changedSchoolsIds = array_unique($changedSchoolsIds);
+            // Dispatch the job to recalculate school ranks and generate reports
+            if (!empty($changedSchoolsIds)) {
+                RecaculateShoolRankJob::dispatch($changedSchoolsIds, $participantsWithNewSchoolId);
+            }
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Bulk update of participants completed successfully',
+                'data' => $response,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to update participants in bulk' . $e->getMessage(),
+                'error' => $e,
+            ], 500);
+        }
+    }
+
+    public function getSchoolIdBySchoolName($schoolName, $participantCountryId)
+    {
+        $schools = School::where('name', 'LIKE', "%$schoolName%")->get();
+
+        if ($schools->count() > 0) {
+            if ($schools->count() === 1) {
+                return $schools->first()->id;
+            }
+
+            $schoolsInCountry = $schools->where('country_id', $participantCountryId);
+
+            if ($schoolsInCountry->count() > 0) {
+                if ($schoolsInCountry->count() === 1) {
+                    return $schoolsInCountry->first()->id;
+                }
+
+                $activeSchool = $schoolsInCountry->where('status', 'active')->first();
+                return $activeSchool ? $activeSchool->id : null;
+            }
+        }
+
+        return null;
     }
 }
