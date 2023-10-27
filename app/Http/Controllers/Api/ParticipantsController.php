@@ -548,37 +548,38 @@ class ParticipantsController extends Controller
         $job = ReportDownloadStatus::where('job_id', $jobId)->first();
         if ($job) {
             $progress = $job->progress_percentage;
+            $report = $job->report;
             $status = $job->status;
             switch ($status) {
-                case 'In Progress':
+                case ReportDownloadStatus::STATUS_In_PROGRESS:
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'In Progress',
+                        'status' => ReportDownloadStatus::STATUS_In_PROGRESS,
                         'file_path' => '',
                         'progress' => $progress,
                     ], 201);
-                case 'Failed':
+                case ReportDownloadStatus::STATUS_FAILED:
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'Failed',
-                        'message' => 'Failed to generate',
+                        'status' => ReportDownloadStatus::STATUS_FAILED,
+                        'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                         'file_path' => '',
                         'progress' => $progress,
                     ], 500);
-                case 'Completed':
+                case ReportDownloadStatus::STATUS_COMPLETED:
                     $filePath = 'performance_reports/' . $job->file_path;
                     if (!Storage::exists($filePath)) {
                         return response()->json([
                             'job_id' => $jobId,
-                            'status' => 'Failed',
-                            'message' => 'No Reports Found',
+                            'status' => ReportDownloadStatus::STATUS_FAILED,
+                            'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                             'file_path' => '',
                             'progress' => 0,
                         ], 500);
                     }
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'Completed',
+                        'status' => ReportDownloadStatus::STATUS_COMPLETED,
                         'file_path' => route('participant.reports.bulk_download.download_file', ['job_id' => $job->job_id]),
                         'progress' => $progress,
                     ], 200);
@@ -587,9 +588,9 @@ class ParticipantsController extends Controller
         } else {
             return response()->json([
                 'job_id' => $jobId,
-                'status' => 'Not Started',
+                'status' => ReportDownloadStatus::STATUS_NOT_STARTED,
                 'progress' => 0,
-                'message' => 'Not Started',
+                'message' => ReportDownloadStatus::STATUS_NOT_STARTED,
             ], 201);
         }
     }
