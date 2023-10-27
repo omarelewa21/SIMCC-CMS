@@ -156,7 +156,9 @@ class ParticipantsController extends Controller
             ->leftJoin('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
             ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
             ->leftJoin('competition', 'competition.id', 'competition_organization.competition_id')
-            ->leftJoin('taggables', fn($join) =>
+            ->leftJoin(
+                'taggables',
+                fn ($join) =>
                 $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
             )
             ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
@@ -210,7 +212,9 @@ class ParticipantsController extends Controller
             })->unique()->sortBy('name')->values();
 
             $availTags = Competition::whereIn('competition.id', $availCompetition->pluck('id'))
-                ->join('taggables', fn($join) =>
+                ->join(
+                    'taggables',
+                    fn ($join) =>
                     $join->on('taggables.taggable_id', 'competition.id')->where('taggables.taggable_type', 'App\Models\Competition')
                 )
                 ->join('domains_tags', 'domains_tags.id', 'taggables.domains_tags_id')
@@ -522,27 +526,27 @@ class ParticipantsController extends Controller
             $progress = $job->progress_percentage;
             $status = $job->status;
             switch ($status) {
-                case 'In Progress':
+                case ReportDownloadStatus::STATUS_In_PROGRESS:
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'In Progress',
+                        'status' => ReportDownloadStatus::STATUS_In_PROGRESS,
                         'file_path' => '',
                         'progress' => $progress,
                     ], 201);
-                case 'Failed':
+                case ReportDownloadStatus::STATUS_FAILED:
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'Failed',
+                        'status' => ReportDownloadStatus::STATUS_FAILED,
                         'message' => 'Failed to generate',
                         'file_path' => '',
                         'progress' => $progress,
                     ], 500);
-                case 'Completed':
+                case ReportDownloadStatus::STATUS_COMPLETED:
                     $filePath = 'performance_reports/' . $job->file_path;
                     if (!Storage::exists($filePath)) {
                         return response()->json([
                             'job_id' => $jobId,
-                            'status' => 'Failed',
+                            'status' => ReportDownloadStatus::STATUS_FAILED,
                             'message' => 'No Reports Found',
                             'file_path' => '',
                             'progress' => 0,
@@ -550,7 +554,7 @@ class ParticipantsController extends Controller
                     }
                     return response()->json([
                         'job_id' => $jobId,
-                        'status' => 'Completed',
+                        'status' => ReportDownloadStatus::STATUS_COMPLETED,
                         'file_path' => route('participant.reports.bulk_download.download_file', ['job_id' => $job->job_id]),
                         'progress' => $progress,
                     ], 200);
@@ -559,9 +563,9 @@ class ParticipantsController extends Controller
         } else {
             return response()->json([
                 'job_id' => $jobId,
-                'status' => 'Not Started',
+                'status' => ReportDownloadStatus::STATUS_NOT_STARTED,
                 'progress' => 0,
-                'message' => 'Not Started',
+                'message' => ReportDownloadStatus::STATUS_NOT_STARTED,
             ], 201);
         }
     }
