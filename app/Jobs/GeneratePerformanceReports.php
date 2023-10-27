@@ -44,12 +44,14 @@ class GeneratePerformanceReports implements ShouldQueue
     public function handle()
     {
         try {
+            $this->progress = 0;
+            $this->jobId = $this->job->getJobId();
+            $this->updateJobProgress($this->progress, 100, ReportDownloadStatus::STATUS_In_PROGRESS);
+
             $this->participants = $this->getParticipants();
             $this->participantResults = $this->getParticipantResults();
             $this->totalProgress = count($this->participantResults);
-            $this->progress = 0;
-            $this->jobId = $this->job->getJobId();
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'In Progress');
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
             $time = (new DateTime)->format('d_m_Y_H_i');
             $pdfDirname = sprintf('performance_reports_%s', $time);
             $pdfDirPath = 'performance_reports/' . $pdfDirname;
@@ -82,7 +84,7 @@ class GeneratePerformanceReports implements ShouldQueue
                 $pdfPath = $pdfDirPath . '/' . $pdfFilename;
                 Storage::put($pdfPath, $pdf->output());
                 $this->progress++;
-                $this->updateJobProgress($this->progress, $this->totalProgress, 'In Progress');
+                $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
             }
 
             // Add the log file to the ZIP archive
@@ -99,9 +101,9 @@ class GeneratePerformanceReports implements ShouldQueue
 
             $zip->close();
             Storage::deleteDirectory($pdfDirPath);
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Completed', $zipFilename, null);
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_COMPLETED, $zipFilename, null);
         } catch (Exception $e) {
-            $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', null, $e);
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $e);
         }
     }
 
@@ -215,7 +217,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     $participantResults[] = $result->makeVisible('report');
                 }
             } catch (Exception $e) {
-                // $this->updateJobProgress($this->progress, $this->totalProgress, 'Failed', null, $e);
+                // $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $e);
                 continue;
             }
         }
@@ -223,7 +225,7 @@ class GeneratePerformanceReports implements ShouldQueue
     }
 
 
-    public function updateJobProgress($processedCount, $totalCount, $status = 'In Progress', $file_path = null, $report = null)
+    public function updateJobProgress($processedCount, $totalCount, $status = ReportDownloadStatus::STATUS_In_PROGRESS, $file_path = null, $report = null)
     {
         try {
             $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
