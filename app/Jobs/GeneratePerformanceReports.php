@@ -34,6 +34,7 @@ class GeneratePerformanceReports implements ShouldQueue
     protected $jobId;
     protected $request;
     protected $user;
+    protected $report;
 
     public function __construct($request, $user)
     {
@@ -51,6 +52,12 @@ class GeneratePerformanceReports implements ShouldQueue
             $this->participants = $this->getParticipants();
             $this->participantResults = $this->getParticipantResults();
             $this->totalProgress = count($this->participantResults);
+            if ($this->totalProgress < 1) {
+                $this->progress = 100;
+                $this->totalProgress = 100;
+                throw new Exception('participants count is 0');
+            }
+
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
             $time = (new DateTime)->format('d_m_Y_H_i');
             $pdfDirname = sprintf('performance_reports_%s', $time);
@@ -75,7 +82,9 @@ class GeneratePerformanceReports implements ShouldQueue
                         'grade_performance_analysis'    => $report['grade_performance_analysis'],
                         'analysis_by_questions'         => $report['analysis_by_questions']
                     ]);
+                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] =  'success';
                 } catch (Exception $e) {
+                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] = 'failed: ' . $e->getMessage();
                     $this->progress++;
                     continue;
                 }
@@ -84,7 +93,7 @@ class GeneratePerformanceReports implements ShouldQueue
                 $pdfPath = $pdfDirPath . '/' . $pdfFilename;
                 Storage::put($pdfPath, $pdf->output());
                 $this->progress++;
-                $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
+                $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS, null, $this->report);
             }
 
             // Add the log file to the ZIP archive
@@ -92,8 +101,6 @@ class GeneratePerformanceReports implements ShouldQueue
             $zipFilename = sprintf('performance_reports_%s.zip', $time);
             $zipPath = 'performance_reports/' . $zipFilename;
             $zip->open(storage_path('app/' . $zipPath), ZipArchive::CREATE);
-            // $zip->addFile(storage_path('app/' . $logPath), $logFilename);
-
             // Add all PDF files to the ZIP archive
             foreach (Storage::files($pdfDirPath) as $file) {
                 $zip->addFile(storage_path('app/' . $file), basename($file));
@@ -101,9 +108,10 @@ class GeneratePerformanceReports implements ShouldQueue
 
             $zip->close();
             Storage::deleteDirectory($pdfDirPath);
-            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_COMPLETED, $zipFilename, null);
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_COMPLETED, $zipFilename, $this->report);
         } catch (Exception $e) {
-            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $e);
+            $this->report['public_error'] = $e->getMessage();
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
         }
     }
 
@@ -192,10 +200,14 @@ class GeneratePerformanceReports implements ShouldQueue
                 case 'status':
                 case 'page':
                 case 'limit':
-                    $participants->limit($this->request['limit']);
+                    if (isset($this->request['limit'])) {
+                        $participants->limit($this->request['limit']);
+                    }
                     break;
                 case 'limits':
-                    $participants->limit($this->request['limits']);
+                    if (isset($this->request['limits'])) {
+                        $participants->limit($this->request['limits']);
+                    }
                     break;
                 default:
                     $participants->where($key, $value);

@@ -524,6 +524,7 @@ class ParticipantsController extends Controller
         $job = ReportDownloadStatus::where('job_id', $jobId)->first();
         if ($job) {
             $progress = $job->progress_percentage;
+            $report = $job->report;
             $status = $job->status;
             switch ($status) {
                 case ReportDownloadStatus::STATUS_In_PROGRESS:
@@ -537,7 +538,7 @@ class ParticipantsController extends Controller
                     return response()->json([
                         'job_id' => $jobId,
                         'status' => ReportDownloadStatus::STATUS_FAILED,
-                        'message' => 'Failed to generate',
+                        'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                         'file_path' => '',
                         'progress' => $progress,
                     ], 500);
@@ -547,7 +548,7 @@ class ParticipantsController extends Controller
                         return response()->json([
                             'job_id' => $jobId,
                             'status' => ReportDownloadStatus::STATUS_FAILED,
-                            'message' => 'No Reports Found',
+                            'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                             'file_path' => '',
                             'progress' => 0,
                         ], 500);

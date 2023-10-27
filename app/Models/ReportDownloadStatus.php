@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ReportDownloadStatus extends Model
 {
     use HasFactory;
-    
+
     const STATUS_NOT_STARTED  = "Not Started";
     const STATUS_In_PROGRESS  = "In Progress";
     const STATUS_COMPLETED     = "Completed";
@@ -16,4 +16,7 @@ class ReportDownloadStatus extends Model
 
     protected $table = 'report_download_status';
     protected $fillable = ['job_id', 'progress_percentage', 'status', 'file_path', 'report'];
+    protected $casts = [
+        'report'=>'array'
+    ];
 }
