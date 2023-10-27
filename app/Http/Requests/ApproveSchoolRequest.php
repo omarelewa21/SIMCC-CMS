@@ -17,7 +17,7 @@ class ApproveSchoolRequest extends FormRequest
      */
     public function authorize()
     {
-        return Auth()->user()->hasRole(['Admin', 'Super Admin', 'Country Partner']);
+        return Auth()->user()->hasRole(['Admin', 'Super Admin', 'Country Partner', 'Country Partner Assistant']);
     }
 
     /**
