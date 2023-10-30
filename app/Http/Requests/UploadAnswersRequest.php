@@ -29,7 +29,7 @@ class UploadAnswersRequest extends FormRequest
         return [
             'competition_id'        => 'required|exists:competition,id',
             'participants'          => 'required|array',
-            'participants.*.grade'  => 'required|string|in:'. implode(',', array_map(fn($grade) => "Grade $grade", Participants::ALLOWED_GRADES)),
+            'participants.*.grade'  => 'required|string',
             'participants.*.index_number' => [
                 'required', Rule::exists('participants', 'index_no')->where(fn ($query) => $query->whereNull('deleted_at'))],
             'participants.*.answers' => 'required|array',
