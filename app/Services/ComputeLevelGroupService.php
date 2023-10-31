@@ -257,7 +257,6 @@ class ComputeLevelGroupService
     private function setParticipantsGlobalRank()
     {
         $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('award', '<>', $this->level->rounds->default_award_name)
             ->orderBy('points', 'DESC')->get();
 
         foreach($participantResults as $index => $participantResult){
