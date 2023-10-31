@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Helpers\AnswerUploadHelper;
 use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
@@ -1063,7 +1064,7 @@ class CompetitionController extends Controller
         DB::beginTransaction();
         try {
             $competition = Competition::find($request->competition_id);
-            $levels = ParticipantService::getLevelsForGradeSet(
+            $levels = AnswerUploadHelper::getLevelsForGradeSet(
                 $competition,
                 array_unique(Arr::pluck($request->participants, 'grade')),
                 true
@@ -1072,18 +1073,22 @@ class CompetitionController extends Controller
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
+                // if($participantData['grade'] !== Participants::where('index_no', $participantData['index_number'])->value('grade')) {
+                //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+                // }
                 $level = $levels[$participantData['grade']];
-                if ($level->tasks->count() !== count($participantData['answers'])) {
+                $levelTaskCount = $level->tasks->count();
+                if ($levelTaskCount > count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
                 ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
-                foreach ($participantData['answers'] as $index => $answer) {
+                for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
-                        'task_id'   => $level->tasks[$index],
+                        'task_id'   => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    => $answer,
+                        'answer'    =>$participantData['answers'][$i],
                         'created_by_userid' => $createdBy,
                         'created_at'    => $createdAt
                     ]);
@@ -1105,7 +1110,7 @@ class CompetitionController extends Controller
             DB::rollBack();
             return response()->json([
                 "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful' . $e->getMessage()
+                "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
             ], 500);
         }
     }
