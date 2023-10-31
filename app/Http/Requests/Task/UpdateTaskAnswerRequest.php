@@ -39,11 +39,11 @@ class UpdateTaskAnswerRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-        $task = Tasks::find($this->id);
-        $validator->after(function ($validator) use($task){
-            if (!$task->allowedToUpdateAll()) {
-                $validator->errors()->add('authorize', 'Task is in use by an active competition, No update to answers is allowed');
-            }
-        });
+        // $task = Tasks::find($this->id);
+        // $validator->after(function ($validator) use($task){
+        //     if (!$task->allowedToUpdateAll()) {
+        //         $validator->errors()->add('authorize', 'Task is in use by an active competition, No update to answers is allowed');
+        //     }
+        // });
     }
 }
