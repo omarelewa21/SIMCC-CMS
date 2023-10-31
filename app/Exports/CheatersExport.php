@@ -35,7 +35,7 @@ class CheatersExport implements FromCollection, WithStyles
             }
             $lastGroup = $record['group_id'];
         }
-        $header = array_keys($dataCollection->first());
+        $header = array_keys($dataCollection->max());
         $header[0] = 'Index';
         $header[1] = 'Name';
         $header[2] = 'School';
