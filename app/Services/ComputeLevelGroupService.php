@@ -262,7 +262,7 @@ class ComputeLevelGroupService
         foreach($participantResults as $index => $participantResult){
             if($index === 0){
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
-            } elseif ($participantResult->points === $participantResults[$index-1]->points && $participantResults[$index-1]->group_id === $participantResult->group_id){
+            } elseif ($participantResult->points === $participantResults[$index-1]->points){
                 $participantResult->setAttribute('global_rank', $participantResults[$index-1]->global_rank);
             } else {
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
