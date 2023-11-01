@@ -257,14 +257,14 @@ class ComputeLevelGroupService
     private function setParticipantsGlobalRank()
     {
         $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('award', '<>', $this->level->rounds->default_award_name)
             ->orderBy('points', 'DESC')->get();
 
         foreach($participantResults as $index => $participantResult){
             if($index === 0){
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
-            } elseif ($participantResult->points === $participantResults[$index-1]->points && $participantResults[$index-1]->group_id === $participantResult->group_id){
-                $participantResult->setAttribute('global_rank', $participantResults[$index-1]->global_rank);
+            } elseif ($participantResult->points === $participantResults[$index-1]->points){
+                $globalRankNumber = preg_replace('/[^0-9]/', '', $participantResults[$index-1]->global_rank); 
+                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $globalRankNumber));
             } else {
                 $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
             }
