@@ -43,7 +43,6 @@ use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
-use App\Services\ParticipantService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
