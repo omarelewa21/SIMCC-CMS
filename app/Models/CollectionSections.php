@@ -36,7 +36,10 @@ class CollectionSections extends Model
     public function getSectionTaskAttribute ()
     {
         if($this->tasks){
-            return Tasks::whereIn('id', Arr::flatten($this->tasks))->get();
+            $taskIds = collect($this->tasks)->map(function ($item) {
+                return $item["0"]["id"];
+            })->toArray();
+            return Tasks::whereIn('id', $taskIds)->get();
         }
         return [];
     }
