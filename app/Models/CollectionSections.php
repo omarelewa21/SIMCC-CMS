@@ -36,7 +36,8 @@ class CollectionSections extends Model
     public function getSectionTaskAttribute ()
     {
         if($this->tasks){
-            return Tasks::whereIn('id', Arr::flatten($this->tasks))->get();
+            $taskIds = collect($this->tasks)->flatten()->filter(fn($item) => is_numeric($item))->toArray();
+            return Tasks::whereIn('id', $taskIds)->get();
         }
         return [];
     }
