@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Custom;
+namespace App\Services;
 
 use App\Models\CompetitionLevels;
 use App\Models\DomainsTags;
@@ -22,15 +22,22 @@ class ParticipantReportService
         $this->getAnalysisByQuestionData = $this->getAnalysisByQuestionsData();
     }
 
-    public function getGeneralData(): array
+    public function getGeneralData()
     {
+        $schoolName = $this->participant->school();
+        if ($schoolName->exists()) {
+            $schoolName = $schoolName->value('name_in_certificate') ?? $schoolName->value('name');
+        } else {
+            $schoolName = 'No school specified for this participant';
+        }
         return [
-            'competition'       => $this->level->rounds->competition->name,
-            'particiapnt'       => $this->participant->name,
-            'school'            => $this->participant->school()->exists() ? $this->participant->school()->value('name') : 'No school specified for this participant',
-            'grade'             => sprintf("Grade%s", $this->participant->grade)
+            'competition' => $this->level->rounds->competition->name,
+            'participant' => $this->participant->name,
+            'school' => $schoolName,
+            'grade' => sprintf("Grade %s", $this->participant->grade)
         ];
     }
+
 
     public function getPerformanceByQuestionsData(): Collection
     {
@@ -39,9 +46,9 @@ class ParticipantReportService
                 ['participant_answers.level_id', $this->level->id],
                 ['participant_answers.participant_index', $this->participant->index_no]
             ])->get()
-            ->flatMap(function($answer, $key){
+            ->flatMap(function ($answer, $key) {
                 return [
-                    sprintf('Q%s', $key+1)  => $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id)
+                    sprintf('Q%s', $key + 1)  => $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id)
                 ];
             });
     }
@@ -50,19 +57,19 @@ class ParticipantReportService
     {
         return
             $this->getAnalysisByQuestionData->pluck('topic')
-                ->flatten()
-                ->unique('id')
-                ->values()
-                ->map(function($topic){
-                    $filteredData = $this->getFilteredAnalysisByQuestionDataByTopicName($topic->id);
-                    return [
-                        'domain'        => $topic->domain->name,
-                        'topic'         => $topic->name,
-                        'participant'   => round($filteredData->sum('is_correct')/$filteredData->count() * 100),
-                        'school'        => round($filteredData->sum('correct_in_school')/$filteredData->count()),
-                        'country'       => round($filteredData->sum('correct_in_country')/$filteredData->count())
-                    ];
-                });        
+            ->flatten()
+            ->unique('id')
+            ->values()
+            ->map(function ($topic) {
+                $filteredData = $this->getFilteredAnalysisByQuestionDataByTopicName($topic->id);
+                return [
+                    'domain'        => $topic->topic_domain,
+                    'topic'         => $topic->name,
+                    'participant'   => round($filteredData->sum('is_correct') / $filteredData->count() * 100),
+                    'school'        => round($filteredData->sum('correct_in_school') / $filteredData->count()),
+                    'country'       => round($filteredData->sum('correct_in_country') / $filteredData->count())
+                ];
+            });
     }
 
     public function getGradePerformanceAnalysisData()
@@ -73,17 +80,17 @@ class ParticipantReportService
                 ['participant_answers.participant_index', $this->participant->index_no]
             ])
             ->join('tasks', 'tasks.id', 'participant_answers.task_id')
-            ->join('taggables', function ($join){
+            ->join('taggables', function ($join) {
                 $join->on('tasks.id', 'taggables.taggable_id')
                     ->where('taggables.taggable_type', 'App\Models\Tasks');
             })
-            ->join('domains_tags', function ($join){
+            ->join('domains_tags', function ($join) {
                 $join->on('taggables.domains_tags_id', 'domains_tags.id')
                     ->whereNotNull('domains_tags.domain_id');
             })
             ->select('domains_tags.id', 'domains_tags.name', 'domains_tags.domain_id')
             ->distinct('domains_tags.id')->get()
-            ->map(function($topic){
+            ->map(function ($topic) {
                 $schoolData = $this->getParticipantSchoolStatisticsByTopic($topic->id, $this->participant->index_no);
                 return [
                     'domain'                => DomainsTags::whereId($topic->domain_id)->value('name'),
@@ -97,8 +104,8 @@ class ParticipantReportService
 
     public function getAnalysisByQuestionsDataProcessed(): Collection
     {
-        return 
-            $this->getAnalysisByQuestionData->map(function($data){
+        return
+            $this->getAnalysisByQuestionData->map(function ($data) {
                 $data['topic'] = $data['topic']->implode('name', ', ');
                 return $data;
             });
@@ -132,14 +139,14 @@ class ParticipantReportService
             ['participant_answers.level_id', $answer->level_id],
             ['participant_answers.task_id', $answer->task_id]
         ])
-        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-        ->where('participants.school_id', $answer->participant->school_id)
-        ->get()->map(function($answer){
-            $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
-            return $answer;
-        });
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->where('participants.school_id', $answer->participant->school_id)
+            ->get()->map(function ($answer) {
+                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
+                return $answer;
+            });
 
-        return round( $allAnswers->sum('is_correct_answer')/$allAnswers->count() * 100 );
+        return round($allAnswers->sum('is_correct_answer') / $allAnswers->count() * 100);
     }
 
     private function getParticipantAnswerCorrectInCountryPercentage(ParticipantsAnswer $answer): int
@@ -148,35 +155,35 @@ class ParticipantReportService
             ['participant_answers.level_id', $answer->level_id],
             ['participant_answers.task_id', $answer->task_id]
         ])
-        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-        ->where('participants.country_id', $answer->participant->country_id)
-        ->get()->map(function($answer){
-            $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
-            return $answer;
-        });
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->where('participants.country_id', $answer->participant->country_id)
+            ->get()->map(function ($answer) {
+                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
+                return $answer;
+            });
 
-        return round( $allAnswers->sum('is_correct_answer')/$allAnswers->count() * 100 );
+        return round($allAnswers->sum('is_correct_answer') / $allAnswers->count() * 100);
     }
 
     private function getFilteredAnalysisByQuestionDataByTopicName(int $topicId): Collection
     {
-        return 
+        return
             $this->getAnalysisByQuestionData->filter(
-                fn($data)=> $data['topic']->filter(fn($topic)=> $topic->id === $topicId)->isNotEmpty()
+                fn ($data) => $data['topic']->filter(fn ($topic) => $topic->id === $topicId)->isNotEmpty()
             );
     }
 
-    private function getParticipantSchoolStatisticsByTopic(int $topicId, string $participantIndex=null): object
+    private function getParticipantSchoolStatisticsByTopic(int $topicId, string $participantIndex = null): object
     {
         $allAnswers = ParticipantsAnswer::where('participant_answers.level_id', $this->level->id)
             ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
             ->where('participants.school_id', $this->participant->school_id)
             ->join('tasks', 'tasks.id', 'participant_answers.task_id')
-            ->join('taggables', function ($join){
+            ->join('taggables', function ($join) {
                 $join->on('tasks.id', 'taggables.taggable_id')
                     ->where('taggables.taggable_type', 'App\Models\Tasks');
             })
-            ->join('domains_tags', function ($join){
+            ->join('domains_tags', function ($join) {
                 $join->on('taggables.domains_tags_id', 'domains_tags.id')
                     ->whereNotNull('domains_tags.domain_id');
             })
@@ -188,9 +195,8 @@ class ParticipantReportService
             ->get();
 
         $participantScore = !is_null($participantIndex)
-            ? $allAnswers->filter(fn($answer)=> $answer->index_no === $participantIndex)->first()->sum
-            : Null
-        ;
+            ? $allAnswers->filter(fn ($answer) => $answer->index_no === $participantIndex)->first()->sum
+            : Null;
 
         return (object) [
             'minScore'          => $allAnswers->min('sum'),
@@ -208,7 +214,7 @@ class ParticipantReportService
                 ['participant_answers.participant_index', $this->participant->index_no]
             ])
             ->join('tasks', 'tasks.id', 'participant_answers.task_id')
-            ->join('competition_task_difficulty', function ($join){
+            ->join('competition_task_difficulty', function ($join) {
                 $join->on('tasks.id', 'competition_task_difficulty.task_id')
                     ->where('competition_task_difficulty.level_id', $this->level->id);
             })
@@ -216,9 +222,9 @@ class ParticipantReportService
                 'participant_answers.*',
                 'competition_task_difficulty.difficulty'
             )->get()
-            ->map(function ($answer, $key){
+            ->map(function ($answer, $key) {
                 return [
-                    'question'              => sprintf("Q%s", $key+1),
+                    'question'              => sprintf("Q%s", $key + 1),
                     'topic'                 => $this->getParticipantAnswerTopics($answer),
                     'is_correct'            => $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id),
                     'correct_in_school'     => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),

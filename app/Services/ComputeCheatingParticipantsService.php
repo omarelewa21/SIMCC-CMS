@@ -207,6 +207,7 @@ class ComputeCheatingParticipantsService
     {
         return $p2Answer
             && $p1Answer->answer == $p2Answer->answer
+            && !is_null($p1Answer->answer) && !empty($p1Answer->answer)
             && $p1Answer->is_correct === $p2Answer->is_correct;
     }
 

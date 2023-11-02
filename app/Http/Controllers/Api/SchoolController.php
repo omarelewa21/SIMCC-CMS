@@ -37,8 +37,8 @@ class SchoolController extends Controller
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Create school unsuccessful",
-                "error"     => $e->getMessage()
+                "message"   => "Create school unsuccessful" . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
 
@@ -56,6 +56,7 @@ class SchoolController extends Controller
             $school->update([
                 'status'    => auth()->user()->hasRole(['Super Admin', 'Admin']) ? 'active' : 'pending',
                 'name'      => $request->name ?? $school->name,
+                'name_in_certificate'      => $request->name_in_certificate ?? $school->name_in_certificate,
                 'province'  => $request->province ?? $school->province,
                 'address'   => $request->address ?? $school->address,
                 'email'     => $request->email ?? $school->email,

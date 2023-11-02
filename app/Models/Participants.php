@@ -9,6 +9,7 @@ use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
 {
@@ -120,7 +121,7 @@ class Participants extends Base
                 case 'limits':
                     break;
                 default:
-                    $query->where($key, $value);
+                    Schema::hasColumn(self::getTable(), $key) && $query->where($key, $value);
             }
         }
     }
@@ -211,5 +212,16 @@ class Participants extends Base
         }
 
         return $newCharacter . $newNumber;
+    }
+
+    public static function generatePassword()
+    {
+        $characters = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        $charactersLength = strlen($characters);
+        $password = '';
+        for ($i = 0; $i < 8; $i++) {
+            $password .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return encrypt($password);
     }
 }

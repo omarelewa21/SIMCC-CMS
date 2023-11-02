@@ -24,7 +24,7 @@ class CreateTaskService
 
     private function addImage(Tasks $task, array $data)
     {
-        if (Arr::has($data, 'image')) {
+        if (Arr::has($data, 'image') && $data['image'] != null) {
             $task->taskImage()->create([
                 'image_string' => $data['image']
             ]);
@@ -33,14 +33,14 @@ class CreateTaskService
 
     private function addTags(Tasks $task, array $data)
     {
-        if (Arr::has($data, 'tag_id')) {
+        if (Arr::has($data, 'tag_id') && $data['tag_id'] != null) {
             $task->tags()->attach($data['tag_id']);
         }
     }
 
     private function addRecommendedDifficulty(Tasks $task, array $data)
     {
-        if (Arr::has($data, 'recommended_grade')) {
+        if (Arr::has($data, 'recommended_grade') && $data['recommended_grade'] != null) {
             if (count($data['recommended_grade']) > 0) {
                 for ($i = 0; $i < count($data['recommended_grade']); $i++) {
                     $task->gradeDifficulty()->create(

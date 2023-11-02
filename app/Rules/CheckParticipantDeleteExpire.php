@@ -31,7 +31,7 @@ class CheckParticipantDeleteExpire implements InvokableRule
      */
     public function __invoke($attribute, $value, $fail)
     {
-        if(Auth()->user()->hasRole('Super Admin', 'Admin')) return;
+        if(Auth()->user()->hasRole(['Super Admin', 'Admin'])) return;
 
         $participant = Participants::where('id', $value)->with('competition_organization.competition')->first();
 
