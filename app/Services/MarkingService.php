@@ -102,7 +102,9 @@ class MarkingService
 
         if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
             if($level->participantsAnswersUploaded()->count() > 0){
-                return $level->rounds->roundsAwards()->count() > 0;
+                if($level->rounds->roundsAwards()->count() > 0){
+                    return true;
+                }
             }
         };
         Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
