@@ -45,7 +45,8 @@ class CollectionSections extends Model
     public function getCountTasksAttribute ()
     {
         if($this->tasks){
-            return Tasks::whereIn('id', Arr::flatten($this->tasks))->count();
+            return collect($this->tasks)->flatten()
+                ->filter(fn($item) => is_numeric($item))->count();
         }
         return [];
     }
