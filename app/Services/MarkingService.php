@@ -93,7 +93,6 @@ class MarkingService
      * @return bool
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
-        return true;
         $level->load('collection.sections', 'rounds');
         $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
