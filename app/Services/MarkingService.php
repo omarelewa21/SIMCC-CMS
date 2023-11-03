@@ -98,11 +98,11 @@ class MarkingService
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
         })->select('task_answers.task_id')->distinct()->count();
-
+        
         if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
-            if($level->participantsAnswersUploaded()->count() > 0){
-                return $level->rounds->roundsAwards()->count() > 0;
-            }
+            // if($level->participantsAnswersUploaded()->count() > 0){
+            return $level->rounds->roundsAwards()->count() > 0;
+            // }
         };
 
         return false;
