@@ -105,7 +105,7 @@ class MarkingService
                 return $level->rounds->roundsAwards()->count() > 0;
             }
         };
-        Log::info($level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count());
+        Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
 
         return false;
     }
