@@ -261,12 +261,4 @@ class MarkingService
             ];
         }
     }
-
-    public function refreshMarkingList(Competition $competition)
-    {
-        \ResponseCache::clear();
-        return response()->json([
-            'status' => 'success',
-        ]);
-    }
 }
