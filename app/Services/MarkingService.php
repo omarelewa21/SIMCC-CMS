@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\Countries;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MarkingService
 {
@@ -100,7 +101,7 @@ class MarkingService
         })->select('task_answers.task_id')->distinct()->count();
 
         if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
-            return true;
+            Log::info($level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks);
             if($level->participantsAnswersUploaded()->count() > 0){
                 return $level->rounds->roundsAwards()->count() > 0;
             }
