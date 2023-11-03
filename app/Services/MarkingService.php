@@ -101,11 +101,11 @@ class MarkingService
         })->select('task_answers.task_id')->distinct()->count();
 
         if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
-            Log::info($level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks);
             if($level->participantsAnswersUploaded()->count() > 0){
                 return $level->rounds->roundsAwards()->count() > 0;
             }
         };
+        Log::info($level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count());
 
         return false;
     }
