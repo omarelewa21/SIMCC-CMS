@@ -502,4 +502,12 @@ class MarkingController extends Controller
             ], 500);
         } 
     }
+
+    public function refreshMarkingList(Competition $competition)
+    {
+        \ResponseCache::clear();
+        return response()->json([
+            'status' => 'success',
+        ]);
+    }
 }
