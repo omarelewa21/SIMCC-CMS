@@ -136,19 +136,22 @@ class Competition extends Base
 
     public function getComputeStatusAttribute()
     {
-        $statusses = $this->rounds()->join('competition_levels', 'competition_rounds.id', 'competition_levels.round_id')
-            ->pluck('competition_levels.computing_status')->unique();
+        $statusses = $this->levels()
+            ->join('level_group_compute', 'level_group_compute.level_id', 'competition_levels.id')
+            ->pluck('level_group_compute.computing_status')
+            ->unique();
 
-        if (count($statusses->toArray()) > 0  && $statusses->contains(CompetitionLevels::STATUS_FINISHED)) {
-            return CompetitionLevels::STATUS_FINISHED;
+        if ($statusses->count() > 0  && $statusses->contains(LevelGroupCompute::STATUS_FINISHED)) {
+            return LevelGroupCompute::STATUS_FINISHED;
         }
-        if (count($statusses->toArray()) === 0 || $statusses->contains(CompetitionLevels::STATUS_NOT_STARTED)) {
-            return CompetitionLevels::STATUS_NOT_STARTED;
+        if ($statusses->count() === 0 || $statusses->contains(LevelGroupCompute::STATUS_NOT_STARTED)) {
+            return LevelGroupCompute::STATUS_NOT_STARTED;
         }
-        if ($statusses->contains(CompetitionLevels::STATUS_In_PROGRESS) || $statusses->contains(CompetitionLevels::STATUS_BUG_DETECTED)) {
-            return CompetitionLevels::STATUS_In_PROGRESS;
+        if ($statusses->contains(LevelGroupCompute::STATUS_IN_PROGRESS) || $statusses->contains(LevelGroupCompute::STATUS_BUG_DETECTED)) {
+            return LevelGroupCompute::STATUS_IN_PROGRESS;
         }
-        return CompetitionLevels::STATUS_FINISHED;
+
+        return LevelGroupCompute::STATUS_FINISHED;
     }
 
     public function getGenerateReportBtnAttribute()
