@@ -21,7 +21,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tasks\CreateTaskService;
 use App\Services\Tasks\DuplicateTaskService;
-use Illuminate\Console\View\Components\Task;
 
 class TasksController extends Controller
 {
