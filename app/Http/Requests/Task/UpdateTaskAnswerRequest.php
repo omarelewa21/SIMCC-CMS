@@ -24,10 +24,11 @@ class UpdateTaskAnswerRequest extends FormRequest
             'answer_structure'  => 'required|integer|exists:answer_structure,id',
             'answer_sorting'    => 'integer|nullable|required_if:answer_type,1|exists:answer_sorting,id',
             'answer_layout'     => 'integer|nullable|required_if:answer_type,1|exists:answer_layout,id',
-            'labels'            => 'required|array',
-            'labels.*'          => 'nullable',
-            'answers'           => ['required', 'array', new CheckAnswerLabelEqual],
-            'answers.*'         => 'string|max:65535|nullable'
+            'answers'           => 'required|array',
+            'answers.answer_id' => 'required|integer|nullable|exists:task_answers',
+            'answers.label_id'  => 'required|integer|nullable|exists:task_labels,id',
+            'answers.label'     => 'required|string|nullable',
+            'answers.answer'    => 'required|string|nullable',
         ];
     }
 
