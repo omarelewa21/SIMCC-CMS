@@ -252,15 +252,15 @@ class CollectionController extends Controller
             $section = CollectionSections::orderBy('id', 'DESC')->first();
             DB::commit();
 
-            CollectionSections::inset([
-                'collection_id'     => $collection_id,
-                'description'       => $validated['description'],
-                'tasks'             => $tasks,
-                'allow_skip'        => $validated['allow_skip'],
-                'sort_randomly'     => $validated['sort_randomly']
-            ]);
-
-            DB::commit();
+//            CollectionSections::inset([
+//                'collection_id'     => $collection_id,
+//                'description'       => $validated['description'],
+//                'tasks'             => $tasks,
+//                'allow_skip'        => $validated['allow_skip'],
+//                'sort_randomly'     => $validated['sort_randomly']
+//            ]);
+//
+//            DB::commit();
 
             return response()->json([
                 "status" => 200,
