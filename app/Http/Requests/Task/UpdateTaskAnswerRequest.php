@@ -25,10 +25,10 @@ class UpdateTaskAnswerRequest extends FormRequest
             'answer_sorting'    => 'integer|nullable|required_if:answer_type,1|exists:answer_sorting,id',
             'answer_layout'     => 'integer|nullable|required_if:answer_type,1|exists:answer_layout,id',
             'answers'           => 'required|array',
-            'answers.answer_id' => 'required|integer|nullable|exists:task_answers',
-            'answers.label_id'  => 'required|integer|nullable|exists:task_labels,id',
-            'answers.label'     => 'required|string|nullable',
-            'answers.answer'    => 'required|string|nullable',
+            'answers.*.answer_id' => 'integer|nullable|exists:task_answers,id',
+            'answers.*.label_id'  => 'integer|nullable|exists:task_labels,id',
+            'answers.*.label'     => 'string|nullable',
+            'answers.*.answer'    => 'string|nullable',
         ];
     }
 
