@@ -71,22 +71,7 @@ class CollectionController extends Controller
                 ->orderByRaw(sprintf("FIELD(status, '%s', '%s', '%s') ASC", Collections::STATUS_VERIFIED, Collections::STATUS_ACTIVE, Collections::STATUS_PENDING_MODERATION))
                 ->orderBy('created_at', 'DESC')
                 ->get()
-                ->map(function ($item) {
-                    $section = $item->sections->map(function ($section) {
-                        foreach ($section->tasks as $group) {
-                            $tasks = Tasks::with('taskAnswers')->whereIn('id', $group['task_id'])->get()->map(function ($task) {
-                                return ['id' => $task->id, 'task_title' => $task->languages->first()->task_title, 'identifier' => $task->identifier];
-                            });
-
-                            $groups[] = $tasks;
-                        }
-
-                        $section->tasks = $groups;
-                        return $section;
-                    });
-
-                    return collect($item)->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']);
-                });
+                ->map(fn($item) => collect($item)->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']));
 
             /**
              * Lists of availabe filters
