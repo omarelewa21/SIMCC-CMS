@@ -59,7 +59,7 @@ class UpdateTaskService
         $taskAnswerIds[] = $taskAnswer->id;
     }
 
-    private function deleteRemovedAnswers(Tasks $task, array &$taskAnswerIds)
+    private function deleteRemovedAnswers(Tasks $task, array $taskAnswerIds)
     {
         TasksAnswers::where('task_id', $task->id)
             ->whereNotIn('id', $taskAnswerIds)
