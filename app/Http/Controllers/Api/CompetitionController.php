@@ -375,8 +375,16 @@ class CompetitionController extends Controller
             "levels" => "array|required",
             "levels.*.id" => ["required_if:allow_all_changes,0", "integer", "distinct", Rule::in($roundLevels)],
             "levels.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "levels.*.collection_id" => ["exclude_if:allow_all_changes,0", "required_if:levels.*.id,null", "integer", "distinct", Rule::exists('collection', 'id')->where('status', 'active'), new CheckExistinglevelCollection],
-            "levels.*.grades" => "exclude_if:allow_all_changes,0|array|required",
+            "levels.*.collection_id" => [
+                "exclude_if:allow_all_changes,0",
+                "required_if:levels.*.id,null",
+                "integer",
+                "distinct",
+                Rule::exists('collection', 'id')->where(function ($query) {
+                    $query->whereIn('status', ['active', 'verified']);
+                }),
+                new CheckExistinglevelCollection
+            ],            "levels.*.grades" => "exclude_if:allow_all_changes,0|array|required",
             "levels.*.grades.*" => ["required", "integer", new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
         ]);
 

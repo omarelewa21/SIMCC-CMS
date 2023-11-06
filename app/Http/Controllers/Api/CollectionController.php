@@ -76,9 +76,11 @@ class CollectionController extends Controller
             /**
              * Lists of availabe filters
              */
+            
             $availCollectionsStatus = $collections->map(function ($item) {
                 return $item['status'];
-            })->unique()->values();
+            })->push('verified')->unique()->values();
+
             $availCollectionsCompetition = $collections->map(function ($item) {
                 $competitions = $item->get('competitions');
 
