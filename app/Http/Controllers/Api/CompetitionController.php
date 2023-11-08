@@ -12,6 +12,7 @@ use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
+use App\Models\CompetitionTaskDifficulty;
 use App\Models\CompetitionTasksMark;
 use App\Models\ParticipantsAnswer;
 use App\Models\Tasks;
@@ -383,7 +384,16 @@ class CompetitionController extends Controller
             "levels" => "array|required",
             "levels.*.id" => ["required_if:allow_all_changes,0", "integer", "distinct", Rule::in($roundLevels)],
             "levels.*.name" => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
-            "levels.*.collection_id" => ["exclude_if:allow_all_changes,0", "required_if:levels.*.id,null", "integer", "distinct", Rule::exists('collection', 'id')->where('status', 'active'), new CheckExistinglevelCollection],
+            "levels.*.collection_id" => [
+                "exclude_if:allow_all_changes,0",
+                "required_if:levels.*.id,null",
+                "integer",
+                "distinct",
+                Rule::exists('collection', 'id')->where(function ($query) {
+                    $query->where('status', 'active')->orWhere('status', 'verified');
+                }),
+                new CheckExistinglevelCollection
+            ],
             "levels.*.grades" => "exclude_if:allow_all_changes,0|array|required",
             "levels.*.grades.*" => ["required", "integer", new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
         ]);
@@ -418,7 +428,10 @@ class CompetitionController extends Controller
                     if ($level->collection_id != $row['collection_id']) {
 
                         if ($level->collection_id != null) {
+                            CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
                             CompetitionTasksMark::where('level_id', $level->id)->delete();
+
+
                         }
 
                         $level->collection_id = $row['collection_id'];

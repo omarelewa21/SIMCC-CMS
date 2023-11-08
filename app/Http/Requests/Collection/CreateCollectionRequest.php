@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Collection;
 
+use App\Services\DifficultyService;
+use App\Services\GradeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,8 +35,8 @@ class CreateCollectionRequest extends FormRequest
             '*.settings.tags.*'         => ['integer',Rule::exists('domains_tags','id')->where('is_tag',1)],
             '*.settings.description'    => 'string|max:65535',
             '*.recommendations'         => 'array',
-            '*.recommendations.*.grade' => 'required_with:collection.*.recommendation.*.difficulty|integer|distinct', // add collection index infront of the grade for example grade 1 will be grade 11, as distinct function check through all the collection for the unqiue value
-            '*.recommendations.*.difficulty' => 'required_with:collection.*.recommendation.*.grade|string',
+            '*.recommendations.*.grade' => 'integer|nullable|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            '*.recommendations.*.difficulty' => "string|nullable|max:255|in:".implode(',', DifficultyService::ALLOWED_DIFFICULTIES),
             '*.sections'                => 'required|array',
             '*.sections.*.groups'       => 'required|array',
             '*.sections.*.groups.*.task_id'     => 'array|required',

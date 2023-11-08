@@ -4,7 +4,8 @@ namespace App\Http\Requests\Task;
 
 use App\Http\Requests\CreateBaseRequest;
 use App\Rules\CheckAnswerLabelEqual;
-use App\Rules\CheckMissingGradeDifficulty;
+use App\Services\DifficultyService;
+use App\Services\GradeService;
 use Illuminate\Validation\Rule;
 
 
@@ -42,10 +43,10 @@ class StoreTaskRequest extends CreateBaseRequest
             $key.'.description'         => 'max:255',
             $key.'.solutions'           => 'max:255',
             $key.'.image'               => 'exclude_if:*.image,null|max:1000000',
-            $key.'.recommended_grade'   => 'required_with:*.recommended_difficulty|array',
-            $key.'.recommended_grade.*' => ['integer', new CheckMissingGradeDifficulty('recommended_difficulty')],
-            $key.'.recommended_difficulty'      => 'required_with:*.recommended_grade|array',
-            $key.'.recommended_difficulty.*'    => ['string', 'max:255', new CheckMissingGradeDifficulty('recommended_grade')],
+            $key.'.recommended_grade'   => 'array',
+            $key.'.recommended_grade.*' => 'integer|nullable|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            $key.'.recommended_difficulty'      => 'array',
+            $key.'.recommended_difficulty.*'    => "string|nullable|max:255|in:".implode(',', DifficultyService::ALLOWED_DIFFICULTIES),
             $key.'.content'             => 'string|max:65535',
             $key.'.answer_type'         => 'required|integer|exists:answer_type,id',
             $key.'.answer_structure'    => 'required|integer|min:1|max:4',
