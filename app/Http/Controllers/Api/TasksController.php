@@ -6,10 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DomainsTags;
 use App\Models\Languages;
 use App\Models\Tasks;
-use App\Models\TasksAnswers;
-use App\Models\TasksLabels;
 use App\Rules\CheckMultipleVaildIds;
-use Illuminate\Support\Arr;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\Task\DeleteTaskRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
@@ -21,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tasks\CreateTaskService;
 use App\Services\Tasks\DuplicateTaskService;
+use App\Services\Tasks\UpdateTaskService;
 
 class TasksController extends Controller
 {
@@ -268,52 +266,23 @@ class TasksController extends Controller
 
     public function update_answer(UpdateTaskAnswerRequest $request)
     {
+        DB::beginTransaction();
         try {
-            $task = Tasks::findOrFail($request->id);
-            if ($task->update($request->all())) {
-                $allAnswersId = TasksAnswers::where('task_id', $task->id)->pluck('id')->toArray();
-                TasksLabels::whereIn('task_answers_id', $allAnswersId)->delete();
-                TasksAnswers::where('task_id', $task->id)->delete();
-
-                $answers = collect($request->answers)->map(function ($answer, $key) use ($task) {
-                    return array([
-                        'task_id'   => $task->id,
-                        'lang_id'   => env('APP_DEFAULT_LANG', 171),
-                        'answer'    => $answer,
-                        'position'  => $key + 1,
-                    ]);
-                })->collapse();
-
-                // add task answers
-                $labels = $request->labels;
-                $labels = Tasks::find($request->id)->taskAnswers()->createMany($answers)->pluck('id')
-                    ->map(function ($answerId, $key) use ($labels) {
-                        return array([
-                            'task_answers_id'   => $answerId,
-                            'lang_id'           => env('APP_DEFAULT_LANG', 171),
-                            'content'           => $labels[$key],
-                        ]);
-                    });
-
-                // add labels for task answers
-                TasksLabels::insert(Arr::collapse($labels));
-                return response()->json([
-                    "status" => 200,
-                    "message" => "Tasks update successful"
-                ]);
-            } else {
-                return response()->json([
-                    "status" => 500,
-                    "message" => "Tasks update unsuccessful"
-                ], 500);
-            }
+            (new UpdateTaskService())->updateAnswer($request->all());
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Tasks update unsuccessful" . $e->getMessage(),
-                "error"     => $e->getMessage()
+                "message"   => "Tasks update unsuccessful " . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
+
+        DB::commit();
+        return response()->json([
+            "status"    => 200,
+            "message"   => "Tasks update successful"
+        ]);
     }
 
     public function delete(DeleteTaskRequest $request)
