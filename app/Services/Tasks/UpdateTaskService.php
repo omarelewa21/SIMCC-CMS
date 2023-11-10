@@ -22,9 +22,8 @@ class UpdateTaskService
             is_null($answer['answer_id'])
                 ? $this->createNewAnswer($answer, $task, $key, $taskAnswerIds)
                 : $this->updateExistingAnswer($answer, $key, $taskAnswerIds);
-
-            $this->deleteRemovedAnswers($task, $taskAnswerIds);
         }
+        $this->deleteRemovedAnswers($task, $taskAnswerIds);
     }
 
     private function createNewAnswer(array $answer, Tasks $task, int $key, array &$taskAnswerIds)
@@ -47,9 +46,6 @@ class UpdateTaskService
     private function updateExistingAnswer(array $answer, int $key, array &$taskAnswerIds)
     {
         $taskAnswer = TasksAnswers::find($answer['answer_id']);
-        if(!$taskAnswer) {
-            dd($answer['answer_id']);
-        }
         $taskAnswer->answer = $answer['answer'];
         $taskAnswer->position = $key + 1;
         $taskAnswer->save();
