@@ -38,17 +38,11 @@ class AnswerUploadHelper
      * 
      * @return CompetitionLevels|null
      */
-    public static function getParticipantLevelByGrade(Competition $competition, $grade): CompetitionLevels|null
+    public static function getParticipantLevelByGrade(Competition $competition, string $grade): CompetitionLevels|null
     {
-        return $competition->levels()->with('collection')->get()->first(function ($level) use ($grade) {
-            if(is_string($grade) && array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) {
-                $grade = self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
-            }
-            elseif(is_string($grade) && str_contains($grade, 'Grade')) {
-                $grade = str_replace('Grade', '', $grade);
-            }
-            return in_array($grade, $level->grades);
-        });
+        return $competition->levels()->with('collection')
+            ->get()
+            ->first(fn ($level) => in_array($grade, $level->grades));
     }
 
     /**
@@ -64,7 +58,8 @@ class AnswerUploadHelper
     {
         $levels = [];
         foreach($grades as $grade){
-            $level = self::getParticipantLevelByGrade($competition, $grade);
+            $systemGrade = self::translateCSVGradeToSystemGrade($grade);
+            $level = self::getParticipantLevelByGrade($competition, $systemGrade);
             if($level){
                 if($withTasks){
                     $level->tasks = $level->collection->sections()->pluck('tasks')
@@ -72,11 +67,23 @@ class AnswerUploadHelper
                             return collect($taskCollection->toArray())->pluck('task_id')->flatten();
                         })->flatten()->sort();
                 }
-                $levels[$grade] = $level;
+                $levels[$grade]['level'] = $level;
+                $levels[$grade]['grade'] = $systemGrade;
             } else {
                 throw ValidationException::withMessages(["No level found for grade '$grade', please include this grade in competition levels first."]);
             }
         }
         return $levels;
+    }
+
+    private static function translateCSVGradeToSystemGrade(string $grade)
+    {
+        if(is_string($grade) && array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) {
+            $grade = self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
+        }
+        elseif(is_string($grade) && str_contains($grade, 'Grade')) {
+            $grade = str_replace('Grade', '', $grade);
+        }
+        return $grade;
     }
 }
