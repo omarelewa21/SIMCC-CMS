@@ -8,7 +8,7 @@ class NoSpecialCharacters implements Rule
 {
     public function passes($attribute, $value)
     {
-        // Use a regular expression to check for special characters
+        // Allow letters, numbers, commas, single quotes, spaces, periods, parentheses, forward slash, backslash, and hyphen
         return preg_match('/^[A-Za-z0-9,\'\s.()\/\\\\-]+$/', $value);
     }
 
