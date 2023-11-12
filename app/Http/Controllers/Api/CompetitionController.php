@@ -1081,14 +1081,18 @@ class CompetitionController extends Controller
                 array_unique(Arr::pluck($request->participants, 'grade')),
                 true
             );
+            $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
+                ->pluck('grade', 'index_no');
+
             $createdBy = auth()->id();
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                // if($participantData['grade'] !== Participants::where('index_no', $participantData['index_number'])->value('grade')) {
-                //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
-                // }
-                $level = $levels[$participantData['grade']];
+                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                    throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+                }
+
+                $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
                 if ($levelTaskCount > count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
