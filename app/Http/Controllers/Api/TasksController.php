@@ -61,7 +61,7 @@ class TasksController extends Controller
         ]);
 
         try {
-            $eagerload = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? ['taskAnswers:id,task_id,answer,position', 'taskAnswers.taskLabels:task_answers_id,lang_id,content'] : [];
+            $eagerload = auth()->user()->role_id == 0 || auth()->user()->role_id == 1 ? ['taskAnswers:id,task_id,answer,position', 'taskAnswers.taskLabels:id,task_answers_id,lang_id,content'] : [];
             $hide = isset($request->id) || isset($request->identifier) ? [] : ['image'];
 
             $limits = $request->limits ? $request->limits : 10;
