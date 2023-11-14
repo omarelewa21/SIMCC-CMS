@@ -181,7 +181,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     });
                     break;
                 case 'private':
-                    $this->request->private
+                    $this->request['private']
                         ? $participants->whereNotNull("tuition_centre_id")
                         : $participants->whereNull("tuition_centre_id");
                     break;
@@ -229,7 +229,6 @@ class GeneratePerformanceReports implements ShouldQueue
                     $participantResults[] = $result->makeVisible('report');
                 }
             } catch (Exception $e) {
-                // $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $e);
                 continue;
             }
         }
