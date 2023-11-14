@@ -11,6 +11,7 @@ use App\Models\CompetitionTaskDifficulty;
 use App\Models\CompetitionTasksMark;
 use App\Models\TaskDifficulty;
 use App\Models\TaskDifficultyGroup;
+use App\Models\TaskDifficultyVerification;
 use App\Models\TasksAnswers;
 use App\Models\Tasks;
 use App\Rules\CheckCompetitionLevelExist;
@@ -21,21 +22,23 @@ use Illuminate\Support\Facades\DB;
 
 class AssignDifficultyPointsController extends Controller
 {
-    public function list (Request $request)
+    public function list(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|integer|exists:competition,id',
+            'competition_id' => 'required|integer|exists:competition,id',
+            'level_id' => 'required|integer|exists:competition_levels,id',
+            'round_id' => 'required|integer|exists:competition_rounds,id',
         ]);
 
         try {
-            $competition = Competition::AcceptRequest(['id'])->with(['rounds.levels.collection.sections','taskDifficulty'])->find($validated['id']);
+            $competition = Competition::AcceptRequest(['competition_id'])->with(['rounds.levels.collection.sections', 'taskDifficulty'])->find($validated['competition_id']);
             $TaskDifficultyGroupId = $competition->difficulty_group_id;
             $difficultyList = TaskDifficultyGroup::whereId($TaskDifficultyGroupId)->exists() ? TaskDifficultyGroup::with('difficulty')->find($TaskDifficultyGroupId)->toArray() : [];
             $competitionRounds = CompetitionRounds::where('competition_id', $competition->id)->get()->map(function ($round) {
 
-                $round['levels'] = CompetitionLevels::where('round_id', $round->id)->get()->map(function ($level){
+                $round['levels'] = CompetitionLevels::where('round_id', $round->id)->get()->map(function ($level) {
                     $CompetitionTasksMark = [];
-                    CompetitionTasksMark::where('level_id', $level->id)->get()->each(function($row) use(&$CompetitionTasksMark) {
+                    CompetitionTasksMark::where('level_id', $level->id)->get()->each(function ($row) use (&$CompetitionTasksMark) {
                         $task_answers_id = is_numeric($row->task_answers_id) ? intVal($row->task_answers_id) : json_decode($row->task_answers_id)[0];
                         $task_id = TasksAnswers::find($task_answers_id)->task->id;
                         $CompetitionTasksMark[$task_id][] = $row->toArray();
@@ -43,16 +46,16 @@ class AssignDifficultyPointsController extends Controller
 
                     $CompetitionTasksDifficulty = [];
                     CompetitionTaskDifficulty::where('level_id', $level->id)->get()
-                        ->each(function($row) use(&$CompetitionTasksDifficulty) {
+                        ->each(function ($row) use (&$CompetitionTasksDifficulty) {
                             $row['difficulty_id'] === null ? null : TaskDifficulty::find($row['difficulty_id'])->name;
-                            $CompetitionTasksDifficulty[$row['task_id']] = ['id' => $row['id'],'difficulty' => $row['difficulty'],'wrong_marks' => $row['wrong_marks'],'blank_marks' => $row['blank_marks']];
-                    });
+                            $CompetitionTasksDifficulty[$row['task_id']] = ['id' => $row['id'], 'difficulty' => $row['difficulty'], 'wrong_marks' => $row['wrong_marks'], 'blank_marks' => $row['blank_marks']];
+                        });
 
-                    $collection = Collections::with(['sections'])->where('id',$level->collection_id)->first();
+                    $collection = Collections::with(['sections'])->where('id', $level->collection_id)->first();
 
                     $collectionSection = $collection->sections
-                        ->map(function ($section) use($CompetitionTasksMark, $CompetitionTasksDifficulty) {
-                            return $section->section_task->map(function ($task) use($CompetitionTasksMark, $CompetitionTasksDifficulty, $section) {
+                        ->map(function ($section) use ($CompetitionTasksMark, $CompetitionTasksDifficulty) {
+                            return $section->section_task->map(function ($task) use ($CompetitionTasksMark, $CompetitionTasksDifficulty, $section) {
                                 $section = [
                                     'id'                => $task->id,
                                     'languages'         => $task->languages->first()->name,
@@ -64,9 +67,9 @@ class AssignDifficultyPointsController extends Controller
                                     'task_blank'        => $CompetitionTasksDifficulty[$task->id]['blank_marks'],
                                     'task_marks'        => $CompetitionTasksMark[$task->id]
                                 ];
-                            return $section;
+                                return $section;
+                            })->toArray();
                         })->toArray();
-                    })->toArray();
 
                     $level['collections'] = [
                         'id'        => $collection->id,
@@ -95,7 +98,7 @@ class AssignDifficultyPointsController extends Controller
                 'rounds' => $competitionRounds->toArray()
             ];
 
-            $data = array("difficultyList" => $difficultyList, "competitionTask" => $competitionAssignTaskDifficultyMarks);
+            $data = array("difficultyList" => $difficultyList, "competitionTask" => $competitionAssignTaskDifficultyMarks, 'is_verified' => $this->checkDifficultyIsVerified($request));
 
             return response()->json([
                 "status" => 200,
@@ -115,35 +118,36 @@ class AssignDifficultyPointsController extends Controller
         }
     }
 
-    public function update (Request $request) {
+    public function update(Request $request)
+    {
         $competitionId = $request->validate([
-            'competition_id' => ["required",Rule::exists('competition','id')->where('status','active')],
+            'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
         ])['competition_id'];
 
         $levelId = $request->validate([
-            'level_id' => ["required",new CheckCompetitionLevelExist($competitionId)],
+            'level_id' => ["required", new CheckCompetitionLevelExist($competitionId)],
         ])['level_id'];
 
         $difficulty = Competition::find($competitionId)->taskDifficulty->pluck('name')->toArray();
 
         $validate = $request->validate([
             'tasks' => "required|array",
-            'tasks.*.task_id' => ["required",Rule::exists("competition_task_difficulty","task_id")->where("level_id",$levelId)],
-            'tasks.*.difficulty' => ["required","string",Rule::in($difficulty)],
+            'tasks.*.task_id' => ["required", Rule::exists("competition_task_difficulty", "task_id")->where("level_id", $levelId)],
+            'tasks.*.difficulty' => ["required", "string", Rule::in($difficulty)],
             'tasks.*.wrong_marks' => 'required|integer',
             'tasks.*.blank_marks' => 'required|integer',
             'tasks.*.answers' => 'required|array',
-            'tasks.*.answers.*.id' => ["required",Rule::exists('competition_tasks_mark','id')->where("level_id",$levelId)],
+            'tasks.*.answers.*.id' => ["required", Rule::exists('competition_tasks_mark', 'id')->where("level_id", $levelId)],
             'tasks.*.answers.*.min_marks' => 'nullable|integer',
             'tasks.*.answers.*.marks' => 'required|integer',
         ]);
 
         try {
-            $insertDifficulty = collect(Arr::pull($validate,'tasks'))->map(function ($task) use($levelId,&$insertAnswers) {
+            $insertDifficulty = collect(Arr::pull($validate, 'tasks'))->map(function ($task) use ($levelId, &$insertAnswers) {
 
                 $taskStructure = Tasks::find($task['task_id'])->answer_structure;
 
-                $insertAnswers[] = collect($task['answers'])->map(function ($answer) use($levelId,$taskStructure) {
+                $insertAnswers[] = collect($task['answers'])->map(function ($answer) use ($levelId, $taskStructure) {
                     return [
                         ...$answer,
                         'task_structure' => $taskStructure,
@@ -151,29 +155,29 @@ class AssignDifficultyPointsController extends Controller
                     ];
                 })->collapse()->toArray();
 
-//                unset($task['answers']);
+                //                unset($task['answers']);
 
-                return [...$task,
-                        'level_id' => $levelId,
-                    ];
-
+                return [
+                    ...$task,
+                    'level_id' => $levelId,
+                ];
             })->toArray();
-//            dd($insertAnswers);
+            //            dd($insertAnswers);
             DB::beginTransaction();
-                collect($insertDifficulty)->map(function ($row) use($levelId){
-                    $taskDifficulty = CompetitionTaskDifficulty::where(['level_id' => $levelId,'task_id' => $row['task_id']])->first();
-                    $taskDifficulty->difficulty = $row['difficulty'];
-                    $taskDifficulty->wrong_marks = $row['wrong_marks'];
-                    $taskDifficulty->blank_marks = $row['blank_marks'];
-                    $taskDifficulty->save();
-                });
+            collect($insertDifficulty)->map(function ($row) use ($levelId) {
+                $taskDifficulty = CompetitionTaskDifficulty::where(['level_id' => $levelId, 'task_id' => $row['task_id']])->first();
+                $taskDifficulty->difficulty = $row['difficulty'];
+                $taskDifficulty->wrong_marks = $row['wrong_marks'];
+                $taskDifficulty->blank_marks = $row['blank_marks'];
+                $taskDifficulty->save();
+            });
 
-                collect($insertAnswers)->map(function ($row) {
-                    $taskMarks = CompetitionTasksMark::find($row['id']);
-                    $taskMarks->min_marks = $row['task_structure'] == 'open' ? $row['min_marks'] : null;
-                    $taskMarks->marks = $row['marks'];
-                    $taskMarks->save();
-                });
+            collect($insertAnswers)->map(function ($row) {
+                $taskMarks = CompetitionTasksMark::find($row['id']);
+                $taskMarks->min_marks = $row['task_structure'] == 'open' ? $row['min_marks'] : null;
+                $taskMarks->marks = $row['marks'];
+                $taskMarks->save();
+            });
 
             DB::commit();
 
@@ -181,12 +185,80 @@ class AssignDifficultyPointsController extends Controller
                 "status" => 200,
                 "message" => "Update competition task marks successful."
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "Update competition task marks unsuccessful." .$e
-            ]);
+                "message" => "Update competition task marks unsuccessful." . $e
+            ], 500);
         }
+    }
+
+    public function verify(Request $request)
+    {
+        if (!auth()->user()->hasRole(['super admin', 'admin'])) {
+            return response()->json([
+                "status"  => 403,
+                "message" => "Only admins can verify collection"
+            ], 403);
+        }
+
+        $competitionId = $request->validate([
+            'competition_id' => ["required", Rule::exists('competition', 'id')->where('status', 'active')],
+        ])['competition_id'];
+
+        $request->validate([
+            'collection_id' => [
+                'required',
+                Rule::exists('collection', 'id')->where('status', '!=', Collections::STATUS_VERIFIED)
+            ],
+        ], [
+            'collection_id.exists' => 'Collection must be verified.'
+        ]);
+
+        $levelId = $request->validate([
+            'level_id' => ["required", new CheckCompetitionLevelExist($competitionId)],
+        ])['level_id'];
+
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $competitionId)->where('level_id', $levelId)->where('round_id', $request->round_id)->first();
+        if ($taskDifficulty) {
+            return response()->json([
+                "status"  => 403,
+                "message" => "This difficulty and points is already verified"
+            ], 403);
+        }
+
+        TaskDifficultyVerification::create(
+            [
+                'competition_id' => $competitionId,
+                'level_id' => $levelId,
+                'round_id' => $request->round_id,
+                'is_verified' => true,
+                'verified_by_userid' => auth()->user()->id
+            ]
+        );
+
+        $competition = Competition::with(['rounds.levels.collection'])
+            ->find($competitionId);
+        $all_collections_verified = $competition->isVerified();
+
+        if ($all_collections_verified) {
+            $competition->update(['is_verified' => true]);
+        }
+
+        return response()->json(
+            [
+                'status' => 200,
+                'message' => 'difficulty and points verified successfully'
+            ]
+        );
+    }
+
+    public function checkDifficultyIsVerified($request)
+    {
+        $taskDifficulty = TaskDifficultyVerification::where('competition_id', $request->competition_id)->where('level_id', $request->level_id)->where('round_id', $request->round_id)->first();
+        if ($taskDifficulty) {
+            return true;
+        }
+        return false;
     }
 }

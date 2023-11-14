@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\Countries;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MarkingService
 {
@@ -94,16 +95,32 @@ class MarkingService
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
         $level->load('collection.sections', 'rounds');
-        $numberOfTasksIds = $level->collection->sections->sum('count_tasks');
+        $levelTaskIds = $level->collection->sections
+            ->pluck('section_task')->flatten()->pluck("id");
+
+        $numberOfTasksIds = $levelTaskIds->count('count_tasks');
+
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
-        })->select('task_answers.task_id')->distinct()->count();
-
-        if($numberOfTasksIds === $numberOfCorrectAnswersWithMarks){
+        })
+        ->whereIn('task_answers.task_id', $levelTaskIds)
+        ->select('task_answers.task_id')->distinct()->count();
+        // if($level->id == 380){
+        //     $toDD1 = $level->collection->sections
+        //         ->pluck('section_task')->flatten()->pluck("id")->toArray();
+        //     $toDD2 = $level->taskMarks()->join('task_answers', function ($join) {
+        //         $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
+        //     })->select('task_answers.task_id')->distinct()->get()->toArray();
+        //     dd($toDD1, $toDD2);
+        // }
+        if($numberOfCorrectAnswersWithMarks >= $numberOfCorrectAnswersWithMarks){
             if($level->participantsAnswersUploaded()->count() > 0){
-                return $level->rounds->roundsAwards()->count() > 0;
+                if($level->rounds->roundsAwards()->count() > 0){
+                    return true;
+                }
             }
         };
+        Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
 
         return false;
     }

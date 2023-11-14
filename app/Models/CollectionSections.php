@@ -36,7 +36,9 @@ class CollectionSections extends Model
     public function getSectionTaskAttribute ()
     {
         if($this->tasks){
-            return Tasks::whereIn('id', Arr::flatten($this->tasks))->get();
+            return Tasks::whereIn('id', Arr::flatten($this->tasks))
+                ->orderByRaw('FIELD(id, '.implode(',', Arr::flatten($this->tasks)).')')
+                ->get();
         }
         return [];
     }

@@ -40,8 +40,8 @@ class UpdateCollectionSectionRequest extends FormRequest
     {
         $collection = Collections::find($this->collection_id);
         $validator->after(function ($validator) use($collection){
-            if (!$collection->allowedToUpdateAll()) {
-                $validator->errors()->add('authorize', 'Collection is in use by an active competition, No update to sections is allowed');
+            if (!$collection->status == Collections::STATUS_VERIFIED) {
+                $validator->errors()->add('authorize', 'Collection is verified, No update to sections is allowed');
             }
         });
     }

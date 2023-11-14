@@ -136,6 +136,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/participants/country/{competition}", [MarkingController::class, "getActiveParticipantsByCountryByGrade"])->name('competition.marking.byCountry.byGrade');
         Route::get("/{competition}", [MarkingController::class, "markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
+        Route::post("/refresh/{competition}", [MarkingController::class, "refreshMarkingList"])->name('competition.marking.refresh');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
         Route::post("/compute/level/{level}/{group}",[MarkingController::class,"computeResultsForSingleLevelGroup"])->name('competition.marking.compute.level.group');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
@@ -153,6 +154,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("answer", [TasksController::class, "update_answer"])->name('task.edit.answer');
         Route::delete("", [TasksController::class, "delete"])->name('task.delete');
         Route::post("duplicate/{task}", [TasksController::class, "duplicate"])->name('task.duplicate');
+        Route::post("verify/{task}", [TasksController::class, "verify"])->name('task.verify');
     });
 
     Route::group(["prefix" => "collection"], function () {
@@ -165,6 +167,9 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("/sections", [CollectionController::class, "update_sections"])->name('collection.sections.update');
         Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
         Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
+        Route::post("verify", [CollectionController::class, "verify"])->name('collection.verify');
+        Route::get("difficultyandpoints/overview", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
+        Route::post("/difficultyandpoints/verify", [AssignDifficultyPointsController::class, "verify"])->name('collection.difficultyandpoints.verify');
     });
 
     Route::group(['prefix' => "taskdifficultygroup"], function () {

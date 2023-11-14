@@ -18,6 +18,7 @@ class DuplicateTaskService
         $newTask = $this->task->replicate();
         $counts = Tasks::where('identifier', 'like', "$newTask->identifier-%")->count();
         $newTask->identifier = "$newTask->identifier-" . ($counts + 1);
+        $newTask->status = 'Pending Moderation';
         $newTask->save();
         $this->syncRelations($newTask);
         return $newTask;
