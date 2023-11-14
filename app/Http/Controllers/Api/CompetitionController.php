@@ -1060,6 +1060,61 @@ class CompetitionController extends Controller
             ], 404);
         }
     }
+    // public function uploadAnswers(UploadAnswersRequest $request)
+    // {
+    //     DB::beginTransaction();
+    //     try {
+    //         $competition = Competition::find($request->competition_id);
+    //         $levels = AnswerUploadHelper::getLevelsForGradeSet(
+    //             $competition,
+    //             array_unique(Arr::pluck($request->participants, 'grade')),
+    //             true
+    //         );
+    //         $createdBy = auth()->id();
+    //         $createdAt = now();
+
+    //         foreach ($request->participants as $participantData) {
+    //             // if($participantData['grade'] !== Participants::where('index_no', $participantData['index_number'])->value('grade')) {
+    //             //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+    //             // }
+    //             $level = $levels[$participantData['grade']];
+    //             $levelTaskCount = $level->tasks->count();
+    //             if ($levelTaskCount > count($participantData['answers'])) {
+    //                 throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
+    //             }
+
+    //             ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
+    //             for($i = 0; $i < $levelTaskCount; $i++) {
+    //                 ParticipantsAnswer::create([
+    //                     'level_id'  => $level->id,
+    //                     'task_id'   => $level->tasks[$i],
+    //                     'participant_index' => $participantData['index_number'],
+    //                     'answer'    =>$participantData['answers'][$i],
+    //                     'created_by_userid' => $createdBy,
+    //                     'created_at'    => $createdAt
+    //                 ]);
+    //             }
+    //         }
+
+    //         DB::commit();
+    //         return response()->json([
+    //             "status"    =>  201,
+    //             "message"   => 'students answers uploaded successful'
+    //         ]);
+    //     } catch (ValidationException $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             "status" =>  $e->status,
+    //             "message" => $e->getMessage()
+    //         ], $e->status);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             "status" =>  500,
+    //             "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function uploadAnswers(Request $request)
     {
