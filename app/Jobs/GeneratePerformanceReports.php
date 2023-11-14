@@ -55,7 +55,7 @@ class GeneratePerformanceReports implements ShouldQueue
             if ($this->totalProgress < 1) {
                 $this->progress = 100;
                 $this->totalProgress = 100;
-                throw new Exception('participants count is 0');
+                throw new Exception('No results found for the selected participants');
             }
 
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
