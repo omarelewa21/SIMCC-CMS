@@ -503,6 +503,7 @@ class ParticipantsController extends Controller
         try {
             DB::beginTransaction();
             $validator = Validator::make($request->all(), [
+                'participants' => ['required', 'array'],
                 'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
                 'participants.*.name' => 'required|string|min:3|max:255',
                 'participants.*.email' => 'sometimes|email|nullable',
@@ -529,20 +530,20 @@ class ParticipantsController extends Controller
             foreach ($participantData as $participant) {
                 $participantIndex = $participant['index_no'];
                 $participantToUpdate = Participants::where('index_no', $participantIndex)->first();
-
-                $participantCountryId = $participantToUpdate->country_id;
-                $originalSchoolId = $participantToUpdate->school_id;
-                $newSchoolId = $this->getSchoolIdBySchoolName($participant['school_name'], $participantCountryId);
-                $participant['school_id'] = $newSchoolId;
-                // Check if the school is being changed
-                if ($originalSchoolId != $newSchoolId) {
-                    $changedSchoolsIds[] = $originalSchoolId;
-                    $changedSchoolsIds[] = $newSchoolId;
-                    $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+                if (isset($participant['school_name']) && $participant['school_name'] != null) {
+                    $participantCountryId = $participantToUpdate->country_id;
+                    $originalSchoolId = $participantToUpdate->school_id;
+                    $newSchoolId = $this->getSchoolIdBySchoolName($participant['school_name'], $participantCountryId);
+                    $participant['school_id'] = $newSchoolId;
+                    // Check if the school is being changed
+                    if ($originalSchoolId != $newSchoolId) {
+                        $changedSchoolsIds[] = $originalSchoolId;
+                        $changedSchoolsIds[] = $newSchoolId;
+                        $participantsWithNewSchoolId[] = $participantToUpdate->index_no;
+                    }
+                    // Update the participant with the validated data
+                    unset($participant['school_name']);
                 }
-
-                // Update the participant with the validated data
-                unset($participant['school_name']);
 
                 $participantToUpdate->update($participant);
                 $participantToUpdate->save();
