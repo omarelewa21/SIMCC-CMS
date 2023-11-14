@@ -557,7 +557,7 @@ class ParticipantsController extends Controller
                         'status' => ReportDownloadStatus::STATUS_In_PROGRESS,
                         'file_path' => '',
                         'progress' => $progress,
-                    ], 201);
+                    ], 200);
                 case ReportDownloadStatus::STATUS_FAILED:
                     return response()->json([
                         'job_id' => $jobId,
@@ -565,7 +565,7 @@ class ParticipantsController extends Controller
                         'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                         'file_path' => '',
                         'progress' => $progress,
-                    ], 500);
+                    ], 200);
                 case ReportDownloadStatus::STATUS_COMPLETED:
                     $filePath = 'performance_reports/' . $job->file_path;
                     if (!Storage::exists($filePath)) {
@@ -575,7 +575,7 @@ class ParticipantsController extends Controller
                             'message' => 'Failed to generate' . isset($report['public_error']) ? $report['public_error'] : '',
                             'file_path' => '',
                             'progress' => 0,
-                        ], 500);
+                        ], 200);
                     }
                     return response()->json([
                         'job_id' => $jobId,
@@ -591,7 +591,7 @@ class ParticipantsController extends Controller
                 'status' => ReportDownloadStatus::STATUS_NOT_STARTED,
                 'progress' => 0,
                 'message' => ReportDownloadStatus::STATUS_NOT_STARTED,
-            ], 201);
+            ], 200);
         }
     }
 
