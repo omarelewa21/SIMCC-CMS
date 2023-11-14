@@ -224,4 +224,9 @@ class Participants extends Base
         }
         return encrypt($password);
     }
+
+    public function hasAnswers()
+    {
+        return $this->answers()->exists();
+    }
 }

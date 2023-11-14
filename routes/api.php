@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\MarkingController;
 Route::post("login", [UserController::class, "login"]);
 Route::get("participant/report/by-certificate", [ParticipantsController::class, "performanceReportWithIndexAndCertificate"])->name('participant.report.byCertificate');
 Route::get('/cheating-csv/{competition}', [CheatingListHelper::class, 'getCheatingCSVFile'])->name('cheating-csv');
+Route::get('/download-excel/{file}', [CompetitionController::class, 'downloadExcel'])->name('download_uploaded_answers_excel_report');
 
 Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], function () {
 
