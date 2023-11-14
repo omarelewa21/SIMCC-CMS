@@ -49,24 +49,24 @@ class ParticipantsController extends Controller
             $ccode[$row->id] = $row->Dial;
         });
 
-        $validated = $request->validate(array(
-            "role_id" => "nullable",
-            "participant.*.competition_id" => ["required"],
-            "participant.*.is_private" => "required|boolean",
-            "participant.*.country_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
-            "participant.*.organization_id" => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
-            "participant.*.name" => "required|string|max:255",
-            "participant.*.class" => "required|max:255|nullable",
-            "participant.*.grade" => ["required", "integer", new CheckCompetitionAvailGrades],
-            "participant.*.for_partner" => "required|boolean",
-            "participant.*.partner_userid" => "exclude_if:*.for_partner,0|required_if:*.for_partner,1|integer|exists:users,id",
-            "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
-            "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
-            "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)]
-        ));
+        $validated = $request->validate([
+            'role_id' => 'nullable',
+            'participant.*.competition_id' => 'required',
+            'participant.*.country_id' => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
+            'participant.*.organization_id' => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
+            'participant.*.name' => 'required|string|max:255',
+            'participant.*.class' => 'required|max:255|nullable',
+            'participant.*.grade' => ['required', 'integer', new CheckCompetitionAvailGrades],
+            'participant.*.for_partner' => 'required|boolean',
+            'participant.*.partner_userid' => 'exclude_if:*.for_partner,0|required_if:*.for_partner,1|integer|exists:users,id',
+            'participant.*.tuition_centre_id' => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
+            'participant.*.school_id' => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
+            'participant.*.email' => ['sometimes', 'email', 'nullable'],
+            'participant.*.identifier' => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            'participant.*.online_based' => 'nullable|in:null,y',
+        ]);
 
-        $validated = data_fill($validated, 'participant.*.class', null); // add missing class attribute and set to null
+        $validated = data_fill($validated, 'participant.*.class', null);
 
         try {
             DB::beginTransaction();
