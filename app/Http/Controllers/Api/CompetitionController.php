@@ -46,6 +46,13 @@ use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use App\Exports\InvalidAnswersExport;
+use App\Exports\MultiSheetExport;
+use App\Exports\SummarizationExport;
+use App\Rules\ParticipantBelongsToCompetition;
+use App\Rules\ValidGradesForCompetition;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CompetitionController extends Controller
 {
@@ -235,13 +242,13 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ],500);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ],500);
+            ], 500);
         }
     }
 
@@ -430,8 +437,6 @@ class CompetitionController extends Controller
                         if ($level->collection_id != null) {
                             CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
                             CompetitionTasksMark::where('level_id', $level->id)->delete();
-
-
                         }
 
                         $level->collection_id = $row['collection_id'];
@@ -548,7 +553,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "add awards unsuccessful"
-            ],500);
+            ], 500);
         }
     }
 
@@ -1070,66 +1075,233 @@ class CompetitionController extends Controller
             ], 404);
         }
     }
+    // public function uploadAnswers(UploadAnswersRequest $request)
+    // {
+    //     DB::beginTransaction();
+    //     try {
+    //         $competition = Competition::find($request->competition_id);
+    //         $levels = AnswerUploadHelper::getLevelsForGradeSet(
+    //             $competition,
+    //             array_unique(Arr::pluck($request->participants, 'grade')),
+    //             true
+    //         );
+    //         $createdBy = auth()->id();
+    //         $createdAt = now();
 
-    public function uploadAnswers(UploadAnswersRequest $request)
+    //         foreach ($request->participants as $participantData) {
+    //             // if($participantData['grade'] !== Participants::where('index_no', $participantData['index_number'])->value('grade')) {
+    //             //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+    //             // }
+    //             $level = $levels[$participantData['grade']];
+    //             $levelTaskCount = $level->tasks->count();
+    //             if ($levelTaskCount > count($participantData['answers'])) {
+    //                 throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
+    //             }
+
+    //             ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
+    //             for($i = 0; $i < $levelTaskCount; $i++) {
+    //                 ParticipantsAnswer::create([
+    //                     'level_id'  => $level->id,
+    //                     'task_id'   => $level->tasks[$i],
+    //                     'participant_index' => $participantData['index_number'],
+    //                     'answer'    =>$participantData['answers'][$i],
+    //                     'created_by_userid' => $createdBy,
+    //                     'created_at'    => $createdAt
+    //                 ]);
+    //             }
+    //         }
+
+    //         DB::commit();
+    //         return response()->json([
+    //             "status"    =>  201,
+    //             "message"   => 'students answers uploaded successful'
+    //         ]);
+    //     } catch (ValidationException $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             "status" =>  $e->status,
+    //             "message" => $e->getMessage()
+    //         ], $e->status);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             "status" =>  500,
+    //             "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    public function uploadAnswers(Request $request)
     {
         DB::beginTransaction();
         try {
+            $request->validate([
+                'competition_id' => 'required|exists:competition,id',
+                'participants'   => 'required|array',
+            ]);
+
             $competition = Competition::find($request->competition_id);
-            $levels = AnswerUploadHelper::getLevelsForGradeSet(
-                $competition,
-                array_unique(Arr::pluck($request->participants, 'grade')),
-                true
-            );
-            $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-                ->pluck('grade', 'index_no');
 
             $createdBy = auth()->id();
             $createdAt = now();
 
-            foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
-                    throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
-                }
+            $validParticipants = [];
+            $invalidParticipants = [];
+            $participants = $request->participants;
 
-                $level = $levels[$participantData['grade']]['level'];
-                $levelTaskCount = $level->tasks->count();
-                if ($levelTaskCount > count($participantData['answers'])) {
-                    throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
-                }
+            $uniqueParticipantValidation = Validator::make($request->all(), [
+                'participants.*.index_number' => 'required|distinct',
+            ]);
 
-                ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
-                for($i = 0; $i < $levelTaskCount; $i++) {
-                    ParticipantsAnswer::create([
-                        'level_id'  => $level->id,
-                        'task_id'   => $level->tasks[$i],
-                        'participant_index' => $participantData['index_number'],
-                        'answer'    =>$participantData['answers'][$i],
-                        'created_by_userid' => $createdBy,
-                        'created_at'    => $createdAt
-                    ]);
+            if ($uniqueParticipantValidation->fails()) {
+                $participants = [];
+                $invalidParticipants['duplicate_index_numbers'] = [];
+                foreach ($request->participants as $key => $participantData) {
+                    if ($uniqueParticipantValidation->errors()->has("participants.{$key}.index_number")) {
+                        $invalidParticipants['duplicate_index_numbers'][] = $participantData;
+                    } else {
+                        $participants[] = $participantData;
+                    }
                 }
             }
 
+            foreach ($participants as $participantData) {
+                $participantValidation = Validator::make($participantData, [
+                    'grade' => ['required', 'string', new ValidGradesForCompetition($competition, true)],
+                    'index_number' => [
+                        'required',
+                        Rule::exists('participants', 'index_no')->where(function ($query) {
+                            $query->whereNull('deleted_at');
+                        }),
+                        new ParticipantBelongsToCompetition($request->competition_id),
+                    ],
+                    'answers' => 'required|array',
+                ]);
+
+                if ($participantValidation->passes()) {
+                    $levelRule = $participantValidation->getRules()['grade'][2];
+                    $level = $levelRule->getLevel();
+                    $levelTaskCount = $level->tasks->count();
+                    if ($levelTaskCount != count($participantData['answers'])) {
+                        $invalidParticipants['wrong_answers_length'][] = $participantData;
+                    } else {
+                        ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
+                        for ($i = 0; $i < $levelTaskCount; $i++) {
+                            ParticipantsAnswer::create([
+                                'level_id'  => $level->id,
+                                'task_id'   => $level->tasks[$i],
+                                'participant_index' => $participantData['index_number'],
+                                'answer'    => $participantData['answers'][$i],
+                                'created_by_userid' => $createdBy,
+                                'created_at'    => $createdAt
+                            ]);
+                        }
+                        $validParticipants[] = $participantData;
+                    }
+                } else {
+                    $errors = $participantValidation->errors();
+                    if ($errors->has('grade')) {
+                        $invalidParticipants['invalid_grade'][] = $participantData;
+                    }
+
+                    if ($errors->has('index_number')) {
+                        $invalidParticipants['invalid_index_number'][] = $participantData;
+                    }
+                }
+            }
+
+            $summarization = [];
+            $participants = [];
+            $participantData=[];
+           
+            $participants = $competition->participants()
+                ->select('participants.index_no', 'participants.grade', 'participants.status')
+                ->with(['answers' => function ($query) {
+                    $query->select('participant_index');
+                }])
+                ->get()
+                ->map(function ($participant) {
+                    $participant->has_answer = $participant->hasAnswers();
+                    return $participant;
+                });
+
+            foreach ($participants as $participant) {
+                $indexNo = $participant->index_no;
+                $grade = $participant->grade;
+                $status = $participant->status;
+                $hasAnswer = $participant->has_answer;
+                $participantData['index_no'] = $indexNo;
+                $participantData['grade'] = $grade;
+                $participantData['status'] = $status;
+                if ($hasAnswer) {
+                    $summarization['attended'][] = $participantData;
+                } else {
+                    $summarization['absent'][] = $participantData;
+                }
+            }
             DB::commit();
+            if (!empty($invalidParticipants)) {
+                $reportFilePath = $this->generateErrorReportExcel($summarization, $invalidParticipants);
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Upload partially successful. Please download the error report.',
+                    'report_url' => $reportFilePath
+                ]);
+            }
+
+            $reportFilePath = $this->generateErrorReportExcel($summarization, []);
+
             return response()->json([
-                "status"    =>  201,
-                "message"   => 'students answers uploaded successful'
+                'status' => 201,
+                'message' => 'Students answers uploaded successfully',
+                'report_url' => $reportFilePath
             ]);
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            return response()->json([
-                "status" =>  $e->status,
-                "message" => $e->getMessage()
-            ], $e->status);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
+                'status' => 500,
+                'message' => 'Students answers upload unsuccessful: ' . $e->getMessage()
             ], 500);
         }
     }
+
+    private function generateErrorReportExcel($summarization, $invalidParticipants = null)
+    {
+        $currentTime = now()->format('YmdHis');
+        $fileName = "answers_upload_report_{$currentTime}.xlsx";
+
+        $sheets = [];
+
+        if ($invalidParticipants) {
+            foreach ($invalidParticipants as $sheetTitle => $sheetData) {
+                $sheets[] = new InvalidAnswersExport($sheetTitle, $sheetData);
+            }
+        }
+
+        foreach ($summarization as $sheetTitle => $sheetData) {
+            $sheets[] = new SummarizationExport($sheetTitle, $sheetData);
+        }
+
+        $storagePath = "answers-upload-reports/{$fileName}";
+
+        Storage::disk('public')->put($storagePath, Excel::raw(new MultiSheetExport($sheets), \Maatwebsite\Excel\Excel::XLSX));
+
+        return route('download_uploaded_answers_excel_report', ['file' => $fileName]);
+    }
+
+    public function downloadExcel($file)
+    {
+        $filePath = "/answers-upload-reports/{$file}";
+    
+        if (Storage::disk('public')->exists($filePath)) {
+            $fullPath = storage_path("app/public" . $filePath);
+    
+            return response()->download($fullPath)->deleteFileAfterSend(true);
+        } else {
+            abort(404, 'File not found');
+        }
+    }
+    
 
     public function report(Competition $competition, Request $request)
     {
