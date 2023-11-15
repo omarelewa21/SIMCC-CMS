@@ -20,7 +20,7 @@ class ComputeCheatingParticipants implements ShouldQueue
     protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
     protected $number_of_incorrect_answers; // If number of incorrect answers > $number_of_incorrect_answers, then the participant is considered as cheater
 
-    public $timeout = 1000;
+    public $timeout = 5000;
 
     /**
      * Create a new job instance.
