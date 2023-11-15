@@ -37,7 +37,7 @@ class GeneratePerformanceReports implements ShouldQueue
     protected $request;
     protected $user;
     protected $report;
-    public $timeout = 600;
+    public $timeout = 900;
 
     public function __construct($request, $user)
     {
