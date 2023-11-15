@@ -28,16 +28,16 @@ class CreateDomainTagRequest extends FormRequest
     {
         return [
             '*.is_tag'      => 'required_if:*.domain_id,null|boolean',
-            '*.domain_id'   => ['integer', 'exclude_if:*.is_tag,1', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')] ,
+            '*.domain_id'   => ['integer', 'exclude_if:*.is_tag,1', Rule::exists('domains_tags', 'id')->whereNull('deleted_at')],
             '*.name'        => 'required|array',
             '*.name.*'      => [
                 'required',
                 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
                 new CheckDomainTagsExist,
-                Rule::unique('domains_tags','name')
-                    ->where(function(Builder $query){
-                        return $query->whereNull('domain_id')->whereNull('deleted_at');
-                })
+                // Rule::unique('domains_tags', 'name')
+                //     ->where(function (Builder $query) {
+                //         return $query->whereNull('domain_id')->whereNull('deleted_at');
+                //     })
             ],
         ];
     }

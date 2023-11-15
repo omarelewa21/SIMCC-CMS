@@ -8,78 +8,47 @@ use App\Models\DomainsTags;
 
 class CheckDomainTagsExist implements Rule, DataAwareRule
 {
-    /**
-     * All of the data under validation.
-     *
-     * @var array
-     */
-
     protected $data = [];
     protected $message;
 
-    // ...
-
-    /**
-     * Set the data under validation.
-     *
-     * @param  array  $data
-     * @return $this
-     */
     public function setData($data)
     {
         $this->data = $data;
-
         return $this;
     }
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
+
     public function __construct()
     {
-        //
+        // Constructor left empty since it doesn't need any initialization.
     }
 
-    /**
-     * Determine if the validation rule passes.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
     public function passes($attribute, $value)
     {
-        $row = explode(".",$attribute)[0];
+        $row = explode(".", $attribute)[0];
+        $col = explode(".", $attribute)[2];
 
-        if(isset($this->data[$row]['domain_id'])) {
-                $result = DomainsTags::where("domain_id",$this->data[$row]['domain_id'])
-                    ->where("name",[$value])
-                    ->exists();
-
-                $this->message = 'The domain '.$attribute.' already exists';
-
-                return !$result;
-        }
-        elseif ($this->data[$row]["is_tag"] == 1 )
-        {
+        if ($this->data[$row]["is_tag"] == 1) {
             $result = DomainsTags::whereNull("domain_id")
-                ->where("name",$value)
+                ->where("name", $value)
                 ->exists();
-
-            $this->message = 'The tag '.$attribute.' already exists';
-
-            return !$result;
+            $this->message = 'The tag ' . $value . ' already exists';
+        } elseif (isset($this->data[$row]['domain_id'])) {
+            $result = DomainsTags::where("name", $value)
+                ->exists();
+            $this->message = 'The topic ' . $value . ' already exists';
+        } else {
+            if ($col === '0') {
+                $result = DomainsTags::whereNull('domain_id')->where('name', $value)->exists();
+                $this->message = 'The domain ' . $value . ' already exists';
+            } elseif ($col === '1') {
+                $result = DomainsTags::whereNotNull('domain_id')->where('name', $value)->exists();
+                $this->message = 'The topic ' . $value . ' already exists';
+            }
         }
 
-        return true;
+        return !$result;
     }
 
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
     public function message()
     {
         return $this->message;
