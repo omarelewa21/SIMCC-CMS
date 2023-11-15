@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 use PDF;
+use SebastianBergmann\Invoker\TimeoutException;
 use Throwable;
 
 class GeneratePerformanceReports implements ShouldQueue
@@ -35,6 +37,7 @@ class GeneratePerformanceReports implements ShouldQueue
     protected $request;
     protected $user;
     protected $report;
+    public $timeout = 600;
 
     public function __construct($request, $user)
     {
@@ -48,61 +51,54 @@ class GeneratePerformanceReports implements ShouldQueue
             $this->progress = 0;
             $this->jobId = $this->job->getJobId();
             $this->updateJobProgress($this->progress, 100, ReportDownloadStatus::STATUS_In_PROGRESS);
-    
             $this->participants = $this->getParticipants();
-            $this->participantResults = collect($this->getParticipantResults()); // Convert array to collection
-            $this->totalProgress = $this->participantResults->count();
-    
+            $this->participantResults = $this->getParticipantResults(); // Convert array to collection
+            $this->totalProgress = count($this->participantResults);
+
             if ($this->totalProgress < 1) {
                 $this->progress = 100;
                 $this->totalProgress = 100;
                 throw new Exception('No results found for the selected participants');
             }
-    
+
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS);
             $time = (new DateTime)->format('d_m_Y_H_i');
             $pdfDirname = sprintf('performance_reports_%s', $time);
             $pdfDirPath = 'performance_reports/' . $pdfDirname;
             Storage::makeDirectory($pdfDirPath);
-    
-            // Process participants in chunks
-            $chunkSize = 50; // Adjust the chunk size as needed
-            foreach ($this->participantResults->chunk($chunkSize) as $participantResultsChunk) {
-                foreach ($participantResultsChunk as $participantResult) {
-                    try {
-                        if (is_null($participantResult->report)) {
-                            $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
-                            $report = $__report->getJsonReport();
-                            $participantResult->report = $report;
-                            $participantResult->save();
-                        } else {
-                            $report = $participantResult->report;
-                        }
-                        $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
-                        $cleanedName = preg_replace('/\s+/', '_', $participantResult->participant['name']);
-                        $pdf = PDF::loadView('performance-report', [
-                            'general_data'                  => $report['general_data'],
-                            'performance_by_questions'      => $report['performance_by_questions'],
-                            'performance_by_topics'         => $report['performance_by_topics'],
-                            'grade_performance_analysis'    => $report['grade_performance_analysis'],
-                            'analysis_by_questions'         => $report['analysis_by_questions']
-                        ]);
-                        $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] =  'success';
-                    } catch (Exception $e) {
-                        // Handle exceptions
-                        $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] = 'failed: ' . $e->getMessage();
-                        $this->progress++;
-                        continue;
+            foreach ($this->participantResults as $participantResult) {
+                try {
+                    if (is_null($participantResult->report)) {
+                        $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+                        $report = $__report->getJsonReport();
+                        $participantResult->report = $report;
+                        $participantResult->save();
+                    } else {
+                        $report = $participantResult->report;
                     }
-    
-                    $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . $cleanedName);
-                    $pdfPath = $pdfDirPath . '/' . $pdfFilename;
-                    Storage::put($pdfPath, $pdf->output());
+                    $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
+                    $cleanedName = preg_replace('/\s+/', '_', $participantResult->participant['name']);
+                    $pdf = PDF::loadView('performance-report', [
+                        'general_data'                  => $report['general_data'],
+                        'performance_by_questions'      => $report['performance_by_questions'],
+                        'performance_by_topics'         => $report['performance_by_topics'],
+                        'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                        'analysis_by_questions'         => $report['analysis_by_questions']
+                    ]);
+                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] =  'success';
+                } catch (Exception $e) {
+                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] = 'failed: ' . $e->getMessage();
                     $this->progress++;
-                    $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS, null, $this->report);
+                    continue;
                 }
+
+                $pdfFilename = sprintf('report_%s.pdf', $participantResult->participant['index_no'] . '_' . $cleanedName);
+                $pdfPath = $pdfDirPath . '/' . $pdfFilename;
+                Storage::put($pdfPath, $pdf->output());
+                $this->progress++;
+                $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_In_PROGRESS, null, $this->report);
             }
-    
+
             // Add the log file to the ZIP archive
             $zip = new ZipArchive;
             $zipFilename = sprintf('performance_reports_%s.zip', $time);
@@ -112,19 +108,16 @@ class GeneratePerformanceReports implements ShouldQueue
             foreach (Storage::files($pdfDirPath) as $file) {
                 $zip->addFile(storage_path('app/' . $file), basename($file));
             }
-    
+
             $zip->close();
             Storage::deleteDirectory($pdfDirPath);
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_COMPLETED, $zipFilename, $this->report);
-        } catch (Exception $e) {
-            $this->report['public_error'] = $e->getMessage();
-            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
-        } catch (Throwable $e) {
+        } catch (Exception | Throwable | TimeoutException | MaxAttemptsExceededException $e) {
             $this->report['public_error'] = $e->getMessage();
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
         }
     }
-    
+
 
     public function getParticipants()
     {
@@ -261,5 +254,16 @@ class GeneratePerformanceReports implements ShouldQueue
             );
         } catch (Exception $e) {
         }
+    }
+
+    public function failed(Throwable $exception)
+    {
+        $errorMessage = $exception->getMessage();
+
+        // Update the job progress and status as failed
+        $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, $errorMessage, $this->report);
+
+        // Log the error message
+        Log::error('Performance report generation failed: ' . $errorMessage);
     }
 }
