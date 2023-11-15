@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 use PDF;
-
+use Throwable;
 
 class GeneratePerformanceReports implements ShouldQueue
 {
@@ -110,6 +110,9 @@ class GeneratePerformanceReports implements ShouldQueue
             Storage::deleteDirectory($pdfDirPath);
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_COMPLETED, $zipFilename, $this->report);
         } catch (Exception $e) {
+            $this->report['public_error'] = $e->getMessage();
+            $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
+        } catch (Throwable $e) {
             $this->report['public_error'] = $e->getMessage();
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
         }
