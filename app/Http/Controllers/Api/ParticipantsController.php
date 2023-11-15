@@ -30,6 +30,7 @@ use App\Rules\CheckSchoolName;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -533,6 +534,7 @@ class ParticipantsController extends Controller
 
     public function performanceReportsBulkDownload(getParticipantListRequest $request)
     {
+        $user = auth()->user();
         $user = auth()->user();
         $job = new GeneratePerformanceReports($request, $user);
         $job_id = $this->dispatch($job);
