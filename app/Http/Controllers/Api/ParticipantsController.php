@@ -52,6 +52,7 @@ class ParticipantsController extends Controller
         $validated = $request->validate([
             'role_id' => 'nullable',
             'participant.*.competition_id' => 'required',
+            "participant.*.is_private" => "required|boolean",
             'participant.*.country_id' => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:all_countries,id',
             'participant.*.organization_id' => 'exclude_if:role_id,2,3,4,5|required_if:role_id,0,1|integer|exists:organization,id',
             'participant.*.name' => 'required|string|max:255',
