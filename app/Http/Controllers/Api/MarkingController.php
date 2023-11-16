@@ -426,7 +426,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Participant results retrival unsuccessful",
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }
