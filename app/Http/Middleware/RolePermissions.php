@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -20,30 +19,49 @@ class RolePermissions
 
     public function handle(Request $request, Closure $next)
     {
-        $rolePermissions = DB::table("permission_lists")
-            ->leftJoin("roles_permission", function($join){
-                $join->on("permission_lists.id", "=", "roles_permission.permission_list_id");
-            })
-            ->leftJoin("permission_dict as a", function($join){
-                $join->on("permission_lists.permission_name_id", "=", "a.id");
-            })
-            ->leftJoin("permission_dict as b", function($join){
-                $join->on("permission_lists.permission_action_id", "=", "b.id");
-            })
-            ->select(DB::raw('CONCAT(a.name, ".", b.name ) AS "permission"'))
+        return $this->isUserAuthorizedForThisRoute()
+            ? $next($request)
+            : response()->json([
+                "status"    => 405,
+                "message"   => "Unauthorized to perform this action"
+            ], 405);
+    }
+
+    /**
+     * Check if user is authorized to perform action
+     * To add new route, add route name to routes table, then add route_id, role_id to permissions table
+     * 
+     * @return bool
+     */
+    private function isAuthorized(): bool
+    {
+        return DB::table("permissions")
+            ->join("routes", "permissions.route_id", "routes.id")
+            ->where("permissions.role_id", auth()->user()->role_id)
+            ->where("routes.route_name", Route::currentRouteName())
+            ->exists();
+    }
+
+    /**
+     * Check if user is authorized to perform action - old version
+     * 
+     * @return bool
+     */
+    private function __isAuthorized(): bool
+    {
+        return DB::table("permission_lists")
+            ->leftJoin("roles_permission", "permission_lists.id", "roles_permission.permission_list_id")
+            ->leftJoin("permission_dict as a", "permission_lists.permission_name_id", "a.id")
+            ->leftJoin("permission_dict as b", "permission_lists.permission_action_id", "b.id")
             ->where("roles_permission.roles_id", "=", auth()->user()->role_id)
-            ->pluck('permission')
-            ->toArray();
+            ->whereRaw("CONCAT(a.name, '.', b.name) = ?", [Route::currentRouteName()])
+            ->exists();
+    }
 
-        $bypassRoute = ['info.countryList','info.roles','info.languages','info.competitionlist'];
-
-        if(auth()->user()->role_id > 1 && !in_array(Route::currentRouteName(),$bypassRoute))
-        {
-            if(!in_array(Route::currentRouteName(),$rolePermissions)) {
-                return response()->json(["status" => 405 ,"message" => "Unauthorized to perform this action" . Route::currentRouteName()], 405);
-            }
-        }
-
-        return $next($request);
+    private function isUserAuthorizedForThisRoute(): bool
+    {
+        return auth()->user()->hasRole(['Admin', 'Super Admin'])
+            || $this->__isAuthorized()
+            || $this->isAuthorized();
     }
 }
