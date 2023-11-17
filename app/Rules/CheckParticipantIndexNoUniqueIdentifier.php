@@ -24,7 +24,8 @@ class CheckParticipantIndexNoUniqueIdentifier implements Rule
             $uniqueIdentifierRule = new CheckUniqueIdentifierWithCompetitionID($participant);
             if (!$uniqueIdentifierRule->passes($attribute, $value)) {
                 $this->message = $uniqueIdentifierRule->message();
-                return false;
+                return false; 
+                
             }
         }
 
