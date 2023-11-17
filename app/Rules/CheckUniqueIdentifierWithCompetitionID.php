@@ -2,11 +2,14 @@
 
 namespace App\Rules;
 
+use App\Models\Competition;
+use App\Models\CompetitionOrganization;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\Rule;
-use App\Models\CompetitionOrganization;
+use App\Models\User;
+use App\Models\CompetitionOrganizationDate;
 use App\Models\Participants;
-use Illuminate\Support\Str;
+
 class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
 {
     protected $message = [];
@@ -20,72 +23,65 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
         return $this;
     }
 
+    /**
+     * Create a new rule instance.
+     *1
+     * @return void
+     */
     public function __construct($participant)
     {
         $this->participant = $participant;
     }
 
+    /**
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
+     */
     public function passes($attribute, $value)
     {
-        if (is_null($value)) {
-            return true;
-        }
+        if (is_null($value)) return true;
 
-        $value = Str::lower($value);
-        $rowNum = explode(".", $attribute)[1];
-        $competitionId = $this->getCompetitionId($rowNum);
-
-        $participants = $this->data['participant'];
-
-        $duplicateCount = 0;
-        foreach ($participants as $index => $participant) {
-            // Check for duplicates within the same competition
-            if ($index != $rowNum && $participant['competition_id'] == $competitionId && Str::lower($participant['identifier']) == $value) {
-                $duplicateCount++;
+        if (!$this->participant) {
+            $rowNum = explode(".", $attribute)[1];
+            switch (auth()->user()->role_id) {
+                case 0:
+                case 1:
+                    $competition_id = $this->data['participant'][$rowNum]['competition_id'];
+                    break;
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                    $competition_id = auth()->user()->competition_id;
+                    break;
             }
+        } else {
+            $competition_id = $this->participant->competition()->id;
         }
-
-        // Check for duplicates in the database
-        $found = Participants::whereIn('competition_organization_id', $this->getCompetitionOrganizationIds($competitionId))
+        $competition_organization_ids = CompetitionOrganization::where(['competition_id' => $competition_id])->pluck('id');
+        $q = Participants::whereIn('competition_organization_id', $competition_organization_ids)
             ->where('identifier', $value);
-
         if ($this->participant) {
-            $found->where('id', '!=', $this->participant->id);
+            $q->where('id', '!=', $this->participant->id);
         }
-
-        $found = $found->exists();
-
-        if ($duplicateCount > 0 || $found) {
+        $found = $q->exists();
+        if ($found) {
             $this->message = 'The identifier value must be unique to the competition.';
             return false;
         }
-
         return true;
     }
 
+    /**
+     * Get the validation error message.
+     *
+     * @return string
+     */
     public function message()
     {
         return $this->message;
-    }
-
-    private function getCompetitionId($rowNum)
-    {
-        switch (auth()->user()->role_id) {
-            case 0:
-            case 1:
-                return $this->data['participant'][$rowNum]['competition_id'];
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                return auth()->user()->competition_id;
-            default:
-                return null;
-        }
-    }
-
-    private function getCompetitionOrganizationIds($competitionId)
-    {
-        return CompetitionOrganization::where(['competition_id' => $competitionId])->pluck('id');
     }
 }
