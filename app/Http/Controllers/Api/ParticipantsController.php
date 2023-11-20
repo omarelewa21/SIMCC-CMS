@@ -509,7 +509,7 @@ class ParticipantsController extends Controller
                 'participants.*.email' => 'sometimes|email|nullable',
                 'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
                 'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
-                    $request->input('participants.*.index_no')
+                    $request->input('participants')
                 )],
             ]);
 
