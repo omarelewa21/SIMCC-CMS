@@ -623,7 +623,7 @@ class ParticipantsController extends Controller
             $validator = Validator::make($request->all(), [
                 'participants' => ['required', 'array'],
                 'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
-                'participants.*.name' => 'required|string|min:3|max:255',
+                'participants.*.name' => 'string|min:3|max:255',
                 'participants.*.email' => 'sometimes|email|nullable',
                 'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
                 'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
