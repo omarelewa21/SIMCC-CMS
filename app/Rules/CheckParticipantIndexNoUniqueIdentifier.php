@@ -28,21 +28,16 @@ class CheckParticipantIndexNoUniqueIdentifier implements Rule
         }
 
         // Validate uniqueness of identifier within the specified index numbers
-
-        foreach ($this->participants as $payLoadParticipant) {
-            $participant = Participants::where('index_no', $payLoadParticipant['index_no'])->first();
-
-            if ($participant->identifier == $payLoadParticipant['identifier']) {
-                continue;
-            }
-
-            // Use CheckUniqueIdentifierWithCompetitionID rule for other cases
-            $uniqueIdentifierRule = new CheckUniqueIdentifierWithCompetitionID($participant);
-            if (!$uniqueIdentifierRule->passes($attribute, $value)) {
-                $this->message = $uniqueIdentifierRule->message();
-                return false;
-            }
+        $rowNum = explode(".", $attribute)[1];
+        $participant = Participants::where('index_no', $this->participants[$rowNum]['index_no'])->first();
+        
+        // Use CheckUniqueIdentifierWithCompetitionID rule for other cases
+        $uniqueIdentifierRule = new CheckUniqueIdentifierWithCompetitionID($participant);
+        if (!$uniqueIdentifierRule->passes($attribute, $value)) {
+            $this->message = $uniqueIdentifierRule->message();
+            return false;
         }
+
 
         return true;
     }
