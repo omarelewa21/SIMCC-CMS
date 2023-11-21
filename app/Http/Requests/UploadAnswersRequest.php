@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Competition;
+use App\Models\Participants;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class UploadAnswersRequest extends FormRequest
@@ -31,8 +33,12 @@ class UploadAnswersRequest extends FormRequest
             'participants.*.grade'  => 'required|string',
             'participants.*.index_number' => Rule::exists('participants', 'index_no')
                 ->where(function ($query) use ($competition) {
-                    $query->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
-                        ->where('competition_organization.competition_id', $competition->id);
+                    $query->whereExists(function ($query) use ($competition) {
+                        $query->select(DB::raw(1))
+                            ->from('competition_organization')
+                            ->whereRaw('competition_organization.id = participants.competition_organization_id')
+                            ->where('competition_organization.competition_id', $competition->id);
+                    });
             }),
             'participants.*.answers' => 'required|array',
         ];
