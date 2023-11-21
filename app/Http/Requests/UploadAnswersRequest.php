@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Competition;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UploadAnswersRequest extends FormRequest
 {
@@ -25,11 +26,15 @@ class UploadAnswersRequest extends FormRequest
     public function rules()
     {
         $competition = Competition::findOrFail($this->competition_id);
-        $participantIndexes = $competition->participants()->pluck('index_no')->join(',');
         return [
+            'competition_id'        => 'required|exists:competitions,id',
             'participants'          => 'required|array',
             'participants.*.grade'  => 'required|string',
-            'participants.*.index_number' => 'required|in:'.$participantIndexes,
+            'participants.*.index_number' => Rule::exists('participants', 'index_no')
+                ->where(function ($query) use ($competition) {
+                    $query->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
+                        ->where('competition_organization.competition_id', $competition->id);
+            }),
             'participants.*.answers' => 'required|array',
         ];
     }
