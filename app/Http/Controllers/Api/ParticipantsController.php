@@ -507,6 +507,7 @@ class ParticipantsController extends Controller
                 'participants.*.index_no' => ['required', new CheckParticipantIndexNo],
                 'participants.*.name' => 'string|min:3|max:255',
                 'participants.*.email' => 'sometimes|email|nullable',
+                "participant.*.class" => "max:255|nullable",
                 'participants.*.school_name' => ['sometimes', 'string', 'nullable', new CheckSchoolName],
                 'participants.*.identifier' => [new CheckParticipantIndexNoUniqueIdentifier(
                     $request->input('participants')
