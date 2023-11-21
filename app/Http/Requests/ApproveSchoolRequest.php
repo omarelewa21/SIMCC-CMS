@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\School;
+namespace App\Http\Request;
 
 use App\Models\School;
 use App\Models\User;
@@ -41,6 +41,7 @@ class ApproveSchoolRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+
         if(Auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])){
             $validator->after(function ($validator) {
                 foreach($this->id as $schoolId){
