@@ -198,7 +198,6 @@ class SchoolController extends Controller
     }
 
     public function approve (ApproveSchoolRequest $request) {
-
         return $this->_updateStatus($request->all(), "rejected", "rejected,deleted,active");
     }
 

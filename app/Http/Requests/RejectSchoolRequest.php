@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\School;
+namespace App\Http\Requests;
 
 use App\Models\School;
 use App\Models\User;
