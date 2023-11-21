@@ -27,7 +27,6 @@ class UploadAnswersRequest extends FormRequest
     {
         $competition = Competition::findOrFail($this->competition_id);
         return [
-            'competition_id'        => 'required|exists:competitions,id',
             'participants'          => 'required|array',
             'participants.*.grade'  => 'required|string',
             'participants.*.index_number' => Rule::exists('participants', 'index_no')
