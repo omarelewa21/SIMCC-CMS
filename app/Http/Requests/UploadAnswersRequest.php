@@ -3,9 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Competition;
-use App\Models\Participants;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UploadAnswersRequest extends FormRequest
 {
@@ -26,13 +24,25 @@ class UploadAnswersRequest extends FormRequest
      */
     public function rules()
     {
+        $competition = Competition::findOrFail($this->competition_id);
+        $participantIndexes = $competition->participants()->pluck('index_no')->join(',');
         return [
-            'competition_id'        => 'required|exists:competition,id',
             'participants'          => 'required|array',
             'participants.*.grade'  => 'required|string',
-            'participants.*.index_number' => [
-                'required', Rule::exists('participants', 'index_no')->where(fn ($query) => $query->whereNull('deleted_at'))],
+            'participants.*.index_number' => 'required|in:'.$participantIndexes,
             'participants.*.answers' => 'required|array',
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            'participants.*.index_number.in' => 'Participant with index number :input is not registered for this competition.',
         ];
     }
 
@@ -45,6 +55,7 @@ class UploadAnswersRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+        return;
         $validator->after(function ($validator) {
             // check if participants provided in the request belongs to competition included in the request
             $competition = Competition::find($this->competition_id);
@@ -60,5 +71,4 @@ class UploadAnswersRequest extends FormRequest
             }
         });
     }
-
 }
