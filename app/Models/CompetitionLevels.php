@@ -47,6 +47,11 @@ class CompetitionLevels extends Model
         return $this->hasMany(LevelGroupCompute::class, 'level_id');
     }
 
+    public function markingLogs ()
+    {
+        return $this->hasMany(MarkingLogs::class, 'level_id')->orderBy('id', 'desc');
+    }
+
     public function setGradesAttribute ($value) {
         $value = array_unique($value);
         return $this->attributes['grades'] = json_encode($value);
