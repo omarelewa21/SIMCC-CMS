@@ -20,7 +20,10 @@ class MarkingService
      */
     public function markList(Competition $competition)
     {
-        $competition->load('rounds.levels.levelGroupComputes', 'groups.countries:id,display_name');
+        $competition->load(
+            ['rounds.levels' => ['levelGroupComputes', 'markingLogs', 'collection.sections', 'rounds']],
+            'groups.countries:id,display_name'
+        );
         $countryGroups = $this->getListCompetitionGroupsWithCountries($competition);
         $rounds = $competition->rounds
             ->mapWithKeys(function ($round) use($countryGroups) {            
@@ -68,7 +71,9 @@ class MarkingService
                 $groupOfMarkedParticipants = $markedParticipants->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
                 $absentees = $this->getLevelAbsenteesForCountryGroup($level, $countryGroupIds);
                 $groupOfAnswersUploaded = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
-                $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first(); 
+                $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
+                $logs = $level->markingLogs->filter(fn($log)=> $log->group_id == $group_id);
+                $firstLogs = $logs->first();
 
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
@@ -83,7 +88,10 @@ class MarkingService
                     'absentees_count'               => $absentees->count(),
                     'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
                     'country_group'                 => $countryGroup->values()->toArray(),
-                    'marking_group_id'              => $group_id
+                    'marking_group_id'              => $group_id,
+                    'computed_at'                   => $firstLogs?->computed_at->format('Y-m-d'),
+                    'computed_by'                   => $firstLogs?->computed_by,
+                    'logs'                          => $logs,
                 ];
             }
             return $levels;
@@ -174,7 +182,6 @@ class MarkingService
         if($level->rounds->roundsAwards()->doesntExist()) return false;
         if($level->participantsAnswersUploaded()->doesntExist()) return false;
 
-        $level->load('collection.sections', 'rounds');
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
 
