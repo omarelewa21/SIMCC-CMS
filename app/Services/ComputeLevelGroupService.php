@@ -7,8 +7,10 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\LevelGroupCompute;
+use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
@@ -42,6 +44,21 @@ class ComputeLevelGroupService
         }
 
         return true;
+    }
+
+    public static function storeLevelGroupRecords(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
+    {
+        DB::beginTransaction();
+        LevelGroupCompute::updateOrCreate(
+            ['level_id' => $level->id, 'group_id' => $group->id],
+            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+        );
+        
+        MarkingLogs::create([
+            'level_id' => $level->id,
+            'group_id' => $group->id,
+        ]);
+        DB::commit();
     }
     
     public function computeResutlsForGroupLevel(array $request)

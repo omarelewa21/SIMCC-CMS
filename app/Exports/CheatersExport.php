@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Helpers\CheatingListHelper;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\Competition;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -11,20 +12,17 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class CheatersExport implements FromCollection, WithStyles
 {
-
-    private $competition;
-
-    function __construct(Competition $competition)
-    {
-        $this->competition = $competition;
-    }
+    function __construct(
+        private Competition $competition,
+        private CompetitionCheatingListRequest $request
+    ){}
 
     /**
     * @return \Illuminate\Support\Collection
     */
     public function collection()
     {
-        $dataCollection = CheatingListHelper::getCheatersDataForCSV($this->competition);
+        $dataCollection = CheatingListHelper::getCheatersDataForCSV($this->competition, $this->request);
         $returnedCollection = collect();
         $lastGroup = null;
         foreach($dataCollection as $key=>$record) {

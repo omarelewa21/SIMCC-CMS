@@ -4,68 +4,153 @@ namespace App\Services;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\CompetitionRounds;
 use App\Models\Countries;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 
 class MarkingService
 {
     /**
      * Get mark list
      * 
-     * @param App\Models\Competition $competition
+     * @param \App\Models\Competition $competition
      * 
      * @return array
      */
     public function markList(Competition $competition)
     {
-        $competition->load('rounds.levels.levelGroupComputes', 'groups.countries:id,display_name');
-
-        $countries = $competition->groups->load('countries:id,display_name')->pluck('countries', 'id');
-        
-        $rounds = $competition->rounds->mapWithKeys(function ($round) use($countries){
-            $levels = $round->levels->mapWithKeys(function ($level) use($countries){
-                $levels = [];
-                foreach($countries as $group_id=>$countryGroup){
-                    $totalParticipants  = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())->count();
-                    $markedParticipants = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                            ->where('participants.status', 'result computed')->count();
-                    $absentees = $level->participants()->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                        ->where('participants.status', 'absent')
-                                        ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                                        ->select('participants.name')->distinct()->get();
-                    
-                    $answersUploaded = $level->participantsAnswersUploaded()
-                        ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-                        ->whereIn('participants.country_id', $countryGroup->pluck('id')->toArray())
-                        ->select('participant_answers.participant_index')->distinct()->count('participant_index');
-                    
-                    $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first(); 
-
-                    $levels[$level->id][] = [
-                        'level_id'                      => $level->id,
-                        'name'                          => $level->name,
-                        'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
-                        'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
-                        'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
-                        'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
-                        'total_participants'            => $totalParticipants,
-                        'answers_uploaded'              => $answersUploaded,
-                        'marked_participants'           => $markedParticipants,
-                        'absentees_count'               => $absentees->count(),
-                        'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
-                        'country_group'                 => $countryGroup->pluck('display_name')->toArray(),
-                        'marking_group_id'              => $group_id
-                    ];
-                }
-                return $levels;
+        $competition->load(
+            ['rounds.levels' => ['levelGroupComputes', 'markingLogs', 'collection.sections', 'rounds']],
+            'groups.countries:id,display_name'
+        );
+        $countryGroups = $this->getListCompetitionGroupsWithCountries($competition);
+        $rounds = $competition->rounds
+            ->mapWithKeys(function ($round) use($countryGroups) {            
+                return [$round['name'] => $this->getLevelList($round, $countryGroups)];
             });
-            return [$round['name'] => $levels];
-        });
+
         return [
             "competition_name" => $competition['name'],
             "rounds"           => $rounds
         ];
+    }
+
+    /**
+     * Get list of competition groups with countries
+     * @param \App\Models\Competition $competition
+     * @return \Illuminate\Support\Collection
+     */
+    private function getListCompetitionGroupsWithCountries(Competition $competition): Collection
+    {
+        return $competition->groups
+            ->pluck('countries', 'id')
+            ->mapWithKeys(function ($countryGroup, $group_id) {
+                return [$group_id => $countryGroup->pluck('display_name', 'id')];
+            });
+    }
+
+    /**
+     * Get Marking level list
+     * @param \App\Models\CompetitionRounds $round
+     * @param \Illuminate\Support\Collection $countryGroups
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelList(CompetitionRounds $round, Collection $countryGroups): Collection
+    {
+        return $round->levels->mapWithKeys(function ($level) use($countryGroups) {
+            $totalParticipants = $this->getLevelTotalParticipants($level);
+            $markedParticipants = $this->getLevelMarkedParticipants($level);
+            $answersUploaded = $this->getLevelAnswersUploaded($level);
+
+            $levels = [];
+            foreach($countryGroups as $group_id=>$countryGroup){
+                $countryGroupIds = $countryGroup->keys()->toArray();
+                
+                $groupOfTotalParticipants = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
+                $groupOfMarkedParticipants = $markedParticipants->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
+                $absentees = $this->getLevelAbsenteesForCountryGroup($level, $countryGroupIds);
+                $groupOfAnswersUploaded = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
+                $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
+                $logs = $level->markingLogs->filter(fn($log)=> $log->group_id == $group_id);
+                $firstLogs = $logs->first();
+
+                $levels[$level->id][] = [
+                    'level_id'                      => $level->id,
+                    'name'                          => $level->name,
+                    'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
+                    'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
+                    'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
+                    'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
+                    'total_participants'            => $groupOfTotalParticipants,
+                    'answers_uploaded'              => $groupOfAnswersUploaded,
+                    'marked_participants'           => $groupOfMarkedParticipants,
+                    'absentees_count'               => $absentees->count(),
+                    'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
+                    'country_group'                 => $countryGroup->values()->toArray(),
+                    'marking_group_id'              => $group_id,
+                    'computed_at'                   => $firstLogs?->computed_at->format('Y-m-d'),
+                    'computed_by'                   => $firstLogs?->computed_by,
+                    'logs'                          => $logs,
+                ];
+            }
+            return $levels;
+        });
+    }
+
+    /**
+     * Get total participants for level
+     * @param \App\Models\CompetitionLevels $level
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelTotalParticipants(CompetitionLevels $level): Collection
+    {
+        return $level->participants()
+            ->groupBy('participants.country_id')->selectRaw('participants.country_id, count(participants.id) as total_participants')
+            ->get();
+    }
+
+    /**
+     * Get marked participants for level
+     * @param \App\Models\CompetitionLevels $level
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelMarkedParticipants(CompetitionLevels $level): Collection
+    {
+        return $level->participants()
+            ->where('participants.status', 'result computed')
+            ->groupBy('participants.country_id')->selectRaw('participants.country_id, count(participants.id) as marked_participants')
+            ->get();
+    }
+
+    /**
+     * Get answers uploaded for level
+     * @param \App\Models\CompetitionLevels $level
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelAnswersUploaded(CompetitionLevels $level): Collection
+    {
+        return $level->participantsAnswersUploaded()
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->selectRaw('participants.country_id, count(participants.id) as answers_uploaded')
+            ->groupBy('participants.country_id')
+            ->get();
+    }
+
+    /**
+     * Get absentees for country group
+     * @param \App\Models\CompetitionLevels $level
+     * @param array $countryGroupIds
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelAbsenteesForCountryGroup(CompetitionLevels $level, array $countryGroupIds)
+    {
+        return $level->participants()
+            ->where('participants.status', 'absent')
+            ->whereIn('participants.country_id', $countryGroupIds)
+            ->select('participants.name')
+            ->distinct()
+            ->get();
     }
 
     /**
@@ -94,35 +179,23 @@ class MarkingService
      * @return bool
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
-        $level->load('collection.sections', 'rounds');
+        if($level->rounds->roundsAwards()->doesntExist()) return false;
+        if($level->participantsAnswersUploaded()->doesntExist()) return false;
+
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
 
-        $numberOfTasksIds = $levelTaskIds->count('count_tasks');
+        // $numberOfTasksIds = $levelTaskIds->count('count_tasks');
 
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
         })
         ->whereIn('task_answers.task_id', $levelTaskIds)
         ->select('task_answers.task_id')->distinct()->count();
-        // if($level->id == 380){
-        //     $toDD1 = $level->collection->sections
-        //         ->pluck('section_task')->flatten()->pluck("id")->toArray();
-        //     $toDD2 = $level->taskMarks()->join('task_answers', function ($join) {
-        //         $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
-        //     })->select('task_answers.task_id')->distinct()->get()->toArray();
-        //     dd($toDD1, $toDD2);
-        // }
-        if($numberOfCorrectAnswersWithMarks >= $numberOfCorrectAnswersWithMarks){
-            if($level->participantsAnswersUploaded()->count() > 0){
-                if($level->rounds->roundsAwards()->count() > 0){
-                    return true;
-                }
-            }
-        };
-        Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
 
-        return false;
+        return $numberOfCorrectAnswersWithMarks >= $numberOfCorrectAnswersWithMarks;
+
+        // Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
     }
 
     /**
