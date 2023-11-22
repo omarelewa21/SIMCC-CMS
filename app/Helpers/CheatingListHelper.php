@@ -62,7 +62,7 @@ class CheatingListHelper
         }
 
         if($cheatingStatus->status === 'Completed') {
-            if($request->csv == 1) return static::getCheatingCSVFile($competition);
+            if($request->csv == 1) return static::getCheatingCSVFile($competition, $request);
 
             $cheaters = static::getCheatingList($competition)
                 ->filterByRequest(
@@ -142,11 +142,12 @@ class CheatingListHelper
      * Generate cheating list CSV file
      * 
      * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Http\Response
      */
-    public static function getCheatersDataForCSV(Competition $competition)
+    public static function getCheatersDataForCSV(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        return static::getCheatersCollectionForCSV($competition)
+        return static::getCheatersCollectionForCSV($competition, $request)
             ->map(fn($participant) => static::getCheatingParticipantReadyForCSV($participant))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
@@ -157,9 +158,10 @@ class CheatingListHelper
      * Get cheating list for CSV
      * 
      * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Support\Collection
      */
-    private static function getCheatersCollectionForCSV(Competition $competition)
+    private static function getCheatersCollectionForCSV(Competition $competition, CompetitionCheatingListRequest $request)
     {
         return Participants::distinct()
             ->join('cheating_participants', function (JoinClause $join) {
@@ -167,6 +169,7 @@ class CheatingListHelper
                         ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
             })
             ->where('cheating_participants.competition_id', $competition->id)
+            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
             ->select(
                 'participants.index_no',
                 'participants.name',
@@ -275,20 +278,21 @@ class CheatingListHelper
      * Get cheating csv file
      * 
      * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Http\Response
      */
-    public static function getCheatingCSVFile(Competition $competition)
+    public static function getCheatingCSVFile(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $fileName = sprintf("cheaters_%s.csv", $competition->id);
+        $fileName = ( $request->file_name ?? sprintf("cheaters_%s", $competition->id) ) . '.xlsx';
         if(Route::currentRouteName() === 'cheating-csv'){
-            return Excel::download(new CheatersExport($competition), $fileName);
+            return Excel::download(new CheatersExport($competition, $request), $fileName);
         }
 
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
         }
         
-        if (Excel::store(new CheatersExport($competition), $fileName)) {
+        if (Excel::store(new CheatersExport($competition, $request), $fileName)) {
             return response(200);
         }
         return response(500);
