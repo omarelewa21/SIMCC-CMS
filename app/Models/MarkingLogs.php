@@ -10,12 +10,44 @@ class MarkingLogs extends Model
 {
     use HasFactory;
 
+    const COMPUTE_OPTIONS = [
+        'award',
+        'school_rank',
+        'country_rank',
+        'global_rank',
+    ];
+
     public $timestamps = false;
 
-    protected function computedBy(): Attribute
+    protected $casts = [
+        'computed_at' => 'datetime',
+        'logs' => 'array',
+    ];
+
+    protected $fillable = [
+        'level_id',
+        'group_id',
+        'computed_by',
+        'computed_at',
+        'logs',
+    ];
+
+    public static function booted()
     {
-        return $this->user()->value('name');
+        parent::booted();
+        static::creating(function ($model) {
+            $model->computed_by = auth()->id();
+            $model->computed_at = now();
+            $model->logs = [
+                'options' => $model->getRequestComputeOptions()
+            ];
+        });
     }
+
+    // protected function computedBy(): Attribute
+    // {
+    //     return $this->user()->value('name');
+    // }
 
     public function level()
     {
@@ -30,5 +62,13 @@ class MarkingLogs extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'computed_by');
+    }
+
+    public function getRequestComputeOptions()
+    {
+        if(request()->has('not_to_compute')) {
+            return array_diff(self::COMPUTE_OPTIONS, request()->input('not_to_compute'));
+        }
+        return self::COMPUTE_OPTIONS;
     }
 }

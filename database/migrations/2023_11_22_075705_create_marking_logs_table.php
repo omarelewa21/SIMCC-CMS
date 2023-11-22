@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('group_id')->constrained('competition_marking_group')->cascadeOnDelete();
             $table->foreignId('computed_by')->constrained('users');
             $table->date('computed_at');
+            $table->json('logs')->nullable();
         });
     }
 
