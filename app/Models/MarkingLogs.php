@@ -20,7 +20,7 @@ class MarkingLogs extends Model
     public $timestamps = false;
 
     protected $casts = [
-        'computed_at' => 'datetime',
+        'computed_at' => 'datetime:Y-m-d',
         'logs' => 'array',
     ];
 
@@ -32,22 +32,39 @@ class MarkingLogs extends Model
         'logs',
     ];
 
+    protected $appends = [
+        'options',
+    ];
+
+    protected $hidden = [
+        'logs',
+    ];
+
     public static function booted()
     {
         parent::booted();
         static::creating(function ($model) {
             $model->computed_by = auth()->id();
-            $model->computed_at = now();
+            $model->computed_at = now()->toDateString();
             $model->logs = [
                 'options' => $model->getRequestComputeOptions()
             ];
         });
     }
 
-    // protected function computedBy(): Attribute
-    // {
-    //     return $this->user()->value('name');
-    // }
+    protected function computedBy(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($userId) => User::whereId($userId)->value('name'),
+        );
+    }
+
+    protected function options(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes) => json_decode($attributes['logs'], true)['options'],
+        );
+    }
 
     public function level()
     {
@@ -67,7 +84,9 @@ class MarkingLogs extends Model
     public function getRequestComputeOptions()
     {
         if(request()->has('not_to_compute')) {
-            return array_diff(self::COMPUTE_OPTIONS, request()->input('not_to_compute'));
+            return array_values(
+                array_diff(self::COMPUTE_OPTIONS, request()->input('not_to_compute'))
+            );
         }
         return self::COMPUTE_OPTIONS;
     }
