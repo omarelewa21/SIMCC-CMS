@@ -285,11 +285,7 @@ class MarkingController extends Controller
     {
         ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
         dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-
-        LevelGroupCompute::updateOrCreate(
-            ['level_id' => $level->id, 'group_id' => $group->id],
-            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-        );
+        ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
         \ResponseCache::clear();
 
@@ -324,10 +320,7 @@ class MarkingController extends Controller
                     foreach($competition->groups as $group){
                         if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-                            LevelGroupCompute::updateOrCreate(
-                                ['level_id' => $level->id, 'group_id' => $group->id],
-                                ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-                            );
+                            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
                         }
                     }
                 }
@@ -426,7 +419,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Participant results retrival unsuccessful",
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }

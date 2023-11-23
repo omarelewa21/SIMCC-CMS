@@ -22,7 +22,6 @@ use App\Models\School;
 use App\Models\Countries;
 use Illuminate\Database\Eloquent\Builder;
 
-
 class SchoolController extends Controller
 {
     public function create(CreateSchoolRequest $request)
@@ -199,7 +198,6 @@ class SchoolController extends Controller
     }
 
     public function approve (ApproveSchoolRequest $request) {
-
         return $this->_updateStatus($request->all(), "rejected", "rejected,deleted,active");
     }
 

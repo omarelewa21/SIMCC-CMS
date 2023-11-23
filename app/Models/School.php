@@ -51,6 +51,7 @@ class School extends Model
     protected function userCanApproveAndReject(): Attribute
     {
         return Attribute::make(function ($value, $attributes) {
+            if(!array_key_exists('status', $attributes)) return false;
             if($attributes['status'] !== 'pending') return false;
             if(auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
                 return auth()->id() !== $attributes['created_by_userid'] 

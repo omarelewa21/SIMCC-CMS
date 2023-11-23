@@ -32,7 +32,7 @@ class UpdateSchoolRequest extends FormRequest
             "id"        => "required|integer|exists:schools,id",
             "name"      => ["sometimes", "required", "distinct", "string", new CheckSchoolUnique, Rule::notIn(['Organization School','ORGANIZATION SCHOOL','organization school'])],
             "address"   => "max:255",
-            "postal"    => "integer",
+            "postal"    => "max:255",
             "phone"     => "required|regex:/^[0-9]*$/",
             "email"     => "required|email",
             "province"  => "sometimes|required|max:255",
@@ -68,7 +68,7 @@ class UpdateSchoolRequest extends FormRequest
                 if($school->country_id != $user->country_id) {
                     $validator->errors()->add('Permission Denied', "Only allowed to edit school's from current country");
                 }
-            } 
+            }
             if ($user->hasRole(['Teacher', 'School Manager']) && $user->school_id != $school->id) {
                 $validator->errors()->add('Permission Denied', "Only allowed to edit own school");
             }

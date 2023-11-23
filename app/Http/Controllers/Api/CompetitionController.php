@@ -1261,7 +1261,7 @@ class CompetitionController extends Controller
                 ]
             );
 
-            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers));
+            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers, $request->country));
             DB::commit();
 
             return response()->json([
