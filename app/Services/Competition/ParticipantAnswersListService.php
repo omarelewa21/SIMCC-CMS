@@ -76,6 +76,25 @@ class ParticipantAnswersListService
             ->paginate($this->request->limits ?? 10);
     }
 
+    public function getHeaders($data)
+    {
+        $headers = [
+            'Index No',
+            'Name',
+            'School',
+            'Country',
+            'Grade',
+            'Status',
+        ];
+
+        $questionsCount = $data->pluck('answers')->max()->count();
+        for ($i = 1; $i <= $questionsCount; $i++) {
+            $headers[] = "Q$i";
+        }
+
+        return $headers;
+    }
+
     public function deleteParticipantsAnswers()
     {
         $indexes = $this->getParticipantsQuery()

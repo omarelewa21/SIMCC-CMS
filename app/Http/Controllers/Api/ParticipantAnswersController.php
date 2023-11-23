@@ -14,11 +14,14 @@ class ParticipantAnswersController extends Controller
     {
         try {
             $participantAnswersService = new ParticipantAnswersListService($competition, $request);
+            $participantAnswersList = $participantAnswersService->getList();
+
             return response()->json([
                 "status"        => 200,
                 "message"       => "Success",
                 "filterOptions" => $participantAnswersService->getFilterOptions(),
-                "data"          => $participantAnswersService->getList()
+                "headers"       => $participantAnswersService->getHeaders($participantAnswersList),
+                "data"          => $participantAnswersList
             ], 200);
 
         } catch (\Exception $e) {
