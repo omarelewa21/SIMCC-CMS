@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\GradeService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class getParticipantListRequest extends FormRequest
@@ -34,7 +35,8 @@ class getParticipantListRequest extends FormRequest
             'private'                       => 'boolean',
             'limits'                        => 'integer',
             'page'                          => 'integer',
-            'search'                        => 'max:255'
+            'search'                        => 'max:255',
+            'grade'                         => 'integer|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
         ];
     }
 }
