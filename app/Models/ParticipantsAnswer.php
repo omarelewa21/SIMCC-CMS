@@ -45,10 +45,13 @@ class ParticipantsAnswer extends Model
         if($this->task->answer_type === 'mcq'){
             return $this->task->taskAnswers()
                 ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
-                ->where('task_labels.content', $this->answer)->value('task_answers.id');
+                ->where(ltrim('task_labels.content', '0'), ltrim($this->answer, '0'))
+                ->value('task_answers.id');
         }
 
-        return $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->value('task_answers.id');
+        return $this->task->taskAnswers()
+            ->where(ltrim('task_answers.answer', '0'), ltrim($this->answer, '0'))
+            ->value('task_answers.id');
     }
 
     public function getAnswerMark()
