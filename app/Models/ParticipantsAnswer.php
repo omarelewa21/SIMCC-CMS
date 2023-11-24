@@ -43,15 +43,19 @@ class ParticipantsAnswer extends Model
     public function getTaskAnswerIdIfParticipantAnswerKeyExists()
     {
         if($this->task->answer_type === 'mcq'){
-            return $this->task->taskAnswers()
+            $taskAnswers = $this->task->taskAnswers()
                 ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
-                ->where(ltrim('task_labels.content', '0'), ltrim($this->answer, '0'))
-                ->value('task_answers.id');
+                ->select('task_answers.id', 'task_labels.label as answer')
+                ->get();
+        } else {
+            $taskAnswers = $this->task->taskAnswers()
+                ->select('task_answers.id', 'task_answers.answer')
+                ->get();
         }
 
-        return $this->task->taskAnswers()
-            ->where(ltrim('task_answers.answer', '0'), ltrim($this->answer, '0'))
-            ->value('task_answers.id');
+        return $taskAnswers->first(fn ($taskAnswer) =>
+            ltrim($taskAnswer->answer, '0') === ltrim($this->answer, '0')
+        )?->id;
     }
 
     public function getAnswerMark()
