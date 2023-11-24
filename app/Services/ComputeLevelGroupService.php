@@ -121,8 +121,8 @@ class ComputeLevelGroupService
                 })
                 ->chunkById(1000, function ($participantAnswers) {
                     foreach ($participantAnswers as $participantAnswer) {
-                        $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($this->level->id);
-                        $participantAnswer->score = $participantAnswer->getAnswerMark($this->level->id);
+                        $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer();
+                        $participantAnswer->score = $participantAnswer->getAnswerMark();
                         $participantAnswer->save();
                     }
                 });

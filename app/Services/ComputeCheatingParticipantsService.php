@@ -62,8 +62,8 @@ class ComputeCheatingParticipantsService
                     ->whereNull('is_correct')
                     ->chunkById(50000, function ($participantAnswers) use($level){
                         foreach ($participantAnswers as $participantAnswer) {
-                            $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer($level->id);
-                            $participantAnswer->score = $participantAnswer->getAnswerMark($level->id);
+                            $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer();
+                            $participantAnswer->score = $participantAnswer->getAnswerMark();
                             $participantAnswer->save();
                         }
                     });
