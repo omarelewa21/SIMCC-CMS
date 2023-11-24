@@ -61,7 +61,9 @@ class MarkingService
         return $round->levels->mapWithKeys(function ($level) use($countryGroups) {
             $totalParticipants = $this->getLevelTotalParticipants($level);
             $markedParticipants = $this->getLevelMarkedParticipants($level);
+            $absentees = $this->getLevelAbsentees($level);
             $answersUploaded = $this->getLevelAnswersUploaded($level);
+            $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
 
             $levels = [];
             foreach($countryGroups as $group_id=>$countryGroup){
@@ -69,7 +71,7 @@ class MarkingService
                 
                 $groupOfTotalParticipants = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
                 $groupOfMarkedParticipants = $markedParticipants->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
-                $absentees = $this->getLevelAbsenteesForCountryGroup($level, $countryGroupIds);
+                $absentees = $absentees->whereIn('country_id', $countryGroupIds);
                 $groupOfAnswersUploaded = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
                 $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
                 $logs = $level->markingLogs->filter(fn($log)=> $log->group_id == $group_id);
@@ -78,7 +80,7 @@ class MarkingService
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
-                    'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
+                    'level_is_ready_to_compute'     => $isLevelReadyToCompute,
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
@@ -96,6 +98,15 @@ class MarkingService
             }
             return $levels;
         });
+    }
+
+    private function getLevelAbsentees(CompetitionLevels $level): Collection
+    {
+        return $level->participants()
+            ->where('participants.status', 'absent')
+            ->select('participants.name', 'participants.country_id')
+            ->distinct()
+            ->get();
     }
 
     /**
