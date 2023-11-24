@@ -40,42 +40,33 @@ class ParticipantsAnswer extends Model
         return $this->belongsTo(CompetitionLevels::class, 'level_id', 'id');
     }
 
-    public function getAnswer()
+    public function getTaskAnswerIdIfParticipantAnswerKeyExists()
     {
         if($this->task->answer_type === 'mcq'){
             return $this->task->taskAnswers()
-                            ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
-                            ->where('task_labels.content', $this->answer)->first();
+                ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
+                ->where('task_labels.content', $this->answer)->value('task_answers.id');
         }
 
-        return $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->first();
+        return $this->task->taskAnswers()->where('task_answers.answer', $this->answer)->value('task_answers.id');
     }
 
-    /**
-     * return answer mark if available or return the minimum marks for this task
-     * 
-     * @return int
-     */
-    public function getAnswerMark($level_id)
+    public function getAnswerMark()
     {
-        $taskAnswer = $this->getAnswer();
+        $taskAnswerId = $this->getTaskAnswerIdIfParticipantAnswerKeyExists();
 
-        if(is_null($taskAnswer)){
-            return $this->getWrongOrBlankMarks($level_id);
-        }
+        if(!$taskAnswerId) return $this->getWrongOrBlankMarks($this->level_id);
 
-        $competitionTaskMark = CompetitionTasksMark::where(['level_id' => $level_id, 'task_answers_id' => $taskAnswer->id])
-            ->first();
-        if($competitionTaskMark){                        // If answer is correct, return the mark for correct answer
-            return $competitionTaskMark->marks;
-        }
+        $competitionTaskMark = CompetitionTasksMark::where(
+            ['level_id' => $this->level_id, 'task_answers_id' => $taskAnswerId]
+        )->first();
 
-        return $this->getWrongOrBlankMarks($level_id);
+        return $competitionTaskMark ? $competitionTaskMark->marks : $this->getWrongOrBlankMarks($this->level_id);
     }
 
-    public function getWrongOrBlankMarks($level_id)
+    private function getWrongOrBlankMarks()
     {
-        $taskDiff = CompetitionTaskDifficulty::where('level_id', $level_id)
+        $taskDiff = CompetitionTaskDifficulty::where('level_id', $this->level_id)
                         ->where('task_id', $this->task_id)
                         ->first();
 
@@ -85,22 +76,22 @@ class ParticipantsAnswer extends Model
         return $taskDiff ? -$taskDiff->wrong_marks : 0;      // If answer is wrong, return wrong marks
     }
 
-    public function getIsCorrectAnswer($level_id): bool
+    public function getIsCorrectAnswer(): bool
     {
-        $taskAnswer = $this->getAnswer();
-        if(
-            !is_null($taskAnswer)
-            && CompetitionTasksMark::where('level_id', $level_id)
-                ->where('task_answers_id', $taskAnswer->id)->exists()
-            )
-        {
-            $this->is_correct = true;
-        }
-        else {
-            $this->is_correct = false;
+        $isCorrect = $this->checkIfAnswerIsCorrect($this->level_id);
+
+        if($this->is_correct !== $isCorrect){
+            $this->save();
         }
 
-        $this->save();
         return $this->is_correct;
+    }
+
+    private function checkIfAnswerIsCorrect(): bool
+    {
+        $taskAnswerId = $this->getTaskAnswerIdIfParticipantAnswerKeyExists();
+
+        return $taskAnswerId && CompetitionTasksMark::where('level_id', $this->level_id)
+            ->where('task_answers_id', $taskAnswerId)->exists();
     }
 }
