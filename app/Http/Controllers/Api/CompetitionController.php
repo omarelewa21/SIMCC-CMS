@@ -1089,7 +1089,7 @@ class CompetitionController extends Controller
                         'level_id'  => $level->id,
                         'task_id'   => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    =>$participantData['answers'][$i],
+                        'answer'    => AnswerUploadHelper::getTrimmedAnswer($participantData['answers'][$i]),
                         'created_by_userid' => $createdBy,
                         'created_at'    => $createdAt
                     ]);
