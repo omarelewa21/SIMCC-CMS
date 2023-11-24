@@ -87,7 +87,7 @@ class AnswerUploadHelper
         return $grade;
     }
 
-    public static function getTrimmedAnswer($answer): string
+    public static function getTrimmedAnswer($answer)
     {
         return is_numeric($answer)
             ? rtrim($answer, '.0')
