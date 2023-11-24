@@ -48,7 +48,7 @@ class ParticipantReportService
             ])->get()
             ->flatMap(function ($answer, $key) {
                 return [
-                    sprintf('Q%s', $key + 1)  => $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id)
+                    sprintf('Q%s', $key + 1)  => $answer->is_correct ?? $answer->getIsCorrectAnswer()
                 ];
             });
     }
@@ -142,7 +142,7 @@ class ParticipantReportService
             ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
             ->where('participants.school_id', $answer->participant->school_id)
             ->get()->map(function ($answer) {
-                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
+                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer();
                 return $answer;
             });
 
@@ -158,7 +158,7 @@ class ParticipantReportService
             ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
             ->where('participants.country_id', $answer->participant->country_id)
             ->get()->map(function ($answer) {
-                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id);
+                $answer->is_correct_answer = $answer->is_correct ?? $answer->getIsCorrectAnswer();
                 return $answer;
             });
 
@@ -226,7 +226,7 @@ class ParticipantReportService
                 return [
                     'question'              => sprintf("Q%s", $key + 1),
                     'topic'                 => $this->getParticipantAnswerTopics($answer),
-                    'is_correct'            => $answer->is_correct ?? $answer->getIsCorrectAnswer($this->level->id),
+                    'is_correct'            => $answer->is_correct ?? $answer->getIsCorrectAnswer(),
                     'correct_in_school'     => $this->getParticipantAnswerCorrectInSchoolPercentage($answer),
                     'correct_in_country'    => $this->getParticipantAnswerCorrectInCountryPercentage($answer),
                     'diffculty'             => $answer->difficulty

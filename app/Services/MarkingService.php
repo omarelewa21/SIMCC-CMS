@@ -60,17 +60,19 @@ class MarkingService
     {
         return $round->levels->mapWithKeys(function ($level) use($countryGroups) {
             $totalParticipants = $this->getLevelTotalParticipants($level);
-            $markedParticipants = $this->getLevelMarkedParticipants($level);
             $answersUploaded = $this->getLevelAnswersUploaded($level);
+            $markedAnswers = $this->getLevelMarkedAnswers($level);
+            $absentees = $this->getLevelAbsentees($level);
+            $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
 
             $levels = [];
             foreach($countryGroups as $group_id=>$countryGroup){
                 $countryGroupIds = $countryGroup->keys()->toArray();
                 
-                $groupOfTotalParticipants = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
-                $groupOfMarkedParticipants = $markedParticipants->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
-                $absentees = $this->getLevelAbsenteesForCountryGroup($level, $countryGroupIds);
-                $groupOfAnswersUploaded = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
+                $totalParticipantsCount = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
+                $markedAnswersCount = $markedAnswers->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
+                $absentees = $absentees->whereIn('country_id', $countryGroupIds);
+                $answersUploadedCount = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
                 $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
                 $logs = $level->markingLogs->filter(fn($log)=> $log->group_id == $group_id);
                 $firstLogs = $logs->first();
@@ -78,13 +80,13 @@ class MarkingService
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
-                    'level_is_ready_to_compute'     => $this->isLevelReadyToCompute($level),
+                    'level_is_ready_to_compute'     => $isLevelReadyToCompute,
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
-                    'total_participants'            => $groupOfTotalParticipants,
-                    'answers_uploaded'              => $groupOfAnswersUploaded,
-                    'marked_participants'           => $groupOfMarkedParticipants,
+                    'total_participants'            => $totalParticipantsCount,
+                    'answers_uploaded'              => $answersUploadedCount,
+                    'marked_participants'           => $markedAnswersCount,
                     'absentees_count'               => $absentees->count(),
                     'absentees'                     => $absentees->count() > 10 ? $absentees->random(10)->pluck('name') : $absentees->pluck('name'),
                     'country_group'                 => $countryGroup->values()->toArray(),
@@ -98,6 +100,15 @@ class MarkingService
         });
     }
 
+    private function getLevelAbsentees(CompetitionLevels $level): Collection
+    {
+        return $level->participants()
+            ->where('participants.status', 'absent')
+            ->select('participants.name', 'participants.country_id')
+            ->distinct()
+            ->get();
+    }
+
     /**
      * Get total participants for level
      * @param \App\Models\CompetitionLevels $level
@@ -106,7 +117,8 @@ class MarkingService
     private function getLevelTotalParticipants(CompetitionLevels $level): Collection
     {
         return $level->participants()
-            ->groupBy('participants.country_id')->selectRaw('participants.country_id, count(participants.id) as total_participants')
+            ->groupBy('participants.country_id')
+            ->selectRaw('participants.country_id, count(participants.id) as total_participants')
             ->get();
     }
 
@@ -115,11 +127,13 @@ class MarkingService
      * @param \App\Models\CompetitionLevels $level
      * @return \Illuminate\Support\Collection
      */
-    private function getLevelMarkedParticipants(CompetitionLevels $level): Collection
+    private function getLevelMarkedAnswers(CompetitionLevels $level): Collection
     {
-        return $level->participants()
+        return $level->participantsAnswersUploaded()
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
             ->where('participants.status', 'result computed')
-            ->groupBy('participants.country_id')->selectRaw('participants.country_id, count(participants.id) as marked_participants')
+            ->groupBy('participants.country_id')
+            ->selectRaw('participants.country_id, count(participants.id) as marked_participants')
             ->get();
     }
 
@@ -132,8 +146,8 @@ class MarkingService
     {
         return $level->participantsAnswersUploaded()
             ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-            ->selectRaw('participants.country_id, count(participants.id) as answers_uploaded')
             ->groupBy('participants.country_id')
+            ->selectRaw('participants.country_id, count(participants.id) as answers_uploaded')
             ->get();
     }
 
