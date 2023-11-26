@@ -88,6 +88,7 @@ class ParticipantsAnswer extends Model
         $isCorrect = $this->checkIfAnswerIsCorrect($this->level_id);
 
         if($this->is_correct !== $isCorrect){
+            $this->is_correct = $isCorrect;
             $this->save();
         }
 
