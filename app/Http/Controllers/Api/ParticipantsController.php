@@ -24,6 +24,7 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
+use App\Rules\CheckUniqueIdentifierWithCountryId;
 use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,7 @@ class ParticipantsController extends Controller
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
             "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            "participant.*.identifier" => [new CheckUniqueIdentifierWithCountryId(null)],
 
             // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
@@ -271,6 +273,7 @@ class ParticipantsController extends Controller
             "school_id" => ['required_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(0, $participantCountryId)],
             'password' => ['confirmed', 'min:8', 'regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/'],
             "identifier" => [new CheckUniqueIdentifierWithCompetitionID($participant)],
+            "identifier" => [new CheckUniqueIdentifierWithCountryId($participant)],
         );
 
 
