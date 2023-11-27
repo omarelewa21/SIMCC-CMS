@@ -508,11 +508,10 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function performanceReportsBulkDownload(getParticipantListRequest $request)
+    public function performanceReportsBulkDownload()
     {
         $user = auth()->user();
-        $user = auth()->user();
-        $job = new GeneratePerformanceReports($request, $user);
+        $job = new GeneratePerformanceReports($user);
         $job_id = $this->dispatch($job);
         return response()->json([
             "status"    => 200,
