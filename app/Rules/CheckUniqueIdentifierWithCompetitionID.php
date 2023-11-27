@@ -7,6 +7,7 @@ use Illuminate\Contracts\Validation\Rule;
 use App\Models\CompetitionOrganization;
 use App\Models\Participants;
 use Illuminate\Support\Str;
+
 class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
 {
     protected $message = [];
@@ -34,13 +35,19 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
         $value = Str::lower($value);
         $rowNum = explode(".", $attribute)[1];
         $competitionId = $this->getCompetitionId($rowNum);
+        $countryId = $this->getCountryId($rowNum);
 
         $participants = $this->data['participant'];
 
         $duplicateCount = 0;
         foreach ($participants as $index => $participant) {
-            // Check for duplicates within the same competition
-            if ($index != $rowNum && $participant['competition_id'] == $competitionId && Str::lower($participant['identifier']) == $value) {
+            // Check for duplicates within the same competition and country
+            if (
+                $index != $rowNum &&
+                $participant['competition_id'] == $competitionId &&
+                $participant['country_id'] == $countryId &&
+                Str::lower($participant['identifier']) == $value
+            ) {
                 $duplicateCount++;
             }
         }
@@ -56,7 +63,7 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
         $found = $found->exists();
 
         if ($duplicateCount > 0 || $found) {
-            $this->message = 'The identifier value must be unique to the competition.';
+            $this->message = 'The identifier value must be unique to the competition and country.';
             return false;
         }
 
@@ -79,6 +86,22 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
             case 4:
             case 5:
                 return auth()->user()->competition_id;
+            default:
+                return null;
+        }
+    }
+
+    private function getCountryId($rowNum)
+    {
+        switch (auth()->user()->role_id) {
+            case 0:
+            case 1:
+                return $this->data['participant'][$rowNum]['country_id'];
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                return auth()->user()->country_id;
             default:
                 return null;
         }
