@@ -42,27 +42,27 @@ class ParticipantsAnswer extends Model
 
     public function getTaskAnswerIdIfParticipantAnswerKeyExists()
     {
-        if($this->task->answer_type === 'mcq'){
-            $taskAnswers = $this->task->taskAnswers()
-                ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
-                ->select('task_answers.id', 'task_labels.label as answer')
-                ->get();
-        } else {
-            $taskAnswers = $this->task->taskAnswers()
-                ->select('task_answers.id', 'task_answers.answer')
-                ->get();
-        }
+        $taskAnswers = $this->task->answer_type === 'mcq' ?
+            $this->task->taskAnswers()
+            ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
+            ->select('task_answers.id', 'task_labels.content as answer')
+            ->get() :
+            $this->task->taskAnswers()
+            ->select('task_answers.id', 'task_answers.answer')
+            ->get();
 
-        return $taskAnswers->first(fn ($taskAnswer) =>
-            ltrim($taskAnswer->answer, '0') === ltrim($this->answer, '0')
-        )?->id;
+        return $taskAnswers->first(function ($taskAnswer) {
+            $taskAnswerValue = $taskAnswer->answer ?? null;
+            return ltrim($taskAnswerValue, '0') === ltrim($this->answer, '0');
+        })?->id;
     }
+
 
     public function getAnswerMark()
     {
         $taskAnswerId = $this->getTaskAnswerIdIfParticipantAnswerKeyExists();
 
-        if(!$taskAnswerId) return $this->getWrongOrBlankMarks($this->level_id);
+        if (!$taskAnswerId) return $this->getWrongOrBlankMarks($this->level_id);
 
         $competitionTaskMark = CompetitionTasksMark::where(
             ['level_id' => $this->level_id, 'task_answers_id' => $taskAnswerId]
@@ -74,10 +74,10 @@ class ParticipantsAnswer extends Model
     private function getWrongOrBlankMarks()
     {
         $taskDiff = CompetitionTaskDifficulty::where('level_id', $this->level_id)
-                        ->where('task_id', $this->task_id)
-                        ->first();
+            ->where('task_id', $this->task_id)
+            ->first();
 
-        if(is_null($this->answer) || empty($this->answer))  // If answer is empty, return blank marks
+        if (is_null($this->answer) || empty($this->answer))  // If answer is empty, return blank marks
             return $taskDiff ? -$taskDiff->blank_marks : 0;
 
         return $taskDiff ? -$taskDiff->wrong_marks : 0;      // If answer is wrong, return wrong marks
@@ -87,11 +87,15 @@ class ParticipantsAnswer extends Model
     {
         $isCorrect = $this->checkIfAnswerIsCorrect($this->level_id);
 
-        if($this->is_correct !== $isCorrect){
+        // If $isCorrect is null or not a boolean, default to false
+        $isCorrect = is_bool($isCorrect) ? $isCorrect : false;
+
+        if ($this->is_correct !== $isCorrect) {
+            $this->is_correct = $isCorrect;
             $this->save();
         }
 
-        return $this->is_correct;
+        return $isCorrect;
     }
 
     private function checkIfAnswerIsCorrect(): bool
