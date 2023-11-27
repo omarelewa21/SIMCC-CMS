@@ -1230,10 +1230,9 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if ($request->recompute != 1 && CheatingStatus::where('competition_id', $competition->id)->exists())
+            if ($request->recompute != 1 && CheatingStatus::where('competition_id', $competition->id)->exists()) {
                 return CheatingListHelper::returnCheatStatusAndData($competition, $request);
-
-            // CompetitionService::validateIfCanGenerateCheatingPage($competition);
+            }
 
             DB::beginTransaction();
 
@@ -1246,13 +1245,21 @@ class CompetitionController extends Controller
                 ]
             );
 
-            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers, $request->country));
+            dispatch(new ComputeCheatingParticipants(
+                $competition,
+                $request->question_number,
+                $request->percentage,
+                $request->number_of_incorrect_answers,
+                $request->country
+            ));
+
             DB::commit();
 
             return response()->json([
                 'status'    => 201,
                 'message'   => 'Computing cheating participants has been started.'
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

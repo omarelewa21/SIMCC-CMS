@@ -8,6 +8,7 @@ use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
+use App\Services\GradeService;
 use App\Services\MarkingService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\Route;
@@ -16,25 +17,6 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CheatingListHelper
 {
-    /**
-     * Validate if competition is ready to compute
-     * 
-     * @param Competition $competition
-     */
-    public static function validateIfCanGenerateCheatingPage(Competition $competition)
-    {
-        $competition->rounds()->with('levels')->get()
-            ->pluck('levels')->flatten()
-            ->each(function($level){
-                if(MarkingService::isLevelReadyToCompute($level) === false) {
-                    throw new \Exception(
-                        sprintf("Level %s is not ready to compute. Check that all tasks has correct answers, round has awards and answers are uploaded to that level", $level->name),
-                        400
-                    );
-                }
-            });
-    }
-
     /**
      * get cheat status and data
      * 
@@ -67,7 +49,7 @@ class CheatingListHelper
             $cheaters = static::getCheatingList($competition)
                 ->filterByRequest(
                     $request,
-                    array("country", "school", "grade", "cheating_percentage", "group_id"),
+                    array("country", "school", "grade", "group_id"),
                     array('participants', 'participants', 'school', 'country')
                 );
 
@@ -93,9 +75,9 @@ class CheatingListHelper
         return [
             'country' => $cheaters->pluck('country')->unique()->values(),
             'school' => $cheaters->pluck('school')->unique()->values(),
-            'grade' => $cheaters->pluck('grade')->unique()->values(),
-            'cheating_percentage' => $cheaters->pluck('cheating_percentage')->unique()->values(),
-            'number_of_cheating_questions' => $cheaters->pluck('number_of_cheating_questions')->unique()->values(),
+            'grade' => GradeService::getAvailableCorrespondingGradesFromList(
+                $cheaters->pluck('grade')->unique()->sort()->values()->toArray()
+            ),
         ];
     }
 
