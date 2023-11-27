@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Http\Controllers\api\ParticipantsController;
+use App\Http\Controllers\Api\ParticipantsController;
 use App\Http\Requests\getParticipantListRequest;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
@@ -97,7 +97,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     ]);
                     $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] =  'success';
                 } catch (Exception $e) {
-                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] = 'failed: ' . $e->getMessage();
+                    $this->report[$participantResult->participant['index_no']] = 'failed: ' . $e->getMessage();
                     $this->progress++;
                     continue;
                 }
