@@ -8,33 +8,13 @@ use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
-use App\Services\MarkingService;
+use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CheatingListHelper
 {
-    /**
-     * Validate if competition is ready to compute
-     * 
-     * @param Competition $competition
-     */
-    public static function validateIfCanGenerateCheatingPage(Competition $competition)
-    {
-        $competition->rounds()->with('levels')->get()
-            ->pluck('levels')->flatten()
-            ->each(function($level){
-                if(MarkingService::isLevelReadyToCompute($level) === false) {
-                    throw new \Exception(
-                        sprintf("Level %s is not ready to compute. Check that all tasks has correct answers, round has awards and answers are uploaded to that level", $level->name),
-                        400
-                    );
-                }
-            });
-    }
-
     /**
      * get cheat status and data
      * 
@@ -67,7 +47,7 @@ class CheatingListHelper
             $cheaters = static::getCheatingList($competition)
                 ->filterByRequest(
                     $request,
-                    array("country", "school", "grade", "cheating_percentage", "group_id"),
+                    array("country", "school", "grade", "group_id"),
                     array('participants', 'participants', 'school', 'country')
                 );
 
@@ -93,9 +73,9 @@ class CheatingListHelper
         return [
             'country' => $cheaters->pluck('country')->unique()->values(),
             'school' => $cheaters->pluck('school')->unique()->values(),
-            'grade' => $cheaters->pluck('grade')->unique()->values(),
-            'cheating_percentage' => $cheaters->pluck('cheating_percentage')->unique()->values(),
-            'number_of_cheating_questions' => $cheaters->pluck('number_of_cheating_questions')->unique()->values(),
+            'grade' => GradeService::getAvailableCorrespondingGradesFromList(
+                $cheaters->pluck('grade')->unique()->sort()->values()->toArray()
+            ),
         ];
     }
 
@@ -283,18 +263,104 @@ class CheatingListHelper
      */
     public static function getCheatingCSVFile(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $fileName = ( $request->file_name ?? sprintf("cheaters_%s", $competition->id) ) . '.xlsx';
-        if(Route::currentRouteName() === 'cheating-csv'){
-            return Excel::download(new CheatersExport($competition, $request), $fileName);
-        }
+        $fileName = static::getFileName($competition, $request->file_name);
 
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
         }
-        
+
         if (Excel::store(new CheatersExport($competition, $request), $fileName)) {
-            return response(200);
+            $file = Storage::get($fileName);
+            Storage::disk('local')->delete($fileName);
+            $response = response()->make($file, 200);
+            $response->header('Content-Type', 'application/'.pathinfo($fileName, PATHINFO_EXTENSION));
+            $response->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+            return $response;
         }
-        return response(500);
+
+        return response()->json([
+            'status'    => 500,
+            'message'   => 'Failed to generate cheating list'
+        ], 500);
+    }
+
+    /**
+     * Get file name
+     * 
+     * @param string $fileName
+     * @return string
+     */
+    private static function getFileName(Competition $competition, string|null $fileName)
+    {
+        if(!$fileName) {
+            return sprintf("%s_cheating_list_%s.csv", $competition->name, now()->format('Y-m-d'));
+        }
+
+        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+        if(!$fileExtension) {
+            return sprintf("%s.%s", $fileName, 'csv');
+        }
+
+        if(!in_array($fileExtension, ['csv', 'xlsx', 'xls'])) {
+            return str_replace($fileExtension, 'csv', $fileName);
+        }
+
+        return $fileName;
+    }
+
+    /**
+     * Get cheating status
+     * @param Competition $competition
+     * @return Illuminate\Http\JsonResponse
+     */
+    public static function returnCheatingStatus(Competition $competition)
+    {
+        $cheatingStatus = CheatingStatus::find($competition->id);
+        switch ($cheatingStatus?->status) {
+            case 'In Progress':
+                return response()->json([
+                    'status'    => 202,
+                    'message'   => 'Generating cheating list is in progress',
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 202);
+                break;
+            case 'Failed':
+                return response()->json([
+                    'status'    => 417,
+                    'message'   => "Generating cheating list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 417);
+                break;
+            case 'Completed':
+                return response()->json([
+                    'status'    => 200,
+                    'message'   => 'Cheating list generated successfully',
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 200);
+                break;
+            default:
+                return response()->json([
+                    'status'    => 206,
+                    'message'   => 'Generating cheating list is not started',
+                    'progress'  => 0
+                ], 206);
+                break;
+        }
+    }
+
+    /**
+     * Get cheating data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     * @return Illuminate\Http\JsonResponse
+     */
+    public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        $cheatingStatus = CheatingStatus::findOrFail($competition->id);
+
+        if($cheatingStatus->status === 'Completed')
+        return static::getCheatingCSVFile($competition, $request);
+
+        return static::returnCheatingStatus($competition);
     }
 }
