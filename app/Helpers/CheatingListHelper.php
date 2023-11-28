@@ -272,9 +272,6 @@ class CheatingListHelper
         }
 
         if (Excel::store(new CheatersExport($competition, $request), $fileName)) {
-            // $file = Storage::get($fileName);
-            // $response = response()->make($file, 200);
-            // $response->header('Content-Type', 'application/'.pathinfo($fileName, PATHINFO_EXTENSION));
             return response()->file(storage_path("app/$fileName"), [
                 'Content-Type' => 'application/'.pathinfo($fileName, PATHINFO_EXTENSION),
                 'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
