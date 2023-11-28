@@ -265,18 +265,48 @@ class CheatingListHelper
      */
     public static function getCheatingCSVFile(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $fileName = ( $request->file_name ?? sprintf("cheaters_%s", $competition->id) ) . '.xlsx';
-        if(Route::currentRouteName() === 'cheating-csv'){
-            return Excel::download(new CheatersExport($competition, $request), $fileName);
-        }
+        $fileName = static::getFileName($competition, $request->file_name);
 
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
         }
-        
+
         if (Excel::store(new CheatersExport($competition, $request), $fileName)) {
-            return response(200);
+            // $file = Storage::get($fileName);
+            // $response = response()->make($file, 200);
+            // $response->header('Content-Type', 'application/'.pathinfo($fileName, PATHINFO_EXTENSION));
+            return response()->file(storage_path("app/$fileName"), [
+                'Content-Type' => 'application/'.pathinfo($fileName, PATHINFO_EXTENSION),
+                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+            ]);
         }
-        return response(500);
+        return response()->json([
+            'status'    => 500,
+            'message'   => 'Failed to generate cheating list'
+        ], 500);
+    }
+
+    /**
+     * Get file name
+     * 
+     * @param string $fileName
+     * @return string
+     */
+    private static function getFileName(Competition $competition, string|null $fileName)
+    {
+        if(!$fileName) {
+            return sprintf("%s_cheating_list_%s.csv", $competition->name, now()->format('Y-m-d'));
+        }
+
+        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+        if(!$fileExtension) {
+            return sprintf("%s.%s", $fileName, 'csv');
+        }
+
+        if(!in_array($fileExtension, ['csv', 'xlsx', 'xls'])) {
+            return str_replace($fileExtension, 'csv', $fileName);
+        }
+
+        return $fileName;
     }
 }
