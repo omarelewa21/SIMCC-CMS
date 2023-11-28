@@ -319,10 +319,10 @@ class CheatingListHelper
         switch ($cheatingStatus?->status) {
             case 'In Progress':
                 return response()->json([
-                    'status'    => 206,
+                    'status'    => 202,
                     'message'   => 'Generating cheating list is in progress',
                     'progress'  => $cheatingStatus->progress_percentage
-                ], 206);
+                ], 202);
                 break;
             case 'Failed':
                 return response()->json([
