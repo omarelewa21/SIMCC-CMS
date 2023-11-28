@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Http\Controllers\Api\ParticipantsController;
+use App\Http\Requests\getParticipantListRequest;
 use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
@@ -37,22 +39,32 @@ class GeneratePerformanceReports implements ShouldQueue
     protected $request;
     protected $user;
     protected $report;
+    protected $participantController;
     public $timeout = 900;
 
-    public function __construct($request, $user)
+    public function __construct($user)
     {
-        $this->request = $request->all();
         $this->user = $user;
     }
 
     public function handle()
     {
+        ini_set('memory_limit', '-1');
+
         try {
+            auth()->login($this->user);
             $this->progress = 0;
             $this->jobId = $this->job->getJobId();
             $this->updateJobProgress($this->progress, 100, ReportDownloadStatus::STATUS_In_PROGRESS);
             $this->participants = $this->getParticipants();
-            $this->participantResults = $this->getParticipantResults(); // Convert array to collection
+
+            if (count($this->participants) > 100) {
+                $this->progress = 100;
+                $this->totalProgress = 100;
+                throw new Exception('The total count of reports exceeds the established limit of 100 reports.');
+            }
+
+            $this->participantResults = $this->getParticipantResults();
             $this->totalProgress = count($this->participantResults);
 
             if ($this->totalProgress < 1) {
@@ -87,7 +99,7 @@ class GeneratePerformanceReports implements ShouldQueue
                     ]);
                     $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] =  'success';
                 } catch (Exception $e) {
-                    $this->report[$participantResult->participant['index_no'] . '_' . $cleanedName] = 'failed: ' . $e->getMessage();
+                    $this->report[$participantResult->participant['index_no']] = 'failed: ' . $e->getMessage();
                     $this->progress++;
                     continue;
                 }
@@ -118,107 +130,16 @@ class GeneratePerformanceReports implements ShouldQueue
         }
     }
 
-
     public function getParticipants()
     {
-        $participants = DB::table('participants')
-            ->leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
-            ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
-            ->leftJoin('all_countries', 'all_countries.id', '=', 'participants.country_id')
-            ->leftJoin('schools', 'schools.id', '=', 'participants.school_id')
-            ->leftJoin('schools as tuition_centre', 'tuition_centre.id', '=', 'participants.tuition_centre_id')
-            ->leftJoin('competition_organization', 'competition_organization.id', '=', 'participants.competition_organization_id')
-            ->leftJoin('organization', 'organization.id', '=', 'competition_organization.organization_id')
-            ->leftJoin('competition', 'competition.id', '=', 'competition_organization.competition_id')
-            ->leftJoin('competition_participants_results', 'competition_participants_results.participant_index', '=', 'participants.index_no')
-            ->leftJoin('participant_answers', function ($join) {
-                $join->on('participant_answers.participant_index', '=', 'participants.index_no');
-            })
-            ->select(
-                'participants.*',
-                'all_countries.display_name as country_name',
-                DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
-                'schools.id as school_id',
-                'schools.name as school_name',
-                'tuition_centre.id as tuition_centre_id',
-                'tuition_centre.name as tuition_centre_name',
-                'competition.id as competition_id',
-                'competition.name as competition_name',
-                'competition.alias as competition_alias',
-                'organization.id as organization_id',
-                'organization.name as organization_name',
-                DB::raw("IF(competition_participants_results.published = 1, competition_participants_results.award, '-') AS award"),
-                DB::raw('(COUNT(participant_answers.participant_index) > 0) as is_answers_uploaded')
-            )
-            ->groupBy('participants.id');
-
-        switch ($this->user->role_id) {
-            case 2:
-            case 4:
-                $ids = CompetitionOrganization::where('organization_id', $this->user->organization_id)->pluck('id');
-                $participants->where('participants.country_id', $this->user->country_id)
-                    ->whereIn("participants.competition_organization_id", $ids);
-                break;
-            case 3:
-            case 5:
-                $ids = CompetitionOrganization::where([
-                    'country_id'        => $this->user->country_id,
-                    'organization_id'   => $this->user->organization_id
-                ])->pluck('id')->toArray();
-                $participants->whereIn("competition_organization_id", $ids)
-                    ->where(function ($q) {
-                        $q->where("tuition_centre_id", $this->user->school_id)
-                            ->orWhere("schools.id", $this->user->school_id);
-                    });
-                break;
+        try {
+            $participantController = new ParticipantsController;
+            $response = $participantController->list(new getParticipantListRequest);
+            $data = json_decode($response->getContent());
+            return $data->data->participantList->data;
+        } catch (Exception $e) {
+            throw new Exception('Failed to load participants ' . $e->getMessage());
         }
-
-        foreach ($this->request as $key => $value) {
-            switch ($key) {
-                case 'search':
-                    $participants->where(function ($query) use ($value) {
-                        $query->where('participants.index_no', $value)
-                            ->orWhere('participants.name', 'like', "%$value%")
-                            ->orWhere('schools.name', 'like', "%$value%")
-                            ->orWhere('tuition_centre.name', 'like', "%$value%");
-                    });
-                    break;
-                case 'private':
-                    $this->request['private']
-                        ? $participants->whereNotNull("tuition_centre_id")
-                        : $participants->whereNull("tuition_centre_id");
-                    break;
-                case 'status':
-                    $participants->where("participants.$key", $value);
-                    break;
-                case 'organization_id':
-                    $participants->where('organization.id', $value);
-                    break;
-                case 'competition_id':
-                    $participants->where('competition.id', $value);
-                    break;
-                case 'country_id':
-                case 'school_id':
-                case 'grade':
-                case 'status':
-                case 'page':
-                case 'limit':
-                    if (isset($this->request['limit'])) {
-                        $participants->limit($this->request['limit']);
-                    }
-                    break;
-                case 'limits':
-                    if (isset($this->request['limits'])) {
-                        $participants->limit($this->request['limits']);
-                    }
-                    break;
-                default:
-                    $participants->where($key, $value);
-            }
-        }
-
-        $participants = $participants->get();
-        return $participants;
     }
 
     public function getParticipantResults()
