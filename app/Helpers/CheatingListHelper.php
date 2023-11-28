@@ -9,9 +9,7 @@ use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Participants;
 use App\Services\GradeService;
-use App\Services\MarkingService;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -272,11 +270,13 @@ class CheatingListHelper
         }
 
         if (Excel::store(new CheatersExport($competition, $request), $fileName)) {
-            return response()->file(storage_path("app/$fileName"), [
-                'Content-Type' => 'application/'.pathinfo($fileName, PATHINFO_EXTENSION),
-                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-            ]);
+            $file = Storage::get($fileName);
+            $response = response()->make($file, 200);
+            $response->header('Content-Type', 'application/'.pathinfo($fileName, PATHINFO_EXTENSION));
+            $response->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+            return $response;
         }
+
         return response()->json([
             'status'    => 500,
             'message'   => 'Failed to generate cheating list'
@@ -305,5 +305,61 @@ class CheatingListHelper
         }
 
         return $fileName;
+    }
+
+    /**
+     * Get cheating status
+     * @param Competition $competition
+     * @return Illuminate\Http\JsonResponse
+     */
+    public static function returnCheatingStatus(Competition $competition)
+    {
+        $cheatingStatus = CheatingStatus::find($competition->id);
+        switch ($cheatingStatus?->status) {
+            case 'In Progress':
+                return response()->json([
+                    'status'    => 206,
+                    'message'   => 'Generating cheating list is in progress',
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 206);
+                break;
+            case 'Failed':
+                return response()->json([
+                    'status'    => 417,
+                    'message'   => sprintf("Generating cheating list failed at perentage %s with error: %s", $cheatingStatus->progress_percentage, $cheatingStatus->compute_error_message),
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 417);
+                break;
+            case 'Completed':
+                return response()->json([
+                    'status'    => 200,
+                    'message'   => 'Cheating list generated successfully',
+                    'progress'  => $cheatingStatus->progress_percentage
+                ], 200);
+                break;
+            default:
+                return response()->json([
+                    'status'    => 204,
+                    'message'   => 'Generating cheating list is not started',
+                    'progress'  => 0
+                ], 204);
+                break;
+        }
+    }
+
+    /**
+     * Get cheating data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     * @return Illuminate\Http\JsonResponse
+     */
+    public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        $cheatingStatus = CheatingStatus::findOrFail($competition->id);
+
+        if($cheatingStatus->status === 'Completed')
+        return static::getCheatingCSVFile($competition, $request);
+
+        return static::returnCheatingStatus($competition);
     }
 }

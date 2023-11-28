@@ -1230,35 +1230,38 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if ($request->recompute != 1 && CheatingStatus::where('competition_id', $competition->id)->exists()) {
-                return CheatingListHelper::returnCheatStatusAndData($competition, $request);
+            if($request->get_status) {
+                return CheatingListHelper::returnCheatingStatus($competition);
             }
 
-            DB::beginTransaction();
+            if ($request->recompute) {
+                DB::transaction(function () use($competition, $request) {
+                    CheatingStatus::updateOrCreate(
+                        ['competition_id' => $competition->id],
+                        [
+                            'status' => 'In Progress',
+                            'progress_percentage' => 1,
+                            'compute_error_message' => null
+                        ]
+                    );
+    
+                    dispatch(new ComputeCheatingParticipants(
+                        $competition,
+                        $request->question_number,
+                        $request->percentage,
+                        $request->number_of_incorrect_answers,
+                        $request->country
+                    ));
+                });
 
-            CheatingStatus::updateOrCreate(
-                ['competition_id' => $competition->id],
-                [
-                    'status' => 'In Progress',
-                    'progress_percentage' => 1,
-                    'compute_error_message' => null
-                ]
-            );
+                return response()->json([
+                    'status'    => 201,
+                    'message'   => 'Computing cheating participants has been started.',
+                    'progress'  => 1
+                ], 201);
+            }
 
-            dispatch(new ComputeCheatingParticipants(
-                $competition,
-                $request->question_number,
-                $request->percentage,
-                $request->number_of_incorrect_answers,
-                $request->country
-            ));
-
-            DB::commit();
-
-            return response()->json([
-                'status'    => 201,
-                'message'   => 'Computing cheating participants has been started.'
-            ], 201);
+            return CheatingListHelper::returnCheatingData($competition, $request);
 
         } catch (\Exception $e) {
             DB::rollBack();
