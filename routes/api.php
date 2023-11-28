@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
+use App\Http\Controllers\Api\ParticipantAnswersController;
 
 /*
 |--------------------------------------------------------------------------
@@ -132,6 +133,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
+        Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
+        Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
     });
 
     Route::group(["prefix" => "marking"], function () {
