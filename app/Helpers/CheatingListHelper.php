@@ -327,7 +327,7 @@ class CheatingListHelper
             case 'Failed':
                 return response()->json([
                     'status'    => 417,
-                    'message'   => sprintf("Generating cheating list failed at perentage %s with error: %s", $cheatingStatus->progress_percentage, $cheatingStatus->compute_error_message),
+                    'message'   => "Generating cheating list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
                     'progress'  => $cheatingStatus->progress_percentage
                 ], 417);
                 break;
