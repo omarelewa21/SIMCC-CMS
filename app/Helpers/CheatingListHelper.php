@@ -340,10 +340,10 @@ class CheatingListHelper
                 break;
             default:
                 return response()->json([
-                    'status'    => 204,
+                    'status'    => 206,
                     'message'   => 'Generating cheating list is not started',
                     'progress'  => 0
-                ], 204);
+                ], 206);
                 break;
         }
     }
