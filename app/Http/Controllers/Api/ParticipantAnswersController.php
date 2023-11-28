@@ -19,6 +19,7 @@ class ParticipantAnswersController extends Controller
             return response()->json([
                 "status"        => 200,
                 "message"       => "Success",
+                'competition'   => $competition->name,
                 "filterOptions" => $participantAnswersService->getFilterOptions(),
                 "headers"       => $participantAnswersService->getHeaders($participantAnswersList),
                 "data"          => $participantAnswersList
