@@ -174,15 +174,15 @@ class TasksController extends Controller
     {
         try {
             $task = Tasks::find($request->id);
-            if ($task->allowedToUpdateAll()) {
+            if ($task->status !== Tasks::STATUS_VERIFIED) {
                 $task->identifier = $request->identifier;
                 $task->taskContents->first()->task_title = $request->title;
+                $task->description = $request->description;
+                $task->solutions = $request->solutions;
+                $task->taskImage()->update(['image_string' => $request->image]);
             }
-            $task->description = $request->description;
-            $task->solutions = $request->solutions;
-            $task->taskImage()->update(['image_string' => $request->image]);
-            $task->taskTags()->sync($request->tag_id);
 
+            $task->taskTags()->sync($request->tag_id);
             $task->push();
 
             return response()->json([
@@ -342,5 +342,31 @@ class TasksController extends Controller
             "status"  => 200,
             "message" => "task verified successfully"
         ]);
+    }
+
+    public function unverify(Tasks $task)
+    {
+        try {
+            if (!auth()->user()->hasRole(['super admin', 'admin'])) {
+                return response()->json([
+                    "status"  => 403,
+                    "message" => "Only admins can unverify collection"
+                ], 403);
+            }
+    
+            $task->status = Tasks::STATUS_ACTIVE;
+            $task->save();
+            return response()->json([
+                "status"  => 200,
+                "message" => "task unverified successfully"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"  => 500,
+                "message" => "Operation failed {$e->getMessage()}",
+                "error"   => strval($e)
+            ], 500);
+        }
     }
 }
