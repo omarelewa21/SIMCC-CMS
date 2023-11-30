@@ -374,4 +374,30 @@ class TasksController extends Controller
             "message" => "task verified successfully"
         ]);
     }
+
+    public function unverify(Tasks $task)
+    {
+        try {
+            if (!auth()->user()->hasRole(['super admin', 'admin'])) {
+                return response()->json([
+                    "status"  => 403,
+                    "message" => "Only admins can unverify collection"
+                ], 403);
+            }
+    
+            $task->status = Tasks::STATUS_ACTIVE;
+            $task->save();
+            return response()->json([
+                "status"  => 200,
+                "message" => "task unverified successfully"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"  => 500,
+                "message" => "Operation failed {$e->getMessage()}",
+                "error"   => strval($e)
+            ], 500);
+        }
+    }
 }
