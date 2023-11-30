@@ -418,6 +418,32 @@ class CollectionController extends Controller
         ]);
     }
 
+    public function unverify(Collections $collection)
+    {
+        try {
+            if (!auth()->user()->hasRole(['super admin', 'admin'])) {
+                return response()->json([
+                    "status"  => 403,
+                    "message" => "Only admins can unverify collection"
+                ], 403);
+            }
+    
+            $collection->status = Collections::STATUS_ACTIVE;
+            $collection->save();
+            return response()->json([
+                "status"  => 200,
+                "message" => "collection unverified successfully"
+            ]);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"  => 500,
+                "message" => "Operation failed {$e->getMessage()}",
+                "error"   => strval($e)
+            ], 500);
+        }
+    }
+
     public function competitionCollectionVerify($competitionId)
     {
         $competition = Competition::with(['rounds.levels.collection'])
