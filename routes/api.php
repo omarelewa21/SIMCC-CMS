@@ -155,6 +155,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("", [TasksController::class, "delete"])->name('task.delete');
         Route::post("duplicate/{task}", [TasksController::class, "duplicate"])->name('task.duplicate');
         Route::post("verify/{task}", [TasksController::class, "verify"])->name('task.verify');
+        Route::post("unverify/{task}", [TasksController::class, "unverify"])->name('task.unverify');
     });
 
     Route::group(["prefix" => "collection"], function () {
@@ -168,6 +169,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/section", [CollectionController::class, "delete_section"])->name('collection.section.delete');
         Route::post("duplicate/{collection}", [CollectionController::class, "duplicate"])->name('collection.duplicate');
         Route::post("verify", [CollectionController::class, "verify"])->name('collection.verify');
+        Route::post("unverify/{collection}", [CollectionController::class, "unverify"])->name('collection.unverify');
         Route::get("difficultyandpoints/overview", [CollectionController::class, "difficultyAndPointsOverview"])->name('collection.difficultyAndPointsOverview');
         Route::post("/difficultyandpoints/verify", [AssignDifficultyPointsController::class, "verify"])->name('collection.difficultyandpoints.verify');
     });
