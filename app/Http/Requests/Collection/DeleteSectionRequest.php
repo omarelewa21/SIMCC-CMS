@@ -24,12 +24,18 @@ class DeleteSectionRequest extends FormRequest
         ];
     }
 
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
     public function withValidator($validator)
     {
         $collection = Collections::find($this->collection_id);
         $validator->after(function ($validator) use ($collection) {
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, Deleting sections is not allowed');
+            if ($collection->collectionIsRestricted()) {
+                $validator->errors()->add('authorize', 'This Collection is used in a computed level, you cannot delete any section.');
             }
         });
     }
