@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Route;
 
 class Collections extends Base
 {
@@ -30,6 +32,7 @@ class Collections extends Base
         'Moderators',
         'allow_delete',
         'allow_update_sections',
+        'is_restricted',
     );
 
     public static function booted()
@@ -105,6 +108,13 @@ class Collections extends Base
         return $this->allowedToUpdateAll();
     }
 
+    protected function isRestricted(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->shouldAppendIsRestrictedAttribute() && $this->collectionIsRestricted(),
+        );
+    }
+
     public function allowedToUpdateAll(): bool
     {
         if(!is_null($this->levels)){
@@ -116,5 +126,26 @@ class Collections extends Base
     public function allowedToDelete(): bool
     {
         return CompetitionLevels::where('collection_id', $this->id)->doesntExist();
+    }
+
+    /**
+     * Collection is restricted if it is used in a computed level that is finished, in progress or has a bug detected.
+     * @return bool
+     */
+    public function collectionIsRestricted(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)
+            ->whereHas('levelGroupComputes', function ($query) {
+                $query->whereIn('computing_status', [
+                    LevelGroupCompute::STATUS_FINISHED,
+                    LevelGroupCompute::STATUS_IN_PROGRESS,
+                    LevelGroupCompute::STATUS_BUG_DETECTED,
+                ]);
+            })->exists();
+    }
+
+    public function shouldAppendIsRestrictedAttribute(): bool
+    {
+        return request()->filled('id') && Route::currentRouteName() === 'collection.list';
     }
 }
