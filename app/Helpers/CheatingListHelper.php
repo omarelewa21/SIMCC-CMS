@@ -318,34 +318,37 @@ class CheatingListHelper
         $cheatingStatus = CheatingStatus::find($competition->id);
         switch ($cheatingStatus?->status) {
             case 'In Progress':
-                return response()->json([
+                $response = [
                     'status'    => 202,
-                    'message'   => 'Generating cheating list is in progress',
-                    'progress'  => $cheatingStatus->progress_percentage
-                ], 202);
+                    'message'   => 'Generating cheating list is in progress'
+                ];
                 break;
             case 'Failed':
-                return response()->json([
+                $response = [
                     'status'    => 417,
                     'message'   => "Generating cheating list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
-                    'progress'  => $cheatingStatus->progress_percentage
-                ], 417);
+                ];
                 break;
             case 'Completed':
-                return response()->json([
+                $response = [
                     'status'    => 200,
                     'message'   => 'Cheating list generated successfully',
-                    'progress'  => $cheatingStatus->progress_percentage
-                ], 200);
+                ];
                 break;
             default:
                 return response()->json([
-                    'status'    => 206,
-                    'message'   => 'Generating cheating list is not started',
-                    'progress'  => 0
+                    'status'        => 206,
+                    'message'       => 'Generating cheating list is not started',
+                    'progress'      => 0,
+                    'competition'   => $competition->name
                 ], 206);
                 break;
         }
+
+        return response()->json(array_merge($response, [
+            'progress'      => $cheatingStatus->progress_percentage,
+            'competition'   => $competition->name
+        ]), $response['status']);
     }
 
     /**
@@ -356,9 +359,9 @@ class CheatingListHelper
      */
     public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::findOrFail($competition->id);
+        $cheatingStatus = CheatingStatus::find($competition->id);
 
-        if($cheatingStatus->status === 'Completed')
+        if($cheatingStatus?->status === 'Completed')
         return static::getCheatingCSVFile($competition, $request);
 
         return static::returnCheatingStatus($competition);
