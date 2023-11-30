@@ -25,14 +25,4 @@ class DeleteCollectionsRequest extends FormRequest
             'id.*'  => ['required', 'integer', 'distinct', new CheckCollectionUse]
         ];
     }
-
-    public function withValidator($validator)
-    {
-        $collection = Collections::find($this->id);
-        $validator->after(function ($validator) use ($collection) {
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, Deleting collection is not allowed');
-            }
-        });
-    }
 }
