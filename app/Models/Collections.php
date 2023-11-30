@@ -12,9 +12,15 @@ class Collections extends Base
 {
     use HasFactory,Filterable, SoftDeletes;
     
-    const STATUS_VERIFIED = "verified";
-    const STATUS_PENDING_MODERATION = "pending moderation";
-    const STATUS_ACTIVE = "active";
+    CONST STATUS_VERIFIED = "verified";
+    CONST STATUS_PENDING_MODERATION = "pending moderation";
+    CONST STATUS_ACTIVE = "active";
+
+    CONST RESTRICTION_MODES = [
+        'restricted' => 'restricted',
+        'in_use_by_level' => 'in_use_by_level',
+        'not_restricted' => 'not_restricted',
+    ];
 
     private static $whiteListFilter = [
         'name',
@@ -32,7 +38,7 @@ class Collections extends Base
         'Moderators',
         'allow_delete',
         'allow_update_sections',
-        'is_restricted',
+        'restriction_mode',
     );
 
     public static function booted()
@@ -108,10 +114,22 @@ class Collections extends Base
         return $this->allowedToUpdateAll();
     }
 
-    protected function isRestricted(): Attribute
+    protected function restrictionMode(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->shouldAppendIsRestrictedAttribute() && $this->collectionIsRestricted(),
+            get: function() {
+                if(!$this->shouldAppendIsRestrictedAttribute()){
+                    return self::RESTRICTION_MODES['not_restricted'];
+                }
+
+                if($this->collectionIsRestricted()) {
+                    return self::RESTRICTION_MODES['restricted'];
+                } elseif($this->collectionIsInUseByLevel()) {
+                    return self::RESTRICTION_MODES['in_use_by_level'];
+                } else {
+                    return self::RESTRICTION_MODES['not_restricted'];
+                }
+            },
         );
     }
 
@@ -125,7 +143,7 @@ class Collections extends Base
 
     public function allowedToDelete(): bool
     {
-        return CompetitionLevels::where('collection_id', $this->id)->doesntExist();
+        return !$this->collectionIsInUseByLevel();
     }
 
     /**
@@ -142,6 +160,11 @@ class Collections extends Base
                     LevelGroupCompute::STATUS_BUG_DETECTED,
                 ]);
             })->exists();
+    }
+
+    public function collectionIsInUseByLevel(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)->exists();
     }
 
     public function shouldAppendIsRestrictedAttribute(): bool
