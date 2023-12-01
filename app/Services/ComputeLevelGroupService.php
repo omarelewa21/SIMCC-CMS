@@ -63,18 +63,14 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        // $clearPreviousRecords = $this->checkIfShouldClearPrevRecords($request);
-        $this->clearRecords();
-        $this->computeParticipantAnswersScores();
-        $this->setupCompetitionParticipantsResultsTable();
-        $this->setParticipantsGroupRank();
+        $clearPreviousRecords = $this->firstTimeCompute() || $this->checkIfShouldClearPrevRecords($request);
 
-        // if($clearPreviousRecords) {
-        //     $this->clearRecords();
-        //     $this->computeParticipantAnswersScores();
-        //     $this->setupCompetitionParticipantsResultsTable();
-        //     $this->setParticipantsGroupRank();
-        // }
+        if($clearPreviousRecords) {
+            $this->clearRecords();
+            $this->computeParticipantAnswersScores();
+            $this->setupCompetitionParticipantsResultsTable();
+            $this->setParticipantsGroupRank();
+        }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
@@ -85,10 +81,10 @@ class ComputeLevelGroupService
             }
         };
 
-        // if($clearPreviousRecords) {
-        //     $this->setParticipantsAwardsRank();
-        //     $this->updateParticipantsStatus();
-        // }
+        if($clearPreviousRecords) {
+            $this->setParticipantsAwardsRank();
+            $this->updateParticipantsStatus();
+        }
 
         $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
@@ -321,16 +317,15 @@ class ComputeLevelGroupService
             ->update(['participants.status' => 'absent']);
     }
 
-    private function checkIfShouldClearPrevRecords($request)
-    {
-        return array_key_exists('clear_previous_results', $request)
-            && $request['clear_previous_results'] == true
-            && $this->FirstTimeComputing();
-    }
-
-    private function FirstTimeComputing()
+    private function firstTimeCompute(): bool
     {
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $this->group->id)->doesntExist();
+    }
+
+    private function checkIfShouldClearPrevRecords($request): bool
+    {
+        return array_key_exists('clear_previous_results', $request)
+            && $request['clear_previous_results'] == true;
     }
 }
