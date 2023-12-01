@@ -63,7 +63,7 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = array_key_exists('clear_previous_results', $request) && $request['clear_previous_results'] == true;
+        $clearPreviousRecords = $this->checkIfShouldClearPrevRecords($request);
 
         if($clearPreviousRecords) {
             $this->clearRecords();
@@ -312,5 +312,18 @@ class ComputeLevelGroupService
             ->whereIn('participants.country_id', $this->groupCountriesIds)
             ->where('participants.status', 'active')
             ->update(['participants.status' => 'absent']);
+    }
+
+    private function checkIfShouldClearPrevRecords($request)
+    {
+        return array_key_exists('clear_previous_results', $request)
+            && $request['clear_previous_results'] == true
+            && $this->FirstTimeComputing();
+    }
+
+    private function FirstTimeComputing()
+    {
+        return CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)->doesntExist();
     }
 }
