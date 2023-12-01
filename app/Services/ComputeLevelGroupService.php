@@ -63,14 +63,18 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = $this->checkIfShouldClearPrevRecords($request);
+        // $clearPreviousRecords = $this->checkIfShouldClearPrevRecords($request);
+        $this->clearRecords();
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
+        $this->setParticipantsGroupRank();
 
-        if($clearPreviousRecords) {
-            $this->clearRecords();
-            $this->computeParticipantAnswersScores();
-            $this->setupCompetitionParticipantsResultsTable();
-            $this->setParticipantsGroupRank();
-        }
+        // if($clearPreviousRecords) {
+        //     $this->clearRecords();
+        //     $this->computeParticipantAnswersScores();
+        //     $this->setupCompetitionParticipantsResultsTable();
+        //     $this->setParticipantsGroupRank();
+        // }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
@@ -81,10 +85,13 @@ class ComputeLevelGroupService
             }
         };
 
-        if($clearPreviousRecords) {
-            $this->setParticipantsAwardsRank();
-            $this->updateParticipantsStatus();
-        }
+        // if($clearPreviousRecords) {
+        //     $this->setParticipantsAwardsRank();
+        //     $this->updateParticipantsStatus();
+        // }
+
+        $this->setParticipantsAwardsRank();
+        $this->updateParticipantsStatus();
 
         $this->updateComputeProgressPercentage(100);
     }
