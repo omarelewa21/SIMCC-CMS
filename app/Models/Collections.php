@@ -4,15 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Route;
 
 class Collections extends Base
 {
     use HasFactory,Filterable, SoftDeletes;
     
-    const STATUS_VERIFIED = "verified";
-    const STATUS_PENDING_MODERATION = "pending moderation";
-    const STATUS_ACTIVE = "active";
+    CONST STATUS_VERIFIED = "verified";
+    CONST STATUS_PENDING_MODERATION = "pending moderation";
+    CONST STATUS_ACTIVE = "active";
+
+    CONST RESTRICTION_MODES = [
+        'restricted' => 'restricted',
+        'in_use_by_level' => 'in_use_by_level',
+        'not_restricted' => 'not_restricted',
+    ];
 
     private static $whiteListFilter = [
         'name',
@@ -30,6 +38,7 @@ class Collections extends Base
         'Moderators',
         'allow_delete',
         'allow_update_sections',
+        'restriction_mode',
     );
 
     public static function booted()
@@ -105,6 +114,25 @@ class Collections extends Base
         return $this->allowedToUpdateAll();
     }
 
+    protected function restrictionMode(): Attribute
+    {
+        return Attribute::make(
+            get: function() {
+                if(!$this->shouldAppendIsRestrictedAttribute()){
+                    return self::RESTRICTION_MODES['not_restricted'];
+                }
+
+                if($this->collectionIsRestricted()) {
+                    return self::RESTRICTION_MODES['restricted'];
+                } elseif($this->collectionIsInUseByLevel()) {
+                    return self::RESTRICTION_MODES['in_use_by_level'];
+                } else {
+                    return self::RESTRICTION_MODES['not_restricted'];
+                }
+            },
+        );
+    }
+
     public function allowedToUpdateAll(): bool
     {
         if(!is_null($this->levels)){
@@ -115,6 +143,32 @@ class Collections extends Base
 
     public function allowedToDelete(): bool
     {
-        return CompetitionLevels::where('collection_id', $this->id)->doesntExist();
+        return !$this->collectionIsInUseByLevel();
+    }
+
+    /**
+     * Collection is restricted if it is used in a computed level that is finished, in progress or has a bug detected.
+     * @return bool
+     */
+    public function collectionIsRestricted(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)
+            ->whereHas('levelGroupComputes', function ($query) {
+                $query->whereIn('computing_status', [
+                    LevelGroupCompute::STATUS_FINISHED,
+                    LevelGroupCompute::STATUS_IN_PROGRESS,
+                    LevelGroupCompute::STATUS_BUG_DETECTED,
+                ]);
+            })->exists();
+    }
+
+    public function collectionIsInUseByLevel(): bool
+    {
+        return CompetitionLevels::where('collection_id', $this->id)->exists();
+    }
+
+    public function shouldAppendIsRestrictedAttribute(): bool
+    {
+        return request()->filled('id') && Route::currentRouteName() === 'collection.list';
     }
 }
