@@ -5,8 +5,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 
 class Tasks extends Base
 {
@@ -43,6 +45,7 @@ class Tasks extends Base
         'answer_sorting_id',
         'allow_delete',
         'allow_update_answer',
+        'is_resricted',
     );
     public $hidden = ['updated_at', 'created_at'];
     private static $whiteListFilter = [
@@ -114,6 +117,11 @@ class Tasks extends Base
     public function gradeDifficulty()
     {
         return $this->morphMany(RecommendedDifficulty::class, 'gradeDifficulty');
+    }
+
+    public function participantAnswers()
+    {
+        return $this->hasMany(ParticipantsAnswer::class, 'task_id', 'id');
     }
 
     public function getAnswerTypeAttribute($value)
@@ -218,6 +226,13 @@ class Tasks extends Base
         return $this->allowedToUpdateAll();
     }
 
+    protected function isResricted(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->shouldAppendIsRestrictedAttribute() && $this->isTaskRestricted(),
+        );
+    }
+
     public static function applyFilter($query, Request $request)
     {
         if ($request->filled("domains") || $request->filled("tags")) {
@@ -236,11 +251,22 @@ class Tasks extends Base
 
     public function allowedToUpdateAll(): bool
     {
-        return ParticipantsAnswer::where('task_id', $this->id)->doesntExist();
+        return $this->participantAnswers()->doesntExist();
     }
 
     public static function checkStatusForDeletion($task_id)
     {
         return CollectionSections::where('tasks', 'LIKE', "%$task_id%")->exists();
+    }
+
+    public function isTaskRestricted(): bool
+    {
+        return $this->participantAnswers()
+            ->whereNotNull('participant_answers.score')->exists();
+    }
+
+    public function shouldAppendIsRestrictedAttribute(): bool
+    {
+        return request()->filled('id') && Route::currentRouteName() === 'task.list';
     }
 }

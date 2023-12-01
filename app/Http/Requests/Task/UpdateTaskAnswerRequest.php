@@ -42,8 +42,8 @@ class UpdateTaskAnswerRequest extends FormRequest
     {
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
-            if (!$task->status==Tasks::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Task is verified, No update to answers is allowed');
+            if ($task->isTaskRestricted()) {
+                $validator->errors()->add('authorize', 'Task is computed before, you can\'t update its answers');
             }
         });
     }

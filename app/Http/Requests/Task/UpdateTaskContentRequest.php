@@ -37,8 +37,8 @@ class UpdateTaskContentRequest extends FormRequest
     {
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
-            if (!$task->allowedToUpdateAll()) {
-                $validator->errors()->add('authorize', 'Task is in use by an active competition, No update to content is allowed');
+            if ($task->isTaskRestricted()) {
+                $validator->errors()->add('authorize', 'Task is computed before, you can\'t update its content');
             }
         });
     }
