@@ -40,7 +40,7 @@ class UpdateCollectionSectionRequest extends FormRequest
     {
         $collection = Collections::find($this->collection_id);
         $validator->after(function ($validator) use ($collection) {
-            if ($collection->collectionIsRestricted()) {
+            if ($collection->isCollectionRestricted()) {
                 $validator->errors()->add('authorize', 'This Collection is used in a computed level, you cannot update collection sections.');
             }
         });

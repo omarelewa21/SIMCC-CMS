@@ -122,7 +122,7 @@ class Collections extends Base
                     return self::RESTRICTION_MODES['not_restricted'];
                 }
 
-                if($this->collectionIsRestricted()) {
+                if($this->isCollectionRestricted()) {
                     return self::RESTRICTION_MODES['restricted'];
                 } elseif($this->collectionIsInUseByLevel()) {
                     return self::RESTRICTION_MODES['in_use_by_level'];
@@ -150,7 +150,7 @@ class Collections extends Base
      * Collection is restricted if it is used in a computed level that is finished, in progress or has a bug detected.
      * @return bool
      */
-    public function collectionIsRestricted(): bool
+    public function isCollectionRestricted(): bool
     {
         return CompetitionLevels::where('collection_id', $this->id)
             ->whereHas('levelGroupComputes', function ($query) {
