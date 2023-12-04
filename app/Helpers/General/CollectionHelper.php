@@ -45,7 +45,7 @@ class CollectionHelper
         ));
     }
 
-    static function searchCollection ($searchTerm, $collection, $availForSearch, $limit) {
+    static function searchCollection ($searchTerm, $collection, $availForSearch, $limit, $convertToArray = false) {
         if(!empty($searchTerm)) {
 
             $userList = self::paginate(collect($collection)
@@ -57,7 +57,9 @@ class CollectionHelper
                         fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower(str_replace('%', ' ', $searchTerm))) : false
                     );
 
-                }), $limit);
+                }), $limit)
+                ->values();
+                
         } else {
             $userList = CollectionHelper::paginate($collection, $limit);
         }
