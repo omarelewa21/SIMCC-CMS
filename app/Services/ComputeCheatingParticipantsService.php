@@ -123,7 +123,6 @@ class ComputeCheatingParticipantsService
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
-            ->having('answers_count', '>', 0)
             ->cursor()->each(function ($participant) use ($groups) {
                 $key = $participant->country_id . '-' . $participant->school_id . '-' . $participant->grade;
                 if($groups->has($key))
