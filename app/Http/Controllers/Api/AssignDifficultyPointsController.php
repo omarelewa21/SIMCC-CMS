@@ -106,14 +106,9 @@ class AssignDifficultyPointsController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage(),
-            ], 500);
-        } catch (\Exception $e) {
-            // do task when error
-            return response()->json([
-                "status" => 500,
-                "message" => "Retrieve competition retrieve unsuccessful" . $e->getMessage()
+                "status"    => 500,
+                "message"   => "Retrieve competition retrieve unsuccessful " . $e->getMessage(),
+                'error'     => strval($e) 
             ], 500);
         }
     }

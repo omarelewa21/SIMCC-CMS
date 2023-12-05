@@ -63,10 +63,15 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $this->clearRecords();
-        $this->computeParticipantAnswersScores();
-        $this->setupCompetitionParticipantsResultsTable();
-        $this->setParticipantsGroupRank();
+        $clearPreviousRecords = $this->firstTimeCompute() || $this->checkIfShouldClearPrevRecords($request);
+
+        if($clearPreviousRecords) {
+            $this->clearRecords();
+            $this->computeParticipantAnswersScores();
+            $this->setupCompetitionParticipantsResultsTable();
+            $this->setParticipantsGroupRank();
+        }
+        
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
@@ -75,8 +80,15 @@ class ComputeLevelGroupService
                 in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
             }
         };
+
+        if($clearPreviousRecords) {
+            $this->setParticipantsAwardsRank();
+            $this->updateParticipantsStatus();
+        }
+
         $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
+
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -303,5 +315,17 @@ class ComputeLevelGroupService
             ->whereIn('participants.country_id', $this->groupCountriesIds)
             ->where('participants.status', 'active')
             ->update(['participants.status' => 'absent']);
+    }
+
+    private function firstTimeCompute(): bool
+    {
+        return CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)->doesntExist();
+    }
+
+    private function checkIfShouldClearPrevRecords($request): bool
+    {
+        return array_key_exists('clear_previous_results', $request)
+            && $request['clear_previous_results'] == true;
     }
 }

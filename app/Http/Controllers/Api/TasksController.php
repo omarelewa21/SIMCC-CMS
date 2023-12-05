@@ -176,15 +176,15 @@ class TasksController extends Controller
     {
         try {
             $task = Tasks::find($request->id);
-            if ($task->allowedToUpdateAll()) {
+            if ($task->status !== Tasks::STATUS_VERIFIED) {
                 $task->identifier = $request->identifier;
                 $task->taskContents->first()->task_title = $request->title;
+                $task->description = $request->description;
+                $task->solutions = $request->solutions;
+                $task->taskImage()->update(['image_string' => $request->image]);
             }
-            $task->description = $request->description;
-            $task->solutions = $request->solutions;
-            $task->taskImage()->update(['image_string' => $request->image]);
-            $task->taskTags()->sync($request->tag_id);
 
+            $task->taskTags()->sync($request->tag_id);
             $task->push();
 
             return response()->json([
