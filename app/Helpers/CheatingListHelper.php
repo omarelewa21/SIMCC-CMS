@@ -149,6 +149,7 @@ class CheatingListHelper
                         ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
             })
             ->where('cheating_participants.competition_id', $competition->id)
+            ->where('cheating_participants.is_same_participant', 0)
             ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
             ->select(
                 'participants.index_no',
@@ -293,19 +294,15 @@ class CheatingListHelper
     private static function getFileName(Competition $competition, string|null $fileName)
     {
         if(!$fileName) {
-            return sprintf("%s_cheating_list_%s.csv", $competition->name, now()->format('Y-m-d'));
+            return sprintf("%s_cheating_list_%s.xlsx", $competition->name, now()->format('Y-m-d'));
         }
 
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         if(!$fileExtension) {
-            return sprintf("%s.%s", $fileName, 'csv');
+            return sprintf("%s.%s", $fileName, 'xlsx');
         }
 
-        if(!in_array($fileExtension, ['csv', 'xlsx', 'xls'])) {
-            return str_replace($fileExtension, 'csv', $fileName);
-        }
-
-        return $fileName;
+        return str_replace($fileExtension, 'xlsx', $fileName);
     }
 
     /**
@@ -365,5 +362,61 @@ class CheatingListHelper
         return static::getCheatingCSVFile($competition, $request);
 
         return static::returnCheatingStatus($competition);
+    }
+    
+    /**
+     * Get same participant cheaters data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function getSameParticipantCheatersDataForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        return static::getSameParticipantCheatersCollectionForCSV($competition, $request)
+            ->map(fn($participant) => static::getSameParticipantCheatingParticipantReadyForCSV($participant))
+            ->sortBy('group_id')
+            ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
+            ->values();
+    }
+
+    /**
+     * Get same participant cheaters collection for CSV
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    private static function getSameParticipantCheatersCollectionForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        return Participants::distinct()
+            ->join('cheating_participants', function (JoinClause $join) {
+                    $join->on('participants.index_no', 'cheating_participants.participant_index')
+                        ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->where('cheating_participants.competition_id', $competition->id)
+            ->where('cheating_participants.is_same_participant', 1)
+            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
+            ->select(
+                'participants.index_no',
+                'participants.name',
+                'participants.school_id',
+                'participants.country_id',
+                'participants.grade',
+                'cheating_participants.group_id'
+            )
+            ->with('school:id,name', 'country:id,display_name')
+            ->withCount('answers')
+            ->get();
+    }
+
+    /**
+     * Get same participant cheating participant ready for CSV
+     * @param Participant $participant
+     */
+    private static function getSameParticipantCheatingParticipantReadyForCSV($participant)
+    {
+        $participant->school = $participant->school->name;
+        $participant->country = $participant->country->display_name;
+        $participant->number_of_answers = $participant->answers_count;
+        return $participant->only(
+            'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_answers'
+        );
     }
 }
