@@ -293,19 +293,15 @@ class CheatingListHelper
     private static function getFileName(Competition $competition, string|null $fileName)
     {
         if(!$fileName) {
-            return sprintf("%s_cheating_list_%s.csv", $competition->name, now()->format('Y-m-d'));
+            return sprintf("%s_cheating_list_%s.xlsx", $competition->name, now()->format('Y-m-d'));
         }
 
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         if(!$fileExtension) {
-            return sprintf("%s.%s", $fileName, 'csv');
+            return sprintf("%s.%s", $fileName, 'xlsx');
         }
 
-        if(!in_array($fileExtension, ['csv', 'xlsx', 'xls'])) {
-            return str_replace($fileExtension, 'csv', $fileName);
-        }
-
-        return $fileName;
+        return str_replace($fileExtension, 'xlsx', $fileName);
     }
 
     /**
