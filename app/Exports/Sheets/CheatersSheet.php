@@ -70,4 +70,12 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles
             1    => ['font' => ['bold' => true]],
         ];
     }
+
+    /**
+     * @return string
+     */
+    public function title(): string
+    {
+        return 'Cheaters Sheet';
+    }
 }
