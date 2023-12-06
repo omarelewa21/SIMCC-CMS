@@ -48,7 +48,7 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
             'Country',
             'Grade',
             'Group ID',
-            'No of qns',
+            'No of answers uploaded',
         ];
     }
 
