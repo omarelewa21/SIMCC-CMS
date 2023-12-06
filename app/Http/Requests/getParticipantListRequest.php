@@ -32,7 +32,7 @@ class getParticipantListRequest extends FormRequest
             'school_id'                     => 'integer',
             'status'                        => 'string',
             'private'                       => 'boolean',
-            'limits'                        => 'integer|min:1|nullable',
+            'limits'                        => 'integer|nullable',
             'page'                          => 'integer',
             'search'                        => 'max:255'
         ];

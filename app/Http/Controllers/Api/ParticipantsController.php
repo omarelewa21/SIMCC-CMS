@@ -189,7 +189,6 @@ class ParticipantsController extends Controller
             } else {
                 $limits = $request->limits ?? 10; //set default to 10 rows per page
             }
-
             /**
              * Lists of availabe filters
              */
@@ -508,16 +507,28 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function performanceReportsBulkDownload()
+    public function performanceReportsBulkDownload(getParticipantListRequest $request)
     {
-        $user = auth()->user();
-        $job = new GeneratePerformanceReports($user);
-        $job_id = $this->dispatch($job);
-        return response()->json([
-            "status"    => 200,
-            'job_id' => $job_id,
-            "message"   => "Report generation job dispatched"
-        ]);
+        try {
+            $response = $this->list($request);
+            $data = json_decode($response->getContent());
+            $participants = $data->data->participantList->data;
+            if (count($participants) > 100) {
+                throw new Exception('The total count of reports exceeds the established limit of 100 reports.');
+            }
+            $job = new GeneratePerformanceReports($participants);
+            $job_id = $this->dispatch($job);
+            return response()->json([
+                "status"    => 200,
+                'job_id' => $job_id,
+                "message"   => "Report generation job dispatched"
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Bulk download reports failed :" . $e->getMessage()
+            ]);
+        }
     }
 
     public function performanceReportsBulkDownloadCheckProgress($jobId)

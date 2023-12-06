@@ -2,9 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Http\Controllers\Api\ParticipantsController;
-use App\Http\Requests\getParticipantListRequest;
-use App\Models\CompetitionOrganization;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ReportDownloadStatus;
@@ -36,15 +33,12 @@ class GeneratePerformanceReports implements ShouldQueue
     protected $totalProgress;
     protected $progress;
     protected $jobId;
-    protected $request;
-    protected $user;
     protected $report;
-    protected $participantController;
     public $timeout = 900;
 
-    public function __construct($user)
+    public function __construct($participants)
     {
-        $this->user = $user;
+        $this->participants = $participants;
     }
 
     public function handle()
@@ -52,17 +46,9 @@ class GeneratePerformanceReports implements ShouldQueue
         ini_set('memory_limit', '-1');
 
         try {
-            auth()->login($this->user);
             $this->progress = 0;
             $this->jobId = $this->job->getJobId();
             $this->updateJobProgress($this->progress, 100, ReportDownloadStatus::STATUS_In_PROGRESS);
-            $this->participants = $this->getParticipants();
-
-            if (count($this->participants) > 100) {
-                $this->progress = 100;
-                $this->totalProgress = 100;
-                throw new Exception('The total count of reports exceeds the established limit of 100 reports.');
-            }
 
             $this->participantResults = $this->getParticipantResults();
             $this->totalProgress = count($this->participantResults);
@@ -127,18 +113,6 @@ class GeneratePerformanceReports implements ShouldQueue
         } catch (Exception | Throwable | TimeoutException | MaxAttemptsExceededException $e) {
             $this->report['public_error'] = $e->getMessage();
             $this->updateJobProgress($this->progress, $this->totalProgress, ReportDownloadStatus::STATUS_FAILED, null, $this->report);
-        }
-    }
-
-    public function getParticipants()
-    {
-        try {
-            $participantController = new ParticipantsController;
-            $response = $participantController->list(new getParticipantListRequest);
-            $data = json_decode($response->getContent());
-            return $data->data->participantList->data;
-        } catch (Exception $e) {
-            throw new Exception('Failed to load participants ' . $e->getMessage());
         }
     }
 
