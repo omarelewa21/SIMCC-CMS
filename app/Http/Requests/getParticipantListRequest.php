@@ -33,7 +33,7 @@ class getParticipantListRequest extends FormRequest
             'school_id'                     => 'integer',
             'status'                        => 'string',
             'private'                       => 'boolean',
-            'limits'                        => 'integer|min:0|nullable',
+            'limits'                        => 'integer|nullable',
             'page'                          => 'integer',
             'search'                        => 'max:255',
             'grade'                         => 'integer|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
