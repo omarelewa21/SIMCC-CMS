@@ -39,9 +39,9 @@ class UpdateCollectionSectionRequest extends FormRequest
     public function withValidator($validator)
     {
         $collection = Collections::find($this->collection_id);
-        $validator->after(function ($validator) use($collection){
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, No update to sections is allowed');
+        $validator->after(function ($validator) use ($collection) {
+            if ($collection->isCollectionRestricted()) {
+                $validator->errors()->add('authorize', 'This Collection is used in a computed level, you cannot update collection sections.');
             }
         });
     }

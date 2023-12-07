@@ -27,6 +27,7 @@ class AddSectionRequest extends FormRequest
             'description'       => 'string|max:65535',
         ];
     }
+
     /**
      * Configure the validator instance.
      *
@@ -37,8 +38,8 @@ class AddSectionRequest extends FormRequest
     {
         $collection = Collections::find($this->collection_id);
         $validator->after(function ($validator) use ($collection) {
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, Adding new sections is not allowed');
+            if ($collection->isCollectionRestricted()) {
+                $validator->errors()->add('authorize', 'This Collection is used in a computed level, you cannot add new section to it.');
             }
         });
     }
