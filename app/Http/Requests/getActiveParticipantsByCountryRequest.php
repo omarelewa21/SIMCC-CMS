@@ -33,19 +33,24 @@ class getActiveParticipantsByCountryRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = [
-            "countries.*"   => "required|array",
-            "countries"     => 'required_array_keys:0'
+        return [
+            "countries"     => 'required|array|min:0',
+            'countries.*'   => 'integer|distinct|exists:all_countries,id'
         ];
-        
-        $countriesIdsList = $this->competition->participants()->pluck('participants.country_id')->toArray();
 
-        foreach($this->countries as $key=> $country_id){
-            $rules = array_merge($rules, [
-                "countries.". $key     => ['integer', 'distinct', 'exists:all_countries,id', Rule::in($countriesIdsList)]
-            ]);
-        }
+        // $rules = [
+        //     "countries"     => 'required|array|min:0',
+        //     'countries.*'   => 'integer|distinct|exists:all_countries,id'
+        // ];
         
-        return $rules;
+        // $countriesIdsList = $this->competition->participants()->pluck('participants.country_id')->toArray();
+
+        // foreach($this->countries as $key=> $country_id){
+        //     $rules = array_merge($rules, [
+        //         "countries.". $key     => ['integer', 'distinct', 'exists:all_countries,id', Rule::in($countriesIdsList)]
+        //     ]);
+        // }
+        
+        // return $rules;
     }
 }
