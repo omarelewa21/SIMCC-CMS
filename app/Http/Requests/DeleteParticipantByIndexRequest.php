@@ -25,7 +25,7 @@ class DeleteParticipantByIndexRequest extends FormRequest
     {
         return [
             'indexes'   => 'required|array',
-            'indexes.*' => 'required|integer|exists:participants,index_no'
+            'indexes.*' => 'required|exists:participants,index_no'
         ];
     }
 }
