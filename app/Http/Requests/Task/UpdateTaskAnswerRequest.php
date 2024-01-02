@@ -42,7 +42,7 @@ class UpdateTaskAnswerRequest extends FormRequest
     {
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
-            if ($task->isTaskRestricted()) {
+            if (!auth()->user()->hasRole('super admin') && $task->isTaskRestricted()) {
                 $validator->errors()->add('authorize', 'Task is computed before, you can\'t update its answers');
             }
         });
