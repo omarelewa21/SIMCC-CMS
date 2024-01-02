@@ -7,6 +7,7 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionRounds;
 use App\Models\Countries;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class MarkingService
@@ -340,6 +341,21 @@ class MarkingService
         }
 
         if(!isset($data['total'][$country])) {
+            $data['total'][$country] = [
+                'total_participants' => 0,
+                'total_participants_with_answers' => 0,
+                'absentees' => 0,
+                'country'   => $country
+            ];
+        }
+    }
+
+    public static function adjustDataTotalToIncludeAllCountries(&$data, $countries)
+    {
+        $dataCountries = array_keys($data['total']);
+        $requestCountries = $countries->pluck('name')->toArray();
+        $missingCountries = array_diff($requestCountries, $dataCountries);
+        foreach($missingCountries as $country){
             $data['total'][$country] = [
                 'total_participants' => 0,
                 'total_participants_with_answers' => 0,

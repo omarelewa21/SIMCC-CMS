@@ -325,7 +325,8 @@ class ComputeLevelGroupService
 
     private function checkIfShouldClearPrevRecords($request): bool
     {
-        return array_key_exists('clear_previous_results', $request)
-            && $request['clear_previous_results'] == true;
+        if(!array_key_exists('clear_previous_results', $request)) return true; // The function is not implemented frontend yet
+
+        return $request['clear_previous_results'] == true;
     }
 }

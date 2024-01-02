@@ -73,6 +73,7 @@ class ParticipantAnswersListService
     {
         return (clone $this->getParticipantsQuery())
             ->with('answers', 'school', 'country')
+            ->withCount('answers')
             ->paginate($this->request->limits ?? 10);
     }
 
@@ -85,6 +86,7 @@ class ParticipantAnswersListService
             'Country',
             'Grade',
             'Status',
+            'Answers Count'
         ];
 
         $questionsCount = $data->pluck('answers')->max()->count();
