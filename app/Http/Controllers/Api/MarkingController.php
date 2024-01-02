@@ -226,6 +226,7 @@ class MarkingController extends Controller
             $data = [];
             MarkingService::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
             MarkingService::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
+            MarkingService::adjustDataTotalToIncludeAllCountries($data, $countries);
 
             return response()->json([
                 "status"        => 200,
