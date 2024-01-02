@@ -7,8 +7,10 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\LevelGroupCompute;
+use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
@@ -43,13 +45,33 @@ class ComputeLevelGroupService
 
         return true;
     }
+
+    public static function storeLevelGroupRecords(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
+    {
+        DB::beginTransaction();
+        LevelGroupCompute::updateOrCreate(
+            ['level_id' => $level->id, 'group_id' => $group->id],
+            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
+        );
+        
+        MarkingLogs::create([
+            'level_id' => $level->id,
+            'group_id' => $group->id,
+        ]);
+        DB::commit();
+    }
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $this->clearRecords();
-        $this->computeParticipantAnswersScores();
-        $this->setupCompetitionParticipantsResultsTable();
-        $this->setParticipantsGroupRank();
+        $clearPreviousRecords = $this->firstTimeCompute() || $this->checkIfShouldClearPrevRecords($request);
+
+        if($clearPreviousRecords) {
+            $this->clearRecords();
+            $this->computeParticipantAnswersScores();
+            $this->setupCompetitionParticipantsResultsTable();
+            $this->setParticipantsGroupRank();
+        }
+        
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
@@ -58,8 +80,15 @@ class ComputeLevelGroupService
                 in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
             }
         };
+
+        if($clearPreviousRecords) {
+            $this->setParticipantsAwardsRank();
+            $this->updateParticipantsStatus();
+        }
+
         $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
+
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -286,5 +315,18 @@ class ComputeLevelGroupService
             ->whereIn('participants.country_id', $this->groupCountriesIds)
             ->where('participants.status', 'active')
             ->update(['participants.status' => 'absent']);
+    }
+
+    private function firstTimeCompute(): bool
+    {
+        return CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)->doesntExist();
+    }
+
+    private function checkIfShouldClearPrevRecords($request): bool
+    {
+        if(!array_key_exists('clear_previous_results', $request)) return true; // The function is not implemented frontend yet
+
+        return $request['clear_previous_results'] == true;
     }
 }

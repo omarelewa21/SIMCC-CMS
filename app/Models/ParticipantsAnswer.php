@@ -45,7 +45,7 @@ class ParticipantsAnswer extends Model
         if($this->task->answer_type === 'mcq'){
             $taskAnswers = $this->task->taskAnswers()
                 ->join('task_labels', 'task_labels.task_answers_id', 'task_answers.id')
-                ->select('task_answers.id', 'task_labels.label as answer')
+                ->select('task_answers.id', 'task_labels.content as answer')
                 ->get();
         } else {
             $taskAnswers = $this->task->taskAnswers()
@@ -88,6 +88,7 @@ class ParticipantsAnswer extends Model
         $isCorrect = $this->checkIfAnswerIsCorrect($this->level_id);
 
         if($this->is_correct !== $isCorrect){
+            $this->is_correct = $isCorrect;
             $this->save();
         }
 

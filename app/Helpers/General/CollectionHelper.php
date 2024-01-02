@@ -45,19 +45,22 @@ class CollectionHelper
         ));
     }
 
-    static function searchCollection ($searchTerm, $collection, $availForSearch, $limit) {
+    static function searchCollection ($searchTerm, $collection, $availForSearch, $limit, $convertToArray = false) {
         if(!empty($searchTerm)) {
 
-            $userList = self::paginate(collect($collection)
+            $userList = self::paginate(
+                collect($collection)
                 ->filter(function ($row) use ($searchTerm, $availForSearch) {
-
                     return collect($availForSearch)->map(
                         fn($item)=> $row[$item]
                     )->contains(
                         fn($item)=> is_string($item) ? str_contains(Str::lower($item), Str::lower(str_replace('%', ' ', $searchTerm))) : false
                     );
-
-                }), $limit);
+                })
+                ->values(),
+                $limit
+            );
+                
         } else {
             $userList = CollectionHelper::paginate($collection, $limit);
         }

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
@@ -343,6 +344,23 @@ class ParticipantsController extends Controller
     {
         try {
             $deletedRecords = Participants::destroy($request->id);
+            return response()->json([
+                "status"    => 200,
+                "message"   => "$deletedRecords Participants delete successful"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"     => 500,
+                "message"    => "Participants delete unsuccessful",
+                "error"      => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteByIndex(DeleteParticipantByIndexRequest $request)
+    {
+        try {
+            $deletedRecords = Participants::whereIn('index_no', $request->indexes)->delete();
             return response()->json([
                 "status"    => 200,
                 "message"   => "$deletedRecords Participants delete successful"

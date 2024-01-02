@@ -226,6 +226,7 @@ class MarkingController extends Controller
             $data = [];
             MarkingService::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
             MarkingService::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
+            MarkingService::adjustDataTotalToIncludeAllCountries($data, $countries);
 
             return response()->json([
                 "status"        => 200,
@@ -285,11 +286,7 @@ class MarkingController extends Controller
     {
         ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
         dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-
-        LevelGroupCompute::updateOrCreate(
-            ['level_id' => $level->id, 'group_id' => $group->id],
-            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-        );
+        ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
         \ResponseCache::clear();
 
@@ -324,10 +321,7 @@ class MarkingController extends Controller
                     foreach($competition->groups as $group){
                         if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-                            LevelGroupCompute::updateOrCreate(
-                                ['level_id' => $level->id, 'group_id' => $group->id],
-                                ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-                            );
+                            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
                         }
                     }
                 }

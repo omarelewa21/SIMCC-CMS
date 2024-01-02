@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
-use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\LazyCollection;
 
 class ComputeCheatingParticipantsService
 {
@@ -69,7 +69,7 @@ class ComputeCheatingParticipantsService
                     });
                 });
 
-            $this->updateCheatStatus(40, 'In Progress');
+            $this->updateCheatStatus(40);
         });
     }
 
@@ -102,7 +102,10 @@ class ComputeCheatingParticipantsService
             ->each(function ($group) {
                 $this->compareAnswersBetweenParticipants($group);
             });
-        
+
+        $this->updateCheatStatus(90);
+
+        $this->detectCheatersWhoTookCompetitionTwiceOrMore();
         $this->updateCheatStatus(100, 'Completed');
     }
 
@@ -115,11 +118,11 @@ class ComputeCheatingParticipantsService
     {
         $groups = collect();
 
-        Participants::join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
-            ->where('competition_organization.competition_id', $this->competition->id)
+        $this->competition->participants()
             ->when($this->countryId, fn($query) => $query->where('participants.country_id', $this->countryId))
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
+            ->withCount('answers')
             ->cursor()->each(function ($participant) use ($groups) {
                 $key = $participant->country_id . '-' . $participant->school_id . '-' . $participant->grade;
                 if($groups->has($key))
@@ -128,7 +131,7 @@ class ComputeCheatingParticipantsService
                     $groups->put($key, collect([$participant]));
             });
 
-        $this->updateCheatStatus(60, 'In Progress');
+        $this->updateCheatStatus(60);
         return $groups->lazy()->filter(function ($group) {
             return $group->count() > 1;
         });
@@ -179,7 +182,7 @@ class ComputeCheatingParticipantsService
 
         if($dataArray['number_of_same_incorrect_answers'] > $this->numberOFSameIncorrect && $this->shouldCreateCheatingParticipant($dataArray) ) {
             $dataArray['different_question_ids'] = $participant1->answers->whereNotIn('task_id', $sameQuestionIds)->pluck('task_id')->toArray();
-            $dataArray['group_id'] = $this->generateGroupId($participant1, $dataArray);
+            $dataArray['group_id'] = $this->generateGroupId($participant1, false, $dataArray);
             $dataArray['cheating_percentage'] = ( $dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions'] ) * 100;
 
             CheatingParticipants::create($dataArray);
@@ -231,7 +234,7 @@ class ComputeCheatingParticipantsService
             'participant_index' => $participant1->index_no,
             'cheating_with_participant_index' => $participant2->index_no,
             'number_of_cheating_questions' => 0,
-            'number_of_questions' => $participant1->answers->count(),
+            'number_of_questions' => $participant1->answers_count,
             'number_of_same_correct_answers' => 0,
             'number_of_same_incorrect_answers' => 0,
             'different_question_ids' => [],
@@ -269,11 +272,18 @@ class ComputeCheatingParticipantsService
      * 
      * @return string
      */
-    private function generateGroupId($participant1, $dataArray)
+    private function generateGroupId($participant1, $forSameParticipant = false, $dataArray = [])
     {
         $cheatingParticipantRecords = CheatingParticipants::where('participant_index', $participant1->index_no)
-                ->orWhere('cheating_with_participant_index', $participant1->index_no)
-                ->get();
+            ->orWhere('cheating_with_participant_index', $participant1->index_no)
+            ->when($forSameParticipant, fn($query) => $query->where('is_same_participant', 1))
+            ->get();
+
+        if($forSameParticipant) {
+            return $cheatingParticipantRecords->isNotEmpty()
+                ? $cheatingParticipantRecords->first()->group_id
+                : CheatingParticipants::generateNewGroupId();
+        }
 
         foreach($cheatingParticipantRecords as $cheatingParticipant){
             if( $this->compareTwoDiffentQuestionArrays(
@@ -300,5 +310,72 @@ class ComputeCheatingParticipantsService
     {
         if( count($differntQuestionArray) !== count($differentQuestionIds) ) return false;
         return empty(array_diff($differntQuestionArray, $differentQuestionIds));
+    }
+
+    /**
+     * Detect cheater who took the competition twice or more
+     * 
+     * @return void
+     */
+    private function detectCheatersWhoTookCompetitionTwiceOrMore()
+    {
+        $groups = $this->groupParticipantsByNameCountryAndSchool();
+        foreach($groups as $group){
+            $this->storeGroupAsPotentialCaseOfSameParticipantTakeSameCompetitionTwice($group);
+        }
+    }
+
+    /**
+     * Group participants by name, country, and school
+     * 
+     * @return LazyCollection
+     */
+    private function groupParticipantsByNameCountryAndSchool(): LazyCollection
+    {
+        $groups = collect();
+
+        $this->competition->participants()
+            ->when($this->countryId, fn($query) => $query->where('participants.country_id', $this->countryId))
+            ->select(
+                'participants.index_no',
+                'participants.name',
+                'participants.country_id', 
+                'participants.school_id',
+                'participants.grade'
+            )
+            ->withCount('answers')
+            ->cursor()->each(function ($participant) use ($groups) {
+                $key = $participant->name . '-' . $participant->country_id . '-' . $participant->school_id;
+                if($groups->has($key))
+                    $groups->get($key)->push($participant);
+                else
+                    $groups->put($key, collect([$participant]));
+            });
+
+        return $groups->lazy()->filter(
+            fn ($group) => $group->count() > 1
+        )->values();
+    }
+
+    /**
+     * Store group as potential case of same participant take same competition twice
+     * 
+     * @param Collection $group
+     * 
+     * @return void
+     */
+    private function storeGroupAsPotentialCaseOfSameParticipantTakeSameCompetitionTwice($group)
+    {
+        $groupId = $this->generateGroupId($group->first(), true);
+
+        foreach($group as $index => $participant) {
+            if(!$group->has($index+1)) break;
+
+            $otherParticipant = $group->get($index+1);
+            $data = $this->getDefaultDataArray($participant, $otherParticipant);
+            $data['group_id'] = $groupId;
+            $data['is_same_participant'] = true;
+            CheatingParticipants::create($data);
+        }
     }
 }

@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Collection::macro('paginate', function ($perPage = 10, $page = 1, $options = []) {
+            $perPage = $perPage == 0 ? 999999 : $perPage;
             $page = $page ?: (Paginator::resolveCurrentPage() ?: 1);
             $results = $this->forPage($page, $perPage)->values();
             $options += [

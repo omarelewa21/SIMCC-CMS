@@ -95,6 +95,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("", [ParticipantsController::class, "list"])->name('participant.list');
         Route::patch("", [ParticipantsController::class, "update"])->name('participant.update');
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
+        Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
         Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
         Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
