@@ -75,10 +75,8 @@ class ComputeLevelGroupService
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            if(!in_array('award', $request['not_to_compute'])) {
-                $this->setParticipantsAwards();
-                in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
-            }
+            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
+            in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
         if($clearPreviousRecords) {
