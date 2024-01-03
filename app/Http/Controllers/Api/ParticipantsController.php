@@ -32,12 +32,12 @@ use App\Rules\CheckSchoolName;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use PDF;
+
 
 class ParticipantsController extends Controller
 {
@@ -189,7 +189,6 @@ class ParticipantsController extends Controller
             ->filterList($request)
             ->groupBy('participants.id')
             ->get();
-            Log::info(memory_get_usage());
         try {
             if ($request->limits == "0") {
                 $limits = 99999999;
