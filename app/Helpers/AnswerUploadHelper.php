@@ -90,7 +90,7 @@ class AnswerUploadHelper
     public static function getTrimmedAnswer($answer)
     {
         return is_numeric($answer)
-            ? rtrim($answer, '.0')
+            ? strval(intval($answer))
             : $answer;
     }
 }
