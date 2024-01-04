@@ -40,7 +40,6 @@
                     <tr>
                         <td>{{ $answer->participant_index }}</td>
                         <td><input type="text" class="editable" data-id="{{ $answer->id }}" value="{{ $answer->answer }}"></td>
-                        <td>{{ $answer->task_id ? 'Yes' : 'No' }}</td>
                         <td>{{ $answer->is_correct ? 'Yes' : 'No' }}</td>
                         <td>{{ $answer->score }}</td>
                     </tr>
