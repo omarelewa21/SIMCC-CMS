@@ -1098,7 +1098,8 @@ class CompetitionController extends Controller
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
-                ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
+                DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
+                // ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
                 for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
