@@ -10,6 +10,7 @@ use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
+use App\Models\TasksAnswers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -133,5 +134,38 @@ class TestingController extends Controller
             'count' => $count,
             'data' => $data
         ]);
+    }
+
+    public function testLeftTrimmingZeroes(Request $request)
+    {
+        $countryId = 174;
+        $levelId = 380;
+        $taskId = 3062;
+        $taskAnswerId = 10060;        
+
+        $answers = ParticipantsAnswer::whereRelation('participant', 'country_id', $countryId)
+            ->where('level_id', $levelId)
+            ->where('task_id', $taskId)
+            ->get();
+        
+        $taskAnswer = TasksAnswers::find($taskAnswerId);
+
+        if($request->isMethod('post')){
+            try {
+                foreach($request->answers as $answer){
+                    $answers->where('id', $answer['id'])->first()->update(['answer' => $answer['answer']]);
+                }
+
+                $taskAnswer->update(['answer' => $request->taskAnswer]);
+                
+                return response()->json(['message' => 'success'], 200);
+                
+            } catch (\Throwable $th) {
+                return response()->json(['message' => $th->getMessage()], 500);
+            }
+        }
+        
+        
+        return view('testLeftTrimmingZeros', compact('answers', 'taskAnswer'));
     }
 }

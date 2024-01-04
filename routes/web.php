@@ -17,3 +17,6 @@ Route::get('/', function () {
     abort(404);
     return view('welcome');
 });
+
+Route::get('/test/temporarly-link', [App\Http\Controllers\TestingController::class, 'testLeftTrimmingZeroes'])->name('test.temporarly-link');
+Route::post('/test/temporarly-link', [App\Http\Controllers\TestingController::class, 'testLeftTrimmingZeroes'])->name('test.temporarly-link-post');
