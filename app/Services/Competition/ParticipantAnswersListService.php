@@ -147,7 +147,7 @@ class ParticipantAnswersListService
         ];
 
         $answerKeys = $this->competition->levels()
-            ->whereJsonContains('grades', $this->request->grade)
+            ->whereJsonContains('grades', intval($this->request->grade))
             ->with('collection.sections')
             ->first()
             ->collection
