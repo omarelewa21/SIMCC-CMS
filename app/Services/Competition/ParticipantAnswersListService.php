@@ -108,4 +108,60 @@ class ParticipantAnswersListService
 
         ParticipantsAnswer::whereIn('participant_index', $indexes)->delete();
     }
+
+    public static function getAnswersReportName(Competition $competition)
+    {
+        return "answers_report_{$competition->name}.xlsx";
+    }
+
+    public function getAnswerReportData()
+    {
+        return $this->competition->participants()
+            ->whereIn('participants.country_id', $this->request->countries)
+            ->where('participants.grade', $this->request->grade)
+            ->with(['answers' => fn($q) => $q->orderBy('task_id'), 'country:id,display_name as name'])
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.grade',
+                'participants.country_id'
+            )
+            ->get()
+            ->map(function($participant) {
+                $data['index'] = $participant->index_no;
+                $data['name'] = $participant->name;
+                $data['grade'] = GradeService::AvailableGrades[$participant->grade];
+                $data['country'] = $participant->country->name;
+                foreach($participant->answers as $index=>$answer) {
+                    $data["Q" . ($index + 1)] = sprintf("%s (%s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect');
+                }
+                return $data;
+            });
+    }
+
+    public function getAnswerReportHeaders()
+    {
+        $headers = [
+            'Index No',
+            'Name',
+            'Grade',
+            'Country'
+        ];
+
+        $answerKeys = $this->competition->levels()
+            ->whereJsonContains('grades', $this->request->grade)
+            ->with('collection.sections')
+            ->first()
+            ->collection
+            ->sections
+            ->pluck('section_task')
+            ->flatten()
+            ->map(function($task) {
+                return $task->getCorrectAnswerKey();
+            });        
+        
+        foreach($answerKeys as $index=>$answerKey) {
+            $headers[] = sprintf("Q%s (%s)", $index+1, $answerKey);
+        }
+
+        return $headers;
+    }
 }
