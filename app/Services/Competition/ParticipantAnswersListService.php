@@ -133,6 +133,7 @@ class ParticipantAnswersListService
                 foreach($participant->answers as $index=>$answer) {
                     $data["Q" . ($index + 1)] = sprintf("%s (%s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect');
                 }
+                $data['total_score'] = $participant->answers->sum('score');
                 return $data;
             });
     }
@@ -146,12 +147,12 @@ class ParticipantAnswersListService
             'Country'
         ];
 
-        $answerKeys = $this->competition->levels()
+        $level = $this->competition->levels()
             ->whereJsonContains('grades', intval($this->request->grade))
             ->with('collection.sections')
-            ->first()
-            ->collection
-            ->sections
+            ->first();
+
+        $answerKeys = $level->collection->sections
             ->pluck('section_task')
             ->flatten()
             ->map(function($task) {
@@ -161,6 +162,8 @@ class ParticipantAnswersListService
         foreach($answerKeys as $index=>$answerKey) {
             $headers[] = sprintf("Q%s (%s)", $index+1, $answerKey);
         }
+
+        $headers[] = sprintf("Total Score (%s)", $level->maxPoints());
 
         return $headers;
     }
