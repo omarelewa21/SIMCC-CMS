@@ -269,4 +269,19 @@ class Tasks extends Base
     {
         return request()->filled('id') && Route::currentRouteName() === 'task.list';
     }
+
+    public function getCorrectAnswerKey()
+    {
+        if($this->answer_type == 'mcq'){
+            return $this->taskAnswers()
+                ->join('task_labels', 'task_labels.task_answers_id', '=', 'task_answers.id')
+                ->where('task_answers.answer', 1)
+                ->select('task_labels.content as answer')
+                ->value('answer');
+        }
+
+        return $this->taskAnswers()
+            ->select('task_answers.answer')
+            ->value('answer');
+    }
 }

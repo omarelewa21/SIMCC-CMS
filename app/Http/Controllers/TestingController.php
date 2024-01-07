@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Exports\CheatersExport;
+use App\Http\Controllers\Api\ParticipantAnswersController;
+use App\Http\Requests\Participant\AnswerReportRequest;
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Countries;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use App\Models\TasksAnswers;
+use App\Services\GradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -167,5 +171,29 @@ class TestingController extends Controller
         
         
         return view('testLeftTrimmingZeros', compact('answers', 'taskAnswer'));
+    }
+
+    public function answerReport(Competition $competition)
+    {
+        $grades = $competition->levels()->pluck('grades')
+            ->flatten()->unique()->sort()->values()->toArray();
+        
+        $grades = GradeService::getAvailableCorrespondingGradesFromList($grades);
+
+        $countryIds = $competition->participants()->has('answers')
+            ->select('participants.country_id')
+            ->distinct()->pluck('participants.country_id')->toArray();
+        
+        $countries = Countries::whereIn('id', $countryIds)
+            ->select('id', 'display_name as name')->get();
+
+        return view('testing.answer-report', compact('competition', 'grades', 'countries'));   
+    }
+
+    public function answerReportPost(Competition $competition, AnswerReportRequest $request)
+    {
+        if($request->method() == 'POST') {
+            return (new ParticipantAnswersController())->answerReport($competition, $request);
+        }
     }
 }
