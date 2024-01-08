@@ -119,7 +119,7 @@ class ParticipantAnswersListService
         return $this->competition->participants()
             ->whereIn('participants.country_id', $this->request->countries)
             ->where('participants.grade', $this->request->grade)
-            ->with(['answers' => fn($q) => $q->orderBy('task_id'), 'country:id,display_name as name'])
+            ->with(['answers', 'country:id,display_name as name'])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.grade',
                 'participants.country_id'
