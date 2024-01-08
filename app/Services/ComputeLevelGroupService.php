@@ -79,11 +79,6 @@ class ComputeLevelGroupService
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
-        if($clearPreviousRecords) {
-            $this->setParticipantsAwardsRank();
-            $this->updateParticipantsStatus();
-        }
-
         $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
 
