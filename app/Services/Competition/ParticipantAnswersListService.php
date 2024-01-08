@@ -3,6 +3,7 @@
 namespace App\Services\Competition;
 
 use App\Models\Competition;
+use App\Models\CompetitionTasksMark;
 use App\Models\ParticipantsAnswer;
 use App\Services\GradeService;
 use Illuminate\Http\Request;
@@ -131,7 +132,7 @@ class ParticipantAnswersListService
                 $data['grade'] = GradeService::AvailableGrades[$participant->grade];
                 $data['country'] = $participant->country->name;
                 foreach($participant->answers as $index=>$answer) {
-                    $data["Q" . ($index + 1)] = sprintf("%s (%s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect');
+                    $data["Q" . ($index + 1)] = sprintf("%s (%s -> %s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect', $answer->score);
                 }
                 $data['total_score'] = $participant->answers->sum('score');
                 return $data;
@@ -155,12 +156,16 @@ class ParticipantAnswersListService
         $answerKeys = $level->collection->sections
             ->pluck('section_task')
             ->flatten()
-            ->map(function($task) {
-                return $task->getCorrectAnswerKey();
+            ->map(function($task) use($level){
+                $answer = $task->getCorrectAnswer();
+                $answerMarks = CompetitionTasksMark::where([
+                    'level_id' => $level->id, 'task_answers_id' => $answer->id]
+                )->value('marks');
+                return ['key' => $answer->answer, 'marks' => $answerMarks];
             });        
         
         foreach($answerKeys as $index=>$answerKey) {
-            $headers[] = sprintf("Q%s (%s)", $index+1, $answerKey);
+            $headers[] = sprintf("Q%s (%s -> %s)", $index+1, $answerKey['key'], $answerKey['marks']);
         }
 
         $headers[] = sprintf("Total Score (%s)", $level->maxPoints());
