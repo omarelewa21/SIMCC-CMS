@@ -196,4 +196,28 @@ class TestingController extends Controller
             return (new ParticipantAnswersController())->answerReport($competition, $request);
         }
     }
+
+    public function testGlobalRank($levelId)
+    {
+        $participantResults = CompetitionParticipantsResults::where('level_id', $levelId)
+            ->orderBy('points', 'DESC')
+            ->get()
+            ->groupBy('award');
+
+        foreach($participantResults as $award => $results) {
+            foreach($results as $index => $participantResult){
+                if($index === 0){
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
+                } elseif ($participantResult->points === $results[$index-1]->points){
+                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank); 
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $globalRankNumber));
+                } else {
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
+                }
+                $participantResult->save();
+            }
+        }
+
+        $this->updateComputeProgressPercentage(80);
+    }
 }
