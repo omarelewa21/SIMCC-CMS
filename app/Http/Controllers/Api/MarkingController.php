@@ -13,7 +13,6 @@ use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\LevelGroupCompute;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -21,6 +20,7 @@ use App\Services\MarkingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class MarkingController extends Controller
 {
@@ -439,17 +439,20 @@ class MarkingController extends Controller
             $awardsRankArray = collect(['PERFECT SCORE'])
                     ->merge($level->rounds->roundsAwards->pluck('name'))
                     ->push($level->rounds->default_award_name);
-
+            
             foreach($request->all() as $data){
-                $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
+                $participantResults = $level->participantResults()
+                    ->where('competition_participants_results.participant_index', $data['participant_index'])
                     ->firstOrFail();
-                $globalRankNumber = explode(" ", $participantResults->global_rank);
 
-                if($participantResults->award != "PERFECT SCORE"){
+                $globalRankNumber = explode(" ", $participantResults->global_rank);
+                if(Str::upper($participantResults->award) != "PERFECT SCORE"){
                     $participantResults->update([
                         'award'         => $data['award'],
                         'award_rank'    => $awardsRankArray->search($data['award']) + 1,
-                        'global_rank'   => sprintf("%s %s", $data['award'], Arr::last($globalRankNumber))
+                        'global_rank'   => $participantResults->global_rank
+                            ? sprintf("%s %s", $data['award'], Arr::last($globalRankNumber))
+                            : Null
                     ]);
                 }
             }
