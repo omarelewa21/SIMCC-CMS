@@ -22,10 +22,7 @@ class DiscardElminatedParticipantsAnswersScope implements Scope
         $builder->whereNotExists(function ($query) {
             $query->select(DB::raw(1))
                   ->from('participants')
-                  ->where([
-                    'participants.index_no' => 'participant_answers.participant_index',
-                    'participants.status'   => Participants::STATUS_CHEATING
-                  ]);
+                  ->whereRaw('participants.index_no = participant_answers.participant_index AND participants.status = ?', [Participants::STATUS_CHEATING]);
         });
     }
 }
