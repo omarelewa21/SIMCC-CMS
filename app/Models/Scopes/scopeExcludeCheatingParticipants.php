@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Support\Facades\DB;
 
-class DiscardElminatedParticipantsAnswersScope implements Scope
+class scopeExcludeCheatingParticipants implements Scope
 {
     /**
      * Apply the scope to a given Eloquent query builder.

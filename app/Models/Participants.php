@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
+use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -161,7 +161,7 @@ class Participants extends Base
 
     public function answers()
     {
-        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new scopeExcludeCheatingParticipants);
     }
 
     public function competition()
