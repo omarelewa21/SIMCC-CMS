@@ -1293,7 +1293,7 @@ class CompetitionController extends Controller
                     });
             })
                 ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
-                ->with('answers', 'isCheater')
+                ->with('answers')
                 ->distinct()
                 ->get();
 

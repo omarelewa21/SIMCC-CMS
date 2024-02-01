@@ -18,5 +18,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReport'])->name('test.answer-report');
-Route::post('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReportPost'])->name('test.answer-report.post');
+// Route::get('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReport'])->name('test.answer-report');
+// Route::post('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReportPost'])->name('test.answer-report.post');
