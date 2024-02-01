@@ -17,6 +17,8 @@ class Participants extends Base
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
+    const STATUS_CHEATING = 'iac';
+
     private static $whiteListFilter = [
         'status',
         'index_no',

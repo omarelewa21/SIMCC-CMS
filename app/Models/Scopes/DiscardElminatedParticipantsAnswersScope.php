@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Models\Participants;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -20,8 +21,11 @@ class DiscardElminatedParticipantsAnswersScope implements Scope
     {
         $builder->whereNotExists(function ($query) {
             $query->select(DB::raw(1))
-                  ->from('eliminated_cheating_participants')
-                  ->whereRaw('eliminated_cheating_participants.participant_index = participant_answers.participant_index');
+                  ->from('participants')
+                  ->where([
+                    'participants.index_no' => 'participant_answers.participant_index',
+                    'participants.status'   => Participants::STATUS_CHEATING
+                  ]);
         });
     }
 }
