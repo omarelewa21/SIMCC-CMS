@@ -18,9 +18,7 @@ use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
@@ -472,18 +470,22 @@ class ParticipantsController extends Controller
     {
         DB::beginTransaction();
         try {
-            foreach ($request->participants as $participant_index) {
-                EliminatedCheatingParticipants::updateOrCreate(
-                    ['participant_index' => $participant_index],
-                    ['reason' => $request->reason]
-                );
-            }
+            Participants::whereIn('index_no', $request->participants)
+                ->where('status', '<>', Participants::STATUS_CHEATING)
+                ->update([
+                    'status' => Participants::STATUS_CHEATING,
+                    'eliminated_by' => auth()->id(),
+                    'eliminated_at' => now()
+                ]);
+
+            CompetitionParticipantsResults::whereIn('participant_index', $request->participants)->delete();
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => "Participants elimination is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
             ], 500);
         }
         DB::commit();
@@ -497,14 +499,18 @@ class ParticipantsController extends Controller
     {
         DB::beginTransaction();
         try {
-            EliminatedCheatingParticipants::whereIn('participant_index', $request->participants)
-                ->delete();
+            Participants::whereIn('index_no', $request->participants)
+                ->where('status', Participants::STATUS_CHEATING)
+                ->update([
+                    'status' => Participants::STATUS_ACTIVE
+                ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants deletetion from elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => "Participants deletetion from elimination is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
             ], 500);
         }
         DB::commit();

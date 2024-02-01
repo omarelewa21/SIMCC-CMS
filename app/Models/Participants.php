@@ -18,6 +18,7 @@ class Participants extends Base
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
     const STATUS_CHEATING = 'iac';
+    const STATUS_ACTIVE = 'active';
 
     private static $whiteListFilter = [
         'status',
@@ -156,11 +157,6 @@ class Participants extends Base
     public function competition_organization()
     {
         return $this->belongsTo(CompetitionOrganization::class, "competition_organization_id", "id");
-    }
-
-    public function isCheater()
-    {
-        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
     }
 
     public function answers()

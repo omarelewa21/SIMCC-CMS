@@ -25,8 +25,7 @@ class EliminateFromComputeRequest extends FormRequest
     {
         return [
             'participants'      => 'required|array',
-            'participants.*'    => 'required|exists:participants,index_no',
-            'reason'            => 'nullable|string',
+            'participants.*'    => 'required|exists:participants,index_no'
         ];
     }
 }
