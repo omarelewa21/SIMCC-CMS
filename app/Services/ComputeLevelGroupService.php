@@ -75,13 +75,14 @@ class ComputeLevelGroupService
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
+            if(!in_array('award', $request['not_to_compute'])) {
+                $this->setParticipantsAwards();
+                $this->setParticipantsAwardsRank();
+            }
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
-        $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
-
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -108,11 +109,12 @@ class ComputeLevelGroupService
             CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $this->group->id)->delete();
 
-            Participants::whereIn('participants.grade', $this->level->grades)
-                ->join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
+            Participants::join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
                 ->join('competition', 'competition.id', 'competition_organization.competition_id')
-                ->where('competition.id', $this->level->rounds->competition_id)
                 ->whereIn('participants.country_id', $this->groupCountriesIds)
+                ->whereIn('participants.grade', $this->level->grades)
+                ->where('competition.id', $this->level->rounds->competition_id)
+                ->where('participants.status', '<>', Participants::STATUS_CHEATING)
                 ->update(['participants.status' => 'active']);
         });
     }
@@ -138,7 +140,6 @@ class ComputeLevelGroupService
     private function setupCompetitionParticipantsResultsTable()
     {
         DB::transaction(function(){
-            $attendeesIds = [];
             ParticipantsAnswer::where('level_id', $this->level->id)
                 ->whereHas('participant', function($query){
                     $query->whereIn('country_id', $this->groupCountriesIds);
@@ -146,27 +147,17 @@ class ComputeLevelGroupService
                 ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
                 ->orderBy('points', 'DESC')
                 ->get()
-                ->each(function($participantAnswer) use(&$attendeesIds){
+                ->each(function($participantAnswer){
                     CompetitionParticipantsResults::create([
                         'level_id'              => $participantAnswer->level_id,
                         'participant_index'     => $participantAnswer->participant_index,
                         'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
                         'group_id'              => $this->group->id,
                     ]);
-                    $attendeesIds[] = $participantAnswer->participant->id;
                 });
 
-            $this->updateParticipantsAbsentees($attendeesIds);
             $this->updateComputeProgressPercentage(25);
         });
-    }
-
-    private function updateParticipantsAbsentees(array $attendeesIds)
-    {
-        $this->level->participants()
-            ->whereNotIn('participants.id', $attendeesIds)
-            ->whereIn('participants.country_id', $this->groupCountriesIds)
-            ->update(['participants.status' => 'absent']);
     }
 
     private function setParticipantsGroupRank()
