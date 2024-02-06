@@ -69,6 +69,7 @@ class ComputeLevelGroupService
             $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
+            $this->setupIACStudentResults();
             $this->setParticipantsGroupRank();
         }
         
@@ -106,8 +107,9 @@ class ComputeLevelGroupService
     private function clearRecords()
     {
         DB::transaction(function () {
-            CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $this->group->id)->delete();
+            CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $this->group->id, false)
+                ->delete();
 
             Participants::join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
                 ->join('competition', 'competition.id', 'competition_organization.competition_id')
@@ -144,7 +146,8 @@ class ComputeLevelGroupService
                 ->whereHas('participant', function($query){
                     $query->whereIn('country_id', $this->groupCountriesIds);
                 })
-                ->select('*', DB::raw('SUM(score) AS points'))->groupBy('participant_index')
+                ->select('*', DB::raw('SUM(score) AS points'))
+                ->groupBy('participant_index')
                 ->orderBy('points', 'DESC')
                 ->get()
                 ->each(function($participantAnswer){
@@ -163,9 +166,10 @@ class ComputeLevelGroupService
     private function setParticipantsGroupRank()
     {
         DB::transaction(function(){
-            $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $this->group->id)
-                ->orderBy('points', 'DESC')->get();
+            $participantResults = CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
+                ->orderBy('points', 'DESC')
+                ->get();
 
             foreach($participantResults as $index => $participantResult){
                 if($index === 0){
@@ -183,10 +187,11 @@ class ComputeLevelGroupService
     private function setParticipantsCountryRank()
     {
         foreach($this->groupCountriesIds as $countryId) {
-            $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $this->group->id)
+            $participantResults = CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->whereRelation('participant', 'country_id', $countryId)
-                ->orderBy('points', 'DESC')->get();
+                ->orderBy('points', 'DESC')
+                ->get();
 
             foreach($participantResults as $index=>$participantResult){
                 if($index === 0){
@@ -203,17 +208,19 @@ class ComputeLevelGroupService
 
     private function setParticipantsSchoolRank()
     {
-        $schoolIds = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        $schoolIds = CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->join('participants', 'competition_participants_results.participant_index', 'participants.index_no')
             ->select('participants.school_id')
-            ->distinct()->pluck('school_id');
+            ->distinct()
+            ->pluck('school_id');
 
         foreach($schoolIds as $schoolId) {
-            $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $this->group->id)
+            $participantResults = CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->whereRelation('participant', 'school_id', $schoolId)
-                ->orderBy('points', 'DESC')->get();
+                ->orderBy('points', 'DESC')
+                ->get();
 
             foreach($participantResults as $index=>$participantResult){
                 if($index === 0){
@@ -238,8 +245,8 @@ class ComputeLevelGroupService
 
     private function setPerfectScoreAward()
     {
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->where('points', $this->level->maxPoints())
             ->update([
                 'award'     => 'PERFECT SCORE',
@@ -257,8 +264,8 @@ class ComputeLevelGroupService
             ->push($this->level->rounds->default_award_name);
 
         $awardsRankArray->each(function($award, $key){
-            CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $this->group->id)
+            CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->where('award', $award)
                 ->update([
                     'award_rank' => $key+1
@@ -270,6 +277,7 @@ class ComputeLevelGroupService
     private function setParticipantsGlobalRank()
     {
         $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->onlyResultComputedParticipants()
             ->orderBy('points', 'DESC')
             ->get()
             ->groupBy('award');
@@ -293,23 +301,14 @@ class ComputeLevelGroupService
 
     private function updateParticipantsStatus()
     {
-        // update attendees
-        Participants::join('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
-            ->where('competition_participants_results.level_id', $this->level->id)
-            ->where('competition_participants_results.group_id', $this->group->id)
-            ->update(['participants.status' => 'result computed']);
-
-        // update absentees
-        $this->level->participants()
-            ->whereIn('participants.country_id', $this->groupCountriesIds)
-            ->where('participants.status', 'active')
-            ->update(['participants.status' => 'absent']);
+        $this->updateAttendees();
+        $this->updateAbsentees();
     }
 
     private function firstTimeCompute(): bool
     {
-        return CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)->doesntExist();
+        return CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $this->group->id, false)->doesntExist();
     }
 
     private function checkIfShouldClearPrevRecords($request): bool
@@ -317,5 +316,42 @@ class ComputeLevelGroupService
         if(!array_key_exists('clear_previous_results', $request)) return true; // The function is not implemented frontend yet
 
         return $request['clear_previous_results'] == true;
+    }
+
+    private function updateAttendees()
+    {
+        Participants::join('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
+            ->where('competition_participants_results.level_id', $this->level->id)
+            ->where('competition_participants_results.group_id', $this->group->id)
+            ->update(['participants.status' => 'result computed']);
+    }
+
+    private function updateAbsentees()
+    {
+        $this->level->participants()
+            ->whereIn('participants.country_id', $this->groupCountriesIds)
+            ->where('participants.status', 'active')
+            ->update(['participants.status' => 'absent']);
+    }
+
+    private function setupIACStudentResults()
+    {
+        $round = $this->level->rounds()->with('roundsAwards')->first();
+        $defaultAwardRank = $round->roundsAwards->count() + 1;
+
+        $this->level->participants()
+            ->whereIn('participants.country_id', $this->groupCountriesIds)
+            ->where('participants.status', Participants::STATUS_CHEATING)
+            ->pluck('index_no')
+            ->each( function($index) use($round, $defaultAwardRank){
+                CompetitionParticipantsResults::create([
+                    'level_id'          => $this->level->id,
+                    'participant_index' => $index,
+                    'group_id'          => $this->group->id,
+                    'award'             => $round->default_award_name,
+                    'ref_award'         => $this->level->rounds->default_award_name,
+                    'award_rank'        => $defaultAwardRank,
+                ]);
+            });
     }
 }
