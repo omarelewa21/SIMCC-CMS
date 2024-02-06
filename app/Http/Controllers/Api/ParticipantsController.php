@@ -466,10 +466,13 @@ class ParticipantsController extends Controller
     }
 
 
-    public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function eliminateParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
     {
         DB::beginTransaction();
         try {
+            $round = $competition->rounds()->with('roundsAwards')->first();
+            $defaultAwardRank = $round->roundsAwards->count() + 1;
+
             Participants::whereIn('index_no', $request->participants)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
                 ->update([
@@ -478,7 +481,19 @@ class ParticipantsController extends Controller
                     'eliminated_at' => now()
                 ]);
 
-            CompetitionParticipantsResults::whereIn('participant_index', $request->participants)->delete();
+            CompetitionParticipantsResults::whereIn('participant_index', $request->participants)
+                ->update([
+                    'ref_award'         => $round->default_award_name,
+                    'award'             => $round->default_award_name,
+                    'award_rank'        => $defaultAwardRank,
+                    'points'            => null,
+                    'percentile'        => null,
+                    'school_rank'       => null,
+                    'country_rank'      => null,
+                    'global_rank'       => null,
+                    'group_rank'        => null,
+                    'report'            => null,
+                ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
