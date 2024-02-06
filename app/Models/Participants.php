@@ -19,6 +19,7 @@ class Participants extends Base
 
     const STATUS_CHEATING = 'iac';
     const STATUS_ACTIVE = 'active';
+    const STATUS_RESULT_COMPUTED = 'result computed';
 
     private static $whiteListFilter = [
         'status',
