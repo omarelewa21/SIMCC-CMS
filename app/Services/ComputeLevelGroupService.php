@@ -69,6 +69,7 @@ class ComputeLevelGroupService
             $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
+            $this->updateParticipantsStatus();
             $this->setupIACStudentResults();
             $this->setParticipantsGroupRank();
         }
@@ -83,7 +84,6 @@ class ComputeLevelGroupService
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
-        $this->updateParticipantsStatus();
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -342,14 +342,14 @@ class ComputeLevelGroupService
         $this->level->participants()
             ->whereIn('participants.country_id', $this->groupCountriesIds)
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->pluck('index_no')
+            ->pluck('participants.index_no')
             ->each( function($index) use($round, $defaultAwardRank){
                 CompetitionParticipantsResults::create([
                     'level_id'          => $this->level->id,
                     'participant_index' => $index,
                     'group_id'          => $this->group->id,
                     'award'             => $round->default_award_name,
-                    'ref_award'         => $this->level->rounds->default_award_name,
+                    'ref_award'         => $round->default_award_name,
                     'award_rank'        => $defaultAwardRank,
                 ]);
             });
