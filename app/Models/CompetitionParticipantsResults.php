@@ -18,6 +18,19 @@ class CompetitionParticipantsResults extends Model
         'report'    => AsArrayObject::class,
     ];
 
+    public function scopeFilterByLevelAndGroup($query, $level, $group, $onlyResultComputedParticipants=true)
+    {
+        return $query->where('level_id', $level)->where('group_id', $group)
+            ->when($onlyResultComputedParticipants, function ($query) {
+                $query->onlyResultComputedParticipants();
+            });
+    }
+
+    public function scopeOnlyResultComputedParticipants($query)
+    {
+        return $query->whereRelation('participant', 'status', Participants::STATUS_RESULT_COMPUTED);
+    }
+
     public function competitionLevel()
     {
         return $this->belongsTo(CompetitionLevels::class, 'level_id');
