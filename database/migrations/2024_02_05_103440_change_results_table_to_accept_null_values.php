@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::table('competition_participants_results', function (Blueprint $table) {
             $table->decimal('points', $precision = 8, $scale = 2)->nullable()->change();
-            $table->decimal('percentile', $precision = 5, $scale = 2)->nullable()->change();
+            $table->decimal('percentile', $precision = 5, $scale = 2)->nullable()->default(null)->change();
         });
     }
 
