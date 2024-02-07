@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\api\CompetitionController;
 use App\Http\Requests\UploadAnswersRequest;
+use App\Models\CompetitionParticipantsResults;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Auth;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private array $data = [
+    private array $answersData = [
         "competition_id" => 66,
         "participants" => [
             [
@@ -7362,6 +7363,1905 @@ return new class extends Migration
         ]
     ];
 
+    private array $resultsData = [
+            [
+             "INDEX NUMBER" => "066231001333",
+             "points" => 78,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 2,
+             "global rank" => "GOLD 307"
+            ],
+            [
+             "INDEX NUMBER" => "066231001334",
+             "points" => 26,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 59,
+             "global rank" => "HONORABLE MENTION 2156"
+            ],
+            [
+             "INDEX NUMBER" => "066231001340",
+             "points" => 78,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 2,
+             "global rank" => "GOLD 307"
+            ],
+            [
+             "INDEX NUMBER" => "066231001358",
+             "points" => 63,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 11,
+             "global rank" => "GOLD 641"
+            ],
+            [
+             "INDEX NUMBER" => "066231001362",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 74,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2580"
+            ],
+            [
+             "INDEX NUMBER" => "066231001365",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 97,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 3017"
+            ],
+            [
+             "INDEX NUMBER" => "066231001382",
+             "points" => 29,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 52,
+             "global rank" => "HONORABLE MENTION 1960"
+            ],
+            [
+             "INDEX NUMBER" => "066231001388",
+             "points" => 41,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 33,
+             "global rank" => "BRONZE 1357"
+            ],
+            [
+             "INDEX NUMBER" => "066231001389",
+             "points" => 58,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 13,
+             "global rank" => "GOLD 762"
+            ],
+            [
+             "INDEX NUMBER" => "066231001396",
+             "points" => 39,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 38,
+             "global rank" => "BRONZE 1476"
+            ],
+            [
+             "INDEX NUMBER" => "066231001431",
+             "points" => 58,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 13,
+             "global rank" => "GOLD 762"
+            ],
+            [
+             "INDEX NUMBER" => "066231001432",
+             "points" => 64,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "GOLD 614"
+            ],
+            [
+             "INDEX NUMBER" => "066231001499",
+             "points" => 32,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 42,
+             "global rank" => "BRONZE 1800"
+            ],
+            [
+             "INDEX NUMBER" => "066231001509",
+             "points" => 64,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "GOLD 614"
+            ],
+            [
+             "INDEX NUMBER" => "066231001511",
+             "points" => 32,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 42,
+             "global rank" => "BRONZE 1800"
+            ],
+            [
+             "INDEX NUMBER" => "066231001521",
+             "points" => 70,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 7,
+             "global rank" => "GOLD 486"
+            ],
+            [
+             "INDEX NUMBER" => "066231001522",
+             "points" => 91,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 90"
+            ],
+            [
+             "INDEX NUMBER" => "066231001538",
+             "points" => 49,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 21,
+             "global rank" => "SILVER 1039"
+            ],
+            [
+             "INDEX NUMBER" => "066231001554",
+             "points" => 6,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 108,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 3319"
+            ],
+            [
+             "INDEX NUMBER" => "066231001558",
+             "points" => 60,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 12,
+             "global rank" => "GOLD 722"
+            ],
+            [
+             "INDEX NUMBER" => "066231001559",
+             "points" => 54,
+             "awards" => "SILVER",
+             "school rank" => 3,
+             "country rank" => 18,
+             "global rank" => "SILVER 869"
+            ],
+            [
+             "INDEX NUMBER" => "066231001560",
+             "points" => 48,
+             "awards" => "SILVER",
+             "school rank" => 4,
+             "country rank" => 24,
+             "global rank" => "SILVER 1082"
+            ],
+            [
+             "INDEX NUMBER" => "066231001561",
+             "points" => 67,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 8,
+             "global rank" => "GOLD 557"
+            ],
+            [
+             "INDEX NUMBER" => "066231001562",
+             "points" => 26,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 5,
+             "country rank" => 59,
+             "global rank" => "HONORABLE MENTION 2156"
+            ],
+            [
+             "INDEX NUMBER" => "066231001576",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 3,
+             "country rank" => 80,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2671"
+            ],
+            [
+             "INDEX NUMBER" => "066231001577",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 6,
+             "country rank" => 31,
+             "global rank" => "BRONZE 1235"
+            ],
+            [
+             "INDEX NUMBER" => "066231001603",
+             "points" => 53,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 19,
+             "global rank" => "SILVER 913"
+            ],
+            [
+             "INDEX NUMBER" => "066231001615",
+             "points" => 30,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 50,
+             "global rank" => "HONORABLE MENTION 1919"
+            ],
+            [
+             "INDEX NUMBER" => "066231001335",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 84,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2352"
+            ],
+            [
+             "INDEX NUMBER" => "066231001336",
+             "points" => 29,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 54,
+             "global rank" => "HONORABLE MENTION 1632"
+            ],
+            [
+             "INDEX NUMBER" => "066231001344",
+             "points" => 66,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "GOLD 481"
+            ],
+            [
+             "INDEX NUMBER" => "066231001345",
+             "points" => 48,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 23,
+             "global rank" => "SILVER 870"
+            ],
+            [
+             "INDEX NUMBER" => "066231001359",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 77,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2293"
+            ],
+            [
+             "INDEX NUMBER" => "066231001368",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 84,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2352"
+            ],
+            [
+             "INDEX NUMBER" => "066231001374",
+             "points" => 29,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 54,
+             "global rank" => "HONORABLE MENTION 1632"
+            ],
+            [
+             "INDEX NUMBER" => "066231001390",
+             "points" => 71,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "GOLD 390"
+            ],
+            [
+             "INDEX NUMBER" => "066231001407",
+             "points" => 81,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 223"
+            ],
+            [
+             "INDEX NUMBER" => "066231001408",
+             "points" => 33,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 42,
+             "global rank" => "BRONZE 1375"
+            ],
+            [
+             "INDEX NUMBER" => "066231001433",
+             "points" => 52,
+             "awards" => "SILVER",
+             "school rank" => 2,
+             "country rank" => 19,
+             "global rank" => "SILVER 770"
+            ],
+            [
+             "INDEX NUMBER" => "066231001434",
+             "points" => 49,
+             "awards" => "SILVER",
+             "school rank" => 3,
+             "country rank" => 21,
+             "global rank" => "SILVER 853"
+            ],
+            [
+             "INDEX NUMBER" => "066231001436",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 4,
+             "country rank" => 108,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 3131"
+            ],
+            [
+             "INDEX NUMBER" => "066231001437",
+             "points" => 64,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 13,
+             "global rank" => "GOLD 512"
+            ],
+            [
+             "INDEX NUMBER" => "066231001513",
+             "points" => 24,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 61,
+             "global rank" => "HONORABLE MENTION 1896"
+            ],
+            [
+             "INDEX NUMBER" => "066231001526",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 108,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 3131"
+            ],
+            [
+             "INDEX NUMBER" => "066231001533",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 91,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2646"
+            ],
+            [
+             "INDEX NUMBER" => "066231001539",
+             "points" => 33,
+             "awards" => "BRONZE",
+             "school rank" => 4,
+             "country rank" => 42,
+             "global rank" => "BRONZE 1375"
+            ],
+            [
+             "INDEX NUMBER" => "066231001540",
+             "points" => 53,
+             "awards" => "SILVER",
+             "school rank" => 3,
+             "country rank" => 17,
+             "global rank" => "SILVER 734"
+            ],
+            [
+             "INDEX NUMBER" => "066231001541",
+             "points" => 97,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 25"
+            ],
+            [
+             "INDEX NUMBER" => "066231001542",
+             "points" => 89,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 2,
+             "global rank" => "GOLD 111"
+            ],
+            [
+             "INDEX NUMBER" => "066231001544",
+             "points" => 21,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 68,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2094"
+            ],
+            [
+             "INDEX NUMBER" => "066231001545",
+             "points" => 83,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 3,
+             "global rank" => "GOLD 194"
+            ],
+            [
+             "INDEX NUMBER" => "066231001553",
+             "points" => 72,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 8,
+             "global rank" => "GOLD 371"
+            ],
+            [
+             "INDEX NUMBER" => "066231001563",
+             "points" => 36,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 34,
+             "global rank" => "BRONZE 1242"
+            ],
+            [
+             "INDEX NUMBER" => "066231001564",
+             "points" => 76,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "GOLD 307"
+            ],
+            [
+             "INDEX NUMBER" => "066231001567",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 77,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2293"
+            ],
+            [
+             "INDEX NUMBER" => "066231001574",
+             "points" => 47,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 24,
+             "global rank" => "SILVER 885"
+            ],
+            [
+             "INDEX NUMBER" => "066231001604",
+             "points" => 32,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 47,
+             "global rank" => "BRONZE 1465"
+            ],
+            [
+             "INDEX NUMBER" => "066231001605",
+             "points" => 39,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 30,
+             "global rank" => "BRONZE 1127"
+            ],
+            [
+             "INDEX NUMBER" => "066231001613",
+             "points" => 80,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 5,
+             "global rank" => "GOLD 247"
+            ],
+            [
+             "INDEX NUMBER" => "066231001357",
+             "points" => 23,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 711"
+            ],
+            [
+             "INDEX NUMBER" => "066231001377",
+             "points" => 63,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 3,
+             "global rank" => "SILVER 92"
+            ],
+            [
+             "INDEX NUMBER" => "066231001385",
+             "points" => 53,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 5,
+             "global rank" => "SILVER 153"
+            ],
+            [
+             "INDEX NUMBER" => "066231001425",
+             "points" => 26,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 11,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 606"
+            ],
+            [
+             "INDEX NUMBER" => "066231001426",
+             "points" => 53,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 5,
+             "global rank" => "SILVER 153"
+            ],
+            [
+             "INDEX NUMBER" => "066231001428",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 3,
+             "country rank" => 13,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 790"
+            ],
+            [
+             "INDEX NUMBER" => "066231001504",
+             "points" => 38,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "BRONZE 327"
+            ],
+            [
+             "INDEX NUMBER" => "066231001506",
+             "points" => 39,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 8,
+             "global rank" => "BRONZE 320"
+            ],
+            [
+             "INDEX NUMBER" => "066231001508",
+             "points" => 55,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "SILVER 134"
+            ],
+            [
+             "INDEX NUMBER" => "066231001555",
+             "points" => 27,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 10,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 583"
+            ],
+            [
+             "INDEX NUMBER" => "066231001429",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 325"
+            ],
+            [
+             "INDEX NUMBER" => "066231001110",
+             "points" => 14,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 100,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2997"
+            ],
+            [
+             "INDEX NUMBER" => "066231001136",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 36,
+             "global rank" => "BRONZE 1106"
+            ],
+            [
+             "INDEX NUMBER" => "066231001338",
+             "points" => 61,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 16,
+             "global rank" => "GOLD 578"
+            ],
+            [
+             "INDEX NUMBER" => "066231001343",
+             "points" => 60,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 17,
+             "global rank" => "GOLD 611"
+            ],
+            [
+             "INDEX NUMBER" => "066231001347",
+             "points" => 64,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 13,
+             "global rank" => "GOLD 506"
+            ],
+            [
+             "INDEX NUMBER" => "066231001348",
+             "points" => 43,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 41,
+             "global rank" => "BRONZE 1164"
+            ],
+            [
+             "INDEX NUMBER" => "066231001352",
+             "points" => 78,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 213"
+            ],
+            [
+             "INDEX NUMBER" => "066231001363",
+             "points" => 64,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 13,
+             "global rank" => "GOLD 506"
+            ],
+            [
+             "INDEX NUMBER" => "066231001383",
+             "points" => 40,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 44,
+             "global rank" => "BRONZE 1286"
+            ],
+            [
+             "INDEX NUMBER" => "066231001393",
+             "points" => 38,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 48,
+             "global rank" => "BRONZE 1356"
+            ],
+            [
+             "INDEX NUMBER" => "066231001394",
+             "points" => 73,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 6,
+             "global rank" => "GOLD 303"
+            ],
+            [
+             "INDEX NUMBER" => "066231001395",
+             "points" => 84,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 2,
+             "global rank" => "GOLD 107"
+            ],
+            [
+             "INDEX NUMBER" => "066231001401",
+             "points" => 38,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 48,
+             "global rank" => "BRONZE 1356"
+            ],
+            [
+             "INDEX NUMBER" => "066231001412",
+             "points" => 73,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "GOLD 303"
+            ],
+            [
+             "INDEX NUMBER" => "066231001446",
+             "points" => 51,
+             "awards" => "SILVER",
+             "school rank" => 2,
+             "country rank" => 27,
+             "global rank" => "SILVER 898"
+            ],
+            [
+             "INDEX NUMBER" => "066231001447",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 36,
+             "global rank" => "BRONZE 1106"
+            ],
+            [
+             "INDEX NUMBER" => "066231001448",
+             "points" => 72,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 8,
+             "global rank" => "GOLD 330"
+            ],
+            [
+             "INDEX NUMBER" => "066231001450",
+             "points" => 21,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 4,
+             "country rank" => 82,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2359"
+            ],
+            [
+             "INDEX NUMBER" => "066231001451",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 5,
+             "country rank" => 89,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2572"
+            ],
+            [
+             "INDEX NUMBER" => "066231001452",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 94,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2812"
+            ],
+            [
+             "INDEX NUMBER" => "066231001494",
+             "points" => 35,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 53,
+             "global rank" => "BRONZE 1506"
+            ],
+            [
+             "INDEX NUMBER" => "066231001514",
+             "points" => 81,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 3,
+             "global rank" => "GOLD 155"
+            ],
+            [
+             "INDEX NUMBER" => "066231001516",
+             "points" => 43,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 41,
+             "global rank" => "BRONZE 1164"
+            ],
+            [
+             "INDEX NUMBER" => "066231001517",
+             "points" => 67,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 11,
+             "global rank" => "GOLD 438"
+            ],
+            [
+             "INDEX NUMBER" => "066231001519",
+             "points" => 62,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 15,
+             "global rank" => "GOLD 565"
+            ],
+            [
+             "INDEX NUMBER" => "066231001529",
+             "points" => 59,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 18,
+             "global rank" => "GOLD 628"
+            ],
+            [
+             "INDEX NUMBER" => "066231001535",
+             "points" => 45,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 35,
+             "global rank" => "BRONZE 1087"
+            ],
+            [
+             "INDEX NUMBER" => "066231001536",
+             "points" => 28,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 66,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1926"
+            ],
+            [
+             "INDEX NUMBER" => "066231001552",
+             "points" => 47,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 32,
+             "global rank" => "BRONZE 1006"
+            ],
+            [
+             "INDEX NUMBER" => "066231001569",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 3,
+             "country rank" => 86,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2487"
+            ],
+            [
+             "INDEX NUMBER" => "066231001570",
+             "points" => 35,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 53,
+             "global rank" => "BRONZE 1506"
+            ],
+            [
+             "INDEX NUMBER" => "066231001571",
+             "points" => 41,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 43,
+             "global rank" => "BRONZE 1218"
+            ],
+            [
+             "INDEX NUMBER" => "066231001578",
+             "points" => 6,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 13,
+             "country rank" => 110,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 3407"
+            ],
+            [
+             "INDEX NUMBER" => "066231001584",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 36,
+             "global rank" => "BRONZE 1106"
+            ],
+            [
+             "INDEX NUMBER" => "066231001588",
+             "points" => 78,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 213"
+            ],
+            [
+             "INDEX NUMBER" => "066231001589",
+             "points" => 59,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 18,
+             "global rank" => "GOLD 628"
+            ],
+            [
+             "INDEX NUMBER" => "066231001590",
+             "points" => 27,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 3,
+             "country rank" => 69,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1950"
+            ],
+            [
+             "INDEX NUMBER" => "066231001598",
+             "points" => 91,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 28"
+            ],
+            [
+             "INDEX NUMBER" => "066231001610",
+             "points" => 39,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 46,
+             "global rank" => "BRONZE 1331"
+            ],
+            [
+             "INDEX NUMBER" => "066231001625",
+             "points" => 29,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 2,
+             "country rank" => 62,
+             "global rank" => "HONORABLE MENTION 1837"
+            ],
+            [
+             "INDEX NUMBER" => "066231001626",
+             "points" => 58,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 20,
+             "global rank" => "GOLD 648"
+            ],
+            [
+             "INDEX NUMBER" => "066231001369",
+             "points" => 11,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 35,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1518"
+            ],
+            [
+             "INDEX NUMBER" => "066231001381",
+             "points" => 54,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 113"
+            ],
+            [
+             "INDEX NUMBER" => "066231001405",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 37,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1530"
+            ],
+            [
+             "INDEX NUMBER" => "066231001406",
+             "points" => 24,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 16,
+             "global rank" => "BRONZE 827"
+            ],
+            [
+             "INDEX NUMBER" => "066231001415",
+             "points" => 44,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "SILVER 228"
+            ],
+            [
+             "INDEX NUMBER" => "066231001479",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 23,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1080"
+            ],
+            [
+             "INDEX NUMBER" => "066231001480",
+             "points" => 23,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 17,
+             "global rank" => "BRONZE 902"
+            ],
+            [
+             "INDEX NUMBER" => "066231001481",
+             "points" => 41,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 7,
+             "global rank" => "SILVER 286"
+            ],
+            [
+             "INDEX NUMBER" => "066231001482",
+             "points" => 23,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 17,
+             "global rank" => "BRONZE 902"
+            ],
+            [
+             "INDEX NUMBER" => "066231001483",
+             "points" => 21,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 5,
+             "country rank" => 21,
+             "global rank" => "HONORABLE MENTION 989"
+            ],
+            [
+             "INDEX NUMBER" => "066231001484",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 29,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1248"
+            ],
+            [
+             "INDEX NUMBER" => "066231001485",
+             "points" => 20,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 23,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1080"
+            ],
+            [
+             "INDEX NUMBER" => "066231001486",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 29,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1248"
+            ],
+            [
+             "INDEX NUMBER" => "066231001487",
+             "points" => 27,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 12,
+             "global rank" => "BRONZE 688"
+            ],
+            [
+             "INDEX NUMBER" => "066231001489",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 10,
+             "country rank" => 37,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1530"
+            ],
+            [
+             "INDEX NUMBER" => "066231001492",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 32,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1299"
+            ],
+            [
+             "INDEX NUMBER" => "066231001497",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 37,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1530"
+            ],
+            [
+             "INDEX NUMBER" => "066231001503",
+             "points" => 59,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 83"
+            ],
+            [
+             "INDEX NUMBER" => "066231001505",
+             "points" => 27,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "BRONZE 688"
+            ],
+            [
+             "INDEX NUMBER" => "066231001515",
+             "points" => 32,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 10,
+             "global rank" => "BRONZE 503"
+            ],
+            [
+             "INDEX NUMBER" => "066231001581",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 27,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1151"
+            ],
+            [
+             "INDEX NUMBER" => "066231001612",
+             "points" => 34,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "SILVER 447"
+            ],
+            [
+             "INDEX NUMBER" => "066231001349",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 30,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1411"
+            ],
+            [
+             "INDEX NUMBER" => "066231001350",
+             "points" => 91,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 2,
+             "global rank" => "GOLD 16"
+            ],
+            [
+             "INDEX NUMBER" => "066231001361",
+             "points" => 38,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 14,
+             "global rank" => "HONORABLE MENTION 478"
+            ],
+            [
+             "INDEX NUMBER" => "066231001386",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 22,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1171"
+            ],
+            [
+             "INDEX NUMBER" => "066231001387",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 25,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1273"
+            ],
+            [
+             "INDEX NUMBER" => "066231001417",
+             "points" => 57,
+             "awards" => "SILVER",
+             "school rank" => 2,
+             "country rank" => 8,
+             "global rank" => "SILVER 169"
+            ],
+            [
+             "INDEX NUMBER" => "066231001418",
+             "points" => 35,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 5,
+             "country rank" => 16,
+             "global rank" => "HONORABLE MENTION 564"
+            ],
+            [
+             "INDEX NUMBER" => "066231001419",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 25,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1273"
+            ],
+            [
+             "INDEX NUMBER" => "066231001420",
+             "points" => 40,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 11,
+             "global rank" => "BRONZE 432"
+            ],
+            [
+             "INDEX NUMBER" => "066231001421",
+             "points" => 30,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 7,
+             "country rank" => 18,
+             "global rank" => "HONORABLE MENTION 728"
+            ],
+            [
+             "INDEX NUMBER" => "066231001422",
+             "points" => 37,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 4,
+             "country rank" => 15,
+             "global rank" => "HONORABLE MENTION 508"
+            ],
+            [
+             "INDEX NUMBER" => "066231001424",
+             "points" => 83,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 30"
+            ],
+            [
+             "INDEX NUMBER" => "066231001493",
+             "points" => 63,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "SILVER 116"
+            ],
+            [
+             "INDEX NUMBER" => "066231001507",
+             "points" => 56,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "SILVER 180"
+            ],
+            [
+             "INDEX NUMBER" => "066231001510",
+             "points" => 39,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "BRONZE 462"
+            ],
+            [
+             "INDEX NUMBER" => "066231001585",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 28,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1349"
+            ],
+            [
+             "INDEX NUMBER" => "066231001599",
+             "points" => 59,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 7,
+             "global rank" => "SILVER 152"
+            ],
+            [
+             "INDEX NUMBER" => "066231001148",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 54,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2043"
+            ],
+            [
+             "INDEX NUMBER" => "066231001149",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 4,
+             "country rank" => 49,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1669"
+            ],
+            [
+             "INDEX NUMBER" => "066231001150",
+             "points" => 6,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 57,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2150"
+            ],
+            [
+             "INDEX NUMBER" => "066231001332",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 54,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2043"
+            ],
+            [
+             "INDEX NUMBER" => "066231001346",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 51,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1910"
+            ],
+            [
+             "INDEX NUMBER" => "066231001364",
+             "points" => 48,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 18,
+             "global rank" => "BRONZE 367"
+            ],
+            [
+             "INDEX NUMBER" => "066231001379",
+             "points" => 34,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 27,
+             "global rank" => "BRONZE 734"
+            ],
+            [
+             "INDEX NUMBER" => "066231001404",
+             "points" => 66,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 109"
+            ],
+            [
+             "INDEX NUMBER" => "066231001474",
+             "points" => 27,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 3,
+             "country rank" => 33,
+             "global rank" => "HONORABLE MENTION 1034"
+            ],
+            [
+             "INDEX NUMBER" => "066231001475",
+             "points" => 26,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 4,
+             "country rank" => 35,
+             "global rank" => "HONORABLE MENTION 1065"
+            ],
+            [
+             "INDEX NUMBER" => "066231001476",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 5,
+             "country rank" => 51,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1910"
+            ],
+            [
+             "INDEX NUMBER" => "066231001478",
+             "points" => 65,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "GOLD 116"
+            ],
+            [
+             "INDEX NUMBER" => "066231001502",
+             "points" => 75,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 52"
+            ],
+            [
+             "INDEX NUMBER" => "066231001518",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 21,
+             "global rank" => "BRONZE 449"
+            ],
+            [
+             "INDEX NUMBER" => "066231001530",
+             "points" => 25,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 38,
+             "global rank" => "HONORABLE MENTION 1142"
+            ],
+            [
+             "INDEX NUMBER" => "066231001557",
+             "points" => 46,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 20,
+             "global rank" => "BRONZE 406"
+            ],
+            [
+             "INDEX NUMBER" => "066231001573",
+             "points" => 6,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 57,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2150"
+            ],
+            [
+             "INDEX NUMBER" => "066231001575",
+             "points" => 26,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 35,
+             "global rank" => "HONORABLE MENTION 1065"
+            ],
+            [
+             "INDEX NUMBER" => "066231001618",
+             "points" => 42,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 22,
+             "global rank" => "BRONZE 492"
+            ],
+            [
+             "INDEX NUMBER" => "066231001619",
+             "points" => 34,
+             "awards" => "BRONZE",
+             "school rank" => 2,
+             "country rank" => 27,
+             "global rank" => "BRONZE 734"
+            ],
+            [
+             "INDEX NUMBER" => "066231001620",
+             "points" => 27,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 3,
+             "country rank" => 33,
+             "global rank" => "HONORABLE MENTION 1034"
+            ],
+            [
+             "INDEX NUMBER" => "066231001621",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 46,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1557"
+            ],
+            [
+             "INDEX NUMBER" => "066231001628",
+             "points" => 22,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 41,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1354"
+            ],
+            [
+             "INDEX NUMBER" => "066231001356",
+             "points" => 75,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 2,
+             "global rank" => "GOLD 57"
+            ],
+            [
+             "INDEX NUMBER" => "066231001378",
+             "points" => 30,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 22,
+             "global rank" => "HONORABLE MENTION 940"
+            ],
+            [
+             "INDEX NUMBER" => "066231001402",
+             "points" => 29,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 23,
+             "global rank" => "HONORABLE MENTION 1000"
+            ],
+            [
+             "INDEX NUMBER" => "066231001403",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 39,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1925"
+            ],
+            [
+             "INDEX NUMBER" => "066231001414",
+             "points" => 43,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 13,
+             "global rank" => "SILVER 446"
+            ],
+            [
+             "INDEX NUMBER" => "066231001467",
+             "points" => 31,
+             "awards" => "BRONZE",
+             "school rank" => 4,
+             "country rank" => 21,
+             "global rank" => "BRONZE 915"
+            ],
+            [
+             "INDEX NUMBER" => "066231001468",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 43,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2205"
+            ],
+            [
+             "INDEX NUMBER" => "066231001469",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 7,
+             "country rank" => 45,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2393"
+            ],
+            [
+             "INDEX NUMBER" => "066231001470",
+             "points" => 36,
+             "awards" => "BRONZE",
+             "school rank" => 3,
+             "country rank" => 16,
+             "global rank" => "BRONZE 664"
+            ],
+            [
+             "INDEX NUMBER" => "066231001471",
+             "points" => 51,
+             "awards" => "SILVER",
+             "school rank" => 2,
+             "country rank" => 10,
+             "global rank" => "SILVER 288"
+            ],
+            [
+             "INDEX NUMBER" => "066231001472",
+             "points" => 66,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "GOLD 129"
+            ],
+            [
+             "INDEX NUMBER" => "066231001473",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 5,
+             "country rank" => 37,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1716"
+            ],
+            [
+             "INDEX NUMBER" => "066231001500",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 40,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1962"
+            ],
+            [
+             "INDEX NUMBER" => "066231001501",
+             "points" => 48,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "SILVER 340"
+            ],
+            [
+             "INDEX NUMBER" => "066231001556",
+             "points" => 21,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 34,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1487"
+            ],
+            [
+             "INDEX NUMBER" => "066231001572",
+             "points" => 69,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 4,
+             "global rank" => "GOLD 97"
+            ],
+            [
+             "INDEX NUMBER" => "066231001594",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 40,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1962"
+            ],
+            [
+             "INDEX NUMBER" => "066231001595",
+             "points" => 56,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "SILVER 214"
+            ],
+            [
+             "INDEX NUMBER" => "066231001600",
+             "points" => 27,
+             "awards" => "HONORABLE MENTION",
+             "school rank" => 1,
+             "country rank" => 26,
+             "global rank" => "HONORABLE MENTION 1093"
+            ],
+            [
+             "INDEX NUMBER" => "066231001602",
+             "points" => 91,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 1,
+             "global rank" => "GOLD 10"
+            ],
+            [
+             "INDEX NUMBER" => "066231001617",
+             "points" => 32,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 20,
+             "global rank" => "BRONZE 842"
+            ],
+            [
+             "INDEX NUMBER" => "066231001331",
+             "points" => 38,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 55,
+             "global rank" => "BRONZE 1406"
+            ],
+            [
+             "INDEX NUMBER" => "066231001339",
+             "points" => 38,
+             "awards" => "BRONZE",
+             "school rank" => 5,
+             "country rank" => 55,
+             "global rank" => "BRONZE 1406"
+            ],
+            [
+             "INDEX NUMBER" => "066231001353",
+             "points" => 68,
+             "awards" => "GOLD",
+             "school rank" => 2,
+             "country rank" => 12,
+             "global rank" => "GOLD 378"
+            ],
+            [
+             "INDEX NUMBER" => "066231001354",
+             "points" => 81,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 5,
+             "global rank" => "GOLD 126"
+            ],
+            [
+             "INDEX NUMBER" => "066231001355",
+             "points" => 67,
+             "awards" => "GOLD",
+             "school rank" => 3,
+             "country rank" => 15,
+             "global rank" => "GOLD 393"
+            ],
+            [
+             "INDEX NUMBER" => "066231001367",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 133,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2998"
+            ],
+            [
+             "INDEX NUMBER" => "066231001371",
+             "points" => 52,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 29,
+             "global rank" => "SILVER 828"
+            ],
+            [
+             "INDEX NUMBER" => "066231001375",
+             "points" => 32,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 75,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1704"
+            ],
+            [
+             "INDEX NUMBER" => "066231001384",
+             "points" => 30,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 76,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1769"
+            ],
+            [
+             "INDEX NUMBER" => "066231001413",
+             "points" => 80,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 6,
+             "global rank" => "GOLD 141"
+            ],
+            [
+             "INDEX NUMBER" => "066231001453",
+             "points" => 54,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 26,
+             "global rank" => "SILVER 754"
+            ],
+            [
+             "INDEX NUMBER" => "066231001454",
+             "points" => 30,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 6,
+             "country rank" => 76,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1769"
+            ],
+            [
+             "INDEX NUMBER" => "066231001455",
+             "points" => 27,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 88,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1930"
+            ],
+            [
+             "INDEX NUMBER" => "066231001456",
+             "points" => 49,
+             "awards" => "SILVER",
+             "school rank" => 3,
+             "country rank" => 31,
+             "global rank" => "SILVER 942"
+            ],
+            [
+             "INDEX NUMBER" => "066231001458",
+             "points" => 29,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 7,
+             "country rank" => 81,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1860"
+            ],
+            [
+             "INDEX NUMBER" => "066231001459",
+             "points" => 18,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 10,
+             "country rank" => 112,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2501"
+            ],
+            [
+             "INDEX NUMBER" => "066231001460",
+             "points" => 36,
+             "awards" => "BRONZE",
+             "school rank" => 4,
+             "country rank" => 61,
+             "global rank" => "BRONZE 1473"
+            ],
+            [
+             "INDEX NUMBER" => "066231001462",
+             "points" => 36,
+             "awards" => "BRONZE",
+             "school rank" => 4,
+             "country rank" => 61,
+             "global rank" => "BRONZE 1473"
+            ],
+            [
+             "INDEX NUMBER" => "066231001463",
+             "points" => 27,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 8,
+             "country rank" => 88,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1930"
+            ],
+            [
+             "INDEX NUMBER" => "066231001465",
+             "points" => 53,
+             "awards" => "SILVER",
+             "school rank" => 2,
+             "country rank" => 28,
+             "global rank" => "SILVER 785"
+            ],
+            [
+             "INDEX NUMBER" => "066231001495",
+             "points" => 61,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 21,
+             "global rank" => "SILVER 549"
+            ],
+            [
+             "INDEX NUMBER" => "066231001496",
+             "points" => 24,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 99,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2103"
+            ],
+            [
+             "INDEX NUMBER" => "066231001498",
+             "points" => 47,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 36,
+             "global rank" => "SILVER 1004"
+            ],
+            [
+             "INDEX NUMBER" => "066231001527",
+             "points" => 29,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 81,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 1860"
+            ],
+            [
+             "INDEX NUMBER" => "066231001528",
+             "points" => 12,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 126,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2851"
+            ],
+            [
+             "INDEX NUMBER" => "066231001537",
+             "points" => 25,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 98,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2094"
+            ],
+            [
+             "INDEX NUMBER" => "066231001543",
+             "points" => 41,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 50,
+             "global rank" => "BRONZE 1271"
+            ],
+            [
+             "INDEX NUMBER" => "066231001548",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 120,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2686"
+            ],
+            [
+             "INDEX NUMBER" => "066231001549",
+             "points" => 58,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 24,
+             "global rank" => "SILVER 629"
+            ],
+            [
+             "INDEX NUMBER" => "066231001550",
+             "points" => 49,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 31,
+             "global rank" => "SILVER 942"
+            ],
+            [
+             "INDEX NUMBER" => "066231001551",
+             "points" => 68,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 12,
+             "global rank" => "GOLD 378"
+            ],
+            [
+             "INDEX NUMBER" => "066231001579",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 1,
+             "country rank" => 45,
+             "global rank" => "BRONZE 1147"
+            ],
+            [
+             "INDEX NUMBER" => "066231001582",
+             "points" => 69,
+             "awards" => "GOLD",
+             "school rank" => 3,
+             "country rank" => 10,
+             "global rank" => "GOLD 348"
+            ],
+            [
+             "INDEX NUMBER" => "066231001591",
+             "points" => 9,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 3,
+             "country rank" => 133,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2998"
+            ],
+            [
+             "INDEX NUMBER" => "066231001592",
+             "points" => 15,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 120,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2686"
+            ],
+            [
+             "INDEX NUMBER" => "066231001593",
+             "points" => 26,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 1,
+             "country rank" => 93,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2038"
+            ],
+            [
+             "INDEX NUMBER" => "066231001596",
+             "points" => 17,
+             "awards" => "CERTIFICATE OF PARTICIPATION",
+             "school rank" => 2,
+             "country rank" => 119,
+             "global rank" => "CERTIFICATE OF PARTICIPATION 2649"
+            ],
+            [
+             "INDEX NUMBER" => "066231001597",
+             "points" => 67,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 15,
+             "global rank" => "GOLD 393"
+            ],
+            [
+             "INDEX NUMBER" => "066231001606",
+             "points" => 36,
+             "awards" => "BRONZE",
+             "school rank" => 9,
+             "country rank" => 61,
+             "global rank" => "BRONZE 1473"
+            ],
+            [
+             "INDEX NUMBER" => "066231001607",
+             "points" => 44,
+             "awards" => "BRONZE",
+             "school rank" => 7,
+             "country rank" => 45,
+             "global rank" => "BRONZE 1147"
+            ],
+            [
+             "INDEX NUMBER" => "066231001611",
+             "points" => 57,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 25,
+             "global rank" => "SILVER 662"
+            ],
+            [
+             "INDEX NUMBER" => "066231001616",
+             "points" => 70,
+             "awards" => "GOLD",
+             "school rank" => 1,
+             "country rank" => 9,
+             "global rank" => "GOLD 317"
+            ],
+            [
+             "INDEX NUMBER" => "066231001366",
+             "points" => 56,
+             "awards" => "SILVER",
+             "school rank" => 1,
+             "country rank" => 34,
+             "global rank" => "SILVER 1060"
+            ]
+    ];
+
 
     /**
      * Run the migrations.
@@ -7371,7 +9271,7 @@ return new class extends Migration
     public function up()
     {
         Auth::loginUsingId(2, false);
-        $request = new UploadAnswersRequest($this->data);
+        $request = new UploadAnswersRequest($this->answersData);
         (new CompetitionController())->uploadAnswers($request);
         DB::transaction(function() use($request){
             foreach ($request->participants as $participant) {
@@ -7381,6 +9281,19 @@ return new class extends Migration
                     $participantAnswer->score = $participantAnswer->getAnswerMark();
                     $participantAnswer->save();
                 }
+            }
+        });
+
+        DB::transaction(function(){
+            foreach($this->resultsData as $result) {
+                CompetitionParticipantsResults::where('participant_index', $result['INDEX NUMBER'])
+                    ->update([
+                        'points' => $result['points'],
+                        'award' => $result['awards'],
+                        'school_rank' => $result['school rank'],
+                        'country_rank' => $result['country rank'],
+                        'global_rank' => $result['global rank']
+                    ]);
             }
         });
     }
