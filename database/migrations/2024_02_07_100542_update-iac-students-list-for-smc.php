@@ -61,7 +61,7 @@ return new class extends Migration
             $awardRank = 6;
             $award = "CERTIFICATE OF PARTICIPATION";
             foreach ($this->indexes as $index) {
-                $participant = Participants::where('index_no', $index)->first();
+                $participant = $competition->participants()->where('index_no', $index)->first();
                 $levelId = $competition->levels()
                     ->whereJsonContains('competition_levels.grades', $participant->grade)
                     ->value('competition_levels.id');
@@ -71,11 +71,11 @@ return new class extends Migration
                     ->where('cmgc.country_id', $participant->country_id)
                     ->value('competition_marking_group.id');
     
-                CompetitionParticipantsResults::where('participant_index', $index)
+                CompetitionParticipantsResults::where('participant_index', $participant->index_no)
                     ->delete();
 
                 CompetitionParticipantsResults::create([
-                    'participant_index' => $index,
+                    'participant_index' => $participant->index_no,
                     'level_id'          => $levelId,
                     'group_id'          => $groupId,
                     'award'             => $award,
@@ -83,7 +83,7 @@ return new class extends Migration
                     'award_rank'        => $awardRank,
                 ]);
 
-                $eliminationRecord = EliminatedCheatingParticipants::where('participant_index', $index)
+                $eliminationRecord = EliminatedCheatingParticipants::where('participant_index', $participant->index_no)
                     ->first();
 
                 $participant->status = 'iac';
