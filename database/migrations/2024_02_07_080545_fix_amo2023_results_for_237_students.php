@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\api\CompetitionController;
+use App\Http\Controllers\Api\CompetitionController;
 use App\Http\Requests\UploadAnswersRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\ParticipantsAnswer;
