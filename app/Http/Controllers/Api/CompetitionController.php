@@ -1121,7 +1121,7 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'participant', 'index', 'certificate number', 'competition', 'organization', 'country',
+                'participant', 'index', 'certificate number', 'status', 'competition', 'organization', 'country',
                 'level', 'grade', 'school', 'tuition', 'points', 'award', 'school_rank', 'country_rank', 'global rank'
             ];
             $competitionService = new CompetitionService($competition);
