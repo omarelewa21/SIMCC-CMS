@@ -12,9 +12,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Request\ApproveSchoolRequest;
 use App\Http\Requests\CreateSchoolRequest;
-use App\Http\Requests\School\ApproveSchoolRequest;
-use App\Http\Requests\School\RejectSchoolRequest;
+use App\Http\Requests\RejectSchoolRequest;
 use App\Http\Requests\SchoolListRequest;
 use App\Http\Requests\UpdateSchoolRequest;
 use App\Models\User;
@@ -341,8 +341,9 @@ class SchoolController extends Controller
             DB::rollback();
 
             return response()->json([
-                "status" => 500,
-                "message" => "School status update unsuccessful"
+                "status"    => 500,
+                "message"   => "School status update unsuccessful {$e->getMessage()}",
+                "error"     => strval($e)
             ]);
         }
     }
