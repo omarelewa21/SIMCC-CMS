@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Request\ApproveSchoolRequest;
+use App\Http\Requests\ApproveSchoolRequest;
 use App\Http\Requests\CreateSchoolRequest;
 use App\Http\Requests\RejectSchoolRequest;
 use App\Http\Requests\SchoolListRequest;
