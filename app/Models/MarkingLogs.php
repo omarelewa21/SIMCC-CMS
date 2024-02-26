@@ -32,14 +32,6 @@ class MarkingLogs extends Model
         'logs',
     ];
 
-    protected $appends = [
-        'options',
-    ];
-
-    protected $hidden = [
-        'logs',
-    ];
-
     public static function booted()
     {
         parent::booted();
@@ -47,7 +39,8 @@ class MarkingLogs extends Model
             $model->computed_by = auth()->id();
             $model->computed_at = now()->toDateString();
             $model->logs = [
-                'options' => $model->getRequestComputeOptions()
+                'options' => $model->getRequestComputeOptions(),
+                'clear_previous_results' => request()->input('clear_previous_results') ?? false,
             ];
         });
     }
@@ -56,13 +49,6 @@ class MarkingLogs extends Model
     {
         return Attribute::make(
             get: fn ($userId) => User::whereId($userId)->value('name'),
-        );
-    }
-
-    protected function options(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes) => json_decode($attributes['logs'], true)['options'],
         );
     }
 

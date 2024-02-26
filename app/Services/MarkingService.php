@@ -94,7 +94,7 @@ class MarkingService
                     'marking_group_id'              => $group_id,
                     'computed_at'                   => $firstLogs?->computed_at->format('Y-m-d'),
                     'computed_by'                   => $firstLogs?->computed_by,
-                    'logs'                          => $logs,
+                    'logs'                          => $logs->values(),
                 ];
             }
             return $levels;
