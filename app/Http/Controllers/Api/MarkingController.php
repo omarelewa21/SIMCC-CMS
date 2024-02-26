@@ -43,7 +43,7 @@ class MarkingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Marking progress list retrieve unsuccessful" . $e->getMessage(),
+                "message"   => "Marking progress list retrieve unsuccessful " . $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
         }
