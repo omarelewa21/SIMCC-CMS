@@ -79,11 +79,6 @@ class ComputeLevelGroupService
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
-        if($clearPreviousRecords) {
-            $this->setParticipantsAwardsRank();
-            $this->updateParticipantsStatus();
-        }
-
         $this->setParticipantsAwardsRank();
         $this->updateParticipantsStatus();
 
@@ -284,19 +279,24 @@ class ComputeLevelGroupService
     private function setParticipantsGlobalRank()
     {
         $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->orderBy('points', 'DESC')->get();
+            ->orderBy('points', 'DESC')
+            ->get()
+            ->groupBy('award');
 
-        foreach($participantResults as $index => $participantResult){
-            if($index === 0){
-                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
-            } elseif ($participantResult->points === $participantResults[$index-1]->points){
-                $globalRankNumber = preg_replace('/[^0-9]/', '', $participantResults[$index-1]->global_rank); 
-                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $globalRankNumber));
-            } else {
-                $participantResult->setAttribute('global_rank', sprintf("%s %s", $participantResult->award, $index+1));
+        foreach($participantResults as $award => $results) {
+            foreach($results as $index => $participantResult){
+                if($index === 0){
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
+                } elseif ($participantResult->points === $results[$index-1]->points){
+                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank); 
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $globalRankNumber));
+                } else {
+                    $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
+                }
+                $participantResult->save();
             }
-            $participantResult->save();
         }
+
         $this->updateComputeProgressPercentage(80);
     }
 

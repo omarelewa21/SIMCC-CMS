@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Helpers\AnswerUploadHelper;
 use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
@@ -36,7 +35,6 @@ use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
-use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Participants;
@@ -45,7 +43,6 @@ use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 use App\Exports\InvalidAnswersExport;
 use App\Exports\MultiSheetExport;
 use App\Exports\SummarizationExport;
