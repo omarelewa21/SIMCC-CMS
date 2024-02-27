@@ -205,12 +205,12 @@ class ComputeLevelGroupService
                 ->get()
                 ->groupBy('award');
 
-            foreach($participantResults as $award => $results) {
+            foreach($participantResults as $results) {
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('country_rank', $index+1);
-                    }elseif($participantResult->points === $participantResults[$index-1]->points){
-                        $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('country_rank', $results[$index-1]->country_rank);
                     }else{
                         $participantResult->setAttribute('country_rank', $index+1);
                     }
@@ -237,12 +237,12 @@ class ComputeLevelGroupService
                 ->get()
                 ->groupBy('award');
 
-            foreach($participantResults as $award => $results) {
+            foreach($participantResults as $results) {
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('school_rank', $index+1);
-                    }elseif($participantResult->points === $participantResults[$index-1]->points){
-                        $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('school_rank', $results[$index-1]->school_rank);
                     }else{
                         $participantResult->setAttribute('school_rank', $index+1);
                     }
