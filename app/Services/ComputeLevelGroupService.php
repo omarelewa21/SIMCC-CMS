@@ -11,6 +11,7 @@ use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
@@ -40,6 +41,11 @@ class ComputeLevelGroupService
 
         if( ! MarkingService::isLevelReadyToCompute($level) ){
             if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            return false;
+        }
+
+        if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
+            if($throwError) throw new \Exception("Awards are not set for this level {$level->name} and group {$group->name}, please set awards for this level and group", 406);
             return false;
         }
 
@@ -73,9 +79,9 @@ class ComputeLevelGroupService
         }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
+            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
@@ -195,17 +201,21 @@ class ComputeLevelGroupService
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $this->group->id)
                 ->whereRelation('participant', 'country_id', $countryId)
-                ->orderBy('points', 'DESC')->get();
+                ->orderBy('points', 'DESC')
+                ->get()
+                ->groupBy('award');
 
-            foreach($participantResults as $index=>$participantResult){
-                if($index === 0){
-                    $participantResult->setAttribute('country_rank', $index+1);
-                }elseif($participantResult->points === $participantResults[$index-1]->points){
-                    $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank);
-                }else{
-                    $participantResult->setAttribute('country_rank', $index+1);
+            foreach($participantResults as $results) {
+                foreach($results as $index => $participantResult){
+                    if($index === 0){
+                        $participantResult->setAttribute('country_rank', $index+1);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('country_rank', $results[$index-1]->country_rank);
+                    }else{
+                        $participantResult->setAttribute('country_rank', $index+1);
+                    }
+                    $participantResult->save();
                 }
-                $participantResult->save();
             }
         }
     }
@@ -216,23 +226,28 @@ class ComputeLevelGroupService
             ->where('group_id', $this->group->id)
             ->join('participants', 'competition_participants_results.participant_index', 'participants.index_no')
             ->select('participants.school_id')
-            ->distinct()->pluck('school_id');
+            ->distinct()
+            ->pluck('school_id');
 
         foreach($schoolIds as $schoolId) {
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $this->group->id)
                 ->whereRelation('participant', 'school_id', $schoolId)
-                ->orderBy('points', 'DESC')->get();
+                ->orderBy('points', 'DESC')
+                ->get()
+                ->groupBy('award');
 
-            foreach($participantResults as $index=>$participantResult){
-                if($index === 0){
-                    $participantResult->setAttribute('school_rank', $index+1);
-                }elseif($participantResult->points === $participantResults[$index-1]->points){
-                    $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank);
-                }else{
-                    $participantResult->setAttribute('school_rank', $index+1);
+            foreach($participantResults as $results) {
+                foreach($results as $index => $participantResult){
+                    if($index === 0){
+                        $participantResult->setAttribute('school_rank', $index+1);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('school_rank', $results[$index-1]->school_rank);
+                    }else{
+                        $participantResult->setAttribute('school_rank', $index+1);
+                    }
+                    $participantResult->save();
                 }
-                $participantResult->save();
             }
         }
         $this->updateComputeProgressPercentage(60);
@@ -326,5 +341,28 @@ class ComputeLevelGroupService
         if(!array_key_exists('clear_previous_results', $request)) return true; // The function is not implemented frontend yet
 
         return $request['clear_previous_results'] == true;
+    }
+
+    private static function checkIfShouldIncludeAwardsInRequest(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        return request()->has('not_to_compute') 
+            && is_array(request('not_to_compute'))
+            && in_array('award', request('not_to_compute'))
+            && (static::isRankingIncludedInRequest() || static::checkIfAwardIsNotSet($level, $group));
+    }
+
+    private static function isRankingIncludedInRequest(): bool
+    {
+        return !Arr::hasAny(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank']);
+    }
+
+    private static function checkIfAwardIsNotSet(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        if(request('clear_previous_results')) return false;
+
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', $group->id)
+            ->whereNull('award')
+            ->exists();
     }
 }
