@@ -357,7 +357,9 @@ class ComputeLevelGroupService
     }
 
     private static function checkIfAwardIsNotSet(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
-    {        
+    {
+        if(request('clear_previous_results')) return false;
+
         return CompetitionParticipantsResults::where('level_id', $level->id)
             ->where('group_id', $group->id)
             ->whereNull('award')
