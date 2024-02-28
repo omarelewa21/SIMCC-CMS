@@ -16,6 +16,7 @@ use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
+use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
@@ -512,5 +513,10 @@ class ParticipantsController extends Controller
             "status"    => 200,
             "message"   => "Participants deleted from elimination successfully"
         ]);
+    }
+
+    public function editResult(Participants $participant, EditParticipantAwardRequest $request)
+    {
+        
     }
 }
