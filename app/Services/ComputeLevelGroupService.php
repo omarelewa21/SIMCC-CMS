@@ -176,7 +176,6 @@ class ComputeLevelGroupService
         DB::transaction(function(){
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $this->group->id)
-                ->whereNull('group_rank')           // to avoid re-computing existing results when checking remark
                 ->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index => $participantResult){
@@ -335,6 +334,5 @@ class ComputeLevelGroupService
     {
         $this->computeParticipantAnswersScores();
         $this->setupCompetitionParticipantsResultsTable();
-        $this->setParticipantsGroupRank();
     }
 }
