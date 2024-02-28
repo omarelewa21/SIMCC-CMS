@@ -73,6 +73,7 @@ class ComputeLevelGroupService
         }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
+            in_array('remark', $request['not_to_compute']) ?: $this->remark();
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
             in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
@@ -147,11 +148,12 @@ class ComputeLevelGroupService
                 ->orderBy('points', 'DESC')
                 ->get()
                 ->each(function($participantAnswer) use(&$attendeesIds){
-                    CompetitionParticipantsResults::create([
-                        'level_id'              => $participantAnswer->level_id,
+                    CompetitionParticipantsResults::updateOrCreate([
                         'participant_index'     => $participantAnswer->participant_index,
-                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
+                        'level_id'              => $participantAnswer->level_id,
                         'group_id'              => $this->group->id,
+                    ], [
+                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
                     ]);
                     $attendeesIds[] = $participantAnswer->participant->id;
                 });
@@ -174,6 +176,7 @@ class ComputeLevelGroupService
         DB::transaction(function(){
             $participantResults = CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->where('group_id', $this->group->id)
+                ->whereNull('group_rank')           // to avoid re-computing existing results when checking remark
                 ->orderBy('points', 'DESC')->get();
 
             foreach($participantResults as $index => $participantResult){
@@ -326,5 +329,12 @@ class ComputeLevelGroupService
         if(!array_key_exists('clear_previous_results', $request)) return true; // The function is not implemented frontend yet
 
         return $request['clear_previous_results'] == true;
+    }
+
+    private function remark()
+    {
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
+        $this->setParticipantsGroupRank();
     }
 }
