@@ -15,7 +15,9 @@ use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
+use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\getParticipantListRequest;
+use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Jobs\GeneratePerformanceReports;
@@ -726,5 +728,38 @@ class ParticipantsController extends Controller
         }
 
         return null;
+    }
+    public function editResult(Participants $participant, EditResultRequest $request)
+    {
+        try {
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)
+                ->first();
+
+            foreach($request->all() as $key => $value) {
+                switch($key) {
+                    case 'award':
+                    case 'country_rank':
+                    case 'school_rank':
+                    case 'global_rank':
+                        $participantResult->$key = $value;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            $participantResult->save();
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Participants result update is successful"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants result update is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
+            ], 500);
+        }
     }
 }
