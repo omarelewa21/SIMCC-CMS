@@ -67,7 +67,7 @@ class RouteServiceProvider extends ServiceProvider
             return \App\Models\Competition::findOrFail($value);
         });
         Route::bind('participant', function ($value) {
-            return \App\Models\Competition::where('index_no', $value)->firstOrFail();
+            return \App\Models\Participants::where('index_no', $value)->firstOrFail();
         });
     }
 
