@@ -3,11 +3,26 @@
 namespace App\Http\Requests\Participant;
 
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\Route;
 
 class EditResultRequest extends FormRequest
 {
     private $awards;
+    private Participants $participant;
+
+    function __construct(Route $route)
+    {
+        $this->participant = $route->parameter('participant');
+        CompetitionParticipantsResults::where('participant_index', $this->participant->index_no)->firstOrFail();
+        $competitionRound = $this->route('participant')->competition()->with('rounds.roundAwards')->first()
+            ->rounds->first();
+
+        $this->awards = collect(['PERFECT SCORE'])
+            ->merge($competitionRound->roundsAwards->pluck('name'))
+            ->push($competitionRound->default_award_name);
+    }
 
     /**
      * Determine if the user is authorized to make this request.
@@ -17,21 +32,6 @@ class EditResultRequest extends FormRequest
     public function authorize()
     {
         return auth()->user()->hasRole(['Super Admin', 'Admin']);
-    }
-
-    /**
-     * Prepare the data for validation.
-     *
-     * @return void
-     */
-    protected function prepareForValidation()
-    {
-        $competitionRound = $this->route('participant')->competition()->with('rounds.roundAwards')->first()
-            ->rounds->first();
-
-        $this->awards = collect(['PERFECT SCORE'])
-            ->merge($competitionRound->roundsAwards->pluck('name'))
-            ->push($competitionRound->default_award_name);
     }
 
     /**
@@ -57,6 +57,9 @@ class EditResultRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            if($this->hasNoResultRecord()) {
+                $validator->errors()->add('participant', 'Participant has no result record');
+            }
             if ($this->has('global_rank')) {
                 if($this->formatIsNotValid()) {
                     $validator->errors()->add('global_rank', 'Global rank format is not valid, it should be like this "GOLD 1"');
@@ -82,5 +85,10 @@ class EditResultRequest extends FormRequest
 
         return CompetitionParticipantsResults::where('participant_index', $this->route('participant')->index_no)
             ->value('award') !== $globalRankAwardPart;
+    }
+
+    private function hasNoResultRecord()
+    {
+        return CompetitionParticipantsResults::where('participant_index', $this->route('participant')->index_no)->doesntExist();
     }
 }
