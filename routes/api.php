@@ -106,6 +106,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
             Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
             Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
         });
+        Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
     });
 
     Route::group(["prefix" => "competition"], function () {
