@@ -16,7 +16,7 @@ class EditResultRequest extends FormRequest
     {
         $this->participant = $route->parameter('participant');
         CompetitionParticipantsResults::where('participant_index', $this->participant->index_no)->firstOrFail();
-        $competitionRound = $this->route('participant')->competition()->with('rounds.roundAwards')->first()
+        $competitionRound = $this->participant->competition()->with('rounds.roundsAwards')->first()
             ->rounds->first();
 
         $this->awards = collect(['PERFECT SCORE'])
@@ -42,7 +42,7 @@ class EditResultRequest extends FormRequest
     public function rules()
     {
         return [
-            'award'         => 'required|in:' . $this->awards->implode(','),
+            'award'         => 'in:' . $this->awards->implode(','),
             'country_rank'  => 'integer',
             'school_rank'   => 'integer'
         ];
