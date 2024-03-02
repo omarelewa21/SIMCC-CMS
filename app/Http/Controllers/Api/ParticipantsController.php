@@ -15,7 +15,6 @@ use App\Models\Countries;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
-use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
