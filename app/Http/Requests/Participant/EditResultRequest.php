@@ -43,8 +43,9 @@ class EditResultRequest extends FormRequest
     {
         return [
             'award'         => 'in:' . $this->awards->implode(','),
-            'country_rank'  => 'integer',
-            'school_rank'   => 'integer'
+            'country_rank'  => 'integer|min:1',
+            'school_rank'   => 'integer|min:1',
+            'global_rank'   => 'string',
         ];
     }
 
@@ -62,10 +63,14 @@ class EditResultRequest extends FormRequest
             }
             if ($this->has('global_rank')) {
                 if($this->formatIsNotValid()) {
-                    $validator->errors()->add('global_rank', 'Global rank format is not valid, it should be like this "GOLD 1"');
+                    $validator->errors()->add('global_rank', "Global rank format is not valid, it should be like this 'GOLD 1' and award should be in: {$this->awards->implode(', ')}");
+                    return;
                 }
                 if($this->awardIsNotValid()) {
                     $validator->errors()->add('global_rank', 'Global rank award part and participant award should be the same');
+                }
+                if(!$this->isCorrectGlobalRankNumber()) {
+                    $validator->errors()->add('global_rank', 'Global rank number should be at least 1');
                 }
             }
         });
@@ -90,5 +95,11 @@ class EditResultRequest extends FormRequest
     private function hasNoResultRecord()
     {
         return CompetitionParticipantsResults::where('participant_index', $this->route('participant')->index_no)->doesntExist();
+    }
+
+    private function isCorrectGlobalRankNumber()
+    {
+        $globalRankNumber = last(explode(" ", $this->global_rank));
+        return is_numeric($globalRankNumber) && $globalRankNumber >= 1;
     }
 }
