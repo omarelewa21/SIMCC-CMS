@@ -9,7 +9,6 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Participants;
 use App\Models\Countries;
@@ -17,8 +16,8 @@ use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\DeleteParticipantByIndexRequest;
 use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
+use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Http\Requests\ParticipantReportWithCertificateRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
@@ -512,5 +511,39 @@ class ParticipantsController extends Controller
             "status"    => 200,
             "message"   => "Participants deleted from elimination successfully"
         ]);
+    }
+
+    public function editResult(Participants $participant, EditResultRequest $request)
+    {
+        try {
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)
+                ->first();
+
+            foreach($request->all() as $key => $value) {
+                switch($key) {
+                    case 'award':
+                    case 'country_rank':
+                    case 'school_rank':
+                    case 'global_rank':
+                        $participantResult->$key = $value;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            $participantResult->save();
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Participants result update is successful"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Participants result update is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
+            ], 500);
+        }
     }
 }
