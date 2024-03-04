@@ -83,7 +83,7 @@ class EditResultRequest extends FormRequest
 
     private function awardIsNotValid()
     {
-        $globalRankAwardPart = explode(" ", $this->global_rank)[0];
+        $globalRankAwardPart = trim(preg_replace('/[0-9]/', '', $this->global_rank));
 
         if($this->has('award'))
             return $globalRankAwardPart !== $this->award;
