@@ -408,6 +408,8 @@ class ComputeLevelGroupService
     {
         if(in_array('global_rank', request('not_to_compute'))) return false;
 
+        if(static::checkIfNewStudentsAdded($level)) return true;
+
         if(in_array('award', request('not_to_compute'))) {
             // award will not be computed
             return CompetitionParticipantsResults::where('level_id', $level->id)
@@ -421,4 +423,11 @@ class ComputeLevelGroupService
             ->whereNull('award')
             ->exists();
     }
+
+    private static function checkIfNewStudentsAdded(CompetitionLevels $level)
+    {
+        return ParticipantsAnswer::where('level_id', $level->id)
+            ->whereNull('score')
+            ->exists();
+    }    
 }
