@@ -79,6 +79,7 @@ class ComputeLevelGroupService
         }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
+            in_array('remark', $request['not_to_compute']) ?: $this->remark();
             in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
@@ -153,11 +154,12 @@ class ComputeLevelGroupService
                 ->orderBy('points', 'DESC')
                 ->get()
                 ->each(function($participantAnswer) use(&$attendeesIds){
-                    CompetitionParticipantsResults::create([
-                        'level_id'              => $participantAnswer->level_id,
+                    CompetitionParticipantsResults::updateOrCreate([
                         'participant_index'     => $participantAnswer->participant_index,
-                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
+                        'level_id'              => $participantAnswer->level_id,
                         'group_id'              => $this->group->id,
+                    ], [
+                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
                     ]);
                     $attendeesIds[] = $participantAnswer->participant->id;
                 });
@@ -364,5 +366,11 @@ class ComputeLevelGroupService
             ->where('group_id', $group->id)
             ->whereNull('award')
             ->exists();
+    }
+
+    private function remark()
+    {
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
     }
 }
