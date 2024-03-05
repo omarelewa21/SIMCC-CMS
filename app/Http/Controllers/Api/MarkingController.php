@@ -284,17 +284,27 @@ class MarkingController extends Controller
      */
     public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
-        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
-        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-        ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
+        try {
 
-        \ResponseCache::clear();
+            ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
-        return response()->json([
-            "status"    => 200,
-            "message"   => "Level computing is in progress",
-        ], 200);
+            \ResponseCache::clear();
 
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Level computing is in progress",
+            ], 200);
+
+        } catch (\Exception $e) {
+            $level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e->getMessage());
+            return response()->json([
+                "status"    => $e->getCode() ?? 500,
+                "message"   => $e->getMessage() ?? "Level couldn't be computed",
+                "error"     => strval($e)
+            ], $e->getCode() ?? 500);
+        }
     }
 
     /**
