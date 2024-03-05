@@ -40,17 +40,17 @@ class ComputeLevelGroupService
         };
 
         if( ! MarkingService::isLevelReadyToCompute($level) ){
-            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 403);
             return false;
         }
 
         if(static::checkIfAnyAnswerHasNotBeenComputed($level, $group)){
-            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 406);
+            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 403);
             return false;
         }
 
         if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
-            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 406);
+            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 403);
             return false;
         }
 
