@@ -301,7 +301,6 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => $e->getCode() ?? 500,
                 "message"   => $e->getMessage() ?? "Level couldn't be computed",
-                "error"     => strval($e)
             ], $e->getCode() ?? 500);
         }
     }
