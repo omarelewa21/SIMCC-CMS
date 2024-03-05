@@ -53,6 +53,11 @@ class ComputeLevelGroupService
             return false;
         }
 
+        if(static::checkIfAwardIsNullWhileComputingGlobalRanking($level, $group)) {
+            if($throwError) throw new \Exception("Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first", 400);
+            return false;
+        }
+
         return true;
     }
 
@@ -396,6 +401,24 @@ class ComputeLevelGroupService
                 $query->whereIn('country_id', $group->countries()->pluck('id')->toArray());
             })
             ->whereNull('score')
+            ->exists();
+    }
+
+    private static function checkIfAwardIsNullWhileComputingGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+
+        if(in_array('award', request('not_to_compute'))) {
+            // award will not be computed
+            return CompetitionParticipantsResults::where('level_id', $level->id)
+                ->whereNull('award')
+                ->exists();
+        };
+
+        // award will computed for this level and group, need to check for other groups
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', '<>', $group->id)
+            ->whereNull('award')
             ->exists();
     }
 }
