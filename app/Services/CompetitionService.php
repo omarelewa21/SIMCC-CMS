@@ -73,8 +73,8 @@ class CompetitionService
             participants.certificate_no,
             competition_participants_results.points,
             CONCAT('\"',competition_participants_results.award,'\"') as award,
-            competition_participants_results.school_rank,
-            competition_participants_results.country_rank,
+            CONCAT('\"',competition_participants_results.award, ' ', competition_participants_results.school_rank, '\"') as school_rank,
+            CONCAT('\"',competition_participants_results.award, ' ', competition_participants_results.country_rank, '\"') as country_rank,
             CONCAT('\"',competition_participants_results.global_rank,'\"') as global_rank"
         );
     }
@@ -99,8 +99,8 @@ class CompetitionService
             participants.certificate_no,
             competition_participants_results.points,
             competition_participants_results.award as award,
-            competition_participants_results.school_rank,
-            competition_participants_results.country_rank,
+            CONCAT(competition_participants_results.award, ' ', competition_participants_results.school_rank) as school_rank,
+            CONCAT(competition_participants_results.award, ' ', competition_participants_results.country_rank) as country_rank,
             competition_participants_results.global_rank"
         );
     }
