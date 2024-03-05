@@ -11,7 +11,6 @@ use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
@@ -44,8 +43,13 @@ class ComputeLevelGroupService
             return false;
         }
 
+        if(static::checkIfAnyAnswerHasNotBeenComputed($level, $group)){
+            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 406);
+            return false;
+        }
+
         if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
-            if($throwError) throw new \Exception("Awards are not set for this level {$level->name} and group {$group->name}, please set awards for this level and group", 406);
+            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 406);
             return false;
         }
 
@@ -69,7 +73,7 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = $this->firstTimeCompute() || $this->checkIfShouldClearPrevRecords($request);
+        $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
 
         if($clearPreviousRecords) {
             $this->clearRecords();
@@ -332,10 +336,10 @@ class ComputeLevelGroupService
             ->update(['participants.status' => 'absent']);
     }
 
-    private function firstTimeCompute(): bool
+    private static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
-        return CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)->doesntExist();
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', $group->id)->doesntExist();
     }
 
     private function checkIfShouldClearPrevRecords($request): bool
@@ -345,17 +349,25 @@ class ComputeLevelGroupService
         return $request['clear_previous_results'] == true;
     }
 
+    private function remark()
+    {
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
+    }
+
     private static function checkIfShouldIncludeAwardsInRequest(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
-        return request()->has('not_to_compute') 
-            && is_array(request('not_to_compute'))
-            && in_array('award', request('not_to_compute'))
-            && (static::isRankingIncludedInRequest() || static::checkIfAwardIsNotSet($level, $group));
+        return in_array('award', request('not_to_compute'))
+            && static::isRankingIncludedInRequest()
+            && static::checkIfAwardIsNotSet($level, $group);
     }
 
     private static function isRankingIncludedInRequest(): bool
     {
-        return !Arr::hasAny(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank']);
+        
+        return count(
+            array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
+        ) < 3;
     }
 
     private static function checkIfAwardIsNotSet(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
@@ -368,9 +380,22 @@ class ComputeLevelGroupService
             ->exists();
     }
 
-    private function remark()
+    private static function checkIfAnyAnswerHasNotBeenComputed(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
-        $this->computeParticipantAnswersScores();
-        $this->setupCompetitionParticipantsResultsTable();
+        return request()->has('not_to_compute')
+            && is_array(request('not_to_compute'))
+            && in_array('remark', request('not_to_compute'))
+            && !static::firstTimeCompute($level, $group)
+            && static::checkIfAnyAnswerHasANullScore($level, $group);
+    }
+
+    private static function checkIfAnyAnswerHasANullScore(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        return ParticipantsAnswer::where('level_id', $level->id)
+            ->whereHas('participant', function($query) use($group){
+                $query->whereIn('country_id', $group->countries()->pluck('id')->toArray());
+            })
+            ->whereNull('score')
+            ->exists();
     }
 }
