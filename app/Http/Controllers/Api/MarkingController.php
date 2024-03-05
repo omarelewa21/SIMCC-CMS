@@ -298,7 +298,6 @@ class MarkingController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            $level->updateStatus(CompetitionLevels::STATUS_BUG_DETECTED, $e->getMessage());
             return response()->json([
                 "status"    => $e->getCode() ?? 500,
                 "message"   => $e->getMessage() ?? "Level couldn't be computed",
