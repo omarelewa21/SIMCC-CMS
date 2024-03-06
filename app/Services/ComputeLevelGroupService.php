@@ -266,6 +266,7 @@ class ComputeLevelGroupService
 
     private function setParticipantsAwards()
     {
+        $this->clearAwardForParticipants();
         $this->setPerfectScoreAward();
         (new SetParticipantsAwardsHelper($this->level, $this->group))->setParticipantsAwards();
         $this->updateComputeProgressPercentage(70);
@@ -429,5 +430,12 @@ class ComputeLevelGroupService
         return ParticipantsAnswer::where('level_id', $level->id)
             ->whereNull('score')
             ->exists();
-    }    
+    }
+
+    private function clearAwardForParticipants()
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)
+            ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
+    }
 }
