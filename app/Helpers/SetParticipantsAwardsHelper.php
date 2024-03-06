@@ -22,6 +22,8 @@ class SetParticipantsAwardsHelper
             ? [$this->group->id]
             : CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->select('group_id')->distinct()->pluck('group_id')->toArray();
+            
+        $this->clearAwardForParticipants($groupIds);
 
         $this->level->rounds->award_type === "Position"
             ? $this->setParticipantsAwardsByPosition($groupIds)
@@ -53,6 +55,7 @@ class SetParticipantsAwardsHelper
 
                 $count--;
             });
+            
 
             $this->setDefaultAward($groupId, $totalCount, $count, $perfectScoreresCount);
         }
@@ -175,5 +178,16 @@ class SetParticipantsAwardsHelper
     {
         $percentile = $count / ($totalCount + $perfectScoreresCount);
         return number_format($percentile * 100, 2, '.', '');
+    }
+
+    private function clearAwardForParticipants(array $groupIds)
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->whereIn('group_id', $groupIds)
+            ->update([
+                'award'     => null,
+                'ref_award' => null,
+                'percentile'=> null,
+            ]);
     }
 }
