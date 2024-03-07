@@ -54,7 +54,7 @@ class ParticipantsAnswer extends Model
         }
 
         return $taskAnswers->first(fn ($taskAnswer) =>
-            ltrim($taskAnswer->answer, '0') === ltrim($this->answer, '0')
+            $taskAnswer->answer == $this->answer
         )?->id;
     }
 
