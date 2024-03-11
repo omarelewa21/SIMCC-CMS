@@ -8,11 +8,13 @@ use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
+use App\Http\Requests\SetAwardModerationRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\LevelGroupCompute;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -514,5 +516,26 @@ class MarkingController extends Controller
         return response()->json([
             'status' => 'success',
         ]);
+    }
+
+    public function setAwardsModerated(CompetitionLevels $level, CompetitionMarkingGroup $group, SetAwardModerationRequest $request)
+    {
+        try {
+            LevelGroupCompute::where('level_id', $level->id)
+                ->where('group_id', $group->id)
+                ->update(['awards_moderated' => $request->awards_moderated]);
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Moderation status updated successful",
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Moderation status update unsuccessful {$e->getMessage()}",
+                "error"     => strval($e)
+            ], 500);
+        }
     }
 }
