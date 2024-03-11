@@ -401,8 +401,7 @@ class MarkingController extends Controller
 
         else{
             $data = $level->participantResults()
-                ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-                ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
+                ->where('competition_participants_results.group_id', $group->id)
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
                 ->orderBy('competition_participants_results.points', 'DESC')
                 ->orderBy('competition_participants_results.percentile', 'DESC')
@@ -416,7 +415,8 @@ class MarkingController extends Controller
                 'level'         => $level->name,
                 'award_type'    => $level->rounds->award_type,
                 'cut_off_points'=> (new MarkingService())->getCutOffPoints($data),
-                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
+                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name]),
+                'awards_moderated' => $group->levelGroupCompute($level->id)->value('awards_moderated')
             ];
 
             return response()->json([
