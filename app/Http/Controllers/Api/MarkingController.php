@@ -8,11 +8,13 @@ use App\Models\CompetitionMarkingGroup;
 use App\Models\Competition;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\getActiveParticipantsByCountryRequest;
+use App\Http\Requests\SetAwardModerationRequest;
 use App\Http\Requests\UpdateCompetitionMarkingGroupRequest;
 use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\LevelGroupCompute;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -284,17 +286,25 @@ class MarkingController extends Controller
      */
     public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
-        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
-        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-        ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
+        try {
 
-        \ResponseCache::clear();
+            ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
-        return response()->json([
-            "status"    => 200,
-            "message"   => "Level computing is in progress",
-        ], 200);
+            \ResponseCache::clear();
 
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Level computing is in progress",
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => $e->getCode() ?? 500,
+                "message"   => $e->getMessage() ?? "Level couldn't be computed",
+            ], $e->getCode() ?? 500);
+        }
     }
 
     /**
@@ -391,8 +401,7 @@ class MarkingController extends Controller
 
         else{
             $data = $level->participantResults()
-                ->join('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-                ->whereIn('participants.country_id', $group->countries()->pluck('all_countries.id'))
+                ->where('competition_participants_results.group_id', $group->id)
                 ->with('participant.school:id,name', 'participant.country:id,display_name as name')
                 ->orderBy('competition_participants_results.points', 'DESC')
                 ->orderBy('competition_participants_results.percentile', 'DESC')
@@ -406,7 +415,8 @@ class MarkingController extends Controller
                 'level'         => $level->name,
                 'award_type'    => $level->rounds->award_type,
                 'cut_off_points'=> (new MarkingService())->getCutOffPoints($data),
-                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name])
+                'awards'        => $level->rounds->roundsAwards->pluck('name')->concat([$level->rounds->default_award_name]),
+                'awards_moderated' => $group->levelGroupCompute($level->id)->value('awards_moderated')
             ];
 
             return response()->json([
@@ -506,5 +516,26 @@ class MarkingController extends Controller
         return response()->json([
             'status' => 'success',
         ]);
+    }
+
+    public function setAwardsModerated(CompetitionLevels $level, CompetitionMarkingGroup $group, SetAwardModerationRequest $request)
+    {
+        try {
+            LevelGroupCompute::where('level_id', $level->id)
+                ->where('group_id', $group->id)
+                ->update(['awards_moderated' => $request->awards_moderated]);
+
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Moderation status updated successful",
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Moderation status update unsuccessful {$e->getMessage()}",
+                "error"     => strval($e)
+            ], 500);
+        }
     }
 }

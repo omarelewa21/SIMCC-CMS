@@ -14,6 +14,7 @@ use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use App\Models\TasksAnswers;
+use App\Services\ComputeLevelGroupService;
 use App\Services\GradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -219,5 +220,10 @@ class TestingController extends Controller
         }
 
         $this->updateComputeProgressPercentage(80);
+    }
+
+    public function testAwardAndPercentile($level, $group)
+    {
+        (new ComputeLevelGroupService($level, $group))->setParticipantsAwards();
     }
 }

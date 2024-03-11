@@ -15,6 +15,7 @@ class MarkingLogs extends Model
         'school_rank',
         'country_rank',
         'global_rank',
+        'remark',
     ];
 
     public $timestamps = false;

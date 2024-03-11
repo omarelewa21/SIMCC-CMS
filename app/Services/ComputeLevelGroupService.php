@@ -11,7 +11,6 @@ use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
@@ -40,17 +39,27 @@ class ComputeLevelGroupService
         };
 
         if( ! MarkingService::isLevelReadyToCompute($level) ){
-            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 400);
             return false;
         }
 
         if(static::checkIfAnyAnswerHasNotBeenComputed($level, $group)){
-            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 406);
+            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 400);
             return false;
         }
 
         if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
-            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 406);
+            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 400);
+            return false;
+        }
+
+        if(static::checkIfAwardIsNullWhileComputingGlobalRanking($level, $group)) {
+            if($throwError) throw new \Exception("Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first", 400);
+            return false;
+        }
+
+        if(static::awardsNotFullyModeratedToComputeGlobalRanking($level, $group)) {
+            if($throwError) throw new \Exception("Awards are not fully moderated for this level {$level->name}, please moderate all awards for all group of countries first", 400);
             return false;
         }
 
@@ -262,6 +271,8 @@ class ComputeLevelGroupService
 
     private function setParticipantsAwards()
     {
+        $this->clearAwardForParticipants();
+        $this->group->levelGroupCompute($this->level->id)->update(['awards_moderated' => false]);
         $this->setPerfectScoreAward();
         (new SetParticipantsAwardsHelper($this->level, $this->group))->setParticipantsAwards();
         $this->updateComputeProgressPercentage(70);
@@ -397,6 +408,50 @@ class ComputeLevelGroupService
                 $query->whereIn('country_id', $group->countries()->pluck('id')->toArray());
             })
             ->whereNull('score')
+            ->exists();
+    }
+
+    private static function checkIfAwardIsNullWhileComputingGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+
+        if(static::checkIfNewStudentsAdded($level)) return true;
+
+        if(in_array('award', request('not_to_compute'))) {
+            // award will not be computed
+            return CompetitionParticipantsResults::where('level_id', $level->id)
+                ->whereNull('award')
+                ->exists();
+        };
+
+        // award will computed for this level and group, need to check for other groups
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', '<>', $group->id)
+            ->whereNull('award')
+            ->exists();
+    }
+
+    private static function checkIfNewStudentsAdded(CompetitionLevels $level)
+    {
+        return ParticipantsAnswer::where('level_id', $level->id)
+            ->whereNull('score')
+            ->exists();
+    }
+
+    private function clearAwardForParticipants()
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)
+            ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
+    }
+
+    private function awardsNotFullyModeratedToComputeGlobalRanking()
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+
+        return LevelGroupCompute::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)
+            ->where('awards_moderated', false)
             ->exists();
     }
 }
