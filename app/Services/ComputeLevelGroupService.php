@@ -267,6 +267,7 @@ class ComputeLevelGroupService
     private function setParticipantsAwards()
     {
         $this->clearAwardForParticipants();
+        $this->group->levelGroupCompute($this->level->id)->update(['awards_moderated' => false]);
         $this->setPerfectScoreAward();
         (new SetParticipantsAwardsHelper($this->level, $this->group))->setParticipantsAwards();
         $this->updateComputeProgressPercentage(70);
