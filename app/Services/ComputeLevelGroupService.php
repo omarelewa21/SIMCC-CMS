@@ -58,6 +58,11 @@ class ComputeLevelGroupService
             return false;
         }
 
+        if(static::awardsNotFullyModeratedToComputeGlobalRanking($level, $group)) {
+            if($throwError) throw new \Exception("Awards are not fully moderated for this level {$level->name}, please moderate all awards for all group of countries first", 400);
+            return false;
+        }
+
         return true;
     }
 
@@ -438,5 +443,15 @@ class ComputeLevelGroupService
         CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $this->group->id)
             ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
+    }
+
+    private function awardsNotFullyModeratedToComputeGlobalRanking()
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+
+        return LevelGroupCompute::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)
+            ->where('awards_moderated', false)
+            ->exists();
     }
 }
