@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('level_group_compute', function (Blueprint $table) {
-            $table->boolean('is_award_moderated')->default(false);
+            $table->boolean('is_awards_moderated')->default(false);
         });
     }
 
@@ -26,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('level_group_compute', function (Blueprint $table) {
-            $table->dropColumn('is_award_moderated');
+            $table->dropColumn('is_awards_moderated');
         });
     }
 };
