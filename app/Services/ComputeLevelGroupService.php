@@ -445,12 +445,12 @@ class ComputeLevelGroupService
             ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
     }
 
-    private function awardsNotFullyModeratedToComputeGlobalRanking()
+    private static function awardsNotFullyModeratedToComputeGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
     {
         if(in_array('global_rank', request('not_to_compute'))) return false;
 
-        return LevelGroupCompute::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        return LevelGroupCompute::where('level_id', $level->id)
+            ->where('group_id', $group->id)
             ->where('awards_moderated', false)
             ->exists();
     }

@@ -72,7 +72,7 @@ class SetAwardModerationRequest extends FormRequest
 
     private function ComputeStatusIsNotFinished(): bool
     {
-        return $this->group->levelGroupCompute($this->level->id)->where('status', '!=', 'Finished')->exists();
+        return $this->group->levelGroupCompute($this->level->id)->where('computing_status', '!=', 'Finished')->exists();
     }
 
     private function awardsIsNotComputed(): bool
