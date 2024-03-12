@@ -332,7 +332,7 @@ class ComputeLevelGroupService
     private static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
         return CompetitionParticipantsResults
-            ::filterByLevelAndGroup($this->level->id, $this->group->id, false)->doesntExist();
+            ::filterByLevelAndGroup($level->id, $group->id, false)->doesntExist();
     }
 
     private function checkIfShouldClearPrevRecords($request): bool
