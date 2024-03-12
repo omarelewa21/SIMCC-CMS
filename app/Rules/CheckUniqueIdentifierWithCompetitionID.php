@@ -59,7 +59,7 @@ class CheckUniqueIdentifierWithCompetitionID implements Rule, DataAwareRule
                     break;
             }
         } else {
-            $competition_id = $this->participant->competition()->id;
+            $competition_id = $this->participant->competition->id;
         }
         $competition_organization_ids = CompetitionOrganization::where(['competition_id' => $competition_id])->pluck('id');
         $q = Participants::whereIn('competition_organization_id', $competition_organization_ids)

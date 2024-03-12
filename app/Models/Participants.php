@@ -167,7 +167,7 @@ class Participants extends Base
 
     public function competition()
     {
-        return $this->competition_organization()->with('competition')->first()->competition;
+        return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)

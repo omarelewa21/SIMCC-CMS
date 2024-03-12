@@ -1090,7 +1090,7 @@ class CompetitionController extends Controller
                         'level_id'  => $level->id,
                         'task_id'   => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    => AnswerUploadHelper::getTrimmedAnswer($participantData['answers'][$i]),
+                        'answer'    => $participantData['answers'][$i],
                         'created_by_userid' => $createdBy,
                         'created_at'    => $createdAt
                     ]);
@@ -1121,7 +1121,7 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'participant', 'index', 'certificate number', 'competition', 'organization', 'country',
+                'participant', 'index', 'certificate number', 'status', 'competition', 'organization', 'country',
                 'level', 'grade', 'school', 'tuition', 'points', 'award', 'school_rank', 'country_rank', 'global rank'
             ];
             $competitionService = new CompetitionService($competition);

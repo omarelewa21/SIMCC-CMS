@@ -39,7 +39,22 @@ class ComputeLevelGroupService
         };
 
         if( ! MarkingService::isLevelReadyToCompute($level) ){
-            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 406);
+            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 400);
+            return false;
+        }
+
+        if(static::checkIfAnyAnswerHasNotBeenComputed($level, $group)){
+            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 400);
+            return false;
+        }
+
+        if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
+            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 400);
+            return false;
+        }
+
+        if(static::checkIfAwardIsNullWhileComputingGlobalRanking($level, $group)) {
+            if($throwError) throw new \Exception("Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first", 400);
             return false;
         }
 
@@ -63,7 +78,7 @@ class ComputeLevelGroupService
     
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = $this->firstTimeCompute() || $this->checkIfShouldClearPrevRecords($request);
+        $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
 
         if($clearPreviousRecords) {
             $this->clearRecords();
@@ -75,12 +90,10 @@ class ComputeLevelGroupService
         }
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
+            in_array('remark', $request['not_to_compute']) ?: $this->remark();
+            in_array('award', $request['not_to_compute']) ?: $this->setParticipantsAwards();
             in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
             in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            if(!in_array('award', $request['not_to_compute'])) {
-                $this->setParticipantsAwards();
-                $this->setParticipantsAwardsRank();
-            }
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
@@ -150,12 +163,13 @@ class ComputeLevelGroupService
                 ->groupBy('participant_index')
                 ->orderBy('points', 'DESC')
                 ->get()
-                ->each(function($participantAnswer){
-                    CompetitionParticipantsResults::create([
-                        'level_id'              => $participantAnswer->level_id,
+                ->each(function($participantAnswer) use(&$attendeesIds){
+                    CompetitionParticipantsResults::updateOrCreate([
                         'participant_index'     => $participantAnswer->participant_index,
-                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
+                        'level_id'              => $participantAnswer->level_id,
                         'group_id'              => $this->group->id,
+                    ], [
+                        'points'                => ($participantAnswer->points ? $participantAnswer->points : 0) + $this->collectionInitialPoints,
                     ]);
                 });
 
@@ -191,17 +205,20 @@ class ComputeLevelGroupService
                 ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->whereRelation('participant', 'country_id', $countryId)
                 ->orderBy('points', 'DESC')
-                ->get();
+                ->get()
+                ->groupBy('award');
 
-            foreach($participantResults as $index=>$participantResult){
-                if($index === 0){
-                    $participantResult->setAttribute('country_rank', $index+1);
-                }elseif($participantResult->points === $participantResults[$index-1]->points){
-                    $participantResult->setAttribute('country_rank', $participantResults[$index-1]->country_rank);
-                }else{
-                    $participantResult->setAttribute('country_rank', $index+1);
+            foreach($participantResults as $results) {
+                foreach($results as $index => $participantResult){
+                    if($index === 0){
+                        $participantResult->setAttribute('country_rank', $index+1);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('country_rank', $results[$index-1]->country_rank);
+                    }else{
+                        $participantResult->setAttribute('country_rank', $index+1);
+                    }
+                    $participantResult->save();
                 }
-                $participantResult->save();
             }
         }
     }
@@ -220,17 +237,20 @@ class ComputeLevelGroupService
                 ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->whereRelation('participant', 'school_id', $schoolId)
                 ->orderBy('points', 'DESC')
-                ->get();
+                ->get()
+                ->groupBy('award');
 
-            foreach($participantResults as $index=>$participantResult){
-                if($index === 0){
-                    $participantResult->setAttribute('school_rank', $index+1);
-                }elseif($participantResult->points === $participantResults[$index-1]->points){
-                    $participantResult->setAttribute('school_rank', $participantResults[$index-1]->school_rank);
-                }else{
-                    $participantResult->setAttribute('school_rank', $index+1);
+            foreach($participantResults as $results) {
+                foreach($results as $index => $participantResult){
+                    if($index === 0){
+                        $participantResult->setAttribute('school_rank', $index+1);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('school_rank', $results[$index-1]->school_rank);
+                    }else{
+                        $participantResult->setAttribute('school_rank', $index+1);
+                    }
+                    $participantResult->save();
                 }
-                $participantResult->save();
             }
         }
         $this->updateComputeProgressPercentage(60);
@@ -238,6 +258,7 @@ class ComputeLevelGroupService
 
     private function setParticipantsAwards()
     {
+        $this->clearAwardForParticipants();
         $this->setPerfectScoreAward();
         (new SetParticipantsAwardsHelper($this->level, $this->group))->setParticipantsAwards();
         $this->updateComputeProgressPercentage(70);
@@ -305,7 +326,7 @@ class ComputeLevelGroupService
         $this->updateAbsentees();
     }
 
-    private function firstTimeCompute(): bool
+    private static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
         return CompetitionParticipantsResults
             ::filterByLevelAndGroup($this->level->id, $this->group->id, false)->doesntExist();
@@ -353,5 +374,89 @@ class ComputeLevelGroupService
                     'award_rank'        => $defaultAwardRank,
                 ]);
             });
+    }
+
+    private function remark()
+    {
+        $this->computeParticipantAnswersScores();
+        $this->setupCompetitionParticipantsResultsTable();
+    }
+
+    private static function checkIfShouldIncludeAwardsInRequest(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        return in_array('award', request('not_to_compute'))
+            && static::isRankingIncludedInRequest()
+            && static::checkIfAwardIsNotSet($level, $group);
+    }
+
+    private static function isRankingIncludedInRequest(): bool
+    {
+        
+        return count(
+            array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
+        ) < 3;
+    }
+
+    private static function checkIfAwardIsNotSet(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        if(request('clear_previous_results')) return false;
+
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', $group->id)
+            ->whereNull('award')
+            ->exists();
+    }
+
+    private static function checkIfAnyAnswerHasNotBeenComputed(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        return request()->has('not_to_compute')
+            && is_array(request('not_to_compute'))
+            && in_array('remark', request('not_to_compute'))
+            && !static::firstTimeCompute($level, $group)
+            && static::checkIfAnyAnswerHasANullScore($level, $group);
+    }
+
+    private static function checkIfAnyAnswerHasANullScore(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    {
+        return ParticipantsAnswer::where('level_id', $level->id)
+            ->whereHas('participant', function($query) use($group){
+                $query->whereIn('country_id', $group->countries()->pluck('id')->toArray());
+            })
+            ->whereNull('score')
+            ->exists();
+    }
+
+    private static function checkIfAwardIsNullWhileComputingGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+
+        if(static::checkIfNewStudentsAdded($level)) return true;
+
+        if(in_array('award', request('not_to_compute'))) {
+            // award will not be computed
+            return CompetitionParticipantsResults::where('level_id', $level->id)
+                ->whereNull('award')
+                ->exists();
+        };
+
+        // award will computed for this level and group, need to check for other groups
+        return CompetitionParticipantsResults::where('level_id', $level->id)
+            ->where('group_id', '<>', $group->id)
+            ->whereNull('award')
+            ->exists();
+    }
+
+    private static function checkIfNewStudentsAdded(CompetitionLevels $level)
+    {
+        return ParticipantsAnswer::where('level_id', $level->id)
+            ->whereNull('score')
+            ->exists();
+    }
+
+    private function clearAwardForParticipants()
+    {
+        CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->where('group_id', $this->group->id)
+            ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
     }
 }

@@ -53,6 +53,7 @@ class SetParticipantsAwardsHelper
 
                 $count--;
             });
+            
 
             $this->setDefaultAward($groupId, $totalCount, $count, $perfectScoreresCount);
         }
