@@ -32,7 +32,8 @@ class CompetitionCheatingListRequest extends FormRequest
             'search'            => 'string',
             'percentage'        => 'numeric',
             'question_number'   => 'integer',
-            'country'           => 'integer|exists:all_countries,id',
+            'country'           => 'array',
+            'country.*'         => 'integer|exists:all_countries,id',
         ];
     }
 }

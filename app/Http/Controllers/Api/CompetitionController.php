@@ -1231,10 +1231,6 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if($request->get_status) {
-                return CheatingListHelper::returnCheatingStatus($competition);
-            }
-
             if ($request->recompute) {
                 DB::transaction(function () use($competition, $request) {
                     CheatingStatus::updateOrCreate(

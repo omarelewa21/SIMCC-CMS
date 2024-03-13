@@ -150,7 +150,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
-            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->select(
                 'participants.index_no',
                 'participants.name',
@@ -392,7 +392,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 1)
-            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->select(
                 'participants.index_no',
                 'participants.name',
