@@ -13,7 +13,7 @@ class EliminateFromComputeRequest extends FormRequest
     private Competition $competition;
 
     function __construct(Route $route) {
-        $this->competition = Competition::find($route->parameter('competition'));
+        $this->competition = $route->parameter('competition');
     }
 
     /**
@@ -34,7 +34,15 @@ class EliminateFromComputeRequest extends FormRequest
     public function rules()
     {
         return [
-            'participants'      => 'required|array',
+            'participants'      => [
+                'array',
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($this->has('group_ids')) {
+                        $fail('The :attribute must not be present when group_ids is provided.');
+                    }
+                }
+            ],
             'participants.*'    => [
                 'required',
                 Rule::exists('participants', 'index_no')
@@ -43,7 +51,21 @@ class EliminateFromComputeRequest extends FormRequest
                             ->pluck('id')->toArray();
                         return $query->whereIn('competition_organization_id', $competitionOrganizations);
                     }),
-            ]
+            ],
+            'group_ids'        => [
+                'array',
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($this->has('participants')) {
+                        $fail('The :attribute must not be present when participants is provided.');
+                    }
+                }
+            ],
+            'group_ids.*'      => [
+                'required',
+                Rule::exists('cheating_participants', 'group_id')
+                    ->where(fn (Builder $query) => $query->where('competition_id', $this->competition->id)),
+            ],
         ];
     }
 }
