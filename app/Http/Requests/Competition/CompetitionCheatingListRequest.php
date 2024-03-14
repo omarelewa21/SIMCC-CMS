@@ -17,6 +17,20 @@ class CompetitionCheatingListRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        if($this->has('country')) {
+            $this->merge([
+                'country' => json_decode($this->country, true),
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -24,16 +38,14 @@ class CompetitionCheatingListRequest extends FormRequest
     public function rules()
     {
         return [
-            'School'            => 'integer|exists:schools,id',
-            'Country'           => 'integer|exists:all_countries,id',
-            'Grade'             => 'integer|exists:participants,grade',
-            'cheat_percentage'  => 'integer',
-            'group_id'          => 'integer|exists:cheating_participants,group_id',
+            'school'            => 'integer|exists:schools,id',
+            'grade'             => 'integer|exists:participants,grade',
             'search'            => 'string',
             'percentage'        => 'numeric',
             'question_number'   => 'integer',
             'country'           => 'array',
             'country.*'         => 'integer|exists:all_countries,id',
+            'number_of_incorrect_answers' => 'integer',
         ];
     }
 }

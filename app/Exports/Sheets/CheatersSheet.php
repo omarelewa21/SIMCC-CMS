@@ -17,7 +17,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
 
     function __construct(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $this->dataCollection = CheatingListHelper::getCheatersDataForCSV($competition, $request);
+        $this->dataCollection = CheatingListHelper::getCheatersData($competition, $request, true);
     }
 
     /**
