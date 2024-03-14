@@ -59,7 +59,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'No of qns with same correct answer',
             'No of qns with same incorrect answer',
             'No of correct answers',
-            'Qns with same incorrect answer',
+            'Qns with same answer',
             ...array_slice($headers, 13)
         ];
     }
