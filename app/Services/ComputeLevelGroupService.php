@@ -94,10 +94,10 @@ class ComputeLevelGroupService
             $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
-            $this->updateParticipantsStatus();
-            $this->setupIACStudentResults();
-            $this->setParticipantsGroupRank();
         }
+
+        $this->updateParticipantsStatus();
+        $this->setupIACStudentResults();
         
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('remark', $request['not_to_compute']) ?: $this->remark();
@@ -110,6 +110,7 @@ class ComputeLevelGroupService
             in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
         };
 
+        $this->setParticipantsGroupRank();
         $this->updateComputeProgressPercentage(100);
     }
 
@@ -196,17 +197,20 @@ class ComputeLevelGroupService
             $participantResults = CompetitionParticipantsResults
                 ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->orderBy('points', 'DESC')
-                ->get();
+                ->get()
+                ->groupBy('award');
 
-            foreach($participantResults as $index => $participantResult){
-                if($index === 0){
-                    $participantResult->setAttribute('group_rank', $index+1);
-                } elseif ($participantResult->points === $participantResults[$index-1]->points){
-                    $participantResult->setAttribute('group_rank', $participantResults[$index-1]->group_rank);
-                } else {
-                    $participantResult->setAttribute('group_rank', $index+1);
+            foreach($participantResults as $results) {
+                foreach($results as $index => $participantResult){
+                    if($index === 0){
+                        $participantResult->setAttribute('group_rank', $index+1);
+                    }elseif($participantResult->points === $results[$index-1]->points){
+                        $participantResult->setAttribute('group_rank', $results[$index-1]->country_rank);
+                    }else{
+                        $participantResult->setAttribute('group_rank', $index+1);
+                    }
+                    $participantResult->save();
                 }
-                $participantResult->save();
             }
         });
     }
@@ -379,13 +383,23 @@ class ComputeLevelGroupService
             ->where('participants.status', Participants::STATUS_CHEATING)
             ->pluck('participants.index_no')
             ->each( function($index) use($round, $defaultAwardRank){
-                CompetitionParticipantsResults::create([
+                CompetitionParticipantsResults::updateOrCreate(
+                [
                     'level_id'          => $this->level->id,
                     'participant_index' => $index,
                     'group_id'          => $this->group->id,
-                    'award'             => $round->default_award_name,
+                ],
+                [
                     'ref_award'         => $round->default_award_name,
+                    'award'             => $round->default_award_name,
                     'award_rank'        => $defaultAwardRank,
+                    'points'            => null,
+                    'percentile'        => null,
+                    'school_rank'       => null,
+                    'country_rank'      => null,
+                    'global_rank'       => null,
+                    'group_rank'        => null,
+                    'report'            => null,
                 ]);
             });
     }
