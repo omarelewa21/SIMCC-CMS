@@ -18,6 +18,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
+use App\Models\CheatingParticipants;
 use App\Models\CompetitionParticipantsResults;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
@@ -473,7 +474,16 @@ class ParticipantsController extends Controller
             $round = $competition->rounds()->with('roundsAwards')->first();
             $defaultAwardRank = $round->roundsAwards->count() + 1;
 
-            Participants::whereIn('index_no', $request->participants)
+            if($request->has('participants')) {
+                $participants = $request->participants;
+            } else {
+                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                    ->whereIn('group_id', $request->group_ids)
+                    ->pluck('participant_index')
+                    ->toArray();
+            }
+
+            Participants::whereIn('index_no', $participants)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
                 ->update([
                     'status' => Participants::STATUS_CHEATING,
@@ -481,7 +491,7 @@ class ParticipantsController extends Controller
                     'eliminated_at' => now()
                 ]);
 
-            CompetitionParticipantsResults::whereIn('participant_index', $request->participants)
+            CompetitionParticipantsResults::whereIn('participant_index', $participants)
                 ->update([
                     'ref_award'         => $round->default_award_name,
                     'award'             => $round->default_award_name,
@@ -510,11 +520,20 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function deleteEliminatedParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
     {
         DB::beginTransaction();
         try {
-            Participants::whereIn('index_no', $request->participants)
+            if($request->has('participants')) {
+                $participants = $request->participants;
+            } else {
+                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                    ->whereIn('group_id', $request->group_ids)
+                    ->pluck('participant_index')
+                    ->toArray();
+            }
+
+            Participants::whereIn('index_no', $participants)
                 ->where('status', Participants::STATUS_CHEATING)
                 ->update([
                     'status' => Participants::STATUS_ACTIVE
