@@ -2,10 +2,20 @@
 
 namespace App\Http\Requests\Participant;
 
+use App\Models\Competition;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\Route;
+use Illuminate\Validation\Rule;
+use Illuminate\Database\Query\Builder;
 
 class EliminateFromComputeRequest extends FormRequest
 {
+    private Competition $competition;
+
+    function __construct(Route $route) {
+        $this->competition = Competition::find($route->parameter('competition'));
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -25,8 +35,15 @@ class EliminateFromComputeRequest extends FormRequest
     {
         return [
             'participants'      => 'required|array',
-            'participants.*'    => 'required|exists:participants,index_no',
-            'reason'            => 'nullable|string',
+            'participants.*'    => [
+                'required',
+                Rule::exists('participants', 'index_no')
+                    ->where(function (Builder $query) {
+                        $competitionOrganizations = $this->competition->competitionOrganization()
+                            ->pluck('id')->toArray();
+                        return $query->whereIn('competition_organization_id', $competitionOrganizations);
+                    }),
+            ]
         ];
     }
 }

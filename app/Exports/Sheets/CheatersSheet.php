@@ -17,7 +17,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
 
     function __construct(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $this->dataCollection = CheatingListHelper::getCheatersDataForCSV($competition, $request);
+        $this->dataCollection = CheatingListHelper::getCheatersData($competition, $request, true);
     }
 
     /**
@@ -59,7 +59,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'No of qns with same correct answer',
             'No of qns with same incorrect answer',
             'No of correct answers',
-            'Qns with same incorrect answer',
+            'Qns with same answer',
             ...array_slice($headers, 13)
         ];
     }
