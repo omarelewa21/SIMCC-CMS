@@ -1304,7 +1304,7 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'participant', 'index', 'certificate number', 'competition', 'organization', 'country',
+                'participant', 'index', 'certificate number', 'status', 'competition', 'organization', 'country',
                 'level', 'grade', 'school', 'tuition', 'points', 'award', 'school_rank', 'country_rank', 'global rank'
             ];
             $competitionService = new CompetitionService($competition);
@@ -1414,10 +1414,6 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if($request->get_status) {
-                return CheatingListHelper::returnCheatingStatus($competition);
-            }
-
             if ($request->recompute) {
                 DB::transaction(function () use($competition, $request) {
                     CheatingStatus::updateOrCreate(
@@ -1476,7 +1472,7 @@ class CompetitionController extends Controller
                     });
             })
                 ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
-                ->with('answers', 'isCheater')
+                ->with('answers')
                 ->distinct()
                 ->get();
 

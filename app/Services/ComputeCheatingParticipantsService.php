@@ -15,18 +15,18 @@ class ComputeCheatingParticipantsService
     protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
     protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
     protected $numberOFSameIncorrect; // If the number of same incorrect answers > $numberOFSameIncorrect, then the participant is considered as cheater
-    protected $countryId;       // If countryId is not null, then only participants from the country will be considered
+    protected $countries;       // If countries is not null, then only compute the cheating participants from these countries
 
     /**
      * @param Competition $competition
      */
-    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95, $numberOFSameIncorrect = 1, $countryId = null)
+    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95, $numberOFSameIncorrect = 1, $countries = null)
     {
         $this->cheatStatus = CheatingStatus::findOrFail($this->competition->id);
         $this->qNumber = $qNumber;
         $this->percentage = $percentage;
         $this->numberOFSameIncorrect = $numberOFSameIncorrect;
-        $this->countryId = $countryId;
+        $this->countries = $countries;
     }
 
     /**
@@ -58,7 +58,7 @@ class ComputeCheatingParticipantsService
                 ->pluck('levels')->flatten()
                 ->each(function($level){
                     ParticipantsAnswer::where('level_id', $level->id)
-                    ->when($this->countryId, fn($query) => $query->whereHas('participant', fn($query) => $query->where('country_id', $this->countryId)))
+                    ->when($this->countries, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('country_id', $this->countries)))
                     ->whereNull('is_correct')
                     ->chunkById(50000, function ($participantAnswers) use($level){
                         foreach ($participantAnswers as $participantAnswer) {
@@ -119,7 +119,7 @@ class ComputeCheatingParticipantsService
         $groups = collect();
 
         $this->competition->participants()
-            ->when($this->countryId, fn($query) => $query->where('participants.country_id', $this->countryId))
+            ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
@@ -199,7 +199,7 @@ class ComputeCheatingParticipantsService
         CheatingParticipants::join('participants', 'cheating_participants.participant_index', '=', 'participants.index_no')
             ->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
             ->where('competition_organization.competition_id', $this->competition->id)
-            ->when($this->countryId, fn($query) => $query->where('participants.country_id', $this->countryId))
+            ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->delete();
     }
 
@@ -335,7 +335,7 @@ class ComputeCheatingParticipantsService
         $groups = collect();
 
         $this->competition->participants()
-            ->when($this->countryId, fn($query) => $query->where('participants.country_id', $this->countryId))
+            ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->select(
                 'participants.index_no',
                 'participants.name',

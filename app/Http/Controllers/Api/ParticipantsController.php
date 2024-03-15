@@ -20,8 +20,8 @@ use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Jobs\GeneratePerformanceReports;
 use App\Jobs\RecaculateShoolRankJob;
+use App\Models\CheatingParticipants;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\EliminatedCheatingParticipants;
 use App\Models\ReportDownloadStatus;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
@@ -508,22 +508,50 @@ class ParticipantsController extends Controller
     }
 
 
-    public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function eliminateParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
     {
         DB::beginTransaction();
         try {
-            foreach ($request->participants as $participant_index) {
-                EliminatedCheatingParticipants::updateOrCreate(
-                    ['participant_index' => $participant_index],
-                    ['reason' => $request->reason]
-                );
+            $round = $competition->rounds()->with('roundsAwards')->first();
+            $defaultAwardRank = $round->roundsAwards->count() + 1;
+
+            if($request->has('participants')) {
+                $participants = $request->participants;
+            } else {
+                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                    ->whereIn('group_id', $request->group_ids)
+                    ->pluck('participant_index')
+                    ->toArray();
             }
+
+            Participants::whereIn('index_no', $participants)
+                ->where('status', '<>', Participants::STATUS_CHEATING)
+                ->update([
+                    'status' => Participants::STATUS_CHEATING,
+                    'eliminated_by' => auth()->id(),
+                    'eliminated_at' => now()
+                ]);
+
+            CompetitionParticipantsResults::whereIn('participant_index', $participants)
+                ->update([
+                    'ref_award'         => $round->default_award_name,
+                    'award'             => $round->default_award_name,
+                    'award_rank'        => $defaultAwardRank,
+                    'points'            => null,
+                    'percentile'        => null,
+                    'school_rank'       => null,
+                    'country_rank'      => null,
+                    'global_rank'       => null,
+                    'group_rank'        => null,
+                    'report'            => null,
+                ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => "Participants elimination is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
             ], 500);
         }
         DB::commit();
@@ -533,18 +561,31 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function deleteEliminatedParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
     {
         DB::beginTransaction();
         try {
-            EliminatedCheatingParticipants::whereIn('participant_index', $request->participants)
-                ->delete();
+            if($request->has('participants')) {
+                $participants = $request->participants;
+            } else {
+                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                    ->whereIn('group_id', $request->group_ids)
+                    ->pluck('participant_index')
+                    ->toArray();
+            }
+
+            Participants::whereIn('index_no', $participants)
+                ->where('status', Participants::STATUS_CHEATING)
+                ->update([
+                    'status' => Participants::STATUS_ACTIVE
+                ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants deletetion from elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => "Participants deletetion from elimination is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
             ], 500);
         }
         DB::commit();

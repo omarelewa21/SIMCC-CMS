@@ -106,6 +106,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
             Route::get("", [ParticipantsController::class, "performanceReportsBulkDownload"])->name('participant.reports.bulk_download');
             Route::get("/check_progress/{job_id}", [ParticipantsController::class, "performanceReportsBulkDownloadCheckProgress"])->name('participant.reports.bulk_download.check_progress');
         });
+        Route::post("/eliminate/{competition}", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.eliminate');
+        Route::delete("/eliminate/{competition}", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.eliminate.delete');
         Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
     });
 
@@ -135,7 +137,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}/report", [CompetitionController::class, "report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
-        Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
         Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
@@ -162,6 +163,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
         Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::post("awards/is_moderated/{level}/{group}",[MarkingController::class,"setAwardsModerated"])->name('competition.marking.awards.is_moderated');
     });
 
     Route::group(["prefix" => "tasks"], function () {

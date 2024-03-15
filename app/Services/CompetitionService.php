@@ -65,6 +65,7 @@ class CompetitionService
             participants.grade,
             participants.country_id,
             participants.school_id,
+            participants.status,
             CONCAT(COALESCE(schools.name_in_certificate, schools.name)) as `school`,
             CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
             participants.index_no,
@@ -72,8 +73,8 @@ class CompetitionService
             participants.certificate_no,
             competition_participants_results.points,
             CONCAT('\"',competition_participants_results.award,'\"') as award,
-            competition_participants_results.school_rank,
-            competition_participants_results.country_rank,
+            CONCAT('\"',competition_participants_results.award, ' ', competition_participants_results.school_rank, '\"') as school_rank,
+            CONCAT('\"',competition_participants_results.award, ' ', competition_participants_results.country_rank, '\"') as country_rank,
             CONCAT('\"',competition_participants_results.global_rank,'\"') as global_rank"
         );
     }
@@ -90,6 +91,7 @@ class CompetitionService
             participants.grade,
             participants.country_id,
             participants.school_id,
+            participants.status,
             CONCAT(COALESCE(schools.name_in_certificate, schools.name)) as `school`,
             tuition_school.name as tuition_centre,
             participants.index_no,
@@ -97,8 +99,8 @@ class CompetitionService
             participants.certificate_no,
             competition_participants_results.points,
             competition_participants_results.award as award,
-            competition_participants_results.school_rank,
-            competition_participants_results.country_rank,
+            CONCAT(competition_participants_results.award, ' ', competition_participants_results.school_rank) as school_rank,
+            CONCAT(competition_participants_results.award, ' ', competition_participants_results.country_rank) as country_rank,
             competition_participants_results.global_rank"
         );
     }

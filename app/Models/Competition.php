@@ -233,6 +233,9 @@ class Competition extends Base
         foreach ($this->rounds as $round) {
             foreach ($round->levels as $level) {
                 $collection = $level->collection;
+                if ($collection->status === 'deleted') {
+                    continue; // Skip deleted collections
+                }
                 if ($collection->status !== 'verified' || !$this->checkDifficultyIsVerified($round->id, $level->id, $this->id)) {
                     $all_collections_verified = false;
                     break 2; // Break out of both loops if one collection is not verified
@@ -241,6 +244,7 @@ class Competition extends Base
         }
         return $all_collections_verified;
     }
+
 
     public function checkDifficultyIsVerified($roundId, $levelId, $competitionId)
     {

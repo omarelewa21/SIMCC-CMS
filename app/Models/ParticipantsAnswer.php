@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
+use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,7 +22,7 @@ class ParticipantsAnswer extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+        static::addGlobalScope(new scopeExcludeCheatingParticipants);
     }
 
     public function task()
@@ -53,10 +53,9 @@ class ParticipantsAnswer extends Model
                 ->get();
         }
 
-        return $taskAnswers->first(function ($taskAnswer) {
-            $taskAnswerValue = $taskAnswer->answer ?? null;
-            return ltrim($taskAnswerValue, '0') === ltrim($this->answer, '0');
-        })?->id;
+        return $taskAnswers->first(fn ($taskAnswer) =>
+            $taskAnswer->answer === $this->answer
+        )?->id;
     }
 
 
