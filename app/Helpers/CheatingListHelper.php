@@ -10,6 +10,7 @@ use App\Models\Competition;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -458,29 +459,34 @@ class CheatingListHelper
 
         $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_keys($data->max());
+            $headers = array_slice(array_keys($data->max()), 14);
+            foreach($headers as $key => $header) {
+                $headers[sprintf("Q%s", $key+1)] = $header;
+                unset($headers[$key]);
+            }
         }
 
         $headers =  [
-            'Index',
-            'Name',
-            'School',
-            'Country',
-            'Grade',
-            'Group ID',
-            'No of qns',
-            'No of qns with same answer',
-            'No of qns with same answer percentage', 
-            'No of qns with same correct answer',
-            'No of qns with same incorrect answer',
-            'No of correct answers',
-            'Qns with same answer',
-            ...array_slice($headers, 13)
+            'Index'                                         => 'index_no',
+            'Name'                                          => 'name',
+            'School'                                        => 'school',
+            'Country'                                       => 'country',
+            'Grade'                                         => 'grade',
+            'Group ID'                                      => 'group_id',
+            'No of qns'                                     => 'number_of_questions',
+            'No of qns with same answer'                    => 'number_of_cheating_questions',
+            'No of qns with same answer percentage'         => 'cheating_percentage', 
+            'No of qns with same correct answer'            => 'number_of_same_correct_answers',
+            'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
+            'No of correct answers'                         => 'number_of_correct_answers',
+            'Qns with same answer'                          => 'different_questions',
+            ...$headers
         ];
 
         return response()->json([
             'status'            => 201,
             'message'           => 'Cheating list generated successfully',
+            'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'headers'           => $headers,
             'data'              => $returnedCollection
