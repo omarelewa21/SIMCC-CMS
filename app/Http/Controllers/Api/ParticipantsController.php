@@ -18,15 +18,14 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
+use App\Http\Requests\participant\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
-use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
-use Illuminate\Validation\Rule;
 use PDF;
 
 class ParticipantsController extends Controller
@@ -250,50 +249,9 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function update(Request $request)
+    public function update(UpdateParticipantRequest $request)
     {
-        //password must English uppercase characters (A – Z), English lowercase characters (a – z), Base 10 digits (0 – 9), Non-alphanumeric (For example: !, $, #, or %), Unicode characters
-        $participant = auth()->user()->hasRole(['Super Admin', 'Admin'])
-            ? Participants::whereId($request['id'])->firstOrFail()
-            : Participants::whereId($request['id'])->firstOrFail();
-
-        $participantCountryId = $participant->country_id;
-        $request['school_type'] = $participant->tuition_centre_id ? 1 : 0;
-
-        $validate = array(
-            'for_partner' => 'required_if:school_type,1|exclude_if:school_type,0|boolean',
-            'name' => 'required|string|min:3|max:255',
-            'class' => "max:20",
-            'grade' => ['required', 'integer', 'min:1', 'max:99', new CheckParticipantGrade],
-            'school_type' => ['required', Rule::in(0, 1)],
-            'email' => ['sometimes', 'email', 'nullable'],
-            "tuition_centre_id" => ['exclude_if:for_partner,1', 'exclude_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(1, $participantCountryId)],
-            "school_id" => ['required_if:school_type,0', 'integer', 'nullable', new CheckSchoolStatus(0, $participantCountryId)],
-            'password' => ['confirmed', 'min:8', 'regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/'],
-            "identifier" => [new CheckUniqueIdentifierWithCompetitionID($participant)],
-        );
-
-
-        switch (auth()->user()->role_id) {
-            case 0:
-            case 1:
-                $validate['id'] = ["required", Rule::exists('participants', 'id'), "integer"];
-                break;
-            case 2:
-            case 4:
-                $organizationId = auth()->user()->organization_id;
-                $countryId = auth()->user()->country_id;
-                $activeCompetitionOrganizationIds = CompetitionOrganization::where(['organization_id' => $organizationId, 'status' => 'active'])->pluck('id')->toArray();
-                $validate['id'] = ["required", "integer", Rule::exists('participants', 'id')->where("country_id", $countryId)->whereIn("competition_organization_id", $activeCompetitionOrganizationIds)];
-                break;
-            case 3:
-            case 5:
-                $schoolId = auth()->user()->school_id;
-                $validate['id'] = ["required", "integer", Rule::exists('participants', 'id')->where("school_id", $schoolId)];
-                break;
-        }
-
-        $validated = $request->validate($validate);
+        $participant = Participants::whereId($request->id)->firstOrFail();
         try {
             $participant->name  = $request->name;
             $participant->grade = $request->grade;
