@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
 use Illuminate\Contracts\Validation\InvokableRule;
 
@@ -17,7 +18,7 @@ class ParticipantIDOnUpdateRule implements InvokableRule
      */
     public function __invoke($attribute, $value, $fail)
     {
-        if(auth()->user()->hasRole('country partner', 'country partner assistant'))
+        if(auth()->user()->hasRole('country partner', 'country partner assistant')) 
             return $this->validateForCountryPartner($value, $fail);
 
         if(auth()->user()->hasRole('teacher', 'school manager'))
@@ -28,6 +29,9 @@ class ParticipantIDOnUpdateRule implements InvokableRule
     {
         if ($this->participantIsNotRelatedToCP($value)) {
             $fail("The selected participant is not in the same country or organization as current user.");
+        }
+        if($this->participantIsComputedAndNotEditable($value)) {
+            $fail("The selected participant already have results and cannot be edited.");
         }
     }
 
@@ -51,5 +55,11 @@ class ParticipantIDOnUpdateRule implements InvokableRule
             ])
             ->doesntExist();
     }
-    
+
+    private function participantIsComputedAndNotEditable($participantId): bool
+    {
+        return CompetitionParticipantsResults::whereRelation('participant', 'id', $participantId)
+            ->whereNotNull('global_rank')
+            ->exists();
+    }
 }
