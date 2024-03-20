@@ -1284,39 +1284,17 @@ class CompetitionController extends Controller
         }
     }
 
-    /**
-     * Get all participants that are cheating by group
-     *
-     * @param int $group_id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getcheatingParticipantsByGroup($group_id)
+    public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            $data = Participants::whereIn('index_no', function ($query) use ($group_id) {
-                $query->select('participant_index')
-                    ->from('cheating_participants')
-                    ->where('group_id', $group_id)
-                    ->union(function ($query) use ($group_id) {
-                        $query->select('cheating_with_participant_index')
-                            ->from('cheating_participants')
-                            ->where('group_id', $group_id);
-                    });
-            })
-                ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
-                ->with('answers')
-                ->distinct()
-                ->get();
+            return CheatingListHelper::returnSameParticipantCheatingData($competition, $request);
 
-            $headers = collect(['index_no', 'name'])->merge(
-                $data->first()->answers->map(function ($answer, $index) {
-                    return 'Q' . ($index + 1);
-                })
-            );
-
-            return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
         }
     }
 }

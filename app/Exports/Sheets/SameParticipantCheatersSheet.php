@@ -17,7 +17,7 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
 
     function __construct(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $this->dataCollection = CheatingListHelper::getSameParticipantCheatersDataForCSV($competition, $request);
+        $this->dataCollection = CheatingListHelper::getSameParticipantCheatersData($competition, $request, true);
     }
 
     /**
