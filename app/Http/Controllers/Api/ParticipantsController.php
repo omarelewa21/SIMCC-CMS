@@ -550,7 +550,7 @@ class ParticipantsController extends Controller
         DB::commit();
         return response()->json([
             "status"    => 200,
-            "message"   => "Participants deleted from elimination successfully"
+            "message"   => "Participants restored successfully"
         ]);
     }
 
