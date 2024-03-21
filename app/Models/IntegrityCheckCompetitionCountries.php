@@ -13,6 +13,27 @@ class IntegrityCheckCompetitionCountries extends Model
 
     protected $fillable = ['competition_id', 'country_id', 'is_computed', 'is_confirmed', 'confirmed_by', 'confirmed_at'];
 
+    public function competition()
+    {
+        return $this->belongsTo(Competition::class);
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Countries::class);
+    }
+
+    public static function booted()
+    {
+        parent::booted();
+
+        static::saved(function($model) {
+            if($model->wasChanged('is_confirmed')) {
+                $model->update(['confirmed_by' => auth()->id(), 'confirmed_at' => now()]);
+            }
+        });
+    }
+
     public static function updateCountriesComputeStatus(Competition $competition, array|null $countryIds)
     {
         if($countryIds) {
@@ -26,7 +47,7 @@ class IntegrityCheckCompetitionCountries extends Model
     public static function setCompetitionCountries(Competition $competition, array|null $countryIds)
     {
         $allCountries = Countries::getCompetitionCountryList($competition);
-        $countriesCreated = self::where('competition_id', $competition->id)->pluck('country_id')->toArray();
+        $countriesCreated   = self::where('competition_id', $competition->id)->pluck('country_id')->toArray();
         $countriesToCreate = array_diff($allCountries, $countriesCreated);
         foreach($countriesToCreate as $countryId) {
             self::create(['competition_id' => $competition->id, 'country_id' => $countryId]);
