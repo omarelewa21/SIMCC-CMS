@@ -39,6 +39,7 @@ use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
+use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1241,7 +1242,7 @@ class CompetitionController extends Controller
                             'compute_error_message' => null
                         ]
                     );
-    
+
                     dispatch(new ComputeCheatingParticipants(
                         $competition,
                         $request->question_number,

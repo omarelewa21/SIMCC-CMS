@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
+use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
@@ -98,6 +99,8 @@ class ComputeCheatingParticipantsService
      */
     protected function detectCheaters()
     {
+        IntegrityCheckCompetitionCountries::setCompetitionCountries($this->competition, $this->countries);
+    
         $this->groupParticipantsByCountrySchoolAndGrade()
             ->each(function ($group) {
                 $this->compareAnswersBetweenParticipants($group);
@@ -106,6 +109,8 @@ class ComputeCheatingParticipantsService
         $this->updateCheatStatus(90);
 
         $this->detectCheatersWhoTookCompetitionTwiceOrMore();
+
+        IntegrityCheckCompetitionCountries::updateCountriesComputeStatus($this->competition, $this->countries);
         $this->updateCheatStatus(100, 'Completed');
     }
 
