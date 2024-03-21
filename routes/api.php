@@ -132,6 +132,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
         Route::get("/cheaters/same-participant/{competition}", [CompetitionController::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
+        Route::get("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
+        Route::post("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
     });
 
     Route::group(["prefix" => "marking"], function () {
