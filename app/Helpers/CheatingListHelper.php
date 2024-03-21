@@ -7,10 +7,10 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
+use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -495,6 +495,8 @@ class CheatingListHelper
             'message'           => 'Cheating list generated successfully',
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
+            'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+            'remaining_countries'=> IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
             'headers'           => $headers,
             'data'              => $returnedCollection
         ], 201);
@@ -550,6 +552,8 @@ class CheatingListHelper
             'message'           => 'Cheating list generated successfully',
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
+            'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+            'remaining_countries'=> IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
             'headers'           => $headers,
             'data'              => $returnedCollection
         ], 201);
