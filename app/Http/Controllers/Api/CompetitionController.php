@@ -32,6 +32,7 @@ use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
+use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
@@ -39,7 +40,6 @@ use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
-use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1274,6 +1274,53 @@ class CompetitionController extends Controller
     {
         try {
             return CheatingListHelper::returnSameParticipantCheatingData($competition, $request);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function getConfirmedCountriesForIntegrityCheck(Competition $competition)
+    {
+        try {
+            $confirmedCountries = $competition->integrityCheckCountries()
+                ->join('all_countries as ac', 'ac.id', 'competition_countries_for_integrity_check.country_id')
+                ->select('ac.display_name as name', 'ac.id', 'competition_countries_for_integrity_check.is_confirmed')
+                ->get();
+
+            return response()->json([
+                'status'    => 200,
+                'countries' => $confirmedCountries
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function confirmCountryForIntegrityCheck(Competition $competition, ConfirmCountryForIntegrityRequest $request)
+    {
+        try {
+            foreach($request->countries as $country) {
+                $competition->integrityCheckCountries()
+                    ->updateOrCreate(
+                        ['country_id' => $country['id']],
+                        ['is_confirmed' => $country['is_confirmed']]
+                    );
+            }
+
+            return response()->json([
+                'status'    => 200,
+                'message'   => 'Country has been confirmed for integrity check'
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
