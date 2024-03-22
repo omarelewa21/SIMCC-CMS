@@ -23,17 +23,6 @@ class IntegrityCheckCompetitionCountries extends Model
         return $this->belongsTo(Countries::class);
     }
 
-    public static function booted()
-    {
-        parent::booted();
-
-        static::saved(function($model) {
-            if($model->wasChanged('is_confirmed')) {
-                $model->update(['confirmed_by' => auth()->id(), 'confirmed_at' => now()]);
-            }
-        });
-    }
-
     public static function updateCountriesComputeStatus(Competition $competition, array|null $countryIds)
     {
         if($countryIds) {

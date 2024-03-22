@@ -1328,7 +1328,11 @@ class CompetitionController extends Controller
                 $competition->integrityCheckCountries()
                     ->updateOrCreate(
                         ['country_id' => $country['id']],
-                        ['is_confirmed' => $country['is_confirmed']]
+                        [
+                            'is_confirmed' => $country['is_confirmed'],
+                            'confirmed_by' => auth()->id(),
+                            'confirmed_at' => now()
+                        ]
                     );
             }
 
