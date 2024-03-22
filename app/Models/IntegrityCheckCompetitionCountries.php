@@ -61,7 +61,7 @@ class IntegrityCheckCompetitionCountries extends Model
         }
     }
 
-    public static function getComputedCountriesList(Competition $competition): string
+    public static function getComputedCountriesList(Competition $competition)
     {
         return self::join('all_countries', 'competition_countries_for_integrity_check.country_id', '=', 'all_countries.id')
             ->where([
@@ -72,10 +72,10 @@ class IntegrityCheckCompetitionCountries extends Model
             ->get()
             ->pluck('display_name')
             ->unique()
-            ->join(', ', ' and ');
+            ->values();
     }
 
-    public static function getRemainingCountriesList(Competition $competition): string
+    public static function getRemainingCountriesList(Competition $competition)
     {
         return self::join('all_countries', 'competition_countries_for_integrity_check.country_id', '=', 'all_countries.id')
             ->where([
@@ -86,6 +86,6 @@ class IntegrityCheckCompetitionCountries extends Model
             ->get()
             ->pluck('display_name')
             ->unique()
-            ->join(', ', ' and ');
+            ->values();
     }
 }
