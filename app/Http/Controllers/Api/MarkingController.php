@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use App\Helpers\ValiateLevelGroupForComputingHelper;
 
 class MarkingController extends Controller
 {
@@ -288,7 +290,7 @@ class MarkingController extends Controller
     {
         try {
 
-            ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+            (new ValiateLevelGroupForComputingHelper($level, $group))->validate();
             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
             ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
@@ -329,7 +331,7 @@ class MarkingController extends Controller
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
                     foreach($competition->groups as $group){
-                        if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
+                        if((new ValiateLevelGroupForComputingHelper($level, $group))->validate(throwException: false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
                             ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
                         }
