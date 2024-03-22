@@ -24,43 +24,6 @@ class ComputeLevelGroupService
         $this->groupCountriesIds = $group->countries()->pluck('id')->toArray();
     }
 
-    public static function validateLevelGroupForComputing(
-            CompetitionLevels $level,
-            CompetitionMarkingGroup $group,
-            $throwError = true
-    ) {
-        $levelGroupCompute = $group->levelGroupCompute($level->id)->first();
-
-        if( $levelGroupCompute ) {
-            if($levelGroupCompute->computing_status === 'In Progress'){
-                if($throwError) throw new \Exception("Grades {$level->name} is already under computing for this group {$group->name}, please wait till finished", 409);
-                return false;
-            }
-        };
-
-        if( ! MarkingService::isLevelReadyToCompute($level) ){
-            if($throwError) throw new \Exception("Level {$level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 400);
-            return false;
-        }
-
-        if(static::checkIfAnyAnswerHasNotBeenComputed($level, $group)){
-            if($throwError) throw new \Exception("Some of the answers have not been computed yet for this level {$level->name} and group {$group->name}, please select re-mark option to remark them", 400);
-            return false;
-        }
-
-        if(static::checkIfShouldIncludeAwardsInRequest($level, $group)){
-            if($throwError) throw new \Exception("Some of the awards have not been computed yet for this level {$level->name} and group {$group->name}, please select award option to compute award first", 400);
-            return false;
-        }
-
-        if(static::checkIfAwardIsNullWhileComputingGlobalRanking($level, $group)) {
-            if($throwError) throw new \Exception("Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first", 400);
-            return false;
-        }
-
-        return true;
-    }
-
     public static function storeLevelGroupRecords(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
         DB::beginTransaction();
@@ -266,6 +229,7 @@ class ComputeLevelGroupService
     private function setParticipantsAwards()
     {
         $this->clearAwardForParticipants();
+        $this->group->levelGroupCompute($this->level->id)->update(['awards_moderated' => false]);
         $this->setPerfectScoreAward();
         (new SetParticipantsAwardsHelper($this->level, $this->group))->setParticipantsAwards();
         $this->updateComputeProgressPercentage(70);
@@ -333,7 +297,7 @@ class ComputeLevelGroupService
         $this->updateAbsentees();
     }
 
-    private static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
+    public static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
         return CompetitionParticipantsResults
             ::filterByLevelAndGroup($level->id, $group->id, false)->doesntExist();
@@ -397,77 +361,6 @@ class ComputeLevelGroupService
     {
         $this->computeParticipantAnswersScores();
         $this->setupCompetitionParticipantsResultsTable();
-    }
-
-    private static function checkIfShouldIncludeAwardsInRequest(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
-    {
-        return in_array('award', request('not_to_compute'))
-            && static::isRankingIncludedInRequest()
-            && static::checkIfAwardIsNotSet($level, $group);
-    }
-
-    private static function isRankingIncludedInRequest(): bool
-    {
-        
-        return count(
-            array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
-        ) < 3;
-    }
-
-    private static function checkIfAwardIsNotSet(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
-    {
-        if(request('clear_previous_results')) return false;
-
-        return CompetitionParticipantsResults::where('level_id', $level->id)
-            ->where('group_id', $group->id)
-            ->whereNull('award')
-            ->exists();
-    }
-
-    private static function checkIfAnyAnswerHasNotBeenComputed(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
-    {
-        return request()->has('not_to_compute')
-            && is_array(request('not_to_compute'))
-            && in_array('remark', request('not_to_compute'))
-            && !static::firstTimeCompute($level, $group)
-            && static::checkIfAnyAnswerHasANullScore($level, $group);
-    }
-
-    private static function checkIfAnyAnswerHasANullScore(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
-    {
-        return ParticipantsAnswer::where('level_id', $level->id)
-            ->whereHas('participant', function($query) use($group){
-                $query->whereIn('country_id', $group->countries()->pluck('id')->toArray());
-            })
-            ->whereNull('score')
-            ->exists();
-    }
-
-    private static function checkIfAwardIsNullWhileComputingGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
-    {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
-
-        if(static::checkIfNewStudentsAdded($level)) return true;
-
-        if(in_array('award', request('not_to_compute'))) {
-            // award will not be computed
-            return CompetitionParticipantsResults::where('level_id', $level->id)
-                ->whereNull('award')
-                ->exists();
-        };
-
-        // award will computed for this level and group, need to check for other groups
-        return CompetitionParticipantsResults::where('level_id', $level->id)
-            ->where('group_id', '<>', $group->id)
-            ->whereNull('award')
-            ->exists();
-    }
-
-    private static function checkIfNewStudentsAdded(CompetitionLevels $level)
-    {
-        return ParticipantsAnswer::where('level_id', $level->id)
-            ->whereNull('score')
-            ->exists();
     }
 
     private function clearAwardForParticipants()
