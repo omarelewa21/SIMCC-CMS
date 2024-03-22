@@ -18,49 +18,43 @@ class ValiateLevelGroupForComputingHelper
 
     public function validate(bool $throwException = true)
     {
-        $levelGroupCompute = $this->group->levelGroupCompute($this->level->id)->first();
-
-        if( $levelGroupCompute ) {
-            if($levelGroupCompute->computing_status === 'In Progress'){
-                if($throwException) throw new \Exception("Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished", 409);
+        foreach ($this->conditions() as $index => $condition) {
+            if ($condition()) {
+                throw_if($throwException, new \Exception($this->getMessage($index), 400));
                 return false;
             }
-        };
-
-        if( ! MarkingService::isLevelReadyToCompute($this->level) ){
-            if($throwException) throw new \Exception("Level {$this->level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level", 400);
-            return false;
-        }
-
-        if($this->SomeAnswersIsNotComputed()){
-            if($throwException) throw new \Exception("Some of the answers have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please select re-mark option to remark them", 400);
-            return false;
-        }
-
-        if($this->AwardShouldBeIncludedInRequest()){
-            if($throwException) throw new \Exception("Some of the awards have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please select award option to compute award first", 400);
-            return false;
-        }
-
-        if($this->checkIfAwardIsNullWhileComputingGlobalRanking()) {
-            if($throwException) throw new \Exception("Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first", 400);
-            return false;
-        }
-
-        if($this->awardAndGlobalRankWillBeComputedTogether()) {
-            if($throwException) throw new \Exception("Award and Global Ranking will be computed together, please compute and moderate awards first", 400);
-            return false;
-        }
-
-        if($this->awardsNotFullyModeratedToComputeGlobalRanking()) {
-            if($throwException) throw new \Exception("Awards are not fully moderated for this level {$this->level->name}, please moderate all awards for all group of countries first", 400);
-            return false;
         }
 
         return true;
     }
 
-    private function SomeAnswersIsNotComputed(): bool
+    private function conditions(): array
+    {
+        return array(
+            fn() => $this->group->levelGroupCompute($this->level->id)->value('computing_status') === LevelGroupCompute::STATUS_IN_PROGRESS,
+            fn() => !MarkingService::isLevelReadyToCompute($this->level),
+            fn() => $this->someAnswersIsNotComputed(),
+            fn() => $this->awardShouldBeIncludedInRequest(),
+            fn() => $this->awardIsNullWhileComputingGlobalRanking(),
+            fn() => $this->awardAndGlobalRankWillBeComputedTogether(),
+            fn() => $this->awardsNotFullyModeratedToComputeGlobalRanking()
+        );
+    }
+
+    private function getMessage($index)
+    {
+        return array(
+            "Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished",
+            "Level {$this->level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level",
+            "Some of the answers have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please select re-mark option to remark them",
+            "Some of the awards have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please select award option to compute award first",
+            "Award is not computed for some of the countries inside this grade, you shall compute award for all countries inside this grade first",
+            "Award and Global Ranking will be computed together, please compute and moderate awards first",
+            "Awards are not fully moderated for this level {$this->level->name}, please moderate all awards for all group of countries first"
+        )[$index];
+    }
+
+    private function someAnswersIsNotComputed(): bool
     {
         return request()->has('not_to_compute')
             && is_array(request('not_to_compute'))
@@ -79,7 +73,7 @@ class ValiateLevelGroupForComputingHelper
             ->exists();
     }
 
-    private function AwardShouldBeIncludedInRequest(): bool
+    private function awardShouldBeIncludedInRequest(): bool
     {
         return in_array('award', request('not_to_compute'))
             && $this->isRankingIncludedInRequest()
@@ -104,7 +98,7 @@ class ValiateLevelGroupForComputingHelper
             ->exists();
     }
 
-    private function checkIfAwardIsNullWhileComputingGlobalRanking()
+    private function awardIsNullWhileComputingGlobalRanking()
     {
         if(in_array('global_rank', request('not_to_compute'))) return false;
 
