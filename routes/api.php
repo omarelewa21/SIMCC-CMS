@@ -97,8 +97,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
         Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
-        Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
-        Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
+        Route::post("/eliminate/{competition}", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.eliminate');
+        Route::delete("/eliminate/{competition}", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.eliminate.delete');
         Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
     });
 
@@ -128,10 +128,12 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}/report", [CompetitionController::class, "report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
-        Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
         Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
+        Route::get("/cheaters/same-participant/{competition}", [CompetitionController::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
+        Route::get("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
+        Route::post("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
     });
 
     Route::group(["prefix" => "marking"], function () {

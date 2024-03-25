@@ -35,8 +35,8 @@ class SetParticipantsAwardsHelper
             $count = $totalCount;
 
             $this->awards->each(function($award) use($groupId, &$count, $totalCount, $perfectScoreresCount){
-                $participantResult = CompetitionParticipantsResults::where('level_id', $this->level->id)
-                    ->where('group_id', $groupId)
+                $participantResult = CompetitionParticipantsResults
+                    ::filterByLevelAndGroup($this->level->id, $groupId)
                     ->whereNull('award')
                     ->where('points', '>=', $award->min_marks)
                     ->orderBy('points', 'DESC')
@@ -99,11 +99,12 @@ class SetParticipantsAwardsHelper
 
     private function getTotalCountAndPerfectScoreresCount(int $groupId): array
     {
-        $totalCount = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $groupId)->count();
+        $totalCount = CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $groupId)
+            ->count();
 
-        $perfectScoreresCount = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $groupId)
+        $perfectScoreresCount = CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $groupId)
             ->where('award', 'PERFECT SCORE')
             ->count();
 
@@ -112,8 +113,8 @@ class SetParticipantsAwardsHelper
 
     private function getParticipantResult(int $groupId): CompetitionParticipantsResults|null
     {
-        return CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $groupId)
+        return CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $groupId)
             ->whereNull('award')
             ->orderBy('points', 'DESC')
             ->limit(1)
@@ -135,8 +136,8 @@ class SetParticipantsAwardsHelper
     private function setDefaultAward(int $groupId, int $totalCount, int $count, int $perfectScoreresCount)
     {
         for($count; $count > 0; $count--) {
-            CompetitionParticipantsResults::where('level_id', $this->level->id)
-                ->where('group_id', $groupId)
+            CompetitionParticipantsResults
+                ::filterByLevelAndGroup($this->level->id, $groupId)
                 ->whereNull('award')
                 ->orderBy('points', 'DESC')
                 ->limit(1)
@@ -150,12 +151,13 @@ class SetParticipantsAwardsHelper
 
     private function updateParticipantsWhoShareSamePointsAsLastParticipant(int $groupId, string $awardName, int $totalCount, int $currentCount, int $perfectScoreresCount): int
     {
-        $lastParticipantPoints = CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $groupId)
+        $lastParticipantPoints = CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $groupId)
             ->where('award', $awardName)
             ->orderBy('points')->value('points');
 
-        $competitionParticipantsQuery =  CompetitionParticipantsResults::where('level_id', $this->level->id)->where('group_id', $groupId)
+        $competitionParticipantsQuery =  CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $groupId)
             ->where('points', $lastParticipantPoints)
             ->whereNull('award');
 

@@ -23,8 +23,7 @@ class HelperController extends Controller
         ]);
 
         if($request->competition_id) {
-            $countryIds = Competition::find($request->competition_id)
-                ->participants()->pluck('participants.country_id')->unique()->toArray();
+            $countryIds = Countries::getCompetitionCountryList(Competition::find($request->competition_id));
             $list = Countries::whereIn('id',$countryIds)->get(['id','Dial','display_name','ISO3166-1-Alpha-2']);
 
         } else {

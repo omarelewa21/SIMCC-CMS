@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
+use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +16,10 @@ class Participants extends Base
     use HasFactory, Filterable, SoftDeletes, Prunable;
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+
+    const STATUS_CHEATING = 'iac';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_RESULT_COMPUTED = 'result computed';
 
     private static $whiteListFilter = [
         'status',
@@ -156,14 +160,9 @@ class Participants extends Base
         return $this->belongsTo(CompetitionOrganization::class, "competition_organization_id", "id");
     }
 
-    public function isCheater()
-    {
-        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
-    }
-
     public function answers()
     {
-        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new scopeExcludeCheatingParticipants);
     }
 
     public function competition()

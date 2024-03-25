@@ -90,7 +90,7 @@ class ParticipantAnswersListService
             'Answers Count'
         ];
 
-        $questionsCount = $data->pluck('answers')->max()->count();
+        $questionsCount = $data->pluck('answers')->max()?->count();
         for ($i = 1; $i <= $questionsCount; $i++) {
             $headers[] = "Q$i";
         }

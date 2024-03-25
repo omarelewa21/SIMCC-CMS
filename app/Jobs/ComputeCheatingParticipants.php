@@ -19,7 +19,7 @@ class ComputeCheatingParticipants implements ShouldQueue
     protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
     protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
     protected $number_of_incorrect_answers; // If number of incorrect answers > $number_of_incorrect_answers, then the participant is considered as cheater
-    protected $countryId;       // If countryId is not null, then only compute the cheating participants from the country
+    protected $countries;       // If countries is not null, then only compute the cheating participants from these countries
 
     public $timeout = 5000;
 
@@ -33,14 +33,14 @@ class ComputeCheatingParticipants implements ShouldQueue
         $qNumber=null,
         $percentage=null,
         $number_of_incorrect_answers=null,
-        $countryId=null
+        $countries=null
     )
     {
         $this->competition = $competition;
         $this->qNumber = $qNumber;
         $this->percentage = $percentage;
         $this->number_of_incorrect_answers = $number_of_incorrect_answers;
-        $this->countryId = $countryId;
+        $this->countries = $countries;
     }
 
     /**
@@ -55,7 +55,7 @@ class ComputeCheatingParticipants implements ShouldQueue
                 $this->competition,
                 $this->qNumber, $this->percentage ?? 95,
                 $this->number_of_incorrect_answers ?? 1,
-                $this->countryId
+                $this->countries
             )
             )->computeCheatingParticipants();
 

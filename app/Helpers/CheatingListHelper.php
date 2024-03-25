@@ -7,6 +7,7 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
+use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
@@ -71,8 +72,12 @@ class CheatingListHelper
     public static function getFilterOptions($cheaters)
     {
         return [
-            'country' => $cheaters->pluck('country')->unique()->values(),
-            'school' => $cheaters->pluck('school')->unique()->values(),
+            'country' => $cheaters->map(function($participant) {
+                return [
+                    'id' => $participant['country_id'],
+                    'name' => $participant['country']
+                ];
+            })->unique('id')->values(),
             'grade' => GradeService::getAvailableCorrespondingGradesFromList(
                 $cheaters->pluck('grade')->unique()->sort()->values()->toArray()
             ),
@@ -123,12 +128,14 @@ class CheatingListHelper
      * 
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
+     * @param bool $forCSV
+     * 
      * @return Illuminate\Http\Response
      */
-    public static function getCheatersDataForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    public static function getCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getCheatersCollectionForCSV($competition, $request)
-            ->map(fn($participant) => static::getCheatingParticipantReadyForCSV($participant))
+        return static::getCheatersCollection($competition, $request)
+            ->map(fn($participant) => static::getCheatingParticipantDataReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
             ->values();
@@ -141,7 +148,7 @@ class CheatingListHelper
      * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Support\Collection
      */
-    private static function getCheatersCollectionForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    private static function getCheatersCollection(Competition $competition, CompetitionCheatingListRequest $request)
     {
         return Participants::distinct()
             ->join('cheating_participants', function (JoinClause $join) {
@@ -150,7 +157,12 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
-            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
+            ->when($request->has('search'), function($query) use($request){
+                $query->where('participants.index_no', 'like', "%{$request->search}%")
+                    ->orWhere('participants.name', 'like', "%{$request->search}%");
+            })
             ->select(
                 'participants.index_no',
                 'participants.name',
@@ -174,9 +186,11 @@ class CheatingListHelper
      * Get cheating participant ready for CSV
      * 
      * @param Participant $participant
+     * @param bool $forCSV
+     * 
      * @return array
      */
-    private static function getCheatingParticipantReadyForCSV($participant)
+    private static function getCheatingParticipantDataReady($participant, $forCSV = false)
     {
         // [$participant->different_questions, $sections, $questions] = static::getQuestionsAndDifferentQuestions($participant);
         [$participant->different_questions, $questions] = static::getQuestionsAndDifferentQuestions($participant);
@@ -191,14 +205,15 @@ class CheatingListHelper
         //     $formattedSections["No of wrong answers in Section $newKey"] = $value;
         // }
 
-        return array_merge($participant->only(
-                'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
-                'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
-                'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
-            ),
-            $questions,
-            $formattedSections
+        $filtered = $participant->only(
+            'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
+            'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
+            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
         );
+
+        if(!$forCSV) $filtered['country_id'] = $participant->country_id;
+
+        return array_merge($filtered,$questions,$formattedSections);
     }
     
     /**
@@ -359,7 +374,9 @@ class CheatingListHelper
         $cheatingStatus = CheatingStatus::find($competition->id);
 
         if($cheatingStatus?->status === 'Completed')
-        return static::getCheatingCSVFile($competition, $request);
+        return $request->mode === 'csv'
+            ? static::getCheatingCSVFile($competition, $request)
+            : static::returnCheatingDataForUI($competition, $request);
 
         return static::returnCheatingStatus($competition);
     }
@@ -369,10 +386,10 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function getSameParticipantCheatersDataForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    public static function getSameParticipantCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getSameParticipantCheatersCollectionForCSV($competition, $request)
-            ->map(fn($participant) => static::getSameParticipantCheatingParticipantReadyForCSV($participant))
+        return static::getSameParticipantCheatersCollection($competition, $request)
+            ->map(fn($participant) => static::getSameParticipantCheatingParticipantReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
             ->values();
@@ -383,7 +400,7 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    private static function getSameParticipantCheatersCollectionForCSV(Competition $competition, CompetitionCheatingListRequest $request)
+    private static function getSameParticipantCheatersCollection(Competition $competition, CompetitionCheatingListRequest $request)
     {
         return Participants::distinct()
             ->join('cheating_participants', function (JoinClause $join) {
@@ -392,7 +409,12 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 1)
-            ->when($request->has('country'), fn($query) => $query->where('participants.country_id', $request->country))
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
+            ->when($request->has('search'), function($query) use($request){
+                $query->where('participants.index_no', 'like', "%{$request->search}%")
+                    ->orWhere('participants.name', 'like', "%{$request->search}%");
+            })
             ->select(
                 'participants.index_no',
                 'participants.name',
@@ -410,13 +432,130 @@ class CheatingListHelper
      * Get same participant cheating participant ready for CSV
      * @param Participant $participant
      */
-    private static function getSameParticipantCheatingParticipantReadyForCSV($participant)
+    private static function getSameParticipantCheatingParticipantReady($participant, $forCSV = false)
     {
         $participant->school = $participant->school->name;
         $participant->country = $participant->country->display_name;
         $participant->number_of_answers = $participant->answers_count;
-        return $participant->only(
+        $filtered = $participant->only(
             'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_answers'
         );
+        if(!$forCSV) $filtered['country_id'] = $participant->country_id;
+        return $filtered;
+    }
+
+    /**
+     * Get Cheating data for UI
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function returnCheatingDataForUI(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        $data = CheatingListHelper::getCheatersData($competition, $request);
+
+        $returnedCollection = collect();
+        $lastGroup = null;
+        foreach($data as $key=>$record) {
+            if($key !== 0 && $lastGroup !== $record['group_id']) {
+                $returnedCollection->push(['-'], $record);
+            }else{
+                $returnedCollection->push($record);
+            }
+            $lastGroup = $record['group_id'];
+        }
+
+        $headers = [];
+        if($data->isNotEmpty()) {
+            $headers = array_slice(array_keys($data->max()), 14);
+            foreach($headers as $key => $header) {
+                $headers[sprintf("Q%s", $key+1)] = $header;
+                unset($headers[$key]);
+            }
+        }
+
+        $headers =  [
+            'Index'                                         => 'index_no',
+            'Name'                                          => 'name',
+            'School'                                        => 'school',
+            'Country'                                       => 'country',
+            'Grade'                                         => 'grade',
+            'Group ID'                                      => 'group_id',
+            'No of qns'                                     => 'number_of_questions',
+            'No of qns with same answer'                    => 'number_of_cheating_questions',
+            'No of qns with same answer percentage'         => 'cheating_percentage', 
+            'No of qns with same correct answer'            => 'number_of_same_correct_answers',
+            'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
+            'No of correct answers'                         => 'number_of_correct_answers',
+            'Qns with same answer'                          => 'different_questions',
+            ...$headers
+        ];
+
+        return response()->json([
+            'status'            => 201,
+            'message'           => 'Cheating list generated successfully',
+            'competition'       => $competition->name,
+            'filter_options'    => static::getFilterOptions($data),
+            'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+            'remaining_countries'=> IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
+            'headers'           => $headers,
+            'data'              => $returnedCollection
+        ], 201);
+    }
+
+    /**
+     * Get same participant cheating data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        $cheatingStatus = CheatingStatus::find($competition->id);
+
+        if($cheatingStatus?->status === 'Completed')
+            return static::returnSameParticipantCheatingList($competition, $request);
+
+        return static::returnCheatingStatus($competition);
+    }
+
+    /**
+     * Get same participant cheating list
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function returnSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        $data = CheatingListHelper::getSameParticipantCheatersData($competition, $request);
+
+        $returnedCollection = collect();
+        $lastGroup = null;
+        foreach($data as $key=>$record) {
+            if($key !== 0 && $lastGroup !== $record['group_id']) {
+                $returnedCollection->push(['-'], $record);
+            }else{
+                $returnedCollection->push($record);
+            }
+            $lastGroup = $record['group_id'];
+        }
+
+        $headers =  [
+            'Index'                                         => 'index_no',
+            'Name'                                          => 'name',
+            'School'                                        => 'school',
+            'Country'                                       => 'country',
+            'Grade'                                         => 'grade',
+            'Group ID'                                      => 'group_id',
+            'No. Of Answers Uploaded'                       => 'number_of_answers',
+        ];
+
+        return response()->json([
+            'status'            => 201,
+            'message'           => 'Cheating list generated successfully',
+            'competition'       => $competition->name,
+            'filter_options'    => static::getFilterOptions($data),
+            'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+            'remaining_countries'=> IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
+            'headers'           => $headers,
+            'data'              => $returnedCollection
+        ], 201);
     }
 }
