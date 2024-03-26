@@ -475,6 +475,8 @@ class CheatingListHelper
             'School'                                        => 'school',
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
+            'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
+            'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',
             'No of qns with same answer'                    => 'number_of_cheating_questions',
@@ -483,8 +485,6 @@ class CheatingListHelper
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
             'Qns with same answer'                          => 'different_questions',
-            'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
-            'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             ...$headers
         ];
         
