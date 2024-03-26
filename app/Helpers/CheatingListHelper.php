@@ -163,20 +163,14 @@ class CheatingListHelper
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
                     ->orWhere('participants.name', 'like', "%{$request->search}%");
             })
-            ->select(
-                'participants.index_no',
-                'participants.name',
-                'participants.school_id',
-                'participants.country_id',
-                'participants.grade',
-                'cheating_participants.group_id',
-                'cheating_participants.number_of_questions',
-                'cheating_participants.number_of_cheating_questions',
-                'cheating_participants.cheating_percentage',
-                'cheating_participants.number_of_same_correct_answers',
-                'cheating_participants.number_of_same_incorrect_answers',
-                'cheating_participants.different_question_ids',
-            )
+            ->selectRaw("
+                participants.index_no, participants.name, participants.school_id, participants.country_id,
+                participants.grade, cheating_participants.group_id, cheating_participants.number_of_questions,
+                cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage,
+                cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
+                cheating_participants.different_question_ids,
+                CASE WHEN participants.status = ? THEN 1 ELSE 0 END AS is_iac
+            ", [Participants::STATUS_CHEATING])
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
             ->withCount('answers')
             ->get();
@@ -208,12 +202,11 @@ class CheatingListHelper
         $filtered = $participant->only(
             'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
-            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
+            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions', 'is_iac'
         );
 
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
-
-        return array_merge($filtered,$questions,$formattedSections);
+        return array_merge($filtered, $questions, $formattedSections);
     }
     
     /**
@@ -466,7 +459,7 @@ class CheatingListHelper
 
         $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_slice(array_keys($data->max()), 14);
+            $headers = array_slice(array_keys($data->max()), 15);
             foreach($headers as $key => $header) {
                 $headers[sprintf("Q%s", $key+1)] = $header;
                 unset($headers[$key]);
