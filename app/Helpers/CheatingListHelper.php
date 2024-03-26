@@ -168,7 +168,8 @@ class CheatingListHelper
                 participants.grade, cheating_participants.group_id, cheating_participants.number_of_questions,
                 cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage,
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
-                cheating_participants.different_question_ids,
+                cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
+                cheating_participants.criteria_number_of_same_incorrect_answers,
                 CASE WHEN participants.status = ? THEN 1 ELSE 0 END AS is_iac
             ", [Participants::STATUS_CHEATING])
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
@@ -200,9 +201,11 @@ class CheatingListHelper
         // }
 
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_questions', 
+            'index_no', 'name', 'school', 'country', 'grade', 'criteria_cheating_percentage',
+            'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions', 
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
-            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions', 'is_iac'
+            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions',
+            'is_iac'
         );
 
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
@@ -459,7 +462,7 @@ class CheatingListHelper
 
         $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_slice(array_keys($data->max()), 15);
+            $headers = array_slice(array_keys($data->max()), 17);
             foreach($headers as $key => $header) {
                 $headers[sprintf("Q%s", $key+1)] = $header;
                 unset($headers[$key]);
@@ -480,9 +483,11 @@ class CheatingListHelper
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
             'Qns with same answer'                          => 'different_questions',
+            'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
+            'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             ...$headers
         ];
-
+        
         return response()->json([
             'status'            => 201,
             'message'           => 'Cheating list generated successfully',

@@ -53,6 +53,8 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'School',
             'Country',
             'Grade',
+            'Criteria Cheating Percentage',
+            'Criteria No of Same Incorrect Answers',
             'Group ID',
             'No of qns',
             'No of qns with same answer',
@@ -61,7 +63,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'No of qns with same incorrect answer',
             'No of correct answers',
             'Qns with same answer',
-            ...array_slice($headers, 14)
+            ...array_slice($headers, 16)
         ];
     }
 
