@@ -6,6 +6,7 @@ use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\IntegrityCheckCompetitionCountries;
+use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
@@ -204,6 +205,7 @@ class ComputeCheatingParticipantsService
         CheatingParticipants::join('participants', 'cheating_participants.participant_index', '=', 'participants.index_no')
             ->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
             ->where('competition_organization.competition_id', $this->competition->id)
+            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->delete();
     }
@@ -236,6 +238,8 @@ class ComputeCheatingParticipantsService
     {
         return [
             'competition_id'    => $this->competition->id,
+            'criteria_cheating_percentage' => $this->percentage,
+            'criteria_number_of_same_incorrect_answers' => $this->numberOFSameIncorrect,
             'participant_index' => $participant1->index_no,
             'cheating_with_participant_index' => $participant2->index_no,
             'number_of_cheating_questions' => 0,
