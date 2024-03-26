@@ -9,6 +9,10 @@ class PossibleAnswer extends Model
 {
     use HasFactory;
 
+    const STATUS_WAITING_INPUT = 'waiting input';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_DECLINED = 'declined';
+
     protected $table = 'possible_answers';
 
     protected $fillable = [
