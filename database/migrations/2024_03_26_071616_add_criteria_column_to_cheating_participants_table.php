@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('cheating_participants', function (Blueprint $table) {
-            $table->decimal('criteria_cheating_percentage', 5, 2)->default(85)->after('competition_id');
+            $table->decimal('criteria_cheating_percentage', 3, 0)->default(85)->after('competition_id');
             $table->unsignedTinyInteger('criteria_number_of_same_correct_answers')->default(5)->after('criteria_cheating_percentage');
         });
     }
