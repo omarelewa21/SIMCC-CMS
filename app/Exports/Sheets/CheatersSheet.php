@@ -28,6 +28,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
         $returnedCollection = collect();
         $lastGroup = null;
         foreach($this->dataCollection as $key=>$record) {
+            unset($record['is_iac']);
             if($key !== 0 && $lastGroup !== $record['group_id']) {
                 $returnedCollection->push(['-'], $record);
             }else{
@@ -52,6 +53,8 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'School',
             'Country',
             'Grade',
+            'Criteria Cheating Percentage',
+            'Criteria No of Same Incorrect Answers',
             'Group ID',
             'No of qns',
             'No of qns with same answer',
@@ -60,7 +63,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'No of qns with same incorrect answer',
             'No of correct answers',
             'Qns with same answer',
-            ...array_slice($headers, 13)
+            ...array_slice($headers, 16)
         ];
     }
 
