@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
 use App\Http\Controllers\Api\ParticipantAnswersController;
+use App\Http\Controllers\Api\PossibleSimilarAnswersController;
 
 /*
 |--------------------------------------------------------------------------
@@ -129,7 +130,6 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
-        Route::get("/answers/similar_answers/{competition}", [ParticipantAnswersController::class, "getCompetitionLevelsAndTasksWithSimilarAnswers"])->name('competition.answers.similar_answers');
         Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
@@ -150,6 +150,12 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
         Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::group(['prefix' => 'possible_similar_answers'], function () {
+            Route::get("/levels_tasks/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevelsAndTasks"])->name('marking.possible_similar_answers.level_taks');
+            Route::get("/{task}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarAnswers"])->name('competition.possible_similar_answers.list');
+            Route::post("/answers/similar_answers/approve/{id}", [PossibleSimilarAnswersController::class, "approveSimilarAnswer"])->name('competition.possible_similar_answers.approve');
+            Route::post("/answers/similar_answers/decline/{id}", [PossibleSimilarAnswersController::class, "declineSimilarAnswer"])->name('competition.possible_similar_answers');
+        });
     });
 
     Route::group(["prefix" => "tasks"], function () {

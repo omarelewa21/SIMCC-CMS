@@ -244,8 +244,5 @@ class Competition extends Base
         return false;
     }
 
-    public function possibleAnswers()
-    {
-        return $this->hasMany(PossibleAnswer::class, 'competition_id');
-    }
+
 }
