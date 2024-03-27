@@ -50,30 +50,35 @@ class PossibleSimilarAnswersController extends Controller
     {
         try {
             $answerData = [];
-            $possibleSimilarAnswersQuery = $task->possibleSimilarAnswers()->with(['task','answer','approver']);
-            if (!$possibleSimilarAnswersQuery->count()) {
-                $similarAnswers = $this->fetchSimilarAnswersForTask($task->id);
-                foreach ($similarAnswers as $similarAnswer) {
-                    $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
-                        return trim($possibleKey) === trim($similarAnswer['answer_key']);
-                    })->values();
+            $similarAnswers = $this->fetchSimilarAnswersForTask($task->id);
+            foreach ($similarAnswers as $similarAnswer) {
+                $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
+                    return trim($possibleKey) === trim($similarAnswer['answer_key']);
+                })->values();
 
-                    // Only include the node if there are any filteredPossibleKeys left
-                    if ($filteredPossibleKeys->isNotEmpty()) {
-                        $answerData = [
-                            'task_id' => $task->id,
-                            'answer_id' => $similarAnswer['answer_id'],
-                            'answer_key' => $similarAnswer['answer_key'],
-                            'possible_keys' => $filteredPossibleKeys->all(),
-                        ];;
-                        PossibleSimilarAnswer::create($answerData);
-                    }
+                // Only include the node if there are any filteredPossibleKeys left
+                if ($filteredPossibleKeys->isNotEmpty()) {
+                    $answerData = [
+                        'task_id' => $task->id,
+                        'answer_id' => $similarAnswer['answer_id'],
+                        'answer_key' => $similarAnswer['answer_key'],
+                        'possible_keys' => $filteredPossibleKeys->all(),
+                    ];
+
+                    $identifiers = [
+                        'task_id' => $answerData['task_id'],
+                        'answer_id' => $answerData['answer_id']
+                    ];
+
+                    PossibleSimilarAnswer::updateOrCreate($identifiers, $answerData);
                 }
             }
+            $possibleSimilarAnswers = $task->possibleSimilarAnswers()->with(['task', 'answer', 'approver'])->get();
+
             return response()->json([
                 "status" => 200,
                 "message" => "Success",
-                "data" => $possibleSimilarAnswersQuery->get()
+                "data" => $possibleSimilarAnswers
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -131,7 +136,7 @@ class PossibleSimilarAnswersController extends Controller
             'data' => $possibleAnswer
         ], 200);
     }
-    
+
     public function declineSimilarAnswer($id)
     {
         $possibleAnswer = PossibleSimilarAnswer::findOrFail($id);
