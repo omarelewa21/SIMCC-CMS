@@ -9,7 +9,9 @@ use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PossibleSimilarAnswersController extends Controller
 {
@@ -46,7 +48,7 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
-    public function getTaskPossibleSimilarAnswers(Tasks $task, Request $request)
+    public function getTaskPossibleSimilarAnswers(Tasks $task)
     {
         try {
             $answerData = [];
@@ -124,29 +126,32 @@ class PossibleSimilarAnswersController extends Controller
         return $response;
     }
 
-    public function approveSimilarAnswer($id)
+    public function approvePossibleAnswers(Request $request)
     {
-        $possibleAnswer = PossibleSimilarAnswer::findOrFail($id);
-        $possibleAnswer->status = PossibleSimilarAnswer::STATUS_APPROVED;
-        $possibleAnswer->approved_by = Auth::id();
-        $possibleAnswer->approved_at = now();
-        $possibleAnswer->save();
-        return response()->json([
-            'message' => 'Possible answer approved successfully.',
-            'data' => $possibleAnswer
-        ], 200);
-    }
+        $validStatuses = [
+            PossibleSimilarAnswer::STATUS_WAITING_INPUT,
+            PossibleSimilarAnswer::STATUS_APPROVED,
+            PossibleSimilarAnswer::STATUS_DECLINED,
+        ];
 
-    public function declineSimilarAnswer($id)
-    {
-        $possibleAnswer = PossibleSimilarAnswer::findOrFail($id);
-        $possibleAnswer->status = PossibleSimilarAnswer::STATUS_APPROVED;
-        $possibleAnswer->approved_by = Auth::id();
-        $possibleAnswer->approved_at = now();
-        $possibleAnswer->save();
+        $request->validate([
+            '*.answer_id' => 'required|integer|exists:possible_similar_answers,id',
+            '*.status' => ['required', 'string', Rule::in($validStatuses)]
+        ]);
+
+        $responses = [];
+
+        foreach ($request->all() as $answerUpdate) {
+            $possibleAnswer = PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id']);
+            $possibleAnswer->status = $answerUpdate['status'];
+            $possibleAnswer->approved_by = Auth::id();
+            $possibleAnswer->approved_at = now();
+            $possibleAnswer->save();
+            $responses[] = $possibleAnswer;
+        }
         return response()->json([
-            'message' => 'Possible answer approved successfully.',
-            'data' => $possibleAnswer
+            'message' => 'Possible similar answers status updated successfully.',
+            'status' => 200
         ], 200);
     }
 }
