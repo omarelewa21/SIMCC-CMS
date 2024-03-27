@@ -53,29 +53,58 @@ class PossibleSimilarAnswersController extends Controller
         try {
             $answerData = [];
             $similarAnswers = $this->fetchSimilarAnswersForTask($task->id);
+
             foreach ($similarAnswers as $similarAnswer) {
                 $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
                     return trim($possibleKey) === trim($similarAnswer['answer_key']);
                 })->values();
 
-                // Only include the node if there are any filteredPossibleKeys left
                 if ($filteredPossibleKeys->isNotEmpty()) {
-                    $answerData = [
-                        'task_id' => $task->id,
-                        'answer_id' => $similarAnswer['answer_id'],
-                        'answer_key' => $similarAnswer['answer_key'],
-                        'possible_keys' => $filteredPossibleKeys->all(),
-                    ];
+                    foreach ($filteredPossibleKeys as $key) {
+                        $answerData = [
+                            'task_id' => $task->id,
+                            'answer_id' => $similarAnswer['answer_id'],
+                            'answer_key' => $similarAnswer['answer_key'],
+                            'possible_key' => $key,
+                        ];
 
-                    $identifiers = [
-                        'task_id' => $answerData['task_id'],
-                        'answer_id' => $answerData['answer_id']
-                    ];
-
-                    PossibleSimilarAnswer::updateOrCreate($identifiers, $answerData);
+                        $identifiers = [
+                            'task_id' => $answerData['task_id'],
+                            'answer_id' => $answerData['answer_id'],
+                            'possible_key' => $key,
+                        ];
+                        PossibleSimilarAnswer::updateOrCreate($identifiers, $answerData);
+                    }
                 }
             }
+
             $possibleSimilarAnswers = $task->possibleSimilarAnswers()->with(['task', 'answer', 'approver'])->get();
+
+            // Group the collection by 'answer_key'
+            $groupedByAnswerKey = $possibleSimilarAnswers->groupBy('answer_key');
+
+            // If needed, transform the grouped collection into a more suitable format
+            $transformed = $groupedByAnswerKey->map(function ($items, $answerKey) {
+                return [
+                    'answer_key' => $answerKey,
+                    'possible_keys' => $items->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            // 'task_id' => $item->task_id,
+                            // 'answer_id' => $item->answer_id,
+                            'possible_key' => $item->possible_key,
+                            'status' => $item->status,
+                            'approver' => $item->approver
+                        ];
+                    })->toArray(),
+                ];
+            })->values();
+
+            return response()->json([
+                "status" => 200,
+                "message" => "Success",
+                "data" => $transformed,
+            ], 200);
 
             return response()->json([
                 "status" => 200,
