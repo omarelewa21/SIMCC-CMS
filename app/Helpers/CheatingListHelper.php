@@ -170,7 +170,7 @@ class CheatingListHelper
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
                 cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
                 cheating_participants.criteria_number_of_same_incorrect_answers,
-                CASE WHEN participants.status = ? THEN 1 ELSE 0 END AS is_iac
+                CASE WHEN participants.status = ? THEN 'Yes' ELSE 'No' END AS is_iac
             ", [Participants::STATUS_CHEATING])
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
             ->withCount('answers')
@@ -475,6 +475,7 @@ class CheatingListHelper
             'School'                                        => 'school',
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
+            'Is IAC'                                        => 'is_iac',
             'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
