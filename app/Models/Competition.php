@@ -248,4 +248,6 @@ class Competition extends Base
         }
         return false;
     }
+
+
 }
