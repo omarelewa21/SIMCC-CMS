@@ -17,22 +17,29 @@ class PossibleSimilarAnswersController extends Controller
 {
     public function getCompetitionLevelsAndTasks(Competition $competition, Request $request)
     {
+        $request->validate([
+            'level_id' => 'required|integer|exists:competition_levels,id',
+        ]);
+
         $level = $competition->levels()->where('competition_levels.id', $request->level_id)->with('collection.sections')->first();
         $levelTasks = [];
         if (!empty($level->collection)) {
-            foreach ($level->collection->sections as $section) {
+            $taskNumber = 1;
+            foreach ($level->collection->sections as $index => $section) {
+                $sectionLetter = chr(65 + $index);
                 $tasks = $section->section_task;
-                $filteredTasks = $tasks->reject(function ($task) {
-                    return $task->answer_type == 'mcq';
-                });
-                foreach ($filteredTasks as $task) {
-                    $levelTasks[] = [
-                        'task_id' => $task->id,
-                        'task_name' => $task->identifier,
-                        'collection_id' => $level->collection->id,
-                        'collection_name' => $level->collection->name,
-                        'section_id' => $section->id,
-                    ];
+                foreach ($tasks as $task) {
+                    if ($task->answer_type != 'mcq') {
+                        $levelTasks[] = [
+                            'task_id' => $task->id,
+                            'task_name' => $task->identifier,
+                            'collection_id' => $level->collection->id,
+                            'collection_name' => $level->collection->name,
+                            'section_id' => $section->id,
+                            'task_tag' => $task->identifier . ' - Section ' . $sectionLetter . ' Question ' . $taskNumber
+                        ];
+                    }
+                    $taskNumber++;
                 }
             }
         }
@@ -42,7 +49,7 @@ class PossibleSimilarAnswersController extends Controller
             "message" => "Success",
             "data" => [
                 'competition_name' => $competition->name,
-                'level_name' => $level->name,
+                'level_name' => $level?->name,
                 'tasks' => $levelTasks
             ]
         ], 200);
