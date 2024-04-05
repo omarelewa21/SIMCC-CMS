@@ -557,4 +557,22 @@ class CheatingListHelper
             'data'              => $returnedCollection
         ], 201);
     }
+
+    public static function getCustomLabeledIntegrityCases(Competition $competition)
+    {
+        return $competition->participants()
+            ->where('participants.status', Participants::STATUS_CHEATING)
+            ->whereNotExists(function($query){
+                $query->select('participant_index')
+                    ->from('cheating_participants')
+                    ->whereColumn('participant_index', 'participants.index_no')
+                    ->orWhereColumn('cheating_with_participant_index', 'participants.index_no');
+            })
+            ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id',
+                'participants.country_id', 'participants.grade'
+            )
+            ->get();
+    }
 }
