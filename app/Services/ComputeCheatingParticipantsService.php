@@ -24,7 +24,12 @@ class ComputeCheatingParticipantsService
      */
     public function __construct(protected Competition $competition, $qNumber=null, $percentage=95, $numberOFSameIncorrect = 1, $countries = null)
     {
-        $this->cheatStatus = CheatingStatus::findOrFail($this->competition->id);
+        $this->cheatStatus = CheatingStatus::where([
+            'competition_id'    => $competition->id,
+            'cheating_percentage'        => $percentage ?? 85,
+            'number_of_same_incorrect_answers' => $numberOFSameIncorrect ?? 5,
+        ])->first();
+
         $this->qNumber = $qNumber;
         $this->percentage = $percentage;
         $this->numberOFSameIncorrect = $numberOFSameIncorrect;

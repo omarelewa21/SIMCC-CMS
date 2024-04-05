@@ -1235,7 +1235,11 @@ class CompetitionController extends Controller
             if ($request->recompute) {
                 DB::transaction(function () use($competition, $request) {
                     CheatingStatus::updateOrCreate(
-                        ['competition_id' => $competition->id],
+                        [
+                            'competition_id' => $competition->id,
+                            'cheating_percentage'    => $request->percentage ?? 85,
+                            'number_of_same_incorrect_answers' => $request->number_of_incorrect_answers ?? 5,
+                        ],
                         [
                             'status' => 'In Progress',
                             'progress_percentage' => 1,

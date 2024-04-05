@@ -27,7 +27,7 @@ class CheatingListHelper
      */
     public static function returnCheatStatusAndData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::findOrFail($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus->status === 'In Progress') {
             return response()->json([
@@ -325,7 +325,7 @@ class CheatingListHelper
      */
     public static function returnCheatingStatus(Competition $competition)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
         switch ($cheatingStatus?->status) {
             case 'In Progress':
                 $response = [
@@ -369,7 +369,7 @@ class CheatingListHelper
      */
     public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus?->status === 'Completed')
         return $request->mode === 'csv'
@@ -510,7 +510,7 @@ class CheatingListHelper
      */
     public static function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus?->status === 'Completed')
             return static::returnSameParticipantCheatingList($competition, $request);

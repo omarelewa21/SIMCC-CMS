@@ -13,7 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('competition_cheat_compute_status', function (Blueprint $table) {
+        Schema::dropIfExists('competition_cheat_compute_status');
+    
+        Schema::create('competition_cheat_compute_status', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('competition_id')->constrained('competition');
+            $table->enum('status', ['In Progress', 'Completed', 'Failed'])->default('In Progress');
+            $table->decimal('progress_percentage', 3, 0);
+            $table->string('compute_error_message')->nullable();
             $table->decimal('cheating_percentage', 3, 0)->default(85);
             $table->unsignedTinyInteger('number_of_same_incorrect_answers')->default(5);
         });
@@ -26,9 +33,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('competition_cheat_compute_status', function (Blueprint $table) {
-            $table->dropColumn('cheating_percentage');
-            $table->dropColumn('number_of_same_incorrect_answers');
-        });
+        Schema::dropIfExists('competition_cheat_compute_status');
     }
 };
