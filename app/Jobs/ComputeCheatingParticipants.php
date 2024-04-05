@@ -53,15 +53,19 @@ class ComputeCheatingParticipants implements ShouldQueue
         try {
             (new ComputeCheatingParticipantsService(
                 $this->competition,
-                $this->qNumber, $this->percentage ?? 95,
-                $this->number_of_incorrect_answers ?? 1,
+                $this->qNumber, $this->percentage ?? 85,
+                $this->number_of_incorrect_answers ?? 5,
                 $this->countries
             )
             )->computeCheatingParticipants();
 
         } catch (\Exception $e) {
             CheatingStatus::updateOrCreate(
-                ['competition_id' => $this->competition->id],
+                [
+                    'competition_id'    => $this->competition->id,
+                    'cheating_percentage'        => $this->percentage ?? 85,
+                    'number_of_same_incorrect_answers' => $this->number_of_incorrect_answers ?? 5,
+                ],
                 [
                     'status' => 'Failed',
                     'progress_percentage' => 0,
