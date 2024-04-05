@@ -136,6 +136,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
         Route::post("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
         Route::get("/cheaters/custom-labeled-integrity-cases/{competition}", [CompetitionController::class, "getCustomLabeledIntegrityCases"])->name('competition.cheaters.customLabeledIntegrityCases');
+        Route::get("/cheaters/criteria-stats/{competition}", [CompetitionController::class, "getCheatingCriteriaStats"])->name('competition.cheaters.stats');
     });
 
     Route::group(["prefix" => "marking"], function () {

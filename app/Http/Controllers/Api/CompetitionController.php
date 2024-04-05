@@ -1355,4 +1355,21 @@ class CompetitionController extends Controller
             ], 500);
         }
     }
+
+    public function getCheatingCriteriaStats(Competition $competition)
+    {
+        try {
+            return response()->json([
+                'status'    => 200,
+                'data'      => CheatingListHelper::getCheatingCriteriaStats($competition)
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
 }

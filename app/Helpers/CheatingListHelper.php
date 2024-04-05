@@ -610,4 +610,23 @@ class CheatingListHelper
             
         return '';
     }
+
+    public static function getCheatingCriteriaStats(Competition $competition)
+    {
+        return CheatingStatus::where('competition_id', $competition->id)
+            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers')
+            ->get()
+            ->map(function($cheatingStatus){
+                $cheatingStatus->participants_count = Participants::distinct()
+                    ->join('cheating_participants', function (JoinClause $join) {
+                        $join->on('participants.index_no', 'cheating_participants.participant_index')
+                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+                    })
+                    ->where('cheating_participants.competition_id', $cheatingStatus->competition_id)
+                    ->where('cheating_participants.criteria_cheating_percentage', $cheatingStatus->cheating_percentage)
+                    ->where('cheating_participants.criteria_number_of_same_incorrect_answers', $cheatingStatus->number_of_same_incorrect_answers)
+                    ->count();
+                return $cheatingStatus;
+            });
+    }
 }
