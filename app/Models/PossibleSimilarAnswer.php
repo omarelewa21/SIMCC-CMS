@@ -19,16 +19,11 @@ class PossibleSimilarAnswer extends Model
         'task_id',
         'answer_id',
         'answer_key',
-        'possible_keys',
+        'possible_key',
         'approved_by',
         'approved_at',
         'status',
     ];
-
-    protected $casts = [
-        'possible_keys' => 'array',
-    ];
-
 
     public function task()
     {

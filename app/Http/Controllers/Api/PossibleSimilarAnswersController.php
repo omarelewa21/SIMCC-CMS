@@ -9,7 +9,9 @@ use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PossibleSimilarAnswersController extends Controller
 {
@@ -46,34 +48,63 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
-    public function getTaskPossibleSimilarAnswers(Tasks $task, Request $request)
+    public function getTaskPossibleSimilarAnswers(Tasks $task)
     {
         try {
             $answerData = [];
             $similarAnswers = $this->fetchSimilarAnswersForTask($task->id);
+
             foreach ($similarAnswers as $similarAnswer) {
                 $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
                     return trim($possibleKey) === trim($similarAnswer['answer_key']);
                 })->values();
 
-                // Only include the node if there are any filteredPossibleKeys left
                 if ($filteredPossibleKeys->isNotEmpty()) {
-                    $answerData = [
-                        'task_id' => $task->id,
-                        'answer_id' => $similarAnswer['answer_id'],
-                        'answer_key' => $similarAnswer['answer_key'],
-                        'possible_keys' => $filteredPossibleKeys->all(),
-                    ];
+                    foreach ($filteredPossibleKeys as $key) {
+                        $answerData = [
+                            'task_id' => $task->id,
+                            'answer_id' => $similarAnswer['answer_id'],
+                            'answer_key' => $similarAnswer['answer_key'],
+                            'possible_key' => $key,
+                        ];
 
-                    $identifiers = [
-                        'task_id' => $answerData['task_id'],
-                        'answer_id' => $answerData['answer_id']
-                    ];
-
-                    PossibleSimilarAnswer::updateOrCreate($identifiers, $answerData);
+                        $identifiers = [
+                            'task_id' => $answerData['task_id'],
+                            'answer_id' => $answerData['answer_id'],
+                            'possible_key' => $key,
+                        ];
+                        PossibleSimilarAnswer::updateOrCreate($identifiers, $answerData);
+                    }
                 }
             }
+
             $possibleSimilarAnswers = $task->possibleSimilarAnswers()->with(['task', 'answer', 'approver'])->get();
+
+            // Group the collection by 'answer_key'
+            $groupedByAnswerKey = $possibleSimilarAnswers->groupBy('answer_key');
+
+            // If needed, transform the grouped collection into a more suitable format
+            $transformed = $groupedByAnswerKey->map(function ($items, $answerKey) {
+                return [
+                    'answer_key' => $answerKey,
+                    'possible_keys' => $items->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            // 'task_id' => $item->task_id,
+                            // 'answer_id' => $item->answer_id,
+                            'possible_key' => $item->possible_key,
+                            'status' => $item->status,
+                            'approver' => $item->approver
+                        ];
+                    })->toArray(),
+                ];
+            })->values();
+
+            return response()->json([
+                "status" => 200,
+                "message" => "Success",
+                "data" => $transformed,
+            ], 200);
 
             return response()->json([
                 "status" => 200,
@@ -124,29 +155,32 @@ class PossibleSimilarAnswersController extends Controller
         return $response;
     }
 
-    public function approveSimilarAnswer($id)
+    public function approvePossibleAnswers(Request $request)
     {
-        $possibleAnswer = PossibleSimilarAnswer::findOrFail($id);
-        $possibleAnswer->status = PossibleSimilarAnswer::STATUS_APPROVED;
-        $possibleAnswer->approved_by = Auth::id();
-        $possibleAnswer->approved_at = now();
-        $possibleAnswer->save();
-        return response()->json([
-            'message' => 'Possible answer approved successfully.',
-            'data' => $possibleAnswer
-        ], 200);
-    }
+        $validStatuses = [
+            PossibleSimilarAnswer::STATUS_WAITING_INPUT,
+            PossibleSimilarAnswer::STATUS_APPROVED,
+            PossibleSimilarAnswer::STATUS_DECLINED,
+        ];
 
-    public function declineSimilarAnswer($id)
-    {
-        $possibleAnswer = PossibleSimilarAnswer::findOrFail($id);
-        $possibleAnswer->status = PossibleSimilarAnswer::STATUS_APPROVED;
-        $possibleAnswer->approved_by = Auth::id();
-        $possibleAnswer->approved_at = now();
-        $possibleAnswer->save();
+        $request->validate([
+            '*.answer_id' => 'required|integer|exists:possible_similar_answers,id',
+            '*.status' => ['required', 'string', Rule::in($validStatuses)]
+        ]);
+
+        $responses = [];
+
+        foreach ($request->all() as $answerUpdate) {
+            $possibleAnswer = PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id']);
+            $possibleAnswer->status = $answerUpdate['status'];
+            $possibleAnswer->approved_by = Auth::id();
+            $possibleAnswer->approved_at = now();
+            $possibleAnswer->save();
+            $responses[] = $possibleAnswer;
+        }
         return response()->json([
-            'message' => 'Possible answer approved successfully.',
-            'data' => $possibleAnswer
+            'message' => 'Possible similar answers status updated successfully.',
+            'status' => 200
         ], 200);
     }
 }
