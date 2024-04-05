@@ -48,7 +48,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get('ConvertCompetitionOrganizationTable', [HelperController::class, 'ConvertCompetitionOrganizationTable'])->name('info.convert.competitionOrganization'); //run this first to add organization_id on previous competitonpartner table
         Route::get('CreateSchoolForOrganization', [HelperController::class, 'CreateSchoolForOrganization'])->name('info.convert.CreateSchoolForOrganization'); //run this to generate organization school based on the user country
         Route::get('setIndexCounterCountryTable', [HelperController::class, 'setIndexCounterCountryTable'])->name('info.convert.setIndexCounterCountryTable'); //store latest student index in country table
-        Route::get('GenerateCertNum', [HelperController::class, 'GenerateCertNum'])->name('info.convert.GenerateCertNum'); //generate cert no.
+        Route::get('GenerateCertNum', [HelperController::class, 'GenerateCertNum'])->name('info.convert.GenerateCertNum'); //generate cert no.\
+        Route::get('participant/{participant}', [HelperController::class, 'getParticipantInfo'])->name('info.participant.info');
     });
 
     Route::group(["prefix" => "notification"], function () {
@@ -144,6 +145,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/cheaters/same-participant/{competition}", [CompetitionController::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
         Route::get("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
         Route::post("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
+        Route::get("/cheaters/custom-labeled-integrity-cases/{competition}", [CompetitionController::class, "getCustomLabeledIntegrityCases"])->name('competition.cheaters.customLabeledIntegrityCases');
     });
 
     Route::group(["prefix" => "marking"], function () {

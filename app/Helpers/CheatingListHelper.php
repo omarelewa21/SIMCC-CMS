@@ -485,7 +485,7 @@ class CheatingListHelper
             'No of qns with same correct answer'            => 'number_of_same_correct_answers',
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
-            'Qns with same answer'                          => 'different_questions',
+            'Qns with same incorrect answer'                          => 'different_questions',
             ...$headers
         ];
         
@@ -556,5 +556,23 @@ class CheatingListHelper
             'headers'           => $headers,
             'data'              => $returnedCollection
         ], 201);
+    }
+
+    public static function getCustomLabeledIntegrityCases(Competition $competition)
+    {
+        return $competition->participants()
+            ->where('participants.status', Participants::STATUS_CHEATING)
+            ->whereNotExists(function($query){
+                $query->select('participant_index')
+                    ->from('cheating_participants')
+                    ->whereColumn('participant_index', 'participants.index_no')
+                    ->orWhereColumn('cheating_with_participant_index', 'participants.index_no');
+            })
+            ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id',
+                'participants.country_id', 'participants.grade'
+            )
+            ->get();
     }
 }

@@ -24,6 +24,7 @@ use App\Models\CheatingParticipants;
 use App\Http\Requests\participant\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\ReportDownloadStatus;
+use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantIndexNo;
@@ -463,15 +464,15 @@ class ParticipantsController extends Controller
             $defaultAwardRank = $round->roundsAwards->count() + 1;
 
             if($request->has('participants')) {
-                $participants = $request->participants;
+                $participantIndexes = $request->participants;
             } else {
-                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
                     ->whereIn('group_id', $request->group_ids)
                     ->pluck('participant_index')
                     ->toArray();
             }
 
-            Participants::whereIn('index_no', $participants)
+            Participants::whereIn('index_no', $participantIndexes)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
                 ->update([
                     'status' => Participants::STATUS_CHEATING,
@@ -479,7 +480,7 @@ class ParticipantsController extends Controller
                     'eliminated_at' => now()
                 ]);
 
-            CompetitionParticipantsResults::whereIn('participant_index', $participants)
+            CompetitionParticipantsResults::whereIn('participant_index', $participantIndexes)
                 ->update([
                     'ref_award'         => $round->default_award_name,
                     'award'             => $round->default_award_name,
@@ -492,6 +493,16 @@ class ParticipantsController extends Controller
                     'group_rank'        => null,
                     'report'            => null,
                 ]);
+            
+            if($request->filled('reason')) {
+                foreach($participantIndexes as $participantIndex) {
+                    EliminatedCheatingParticipants::updateOrCreate([
+                        'participant_index' => $participantIndex,
+                    ], [
+                        'reason' => $request->reason
+                    ]);
+                }
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -513,19 +524,22 @@ class ParticipantsController extends Controller
         DB::beginTransaction();
         try {
             if($request->has('participants')) {
-                $participants = $request->participants;
+                $participantIndexes = $request->participants;
             } else {
-                $participants = CheatingParticipants::where('competition_id', $competition->id)
+                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
                     ->whereIn('group_id', $request->group_ids)
                     ->pluck('participant_index')
                     ->toArray();
             }
 
-            Participants::whereIn('index_no', $participants)
+            Participants::whereIn('index_no', $participantIndexes)
                 ->where('status', Participants::STATUS_CHEATING)
                 ->update([
                     'status' => Participants::STATUS_ACTIVE
                 ]);
+
+            EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)
+                ->delete();
 
         } catch (\Exception $e) {
             DB::rollBack();

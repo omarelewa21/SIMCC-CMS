@@ -246,4 +246,12 @@ class HelperController extends Controller
             return $e;
         }
     }
+
+    public function getParticipantInfo(Participants $participant) {
+        $participant->load('school:id,name','country:id,display_name as name');
+        return response()->json([
+            'status' => 200,
+            'data' => $participant
+        ]);
+    }
 }
