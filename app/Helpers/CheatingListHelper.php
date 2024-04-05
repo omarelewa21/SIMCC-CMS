@@ -7,10 +7,12 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
+use App\Models\Countries;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -491,7 +493,7 @@ class CheatingListHelper
         
         return response()->json([
             'status'            => 201,
-            'message'           => 'Cheating list generated successfully',
+            'message'           => static::getMessageForCheatingData($competition, $request),
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
@@ -548,7 +550,7 @@ class CheatingListHelper
 
         return response()->json([
             'status'            => 201,
-            'message'           => 'Cheating list generated successfully',
+            'message'           => static::getMessageForCheatingData($competition, $request),
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
@@ -574,5 +576,38 @@ class CheatingListHelper
                 'participants.country_id', 'participants.grade'
             )
             ->get();
+    }
+
+    /**
+     * Get message for cheating data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        if($request->has('percentage') && $request->has('number_of_incorrect_answers')) {
+            return Participants::distinct()
+            ->join('cheating_participants', function (JoinClause $join) {
+                    $join->on('participants.index_no', 'cheating_participants.participant_index')
+                        ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->where([
+                'cheating_participants.competition_id'      => $competition->id,
+                'cheating_participants.criteria_cheating_percentage' => $request->percentage,
+                'cheating_participants.criteria_number_of_same_incorrect_answers' => $request->number_of_incorrect_answers
+            ])
+            ->exists()
+            ? ''
+            : sprintf("No Integrity Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
+                $request->percentage,
+                $request->number_of_incorrect_answers,
+                $request->has('country')
+                    ? Arr::join(Countries::whereIn('id', $request->country)->pluck('display_name')->toArray(), ', ')
+                    : 'All Countries'
+            );
+        }
+            
+        return '';
     }
 }
