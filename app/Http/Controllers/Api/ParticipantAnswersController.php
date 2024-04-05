@@ -8,7 +8,13 @@ use App\Http\Requests\Competition\ParticipantAnswersDeleteRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\AnswerReportRequest;
 use App\Models\Competition;
+use App\Models\ParticipantsAnswer;
+use App\Models\PossibleAnswer;
+use App\Models\Tasks;
+use App\Models\TasksAnswers;
 use App\Services\Competition\ParticipantAnswersListService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -28,7 +34,6 @@ class ParticipantAnswersController extends Controller
                 "headers"       => $participantAnswersService->getHeaders($participantAnswersList),
                 "data"          => $participantAnswersList
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -47,7 +52,6 @@ class ParticipantAnswersController extends Controller
                 "status"    => 200,
                 "message"   => "Success",
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -62,16 +66,16 @@ class ParticipantAnswersController extends Controller
         try {
             $reportName = ParticipantAnswersListService::getAnswersReportName($competition);
 
-            if(Storage::disk('local')->exists($reportName)){
+            if (Storage::disk('local')->exists($reportName)) {
                 Storage::disk('local')->delete($reportName);
             }
-    
+
             if (Excel::store(new AnswersReportExport($competition, $request), $reportName)) {
                 $file = Storage::get($reportName);
                 Storage::disk('local')->delete($reportName);
                 $response = response()->make($file, 200);
-                $response->header('Content-Type', 'application/'.pathinfo($reportName, PATHINFO_EXTENSION));
-                $response->header('Content-Disposition', 'attachment; filename="'.$reportName.'"');
+                $response->header('Content-Type', 'application/' . pathinfo($reportName, PATHINFO_EXTENSION));
+                $response->header('Content-Disposition', 'attachment; filename="' . $reportName . '"');
                 return $response;
             }
 
@@ -79,7 +83,6 @@ class ParticipantAnswersController extends Controller
                 'status'    => 500,
                 'message'   => 'Failed to generate cheating list'
             ], 500);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
@@ -88,4 +91,5 @@ class ParticipantAnswersController extends Controller
             ], 500);
         }
     }
+
 }
