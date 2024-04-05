@@ -485,7 +485,7 @@ class CheatingListHelper
             'No of qns with same correct answer'            => 'number_of_same_correct_answers',
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
-            'Qns with same answer'                          => 'different_questions',
+            'Qns with same incorrect answer'                          => 'different_questions',
             ...$headers
         ];
         
