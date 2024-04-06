@@ -575,7 +575,15 @@ class CheatingListHelper
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'
             )
-            ->get();
+            ->get()
+            ->map(function($participant){
+                $data = $participant->toArray();
+                $data['school'] = $participant->school->name;
+                $data['country'] = $participant->country->name;
+                $data['reason'] = $participant->eliminationRecord->reason;
+                unset($data['elimination_record']);
+                return $data;
+            });
     }
 
     /**
