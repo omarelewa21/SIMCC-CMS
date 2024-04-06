@@ -18,7 +18,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Http\Requests\participant\UpdateParticipantRequest;
+use App\Http\Requests\Participant\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\EliminatedCheatingParticipants;
 use App\Rules\CheckSchoolStatus;
