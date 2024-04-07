@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ParticipantResource;
 use App\Models\Competition;
 use App\Models\Countries;
 use App\Models\Languages;
@@ -245,5 +246,27 @@ class HelperController extends Controller
         } catch (\Exception $e) {
             return $e;
         }
+    }
+
+    public function getParticipantInfo(Participants $participant) {
+        try {
+            $data = $participant->load('school:id,name','country:id,display_name as name')->toArray();
+            $data['school'] = $data['school']['name'];
+            $data['country'] = $data['country']['name'];
+
+            return response()->json([
+                'status' => 200,
+                'data'   => $data
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ]);
+        }
+        
+        
     }
 }

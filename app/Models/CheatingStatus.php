@@ -31,17 +31,10 @@ class CheatingStatus extends Model
     public $timestamps = false;
 
     /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'competition_id';
-
-    /**
      * Get the competition that owns the cheating status.
      */
     public function competition()
     {
-        return $this->belongsTo(Competition::class, 'competition_id', 'id');
+        return $this->belongsTo(Competition::class);
     }
 }

@@ -66,6 +66,7 @@ class EliminateFromComputeRequest extends FormRequest
                 Rule::exists('cheating_participants', 'group_id')
                     ->where(fn (Builder $query) => $query->where('competition_id', $this->competition->id)),
             ],
+            'reason'           => 'string',
         ];
     }
 }

@@ -7,10 +7,12 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
+use App\Models\Countries;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -25,7 +27,7 @@ class CheatingListHelper
      */
     public static function returnCheatStatusAndData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::findOrFail($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus->status === 'In Progress') {
             return response()->json([
@@ -323,7 +325,7 @@ class CheatingListHelper
      */
     public static function returnCheatingStatus(Competition $competition)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
         switch ($cheatingStatus?->status) {
             case 'In Progress':
                 $response = [
@@ -367,7 +369,7 @@ class CheatingListHelper
      */
     public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus?->status === 'Completed')
         return $request->mode === 'csv'
@@ -491,7 +493,7 @@ class CheatingListHelper
         
         return response()->json([
             'status'            => 201,
-            'message'           => 'Cheating list generated successfully',
+            'message'           => static::getMessageForCheatingData($competition, $request),
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
@@ -508,7 +510,7 @@ class CheatingListHelper
      */
     public static function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::find($competition->id);
+        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
 
         if($cheatingStatus?->status === 'Completed')
             return static::returnSameParticipantCheatingList($competition, $request);
@@ -548,7 +550,7 @@ class CheatingListHelper
 
         return response()->json([
             'status'            => 201,
-            'message'           => 'Cheating list generated successfully',
+            'message'           => static::getMessageForCheatingData($competition, $request),
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
@@ -556,5 +558,83 @@ class CheatingListHelper
             'headers'           => $headers,
             'data'              => $returnedCollection
         ], 201);
+    }
+
+    public static function getCustomLabeledIntegrityCases(Competition $competition)
+    {
+        return $competition->participants()
+            ->where('participants.status', Participants::STATUS_CHEATING)
+            ->whereNotExists(function($query){
+                $query->select('participant_index')
+                    ->from('cheating_participants')
+                    ->whereColumn('participant_index', 'participants.index_no')
+                    ->orWhereColumn('cheating_with_participant_index', 'participants.index_no');
+            })
+            ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id',
+                'participants.country_id', 'participants.grade'
+            )
+            ->get()
+            ->map(function($participant){
+                $data = $participant->toArray();
+                $data['school'] = $participant->school->name;
+                $data['country'] = $participant->country->name;
+                $data['reason'] = $participant->eliminationRecord->reason;
+                unset($data['elimination_record']);
+                return $data;
+            });
+    }
+
+    /**
+     * Get message for cheating data
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        if($request->has('percentage') && $request->has('number_of_incorrect_answers')) {
+            return Participants::distinct()
+            ->join('cheating_participants', function (JoinClause $join) {
+                    $join->on('participants.index_no', 'cheating_participants.participant_index')
+                        ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->where([
+                'cheating_participants.competition_id'      => $competition->id,
+                'cheating_participants.criteria_cheating_percentage' => $request->percentage,
+                'cheating_participants.criteria_number_of_same_incorrect_answers' => $request->number_of_incorrect_answers
+            ])
+            ->exists()
+            ? ''
+            : sprintf("No Integrity Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
+                $request->percentage,
+                $request->number_of_incorrect_answers,
+                $request->has('country')
+                    ? Arr::join(Countries::whereIn('id', $request->country)->pluck('display_name')->toArray(), ', ')
+                    : 'All Countries'
+            );
+        }
+            
+        return '';
+    }
+
+    public static function getCheatingCriteriaStats(Competition $competition)
+    {
+        return CheatingStatus::where('competition_id', $competition->id)
+            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers')
+            ->get()
+            ->map(function($cheatingStatus){
+                $cheatingStatus->participants_count = Participants::distinct()
+                    ->join('cheating_participants', function (JoinClause $join) {
+                        $join->on('participants.index_no', 'cheating_participants.participant_index')
+                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+                    })
+                    ->where('cheating_participants.competition_id', $cheatingStatus->competition_id)
+                    ->where('cheating_participants.criteria_cheating_percentage', $cheatingStatus->cheating_percentage)
+                    ->where('cheating_participants.criteria_number_of_same_incorrect_answers', $cheatingStatus->number_of_same_incorrect_answers)
+                    ->count();
+                return $cheatingStatus;
+            });
     }
 }
