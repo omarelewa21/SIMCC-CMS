@@ -1254,6 +1254,7 @@ class CompetitionController extends Controller
                             'competition_id' => $competition->id,
                             'cheating_percentage'    => $request->percentage ?? 85,
                             'number_of_same_incorrect_answers' => $request->number_of_incorrect_answers ?? 5,
+                            'countries'  => $request->country ?? null,
                         ],
                         [
                             'status' => 'In Progress',
