@@ -477,7 +477,7 @@ class CheatingListHelper
             'School'                                        => 'school',
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
-            'Is IAC'                                        => 'is_iac',
+            'System generated IAC'                          => 'is_iac',
             'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
