@@ -45,7 +45,9 @@ class CheatingStatus extends Model
             get: fn (string|null $values) =>
                 $values
                     ? Countries::whereIn('id', json_decode($values, true))->pluck('display_name')->join(', ')
-                    : "All Countries"
+                    : "All Countries",
+                
+            set: fn ($values) => is_array($values) ? json_encode($values) : $values
         );
     }
 }
