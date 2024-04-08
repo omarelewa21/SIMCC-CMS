@@ -31,6 +31,8 @@ class CheatingStatus extends Model
      */
     public $timestamps = false;
 
+    protected $appends = ['original_countries'];
+
     /**
      * Get the competition that owns the cheating status.
      */
@@ -48,6 +50,13 @@ class CheatingStatus extends Model
                     : "All Countries",
                 
             set: fn ($values) => is_array($values) ? json_encode($values) : $values
+        );
+    }
+
+    protected function originalCountries(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes) => $attributes['countries'] ? json_decode($attributes['countries'], true) : [],
         );
     }
 }
