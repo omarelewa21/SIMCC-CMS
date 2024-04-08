@@ -566,18 +566,16 @@ class CheatingListHelper
             ->where('participants.status', Participants::STATUS_CHEATING)
             ->join('eliminated_cheating_participants', 'participants.index_no', 'eliminated_cheating_participants.participant_index')
             ->whereNotNull('eliminated_cheating_participants.reason')
-            ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
+            ->with('school:id,name', 'country:id,display_name as name')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
-                'participants.country_id', 'participants.grade'
+                'participants.country_id', 'participants.grade', 'eliminated_cheating_participants.reason'
             )
             ->get()
             ->map(function($participant){
                 $data = $participant->toArray();
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
-                $data['reason'] = $participant->eliminationRecord->reason;
-                unset($data['elimination_record']);
                 return $data;
             });
     }
