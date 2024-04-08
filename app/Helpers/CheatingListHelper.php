@@ -627,6 +627,7 @@ class CheatingListHelper
                     ->where('cheating_participants.competition_id', $cheatingStatus->competition_id)
                     ->where('cheating_participants.criteria_cheating_percentage', $cheatingStatus->cheating_percentage)
                     ->where('cheating_participants.criteria_number_of_same_incorrect_answers', $cheatingStatus->number_of_same_incorrect_answers)
+                    ->when($cheatingStatus->original_countries && !empty($cheatingStatus->original_countries), fn($query) => $query->whereIn('participants.country_id', $cheatingStatus->original_countries))
                     ->count();
                 return $cheatingStatus;
             });
