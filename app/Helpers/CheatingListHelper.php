@@ -564,7 +564,8 @@ class CheatingListHelper
     {
         return $competition->participants()
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->whereHas('eliminationRecord', fn($query) => $query->whereNotNull('reason'))
+            ->join('eliminated_cheating_participants', 'participants.index_no', 'eliminated_cheating_participants.participant_index')
+            ->whereNotNull('eliminated_cheating_participants.reason')
             ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',

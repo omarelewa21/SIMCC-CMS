@@ -22,7 +22,6 @@ class EliminatedCheatingParticipants extends Model
         'created_at' => 'datetime:Y-m-d',
     ];
 
-    protected $primaryKey = 'participant_index';
 
     protected function eliminatedBy(): Attribute
     {
