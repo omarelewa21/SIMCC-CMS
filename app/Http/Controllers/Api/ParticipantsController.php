@@ -27,6 +27,7 @@ use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Validation\Rule;
 use PDF;
 
@@ -506,13 +507,24 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
             
-            if($request->filled('reason')) {
+            if($request->mode === 'custom') {
                 foreach($participantIndexes as $participantIndex) {
                     EliminatedCheatingParticipants::updateOrCreate([
                         'participant_index' => $participantIndex,
                     ], [
                         'reason' => $request->reason
                     ]);
+                    Participants::where('index_no', $participantIndex)
+                        ->update([
+                            'is_system_iac' => false
+                        ]);
+                }
+            } else {
+                foreach($participantIndexes as $participantIndex) {
+                    Participants::where('index_no', $participantIndex)
+                        ->update([
+                            'is_system_iac' => true
+                        ]);
                 }
             }
 
@@ -544,14 +556,35 @@ class ParticipantsController extends Controller
                     ->toArray();
             }
 
-            Participants::whereIn('index_no', $participantIndexes)
-                ->where('status', Participants::STATUS_CHEATING)
-                ->update([
-                    'status' => Participants::STATUS_ACTIVE
-                ]);
+            if($request->mode === 'custom') {
+                EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)->delete();
+                foreach($participantIndexes as $participantIndex) {
+                    $participant = Participants::where('index_no', $participantIndex)->first();
+                    if(!$participant->is_system_iac) {
+                        Participants::whereIn('index_no', $participantIndexes)
+                        ->where('status', Participants::STATUS_CHEATING)
+                        ->update([
+                            'status' => Participants::STATUS_ACTIVE
+                        ]);
+                    }
+                }
+            } else {
+                $participants = Participants::whereIn('index_no', $participantIndexes)
+                    ->join('cheating_participants', function (JoinClause $join) {
+                        $join->on('participants.index_no', 'cheating_participants.participant_index')
+                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+                    })->get();
 
-            EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)
-                ->delete();
+                foreach($participants as $participant) {
+                    if($participant->is_system_iac) {
+                        Participants::whereIn('index_no', $participantIndexes)
+                        ->where('status', Participants::STATUS_CHEATING)
+                        ->update([
+                            'status' => Participants::STATUS_ACTIVE
+                        ]);
+                    }
+                }
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
