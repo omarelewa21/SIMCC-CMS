@@ -514,10 +514,6 @@ class ParticipantsController extends Controller
                     ], [
                         'reason' => $request->reason
                     ]);
-                    Participants::where('index_no', $participantIndex)
-                        ->update([
-                            'is_system_iac' => false
-                        ]);
                 }
             } else {
                 foreach($participantIndexes as $participantIndex) {
@@ -560,7 +556,7 @@ class ParticipantsController extends Controller
                 EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)->delete();
                 foreach($participantIndexes as $participantIndex) {
                     $participant = Participants::where('index_no', $participantIndex)->first();
-                    if(!$participant->is_system_iac) {
+                    if($participant->is_system_iac === 0) {
                         Participants::whereIn('index_no', $participantIndexes)
                         ->where('status', Participants::STATUS_CHEATING)
                         ->update([
