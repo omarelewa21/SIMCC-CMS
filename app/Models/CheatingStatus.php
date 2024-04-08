@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -36,5 +37,15 @@ class CheatingStatus extends Model
     public function competition()
     {
         return $this->belongsTo(Competition::class);
+    }
+
+    protected function countries(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string|null $values) =>
+                $values
+                    ? Countries::whereIn('id', json_decode($values, true))->pluck('display_name')->join(', ')
+                    : "All Countries"
+        );
     }
 }

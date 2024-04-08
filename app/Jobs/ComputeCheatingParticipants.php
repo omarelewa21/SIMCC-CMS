@@ -65,6 +65,7 @@ class ComputeCheatingParticipants implements ShouldQueue
                     'competition_id'    => $this->competition->id,
                     'cheating_percentage'        => $this->percentage ?? 85,
                     'number_of_same_incorrect_answers' => $this->number_of_incorrect_answers ?? 5,
+                    'countries'  => $this->countries ?? null,
                 ],
                 [
                     'status' => 'Failed',

@@ -622,7 +622,7 @@ class CheatingListHelper
     public static function getCheatingCriteriaStats(Competition $competition)
     {
         return CheatingStatus::where('competition_id', $competition->id)
-            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers')
+            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers', 'countries')
             ->get()
             ->map(function($cheatingStatus){
                 $cheatingStatus->participants_count = Participants::distinct()
