@@ -159,7 +159,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
-            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('country') && !$request->has('percentage'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
