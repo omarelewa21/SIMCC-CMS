@@ -179,7 +179,7 @@ class CheatingListHelper
             ->withCount('answers')
             ->get()
             ->map(function($participant){
-                $participant->is_iac = $participant->integrityCases->isNotEmpty();
+                $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
                 return $participant;
             });
     }
