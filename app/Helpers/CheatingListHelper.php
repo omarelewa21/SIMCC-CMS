@@ -19,53 +19,6 @@ use Maatwebsite\Excel\Facades\Excel;
 class CheatingListHelper
 {
     /**
-     * get cheat status and data
-     * 
-     * @param Competition $competition
-     * @param CompetitionCheatingListRequest $request
-     * @return Illuminate\Http\JsonResponse
-     */
-    public static function returnCheatStatusAndData(Competition $competition, CompetitionCheatingListRequest $request)
-    {
-        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
-
-        if($cheatingStatus->status === 'In Progress') {
-            return response()->json([
-                'status'    => 206,
-                'message'   => 'Generating cheating list is in progress',
-                'cheating_percentage' => $cheatingStatus->progress_percentage
-            ], 206);
-        }
-
-        if($cheatingStatus->status === 'Failed') {
-            return response()->json([
-                'status'    => 500,
-                'message'   => sprintf("Generating cheating list failed at perentage %s with error: %s", $cheatingStatus->progress_percentage, $cheatingStatus->compute_error_message)
-            ], 500);
-        }
-
-        if($cheatingStatus->status === 'Completed') {
-            if($request->csv == 1) return static::getCheatingCSVFile($competition, $request);
-
-            $cheaters = static::getCheatingList($competition)
-                ->filterByRequest(
-                    $request,
-                    array("country", "school", "grade", "group_id"),
-                    array('participants', 'participants', 'school', 'country')
-                );
-
-            $filterOptions = static::getFilterOptions($cheaters);
-
-            return response()->json([
-                'status'    => 200,
-                'message'   => 'Cheating list generated successfully',
-                'filter_options' => $filterOptions,
-                'Cheaters'  => $cheaters->paginate($request->limits ?? 10, $request->page ?? 1)
-            ], 200);
-        }
-    }
-
-    /**
      * Get filter options For cheating list
      * 
      * @param Illuminate\Support\Collection $cheaters
@@ -177,11 +130,7 @@ class CheatingListHelper
                 'integrityCases' => fn($query) => $query->where('mode', 'system')]
             )
             ->withCount('answers')
-            ->get()
-            ->map(function($participant){
-                $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
-                return $participant;
-            });
+            ->get();
     }
 
     /**
@@ -194,29 +143,22 @@ class CheatingListHelper
      */
     private static function getCheatingParticipantDataReady($participant, $forCSV = false)
     {
-        // [$participant->different_questions, $sections, $questions] = static::getQuestionsAndDifferentQuestions($participant);
         [$participant->different_questions, $questions] = static::getQuestionsAndDifferentQuestions($participant);
 
         $participant->school = $participant->school->name;
         $participant->country = $participant->country->display_name;
         $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
+        $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
         
-        $formattedSections = [];
-        // foreach ($sections as $key => $value) {
-        //     $newKey = range('A', 'Z')[$key];
-        //     $formattedSections["No of wrong answers in Section $newKey"] = $value;
-        // }
-
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'criteria_cheating_percentage',
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'criteria_cheating_percentage',
             'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions', 
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
-            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions',
-            'is_iac'
+            'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
         );
-
+        
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
-        return array_merge($filtered, $questions, $formattedSections);
+        return array_merge($filtered, $questions);
     }
     
     /**
@@ -229,7 +171,6 @@ class CheatingListHelper
     {
         $sameIncorrectQuestionNumbers = [];
         $questions = [];
-        // $sections = [];
 
         $diffIds = json_decode($participant->different_question_ids, true);     // get the array of different questions
 
@@ -243,34 +184,7 @@ class CheatingListHelper
             }
         }
 
-        // $sections = static::getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers);
-        // return [implode(', ', $sameIncorrectQuestionNumbers), $sections, $questions];
         return [implode(', ', $sameIncorrectQuestionNumbers), $questions];
-    }
-
-    /**
-     * Get incorrect answers count per section
-     * 
-     * @param Participant $participant
-     * @param array $sameIncorrectQuestionNumbers
-     * @return array
-     */
-    private static function getIncorrectAnswersCountPerSection($participant, $sameIncorrectQuestionNumbers)
-    {
-        $sectionTasks = $participant->answers->first()
-            ->level->collection->sections->pluck('tasks')
-            ->map(fn($tasksArrayObject) => collect($tasksArrayObject)->flatten());  // get a collection of task ids with section number as key
-
-        $sections = [];
-
-        foreach($sectionTasks as $key => $taskIdsCollection){
-            if(!isset($sections[$key])) $sections[$key] = 0;
-            foreach($taskIdsCollection as $taskId){
-                if(in_array($taskId, array_keys($sameIncorrectQuestionNumbers))) $sections[$key]++;
-            }
-        }
-
-        return $sections;
     }
 
     /**
@@ -335,25 +249,25 @@ class CheatingListHelper
             case 'In Progress':
                 $response = [
                     'status'    => 202,
-                    'message'   => 'Generating cheating list is in progress'
+                    'message'   => 'Generating integrity list is in progress'
                 ];
                 break;
             case 'Failed':
                 $response = [
                     'status'    => 417,
-                    'message'   => "Generating cheating list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'message'   => "Generating integrity list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
                 ];
                 break;
             case 'Completed':
                 $response = [
                     'status'    => 200,
-                    'message'   => 'Cheating list generated successfully',
+                    'message'   => 'Integerity list generated successfully',
                 ];
                 break;
             default:
                 return response()->json([
                     'status'        => 206,
-                    'message'       => 'Generating cheating list is not started',
+                    'message'       => 'Generating Integrity list is not started',
                     'progress'      => 0,
                     'competition'   => $competition->name
                 ], 206);
@@ -426,7 +340,9 @@ class CheatingListHelper
                 'participants.grade',
                 'cheating_participants.group_id'
             )
-            ->with('school:id,name', 'country:id,display_name')
+            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
+                'integrityCases' => fn($query) => $query->where('mode', 'system')]
+            )
             ->withCount('answers')
             ->get();
     }
@@ -437,14 +353,33 @@ class CheatingListHelper
      */
     private static function getSameParticipantCheatingParticipantReady($participant, $forCSV = false)
     {
+        $questions = static::getSameParticipantQuestions($participant);
+
         $participant->school = $participant->school->name;
         $participant->country = $participant->country->display_name;
         $participant->number_of_answers = $participant->answers_count;
+        $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
+
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'group_id', 'number_of_answers'
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'group_id', 'number_of_answers'
         );
+    
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
-        return $filtered;
+        return array_merge($filtered, $questions);
+    }
+
+    /**
+     * Get same participant questions
+     * @param Participant $participant
+     */
+    private static function getSameParticipantQuestions($participant)
+    {
+        $questions = [];
+        for($i=1; $i <= $participant->answers_count; $i++){
+            $participantAnswer = $participant->answers[$i-1];
+            $questions["Q$i"] = sprintf("%s (%s)", $participantAnswer->answer, $participantAnswer->is_correct ? 'Correct' : 'Incorrect');
+        }
+        return $questions;
     }
 
     /**
@@ -483,7 +418,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
-            'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
+            'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',
@@ -543,6 +478,15 @@ class CheatingListHelper
             $lastGroup = $record['group_id'];
         }
 
+        $headers = [];
+        if($data->isNotEmpty()) {
+            $headers = array_slice(array_keys($data->max()), 9);
+            foreach($headers as $key => $header) {
+                $headers[sprintf("Q%s", $key+1)] = $header;
+                unset($headers[$key]);
+            }
+        }
+
         $headers =  [
             'Index'                                         => 'index_no',
             'Name'                                          => 'name',
@@ -551,6 +495,8 @@ class CheatingListHelper
             'Grade'                                         => 'grade',
             'Group ID'                                      => 'group_id',
             'No. Of Answers Uploaded'                       => 'number_of_answers',
+            'System generated IAC'                          => 'is_iac',
+            ...$headers
         ];
 
         return response()->json([

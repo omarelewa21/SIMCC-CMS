@@ -41,14 +41,21 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
 
     public function headings(): array
     {
+        $headers = [];
+        if($this->dataCollection->isNotEmpty()) {
+            $headers = array_keys($this->dataCollection->max());
+        }
+
         return [
             'Index',
             'Name',
             'School',
             'Country',
             'Grade',
+            'System generated IAC',
             'Group ID',
             'No. Of Answers Uploaded',
+            ...array_slice($headers, 9)
         ];
     }
 
