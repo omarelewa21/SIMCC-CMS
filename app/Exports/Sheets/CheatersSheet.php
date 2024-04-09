@@ -53,7 +53,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'School',
             'Country',
             'Grade',
-            'Criteria Cheating Percentage',
+            'Criteria Integrity Percentage',
             'Criteria No of Same Incorrect Answers',
             'Group ID',
             'No of qns',
