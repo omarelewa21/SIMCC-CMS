@@ -174,7 +174,7 @@ class CheatingListHelper
                 cheating_participants.criteria_number_of_same_incorrect_answers
             ")
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
-                'integrityCases' => fn($query) => $query->where('mode', 'custom')]
+                'integrityCases' => fn($query) => $query->where('mode', 'system')]
             )
             ->withCount('answers')
             ->get()
