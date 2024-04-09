@@ -584,4 +584,33 @@ class CheatingListHelper
                 return $cheatingStatus;
             });
     }
+
+    public function getIntegrityCasesByCountry(Competition $competition, Countries $country)
+    {
+        return $competition->participants()
+            ->has('integrityCases')
+            ->where('participants.country_id', $country->id)
+            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id',
+                'participants.country_id', 'participants.grade'
+            )->get()
+            ->map(function($participant){
+                $data = $participant->toArray();
+                $data['school'] = $participant->school->name;
+                $data['country'] = $participant->country->name;
+                $type = collect([]);
+                foreach($participant->integrityCases as $integrityCase){
+                    if($integrityCase->mode === 'system') {
+                        $type->push('System');
+                    }else{
+                        $type->push('Custom');
+                    }
+                }
+                $data['type'] = $type->join(', ', ' and ') . ' Generated IAC';
+                unset($data['integrity_cases']);
+                return $data;
+            });
+    }
+
 }
