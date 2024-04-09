@@ -136,18 +136,34 @@ class PossibleSimilarAnswersController extends Controller
             })
             ->get();
 
+        // Fetch and sort all participants' answers based on their frequency
+        $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
+            ->whereNotNull('answer')
+            ->pluck('answer')
+            ->reject(function ($answer) {
+                return is_null($answer);
+            })
+            ->countBy()
+            ->sortDesc()
+            ->keys();
 
         $response = [];
         foreach ($taskAnswers as $taskAnswer) {
             $normalizedKey = intval($taskAnswer->answer);
 
             $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
+                ->whereNotNull('answer')
                 ->select('*', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
                 ->get()
                 ->filter(function ($participantAnswer) use ($normalizedKey) {
                     return intval($participantAnswer->numeric_answer) === $normalizedKey;
                 })
                 ->pluck('answer')
+                ->unique();
+
+            // Combine similarAnswers with the sorted allParticipantsAnswers, remove duplicates
+            $combinedAnswers = $similarAnswers
+                ->merge($allParticipantsAnswers)
                 ->unique()
                 ->values();
 
@@ -155,7 +171,7 @@ class PossibleSimilarAnswersController extends Controller
                 'task_id' => $taskId,
                 'answer_id' => $taskAnswer->id,
                 'answer_key' => $taskAnswer->answer,
-                'possible_keys' => $similarAnswers->all()
+                'possible_keys' => $combinedAnswers->all() // Combined, unique, and sorted possible keys
             ];
         }
 
