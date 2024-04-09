@@ -2,6 +2,7 @@
 
 use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
+use App\Models\IntegrityCheckCompetitionCountries;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ return new class extends Migration
 
         CheatingParticipants::truncate();
         CheatingStatus::truncate();
+        IntegrityCheckCompetitionCountries::truncate();
     }
 
     /**
