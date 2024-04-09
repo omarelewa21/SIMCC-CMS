@@ -488,13 +488,13 @@ class ParticipantsController extends Controller
             foreach($participantIndexes as $participantIndex) {
                 if($request->reason) {
                     IntegrityCase::updateOrCreate(
-                        ['participant_index' => $participantIndex],
-                        ['reason' => $request->reason, 'mode' => $request->mode],
+                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                        ['reason' => $request->reason],
                     );
                 } else {
                     IntegrityCase::updateOrCreate(
-                        ['participant_index' => $participantIndex],
-                        ['mode' => $request->mode]
+                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                        []
                     );
                 }
             }
