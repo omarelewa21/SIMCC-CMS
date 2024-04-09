@@ -18,9 +18,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Models\CheatingParticipants;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\EliminatedCheatingParticipants;
 use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
@@ -28,7 +26,6 @@ use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
-use Illuminate\Database\Query\JoinClause;
 use Illuminate\Validation\Rule;
 use PDF;
 
