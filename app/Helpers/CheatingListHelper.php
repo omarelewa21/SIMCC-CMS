@@ -172,7 +172,7 @@ class CheatingListHelper
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
                 cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
                 cheating_participants.criteria_number_of_same_incorrect_answers,
-                CASE WHEN participants.status = ? AND participants.is_system_iac = 1 THEN 'Yes' ELSE 'No' END AS is_iac
+                CASE WHEN participants.status = ? THEN 'Yes' ELSE 'No' END AS is_iac
             ", [Participants::STATUS_CHEATING])
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
             ->withCount('answers')
@@ -563,19 +563,19 @@ class CheatingListHelper
     public static function getCustomLabeledIntegrityCases(Competition $competition)
     {
         return $competition->participants()
+            ->whereRelation('integrityCase', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->join('eliminated_cheating_participants', 'participants.index_no', 'eliminated_cheating_participants.participant_index')
-            ->whereNotNull('eliminated_cheating_participants.reason')
-            ->with('school:id,name', 'country:id,display_name as name')
+            ->with('school:id,name', 'country:id,display_name as name'. 'integrityCase')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
-                'participants.country_id', 'participants.grade', 'eliminated_cheating_participants.reason'
+                'participants.country_id', 'participants.grade'
             )
             ->get()
             ->map(function($participant){
                 $data = $participant->toArray();
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
+                $data['reason'] = $participant->integrityCase->reason;
                 return $data;
             });
     }

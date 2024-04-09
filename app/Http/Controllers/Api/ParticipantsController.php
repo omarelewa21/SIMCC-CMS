@@ -25,6 +25,7 @@ use App\Http\Requests\participant\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\ReportDownloadStatus;
 use App\Models\EliminatedCheatingParticipants;
+use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantIndexNo;
@@ -463,15 +464,7 @@ class ParticipantsController extends Controller
         try {
             $round = $competition->rounds()->with('roundsAwards')->first();
             $defaultAwardRank = $round->roundsAwards->count() + 1;
-
-            if($request->has('participants')) {
-                $participantIndexes = $request->participants;
-            } else {
-                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
-                    ->whereIn('group_id', $request->group_ids)
-                    ->pluck('participant_index')
-                    ->toArray();
-            }
+            $participantIndexes = $request->participants;
 
             Participants::whereIn('index_no', $participantIndexes)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
@@ -495,20 +488,17 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
             
-            if($request->mode === 'custom') {
-                foreach($participantIndexes as $participantIndex) {
-                    EliminatedCheatingParticipants::updateOrCreate([
-                        'participant_index' => $participantIndex,
-                    ], [
-                        'reason' => $request->reason
-                    ]);
-                }
-            } else {
-                foreach($participantIndexes as $participantIndex) {
-                    Participants::where('index_no', $participantIndex)
-                        ->update([
-                            'is_system_iac' => true
-                        ]);
+            foreach($participantIndexes as $participantIndex) {
+                if($request->reason) {
+                    IntegrityCase::updateOrCreate(
+                        ['participant_index' => $participantIndex],
+                        ['reason' => $request->reason, 'mode' => $request->mode],
+                    );
+                } else {
+                    IntegrityCase::updateOrCreate(
+                        ['participant_index' => $participantIndex],
+                        ['mode' => $request->mode]
+                    );
                 }
             }
 
@@ -531,43 +521,18 @@ class ParticipantsController extends Controller
     {
         DB::beginTransaction();
         try {
-            if($request->has('participants')) {
-                $participantIndexes = $request->participants;
-            } else {
-                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
-                    ->whereIn('group_id', $request->group_ids)
-                    ->pluck('participant_index')
-                    ->toArray();
-            }
+            $participantIndexes = $request->participants;
+            foreach($participantIndexes as $participantIndex) {
+                IntegrityCase::where([
+                    'participant_index' => $participantIndex,
+                    'mode' => $request->mode
+                ])->delete();
 
-            if($request->mode === 'custom') {
-                EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)->delete();
-                foreach($participantIndexes as $participantIndex) {
-                    $participant = Participants::where('index_no', $participantIndex)->first();
-                    if($participant->is_system_iac === 0) {
-                        Participants::whereIn('index_no', $participantIndexes)
-                        ->where('status', Participants::STATUS_CHEATING)
-                        ->update([
-                            'status' => Participants::STATUS_ACTIVE
-                        ]);
-                    }
-                }
-            } else {
-                $participants = Participants::whereIn('index_no', $participantIndexes)
-                    ->join('cheating_participants', function (JoinClause $join) {
-                        $join->on('participants.index_no', 'cheating_participants.participant_index')
-                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
-                    })->get();
+                if(IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
 
-                foreach($participants as $participant) {
-                    if($participant->is_system_iac) {
-                        Participants::whereIn('index_no', $participantIndexes)
-                        ->where('status', Participants::STATUS_CHEATING)
-                        ->update([
-                            'status' => Participants::STATUS_ACTIVE
-                        ]);
-                    }
-                }
+                Participants::where('index_no', $participantIndex)->update([
+                    'status' => Participants::STATUS_ACTIVE
+                ]);
             }
 
         } catch (\Exception $e) {
@@ -578,6 +543,7 @@ class ParticipantsController extends Controller
                 "error"     => strval($e)
             ], 500);
         }
+
         DB::commit();
         return response()->json([
             "status"    => 200,
