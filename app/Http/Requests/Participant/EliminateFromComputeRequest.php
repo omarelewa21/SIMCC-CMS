@@ -35,6 +35,7 @@ class EliminateFromComputeRequest extends FormRequest
     {
         return [
             'participants'      => [
+                'required',
                 'array',
                 'nullable',
                 function ($attribute, $value, $fail) {
@@ -52,20 +53,21 @@ class EliminateFromComputeRequest extends FormRequest
                         return $query->whereIn('competition_organization_id', $competitionOrganizations);
                     }),
             ],
-            'group_ids'        => [
-                'array',
-                'nullable',
-                function ($attribute, $value, $fail) {
-                    if ($this->has('participants')) {
-                        $fail('The :attribute must not be present when participants is provided.');
-                    }
-                }
-            ],
-            'group_ids.*'      => [
-                'required',
-                Rule::exists('cheating_participants', 'group_id')
-                    ->where(fn (Builder $query) => $query->where('competition_id', $this->competition->id)),
-            ],
+            // 'group_ids'        => [
+            //     'array',
+            //     'nullable',
+            //     function ($attribute, $value, $fail) {
+            //         if ($this->has('participants')) {
+            //             $fail('The :attribute must not be present when participants is provided.');
+            //         }
+            //     }
+            // ],
+            // 'group_ids.*'      => [
+            //     'required',
+            //     Rule::exists('cheating_participants', 'group_id')
+            //         ->where(fn (Builder $query) => $query->where('competition_id', $this->competition->id)),
+            // ],
+            'mode'             => 'required|in:system,custom',
             'reason'           => 'string',
         ];
     }

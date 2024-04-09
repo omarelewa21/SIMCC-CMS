@@ -171,12 +171,17 @@ class CheatingListHelper
                 cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage,
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
                 cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
-                cheating_participants.criteria_number_of_same_incorrect_answers,
-                CASE WHEN participants.status = ? THEN 'Yes' ELSE 'No' END AS is_iac
-            ", [Participants::STATUS_CHEATING])
-            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
+                cheating_participants.criteria_number_of_same_incorrect_answers
+            ")
+            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
+                'integrityCases' => fn($query) => $query->where('mode', 'system')]
+            )
             ->withCount('answers')
-            ->get();
+            ->get()
+            ->map(function($participant){
+                $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
+                return $participant;
+            });
     }
 
     /**
@@ -477,7 +482,7 @@ class CheatingListHelper
             'School'                                        => 'school',
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
-            'Is IAC'                                        => 'is_iac',
+            'System generated IAC'                          => 'is_iac',
             'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
@@ -563,14 +568,9 @@ class CheatingListHelper
     public static function getCustomLabeledIntegrityCases(Competition $competition)
     {
         return $competition->participants()
+            ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->whereNotExists(function($query){
-                $query->select('participant_index')
-                    ->from('cheating_participants')
-                    ->whereColumn('participant_index', 'participants.index_no')
-                    ->orWhereColumn('cheating_with_participant_index', 'participants.index_no');
-            })
-            ->with('school:id,name', 'country:id,display_name as name', 'eliminationRecord')
+            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'
@@ -580,8 +580,8 @@ class CheatingListHelper
                 $data = $participant->toArray();
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
-                $data['reason'] = $participant->eliminationRecord->reason;
-                unset($data['elimination_record']);
+                $data['reason'] = $participant->integrityCases->first()->reason;
+                unset($data['integrity_cases']);
                 return $data;
             });
     }
@@ -622,7 +622,7 @@ class CheatingListHelper
     public static function getCheatingCriteriaStats(Competition $competition)
     {
         return CheatingStatus::where('competition_id', $competition->id)
-            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers')
+            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers', 'countries')
             ->get()
             ->map(function($cheatingStatus){
                 $cheatingStatus->participants_count = Participants::distinct()
@@ -633,6 +633,7 @@ class CheatingListHelper
                     ->where('cheating_participants.competition_id', $cheatingStatus->competition_id)
                     ->where('cheating_participants.criteria_cheating_percentage', $cheatingStatus->cheating_percentage)
                     ->where('cheating_participants.criteria_number_of_same_incorrect_answers', $cheatingStatus->number_of_same_incorrect_answers)
+                    ->when($cheatingStatus->original_countries && !empty($cheatingStatus->original_countries), fn($query) => $query->whereIn('participants.country_id', $cheatingStatus->original_countries))
                     ->count();
                 return $cheatingStatus;
             });

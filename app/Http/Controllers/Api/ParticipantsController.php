@@ -18,10 +18,9 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
-use App\Models\CheatingParticipants;
 use App\Http\Requests\Participant\UpdateParticipantRequest;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\EliminatedCheatingParticipants;
+use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
@@ -432,15 +431,7 @@ class ParticipantsController extends Controller
         try {
             $round = $competition->rounds()->with('roundsAwards')->first();
             $defaultAwardRank = $round->roundsAwards->count() + 1;
-
-            if($request->has('participants')) {
-                $participantIndexes = $request->participants;
-            } else {
-                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
-                    ->whereIn('group_id', $request->group_ids)
-                    ->pluck('participant_index')
-                    ->toArray();
-            }
+            $participantIndexes = $request->participants;
 
             Participants::whereIn('index_no', $participantIndexes)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
@@ -464,13 +455,17 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
             
-            if($request->filled('reason')) {
-                foreach($participantIndexes as $participantIndex) {
-                    EliminatedCheatingParticipants::updateOrCreate([
-                        'participant_index' => $participantIndex,
-                    ], [
-                        'reason' => $request->reason
-                    ]);
+            foreach($participantIndexes as $participantIndex) {
+                if($request->reason) {
+                    IntegrityCase::updateOrCreate(
+                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                        ['reason' => $request->reason],
+                    );
+                } else {
+                    IntegrityCase::updateOrCreate(
+                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                        []
+                    );
                 }
             }
 
@@ -493,23 +488,19 @@ class ParticipantsController extends Controller
     {
         DB::beginTransaction();
         try {
-            if($request->has('participants')) {
-                $participantIndexes = $request->participants;
-            } else {
-                $participantIndexes = CheatingParticipants::where('competition_id', $competition->id)
-                    ->whereIn('group_id', $request->group_ids)
-                    ->pluck('participant_index')
-                    ->toArray();
-            }
+            $participantIndexes = $request->participants;
+            foreach($participantIndexes as $participantIndex) {
+                IntegrityCase::where([
+                    'participant_index' => $participantIndex,
+                    'mode' => $request->mode
+                ])->delete();
 
-            Participants::whereIn('index_no', $participantIndexes)
-                ->where('status', Participants::STATUS_CHEATING)
-                ->update([
+                if(IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
+
+                Participants::where('index_no', $participantIndex)->update([
                     'status' => Participants::STATUS_ACTIVE
                 ]);
-
-            EliminatedCheatingParticipants::whereIn('participant_index', $participantIndexes)
-                ->delete();
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -519,6 +510,7 @@ class ParticipantsController extends Controller
                 "error"     => strval($e)
             ], 500);
         }
+
         DB::commit();
         return response()->json([
             "status"    => 200,
