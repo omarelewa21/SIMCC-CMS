@@ -171,12 +171,17 @@ class CheatingListHelper
                 cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage,
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
                 cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
-                cheating_participants.criteria_number_of_same_incorrect_answers,
-                CASE WHEN participants.status = ? THEN 'Yes' ELSE 'No' END AS is_iac
-            ", [Participants::STATUS_CHEATING])
-            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections')])
+                cheating_participants.criteria_number_of_same_incorrect_answers
+            ")
+            ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
+                'integrityCases' => fn($query) => $query->where('mode', 'custom')]
+            )
             ->withCount('answers')
-            ->get();
+            ->get()
+            ->map(function($participant){
+                $participant->is_iac = $participant->integrityCases->isNotEmpty();
+                return $participant;
+            });
     }
 
     /**
@@ -563,9 +568,9 @@ class CheatingListHelper
     public static function getCustomLabeledIntegrityCases(Competition $competition)
     {
         return $competition->participants()
-            ->whereRelation('integrityCase', 'mode', 'custom')
+            ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with('school:id,name', 'country:id,display_name as name'. 'integrityCase')
+            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'
@@ -575,7 +580,8 @@ class CheatingListHelper
                 $data = $participant->toArray();
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
-                $data['reason'] = $participant->integrityCase->reason;
+                $data['reason'] = $participant->integrityCases->first()->reason;
+                unset($data['integrity_cases']);
                 return $data;
             });
     }

@@ -20,11 +20,9 @@ use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
 use App\Jobs\GeneratePerformanceReports;
 use App\Jobs\RecaculateShoolRankJob;
-use App\Models\CheatingParticipants;
 use App\Http\Requests\participant\UpdateParticipantRequest;
-use App\Models\CompetitionParticipantsResults;
 use App\Models\ReportDownloadStatus;
-use App\Models\EliminatedCheatingParticipants;
+use App\Models\CompetitionParticipantsResults;
 use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
@@ -37,7 +35,6 @@ use Illuminate\Support\Facades\Validator;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
-use Illuminate\Database\Query\JoinClause;
 use PDF;
 
 

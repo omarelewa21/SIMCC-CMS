@@ -191,9 +191,9 @@ class Participants extends Base
         return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
     }
 
-    public function integrityCase()
+    public function integrityCases()
     {
-        return $this->hasOne(IntegrityCase::class, 'participant_index', 'index_no');
+        return $this->hasMany(IntegrityCase::class, 'participant_index', 'index_no');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
