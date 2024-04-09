@@ -170,9 +170,9 @@ class Participants extends Base
         return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
     }
 
-    public function eliminationRecord()
+    public function integrityCase()
     {
-        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
+        return $this->hasOne(IntegrityCase::class, 'participant_index', 'index_no');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
