@@ -335,25 +335,25 @@ class CheatingListHelper
             case 'In Progress':
                 $response = [
                     'status'    => 202,
-                    'message'   => 'Generating cheating list is in progress'
+                    'message'   => 'Generating integrity list is in progress'
                 ];
                 break;
             case 'Failed':
                 $response = [
                     'status'    => 417,
-                    'message'   => "Generating cheating list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'message'   => "Generating integrity list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
                 ];
                 break;
             case 'Completed':
                 $response = [
                     'status'    => 200,
-                    'message'   => 'Cheating list generated successfully',
+                    'message'   => 'Integerity list generated successfully',
                 ];
                 break;
             default:
                 return response()->json([
                     'status'        => 206,
-                    'message'       => 'Generating cheating list is not started',
+                    'message'       => 'Generating Integrity list is not started',
                     'progress'      => 0,
                     'competition'   => $competition->name
                 ], 206);
@@ -483,7 +483,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
-            'Criteria Cheating Percentage'                  => 'criteria_cheating_percentage',
+            'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',
