@@ -8,32 +8,33 @@ use App\Models\Competition;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
 
 class ComputeCheatingParticipantsService
 {
-    protected $cheatStatus;
-    protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
-    protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
-    protected $numberOFSameIncorrect; // If the number of same incorrect answers > $numberOFSameIncorrect, then the participant is considered as cheater
-    protected $countries;       // If countries is not null, then only compute the cheating participants from these countries
+    protected CheatingStatus $cheatStatus;
 
     /**
      * @param Competition $competition
      */
-    public function __construct(protected Competition $competition, $qNumber=null, $percentage=95, $numberOFSameIncorrect = 1, $countries = null)
+    public function __construct(
+        protected Competition $competition,
+        protected $qNumber=null,
+        protected $percentage=95,
+        protected $numberOFSameIncorrect = 1,
+        protected $countries = null,
+        protected $forMapList = false
+    )
     {
         $this->cheatStatus = CheatingStatus::where([
-            'competition_id'    => $competition->id,
-            'cheating_percentage'        => $percentage ?? 85,
-            'number_of_same_incorrect_answers' => $numberOFSameIncorrect ?? 5,
-        ])->first();
-
-        $this->qNumber = $qNumber;
-        $this->percentage = $percentage;
-        $this->numberOFSameIncorrect = $numberOFSameIncorrect;
-        $this->countries = $countries;
+            'competition_id'                    => $competition->id,
+            'cheating_percentage'               => $percentage ?? 85,
+            'number_of_same_incorrect_answers'  => $numberOFSameIncorrect ?? 5,
+            'countries'                         => $countries ?? null,
+            'for_map_list'                      => $forMapList
+        ])->firstOrFail();
     }
 
     /**
@@ -46,9 +47,16 @@ class ComputeCheatingParticipantsService
         try {
             $this->clearRecords();
             $this->computeParticipantAnswersScores();
-            $this->detectCheaters();
 
-        } catch (\Exception $e) {
+            $this->forMapList
+                ? $this->detectCheatersWhoTookCompetitionTwiceOrMore()
+                : $this->detectCheaters();
+
+            $this->detectCheaters();
+            $this->updateCheatStatus(100, 'Completed');
+        }
+
+        catch (\Exception $e) {
             $this->updateCheatStatus($this->cheatStatus->progress_percentage, 'Failed', $e->getMessage());
         }
     }
@@ -112,12 +120,7 @@ class ComputeCheatingParticipantsService
                 $this->compareAnswersBetweenParticipants($group);
             });
 
-        $this->updateCheatStatus(90);
-
-        $this->detectCheatersWhoTookCompetitionTwiceOrMore();
-
         IntegrityCheckCompetitionCountries::updateCountriesComputeStatus($this->competition, $this->countries);
-        $this->updateCheatStatus(100, 'Completed');
     }
 
     /**
@@ -207,10 +210,15 @@ class ComputeCheatingParticipantsService
      */
     private function clearRecords()
     {
-        CheatingParticipants::join('participants', 'cheating_participants.participant_index', '=', 'participants.index_no')
-            ->join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
-            ->where('competition_organization.competition_id', $this->competition->id)
-            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
+        CheatingParticipants::join('participants', function (JoinClause $join) {
+            $join->on('participants.index_no', 'cheating_participants.participant_index')
+                ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->where([
+                'cheating_participants.competition_id'      => $this->competition->id,
+                'participants.status'                       => Participants::STATUS_CHEATING,
+                'cheating_participants.is_same_participant' => $this->forMapList
+            ])
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->delete();
     }

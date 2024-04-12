@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\api;
 
 use App\Helpers\AnswerUploadHelper;
-use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -31,15 +30,11 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\Competition\CompetitionCheatingListRequest;
-use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
-use App\Jobs\ComputeCheatingParticipants;
-use App\Models\CheatingStatus;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1235,157 +1230,6 @@ class CompetitionController extends Controller
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
                 break;
-        }
-    }
-
-    /**
-     * Get all participants that are cheating
-     *
-     * @param Competition $competition
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
-    {
-        try {
-            if ($request->recompute) {
-                DB::transaction(function () use($competition, $request) {
-                    CheatingStatus::updateOrCreate(
-                        [
-                            'competition_id' => $competition->id,
-                            'cheating_percentage'    => $request->percentage ?? 85,
-                            'number_of_same_incorrect_answers' => $request->number_of_incorrect_answers ?? 5,
-                            'countries'  => $request->country ?? null,
-                        ],
-                        [
-                            'status' => 'In Progress',
-                            'progress_percentage' => 1,
-                            'compute_error_message' => null
-                        ]
-                    );
-
-                    dispatch(new ComputeCheatingParticipants(
-                        $competition,
-                        $request->question_number,
-                        $request->percentage,
-                        $request->number_of_incorrect_answers,
-                        $request->country
-                    ));
-                });
-
-                return response()->json([
-                    'status'    => 201,
-                    'message'   => 'Computing cheating participants has been started.',
-                    'progress'  => 1
-                ], 201);
-            }
-
-            return CheatingListHelper::returnCheatingData($competition, $request);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
-                'message'   => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
-    {
-        try {
-            return CheatingListHelper::returnSameParticipantCheatingData($competition, $request);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
-        }
-    }
-
-    public function getConfirmedCountriesForIntegrityCheck(Competition $competition)
-    {
-        try {
-            $confirmedCountries = $competition->integrityCheckCountries()
-                ->join('all_countries as ac', 'ac.id', 'competition_countries_for_integrity_check.country_id')
-                ->select('ac.display_name as name', 'ac.id', 'competition_countries_for_integrity_check.is_confirmed')
-                ->get();
-
-            return response()->json([
-                'status'    => 200,
-                'countries' => $confirmedCountries
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
-        }
-    }
-
-    public function confirmCountryForIntegrityCheck(Competition $competition, ConfirmCountryForIntegrityRequest $request)
-    {
-        try {
-            foreach($request->countries as $country) {
-                $competition->integrityCheckCountries()
-                    ->updateOrCreate(
-                        ['country_id' => $country['id']],
-                        [
-                            'is_confirmed' => $country['is_confirmed'],
-                            'confirmed_by' => auth()->id(),
-                            'confirmed_at' => now()
-                        ]
-                    );
-            }
-
-            return response()->json([
-                'status'    => 200,
-                'message'   => 'Country has been confirmed for integrity check'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
-        }
-    }
-
-    public function getCustomLabeledIntegrityCases(Competition $competition)
-    {
-        try {
-            return response()->json([
-                'status'    => 200,
-                'data'      => CheatingListHelper::getCustomLabeledIntegrityCases($competition)
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
-        }
-    }
-
-    public function getCheatingCriteriaStats(Competition $competition)
-    {
-        try {
-            return response()->json([
-                'status'    => 200,
-                'data'      => CheatingListHelper::getCheatingCriteriaStats($competition)
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
         }
     }
 }
