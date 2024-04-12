@@ -5,6 +5,7 @@ namespace App\Helpers;
 
 use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
+use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
@@ -622,27 +623,6 @@ class CheatingListHelper
         ], 201);
     }
 
-    public static function getCustomLabeledIntegrityCases(Competition $competition)
-    {
-        return $competition->participants()
-            ->whereRelation('integrityCases', 'mode', 'custom')
-            ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
-            ->select(
-                'participants.index_no', 'participants.name', 'participants.school_id',
-                'participants.country_id', 'participants.grade'
-            )
-            ->get()
-            ->map(function($participant){
-                $data = $participant->toArray();
-                $data['school'] = $participant->school->name;
-                $data['country'] = $participant->country->name;
-                $data['reason'] = $participant->integrityCases->first()->reason;
-                unset($data['integrity_cases']);
-                return $data;
-            });
-    }
-
     /**
      * Get message for cheating data
      * @param Competition $competition
@@ -676,7 +656,7 @@ class CheatingListHelper
         return '';
     }
 
-    public static function getCheatingCriteriaStats(Competition $competition)
+    public static function getCheatingCriteriaStatsData(Competition $competition)
     {
         return CheatingStatus::where('competition_id', $competition->id)
             ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers', 'countries')
@@ -724,4 +704,110 @@ class CheatingListHelper
             });
     }
 
+    public function getConfirmedCountriesForIntegrityCheck(Competition $competition)
+    {
+        try {
+            $confirmedCountries = $competition->integrityCheckCountries()
+                ->join('all_countries as ac', 'ac.id', 'competition_countries_for_integrity_check.country_id')
+                ->select('ac.display_name as name', 'ac.id', 'competition_countries_for_integrity_check.is_confirmed')
+                ->get();
+
+            return response()->json([
+                'status'    => 200,
+                'countries' => $confirmedCountries
+            ], 200);
+        }
+
+        catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function confirmCountryForIntegrityCheck(Competition $competition, ConfirmCountryForIntegrityRequest $request)
+    {
+        try {
+            foreach($request->countries as $country) {
+                $competition->integrityCheckCountries()
+                    ->updateOrCreate(
+                        ['country_id' => $country['id']],
+                        [
+                            'is_confirmed' => $country['is_confirmed'],
+                            'confirmed_by' => auth()->id(),
+                            'confirmed_at' => now()
+                        ]
+                    );
+            }
+
+            return response()->json([
+                'status'    => 200,
+                'message'   => 'Country has been confirmed for integrity check'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function getCustomLabeledIntegrityCases(Competition $competition)
+    {
+        try {
+            return response()->json([
+                'status'    => 200,
+                'data'      => $this->getCustomLabeledIntegrityCasesData($competition)
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function getCustomLabeledIntegrityCasesData(Competition $competition)
+    {
+        return $competition->participants()
+            ->whereRelation('integrityCases', 'mode', 'custom')
+            ->where('participants.status', Participants::STATUS_CHEATING)
+            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
+            ->select(
+                'participants.index_no', 'participants.name', 'participants.school_id',
+                'participants.country_id', 'participants.grade'
+            )
+            ->get()
+            ->map(function($participant){
+                $data = $participant->toArray();
+                $data['school'] = $participant->school->name;
+                $data['country'] = $participant->country->name;
+                $data['reason'] = $participant->integrityCases->first()->reason;
+                unset($data['integrity_cases']);
+                return $data;
+            });
+    }
+
+    public function getCheatingCriteriaStats(Competition $competition)
+    {
+        try {
+            return response()->json([
+                'status'    => 200,
+                'data'      => $this->getCheatingCriteriaStats($competition)
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => 500,
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
+            ], 500);
+        }
+    }
 }
