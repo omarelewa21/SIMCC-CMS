@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\api;
 
 use App\Helpers\AnswerUploadHelper;
-use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -31,7 +30,6 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
@@ -44,8 +42,6 @@ use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-
-//update participant session once competition mode change, add this changes once participant session done
 
 class CompetitionController extends Controller
 {
