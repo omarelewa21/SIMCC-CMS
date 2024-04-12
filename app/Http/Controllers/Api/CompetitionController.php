@@ -31,15 +31,12 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
-use App\Jobs\ComputeCheatingParticipants;
-use App\Models\CheatingStatus;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1223,71 +1220,7 @@ class CompetitionController extends Controller
         }
     }
 
-    /**
-     * Get all participants that are cheating
-     *
-     * @param Competition $competition
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
-    {
-        try {
-            if ($request->recompute) {
-                DB::transaction(function () use($competition, $request) {
-                    CheatingStatus::updateOrCreate(
-                        [
-                            'competition_id' => $competition->id,
-                            'cheating_percentage'    => $request->percentage ?? 85,
-                            'number_of_same_incorrect_answers' => $request->number_of_incorrect_answers ?? 5,
-                            'countries'  => $request->country ?? null,
-                        ],
-                        [
-                            'status' => 'In Progress',
-                            'progress_percentage' => 1,
-                            'compute_error_message' => null
-                        ]
-                    );
-
-                    dispatch(new ComputeCheatingParticipants(
-                        $competition,
-                        $request->question_number,
-                        $request->percentage,
-                        $request->number_of_incorrect_answers,
-                        $request->country
-                    ));
-                });
-
-                return response()->json([
-                    'status'    => 201,
-                    'message'   => 'Computing cheating participants has been started.',
-                    'progress'  => 1
-                ], 201);
-            }
-
-            return CheatingListHelper::returnCheatingData($competition, $request);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
-                'message'   => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
-    {
-        try {
-            return CheatingListHelper::returnSameParticipantCheatingData($competition, $request);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ], 500);
-        }
-    }
+    
 
     public function getConfirmedCountriesForIntegrityCheck(Competition $competition)
     {

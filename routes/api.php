@@ -128,11 +128,11 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/overall_awards", [CompetitionController::class, "deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
         Route::get("/{competition}/report", [CompetitionController::class, "report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
-        Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
+        Route::get("/compute/cheaters/{competition}", [CheatingListHelper::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
-        Route::get("/cheaters/same-participant/{competition}", [CompetitionController::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
+        Route::get("/cheaters/same-participant/{competition}", [CheatingListHelper::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
         Route::get("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
         Route::post("/cheaters/confirmed-countries/{competition}", [CompetitionController::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
         Route::get("/cheaters/custom-labeled-integrity-cases/{competition}", [CompetitionController::class, "getCustomLabeledIntegrityCases"])->name('competition.cheaters.customLabeledIntegrityCases');
