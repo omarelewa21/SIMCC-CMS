@@ -134,20 +134,25 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Fetch updated possible similar answers and transform the collection
-            $possibleSimilarAnswers = $task->possibleSimilarAnswers()->with(['task', 'answer', 'approver'])->get();
-            $transformed = $possibleSimilarAnswers->groupBy('answer_key')->map(function ($items, $answerKey) {
-                return [
-                    'answer_key' => $answerKey,
-                    'possible_keys' => $items->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'possible_key' => $item->possible_key,
-                            'status' => $item->status,
-                            'approver' => $item->approver,
-                        ];
-                    })->toArray(),
-                ];
-            })->values();
+            $possibleSimilarAnswers = $task->possibleSimilarAnswers()
+                ->with(['task', 'answer', 'approver'])
+                ->get();
+
+            $transformed = $possibleSimilarAnswers->groupBy('answer_key')
+                ->map(function ($items, $answerKey) {
+                    $sortedItems = $items->sortBy('possible_key'); // Sort items within the group
+                    return [
+                        'answer_key' => $answerKey,
+                        'possible_keys' => $sortedItems->map(function ($item) {
+                            return [
+                                'id' => $item->id,
+                                'possible_key' => $item->possible_key,
+                                'status' => $item->status,
+                                'approver' => optional($item->approver)->name, // assuming 'approver' is an object with a 'name' attribute
+                            ];
+                        })->toArray(),
+                    ];
+                })->values();
 
             return response()->json([
                 "status" => 200,
