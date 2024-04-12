@@ -150,7 +150,7 @@ class PossibleSimilarAnswersController extends Controller
                                 'status' => $item->status,
                                 'approver' => optional($item->approver)->name, // assuming 'approver' is an object with a 'name' attribute
                             ];
-                        })->toArray(),
+                        })->values(),
                     ];
                 })->values();
 
