@@ -5,6 +5,7 @@ namespace App\Helpers;
 
 use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
+use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Countries;
@@ -13,11 +14,107 @@ use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CheatingListHelper
 {
+    /**
+     * Get Main Integrity List Data or Start the job
+     *
+     * @param Competition $competition
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            if ($request->recompute) {
+                $this->fireJob($competition, $request);
+                return response()->json([
+                    'status'    => 201,
+                    'message'   => 'Computing Integrity list has been started.',
+                    'progress'  => 1
+                ], 201);
+            }
+
+            return $this->returnCheatingData($competition, $request);
+        }
+
+        catch (\Exception $e) {
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Same Participant Cheating List Data or Start the job
+     * 
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     */
+    public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            $request->merge(['for_map_list' => 1]);
+
+            if ($request->recompute) {
+                $this->fireJob($competition, $request);
+                return response()->json([
+                    'status'    => 201,
+                    'message'   => 'Computing Multiple Attempts List has been started.',
+                    'progress'  => 1
+                ], 201);
+            }
+
+            return $this->returnSameParticipantCheatingData($competition, $request);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fire job for main integrity list
+     *
+     * @param Competition $competition
+     * @param CompetitionCheatingListRequest $request
+     * @return void
+     */
+    private function fireJob(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        DB::beginTransaction();
+
+        CheatingStatus::updateOrCreate([
+            'competition_id'                    => $competition->id,
+            'cheating_percentage'               => $request->percentage ?? 85,
+            'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
+            'countries'                         => $request->country ?? null,
+            'for_map_list'                      => $request->for_map_list ?? false
+        ],
+        [
+            'status'                            => 'In Progress',
+            'progress_percentage'               => 1,
+            'compute_error_message'             => null
+        ]);
+
+        dispatch(new ComputeCheatingParticipants(
+            $competition,
+            $request->question_number,
+            $request->percentage,
+            $request->number_of_incorrect_answers,
+            $request->country,
+            $request->for_map_list
+        ));
+
+        DB::commit();
+    }
+
     /**
      * Get filter options For cheating list
      * 
@@ -194,9 +291,9 @@ class CheatingListHelper
      * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Http\Response
      */
-    public static function getCheatingCSVFile(Competition $competition, CompetitionCheatingListRequest $request)
+    public function getCheatingCSVFile(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $fileName = static::getFileName($competition, $request->file_name);
+        $fileName = $this->getFileName($competition, $request->file_name);
 
         if(Storage::disk('local')->exists($fileName)){
             Storage::disk('local')->delete($fileName);
@@ -223,7 +320,7 @@ class CheatingListHelper
      * @param string $fileName
      * @return string
      */
-    private static function getFileName(Competition $competition, string|null $fileName)
+    private function getFileName(Competition $competition, string|null $fileName)
     {
         if(!$fileName) {
             return sprintf("%s_cheating_list_%s.xlsx", $competition->name, now()->format('Y-m-d'));
@@ -239,12 +336,14 @@ class CheatingListHelper
 
     /**
      * Get cheating status
+     * 
      * @param Competition $competition
+     * @param CheatingStatus|null $cheatingStatus
+     * 
      * @return Illuminate\Http\JsonResponse
      */
-    public static function returnCheatingStatus(Competition $competition)
+    public function returnCheatingStatus(Competition $competition, CheatingStatus|null $cheatingStatus)
     {
-        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
         switch ($cheatingStatus?->status) {
             case 'In Progress':
                 $response = [
@@ -286,16 +385,22 @@ class CheatingListHelper
      * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Http\JsonResponse
      */
-    public static function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    public function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
+        $cheatingStatus = CheatingStatus::where([
+                'competition_id'                    => $competition->id,
+                'cheating_percentage'               => $request->percentage ?? 85,
+                'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
+                'countries'                         => $request->country ?? null,
+                'for_map_list'                      => 0
+        ])->first();
 
         if($cheatingStatus?->status === 'Completed')
         return $request->mode === 'csv'
-            ? static::getCheatingCSVFile($competition, $request)
-            : static::returnCheatingDataForUI($competition, $request);
+            ? $this->getCheatingCSVFile($competition, $request)
+            : $this->returnCheatingDataForUI($competition, $request);
 
-        return static::returnCheatingStatus($competition);
+        return $this->returnCheatingStatus($competition, $cheatingStatus);
     }
     
     /**
@@ -387,9 +492,9 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function returnCheatingDataForUI(Competition $competition, CompetitionCheatingListRequest $request)
+    public function returnCheatingDataForUI(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $data = CheatingListHelper::getCheatersData($competition, $request);
+        $data = static::getCheatersData($competition, $request);
 
         $returnedCollection = collect();
         $lastGroup = null;
@@ -448,14 +553,20 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    public function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::where('competition_id', $competition->id)->first();
+        $cheatingStatus = CheatingStatus::where([
+            'competition_id'                    => $competition->id,
+            'cheating_percentage'               => $request->percentage ?? 85,
+            'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
+            'countries'                         => $request->country ?? null,
+            'for_map_list'                      => 1
+        ])->first();
 
         if($cheatingStatus?->status === 'Completed')
-            return static::returnSameParticipantCheatingList($competition, $request);
+         return $this->returnSameParticipantCheatingList($competition, $request);
 
-        return static::returnCheatingStatus($competition);
+        return $this->returnCheatingStatus($competition, $cheatingStatus);
     }
 
     /**
@@ -463,9 +574,9 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function returnSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
+    public function returnSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $data = CheatingListHelper::getSameParticipantCheatersData($competition, $request);
+        $data = static::getSameParticipantCheatersData($competition, $request);
 
         $returnedCollection = collect();
         $lastGroup = null;
