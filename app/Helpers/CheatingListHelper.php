@@ -799,7 +799,7 @@ class CheatingListHelper
         try {
             return response()->json([
                 'status'    => 200,
-                'data'      => $this->getCheatingCriteriaStats($competition)
+                'data'      => $this->getCheatingCriteriaStatsData($competition)
             ], 200);
 
         } catch (\Exception $e) {
