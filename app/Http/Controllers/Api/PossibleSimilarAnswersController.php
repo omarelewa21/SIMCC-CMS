@@ -105,7 +105,7 @@ class PossibleSimilarAnswersController extends Controller
                 return $groupedItems->map(function ($item) {
                     return [
                         'answer_id' => $item['answer_id'],
-                        'possible_key' => $item['possible_key'],
+                        'possible_key' => (string) $item['possible_key'],
                     ];
                 });
             });
