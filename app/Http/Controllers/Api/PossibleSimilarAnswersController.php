@@ -100,13 +100,37 @@ class PossibleSimilarAnswersController extends Controller
                 }
             }
 
-            // Update or create PossibleSimilarAnswer records for all processed possible keys
+            // First, group all keys by task_id for targeted deletion.
+            $tasksWithKeys = collect($answerData)->groupBy('task_id')->map(function ($groupedItems) {
+                return $groupedItems->map(function ($item) {
+                    return [
+                        'answer_id' => $item['answer_id'],
+                        'possible_key' => $item['possible_key'],
+                    ];
+                });
+            });
+
+            // Update or create records.
             foreach ($answerData as $data) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $data['task_id'],
                     'answer_id' => $data['answer_id'],
                     'possible_key' => $data['possible_key'],
                 ], $data);
+            }
+
+            // Delete records that are not in the answerData for each specific task_id.
+            foreach ($tasksWithKeys as $taskId => $keys) {
+                PossibleSimilarAnswer::where('task_id', $taskId)
+                    ->whereNot(function ($query) use ($keys) {
+                        foreach ($keys as $key) {
+                            $query->orWhere(function ($orQuery) use ($key) {
+                                $orQuery->where('answer_id', $key['answer_id'])
+                                    ->where('possible_key', $key['possible_key']);
+                            });
+                        }
+                    })
+                    ->delete();
             }
 
             // Fetch updated possible similar answers and transform the collection
