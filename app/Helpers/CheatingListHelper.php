@@ -658,7 +658,10 @@ class CheatingListHelper
 
     public static function getCheatingCriteriaStatsData(Competition $competition)
     {
-        return CheatingStatus::where('competition_id', $competition->id)
+        return CheatingStatus::where([
+            'competition_id'    => $competition->id,
+            'for_map_list'      => 0
+            ])
             ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers', 'countries')
             ->get()
             ->map(function($cheatingStatus){
@@ -667,9 +670,11 @@ class CheatingListHelper
                         $join->on('participants.index_no', 'cheating_participants.participant_index')
                             ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
                     })
-                    ->where('cheating_participants.competition_id', $cheatingStatus->competition_id)
-                    ->where('cheating_participants.criteria_cheating_percentage', $cheatingStatus->cheating_percentage)
-                    ->where('cheating_participants.criteria_number_of_same_incorrect_answers', $cheatingStatus->number_of_same_incorrect_answers)
+                    ->where([
+                        'cheating_participants.competition_id'      => $cheatingStatus->competition_id,
+                        'cheating_participants.criteria_cheating_percentage' => $cheatingStatus->cheating_percentage,
+                        'cheating_participants.criteria_number_of_same_incorrect_answers' => $cheatingStatus->number_of_same_incorrect_answers
+                    ])
                     ->when($cheatingStatus->original_countries && !empty($cheatingStatus->original_countries), fn($query) => $query->whereIn('participants.country_id', $cheatingStatus->original_countries))
                     ->count();
                 return $cheatingStatus;
