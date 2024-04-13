@@ -50,18 +50,33 @@ class ComputeCheatingParticipants implements ShouldQueue
         }
         
         catch (\Exception $e) {
-            CheatingStatus::updateOrCreate([
+            $cheatingStatus = CheatingStatus::where([
                 'competition_id'                    => $this->competition->id,
                 'cheating_percentage'               => $this->percentage ?? 85,
                 'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
-                'countries'                         => $this->countries ?? null,
                 'for_map_list'                      => $this->forMapList
-            ],
-            [
-                'status'                => 'Failed',
-                'progress_percentage'   => 0,
-                'compute_error_message' => $e->getMessage()
-            ]);
+            ])
+            ->when($this->countries, fn($query) => $query->whereJsonContains('countries', $this->countries ?? null))
+            ->first();
+
+            if ($cheatingStatus) {
+                $cheatingStatus->update([
+                    'status'                => 'Failed',
+                    'progress_percentage'   => 0,
+                    'compute_error_message' => $e->getMessage()
+                ]);
+            } else {
+                CheatingStatus::create([
+                    'competition_id'                    => $this->competition->id,
+                    'cheating_percentage'               => $this->percentage ?? 85,
+                    'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
+                    'countries'                         => $this->countries ?? null,
+                    'for_map_list'                      => $this->forMapList,
+                    'status'                            => 'Failed',
+                    'progress_percentage'               => 0,
+                    'compute_error_message'             => $e->getMessage()
+                ]);
+            }
         }
     }
 }

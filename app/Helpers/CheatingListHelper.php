@@ -91,18 +91,33 @@ class CheatingListHelper
     {
         DB::beginTransaction();
 
-        CheatingStatus::updateOrCreate([
+        $cheatingStatus = CheatingStatus::where([
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $request->percentage ?? 85,
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'countries'                         => $request->country,
-            'for_map_list'                      => $request->for_map_list ?? false
-        ],
-        [
-            'status'                            => 'In Progress',
-            'progress_percentage'               => 1,
-            'compute_error_message'             => null
-        ]);
+            'for_map_list'                      => 0
+        ])
+        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->first();
+
+        if($cheatingStatus) {
+            $cheatingStatus->update([
+                'status'                => 'In Progress',
+                'progress_percentage'   => 1,
+                'compute_error_message' => null
+            ]);
+        } else {
+            CheatingStatus::create([
+                'competition_id'                    => $competition->id,
+                'cheating_percentage'               => $request->percentage ?? 85,
+                'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
+                'countries'                         => $request->country,
+                'for_map_list'                      => 0,
+                'status'                            => 'In Progress',
+                'progress_percentage'               => 1,
+                'compute_error_message'             => null
+            ]);
+        }
 
         dispatch(new ComputeCheatingParticipants(
             $competition,
