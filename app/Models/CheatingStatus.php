@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class CheatingStatus extends Model
 {
@@ -49,7 +50,7 @@ class CheatingStatus extends Model
                     ? Countries::whereIn('id', json_decode($values, true))->pluck('display_name')->join(', ')
                     : "All Countries",
                 
-            set: fn ($values) => is_array($values) ? json_encode($values) : $values
+            set: fn ($values) => is_array($values) ? '[' . Arr::join($values, ',') . ']' : $values
         );
     }
 
