@@ -22,8 +22,8 @@ class ComputeCheatingParticipantsService
     public function __construct(
         protected Competition $competition,
         protected $qNumber=null,
-        protected $percentage=95,
-        protected $numberOFSameIncorrect = 1,
+        protected $percentage=85,
+        protected $numberOFSameIncorrect=5,
         protected $countries = null,
         protected $forMapList = false
     )
@@ -32,7 +32,7 @@ class ComputeCheatingParticipantsService
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $percentage ?? 85,
             'number_of_same_incorrect_answers'  => $numberOFSameIncorrect ?? 5,
-            'countries'                         => $countries ?? null,
+            'countries'                         => $countries ? json_encode($countries) : null,
             'for_map_list'                      => $forMapList
         ])->firstOrFail();
     }
@@ -52,7 +52,6 @@ class ComputeCheatingParticipantsService
                 ? $this->detectCheatersWhoTookCompetitionTwiceOrMore()
                 : $this->detectCheaters();
 
-            $this->detectCheaters();
             $this->updateCheatStatus(100, 'Completed');
         }
 

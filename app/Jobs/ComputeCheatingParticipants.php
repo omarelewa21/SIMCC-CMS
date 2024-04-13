@@ -26,9 +26,9 @@ class ComputeCheatingParticipants implements ShouldQueue
         protected Competition $competition,
         protected $qNumber=null,
         protected $percentage=null,
-        protected $number_of_incorrect_answers=null,
+        protected $numberOFSameIncorrect=null,
         protected $countries=null,
-        protected $for_map_list = false
+        protected $forMapList = false
 
     ) {}
 
@@ -43,9 +43,9 @@ class ComputeCheatingParticipants implements ShouldQueue
             (new ComputeCheatingParticipantsService(
                 $this->competition,
                 $this->qNumber, $this->percentage ?? 85,
-                $this->number_of_incorrect_answers ?? 5,
+                $this->numberOFSameIncorrect ?? 5,
                 $this->countries,
-                $this->for_map_list ?? false
+                $this->forMapList ?? false
             ))->computeCheatingParticipants();
         }
         
@@ -53,9 +53,9 @@ class ComputeCheatingParticipants implements ShouldQueue
             CheatingStatus::updateOrCreate([
                 'competition_id'                    => $this->competition->id,
                 'cheating_percentage'               => $this->percentage ?? 85,
-                'number_of_same_incorrect_answers'  => $this->number_of_incorrect_answers ?? 5,
+                'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
                 'countries'                         => $this->countries ?? null,
-                'for_map_list'                      => $this->for_map_list
+                'for_map_list'                      => $this->forMapList
             ],
             [
                 'status'                => 'Failed',

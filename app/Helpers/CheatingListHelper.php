@@ -396,7 +396,7 @@ class CheatingListHelper
                 'competition_id'                    => $competition->id,
                 'cheating_percentage'               => $request->percentage ?? 85,
                 'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-                'countries'                         => $request->country ?? null,
+                'countries'                         => $request->country ? json_encode($request->country) : null,
                 'for_map_list'                      => 0
         ])->first();
 
@@ -564,7 +564,7 @@ class CheatingListHelper
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $request->percentage ?? 85,
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'countries'                         => $request->country ?? null,
+            'countries'                         => $request->country ? json_encode($request->country) : null,
             'for_map_list'                      => 1
         ])->first();
 
