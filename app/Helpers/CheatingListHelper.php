@@ -59,7 +59,11 @@ class CheatingListHelper
     public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            $request->merge(['for_map_list' => 1]);
+            $request->merge([
+                'for_map_list'          => 1,
+                'percentage'            => 0,
+                'number_of_same_incorrect_answers' => 0
+            ]);
 
             if ($request->recompute) {
                 $this->fireJob($competition, $request);
