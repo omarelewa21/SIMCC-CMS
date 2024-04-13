@@ -95,7 +95,7 @@ class CheatingListHelper
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $request->percentage ?? 85,
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'countries'                         => $request->country ?? null,
+            'countries'                         => $request->country,
             'for_map_list'                      => $request->for_map_list ?? false
         ],
         [
@@ -392,9 +392,10 @@ class CheatingListHelper
                 'competition_id'                    => $competition->id,
                 'cheating_percentage'               => $request->percentage ?? 85,
                 'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-                'countries'                         => $request->country ? json_encode($request->country) : null,
                 'for_map_list'                      => 0
-        ])->first();
+        ])
+        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->first();
 
         if($cheatingStatus?->status === 'Completed')
         return $request->mode === 'csv'
@@ -533,7 +534,7 @@ class CheatingListHelper
             'No of qns with same correct answer'            => 'number_of_same_correct_answers',
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
-            'Qns with same incorrect answer'                          => 'different_questions',
+            'Qns with same incorrect answer'                => 'different_questions',
             ...$headers
         ];
         
@@ -560,9 +561,10 @@ class CheatingListHelper
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $request->percentage ?? 85,
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'countries'                         => $request->country ? json_encode($request->country) : null,
             'for_map_list'                      => 1
-        ])->first();
+        ])
+        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->first();
 
         if($cheatingStatus?->status === 'Completed')
          return $this->returnSameParticipantCheatingList($competition, $request);

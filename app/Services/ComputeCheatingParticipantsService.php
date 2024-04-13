@@ -32,9 +32,10 @@ class ComputeCheatingParticipantsService
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $percentage ?? 85,
             'number_of_same_incorrect_answers'  => $numberOFSameIncorrect ?? 5,
-            'countries'                         => $countries ? json_encode($countries) : null,
             'for_map_list'                      => $forMapList
-        ])->firstOrFail();
+        ])
+        ->when($countries, fn($query) => $query->whereJsonContains('countries', $countries))
+        ->firstOrFail();
     }
 
     /**
