@@ -59,11 +59,7 @@ class CheatingListHelper
     public function getSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            $request->merge([
-                'for_map_list'          => 1,
-                'percentage'            => 0,
-                'number_of_same_incorrect_answers' => 0
-            ]);
+            $request->merge(['for_map_list' => 1]);
 
             if ($request->recompute) {
                 $this->fireJob($competition, $request);
@@ -347,31 +343,31 @@ class CheatingListHelper
      * 
      * @return Illuminate\Http\JsonResponse
      */
-    public function returnCheatingStatus(Competition $competition, CheatingStatus|null $cheatingStatus)
+    public function returnCheatingStatus(Competition $competition, CheatingStatus|null $cheatingStatus, $list = 'Integrity')
     {
         switch ($cheatingStatus?->status) {
             case 'In Progress':
                 $response = [
                     'status'    => 202,
-                    'message'   => 'Generating integrity list is in progress'
+                    'message'   => "Generating $list list is in progress"
                 ];
                 break;
             case 'Failed':
                 $response = [
                     'status'    => 417,
-                    'message'   => "Generating integrity list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'message'   => "Generating $list list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
                 ];
                 break;
             case 'Completed':
                 $response = [
                     'status'    => 200,
-                    'message'   => 'Integerity list generated successfully',
+                    'message'   => "$list list generated successfully",
                 ];
                 break;
             default:
                 return response()->json([
                     'status'        => 206,
-                    'message'       => 'Generating Integrity list is not started',
+                    'message'       => "Generating $list list is not started",
                     'progress'      => 0,
                     'competition'   => $competition->name
                 ], 206);
@@ -571,7 +567,7 @@ class CheatingListHelper
         if($cheatingStatus?->status === 'Completed')
          return $this->returnSameParticipantCheatingList($competition, $request);
 
-        return $this->returnCheatingStatus($competition, $cheatingStatus);
+        return $this->returnCheatingStatus($competition, $cheatingStatus, 'Multiple Attempts');
     }
 
     /**
