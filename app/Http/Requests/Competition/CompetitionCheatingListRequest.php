@@ -24,23 +24,15 @@ class CompetitionCheatingListRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        if($this->has('country')) {
-            $requestCountries = $this->query('country');
-            if (is_string($requestCountries)) {
-                // Assuming the string is like "[41,202]", strip the brackets and explode by comma
-                $requestCountries = trim($requestCountries, "[]");
-                $requestCountries = explode(',', $requestCountries);
-            }
+        if($this->filled('country')) {
+            $requestCountries = json_decode($this->country, true);
             $competitionCountries = Countries::getCompetitionCountryList($this->route()->competition);
-
             if(empty(array_diff($competitionCountries, $requestCountries))) {
-                $this->offsetUnset('country');
+                $this->merge(['country' => null]);
             } else {
                 $countries = array_intersect($competitionCountries, $requestCountries);
                 sort($countries);
-                $this->merge([
-                    'country' => $countries,
-                ]);
+                $this->merge(['country' => $countries]);
             }
         }
     }
@@ -58,7 +50,7 @@ class CompetitionCheatingListRequest extends FormRequest
             'search'            => 'string',
             'percentage'        => 'numeric',
             'question_number'   => 'integer',
-            'country'           => 'array',
+            'country'           => 'array|nullable:min:1',
             'country.*'         => 'integer|exists:all_countries,id',
             'number_of_incorrect_answers' => 'integer',
             'get_data'          => 'boolean',
