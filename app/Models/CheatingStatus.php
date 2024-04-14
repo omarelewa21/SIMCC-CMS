@@ -42,6 +42,23 @@ class CheatingStatus extends Model
         return $this->belongsTo(Competition::class);
     }
 
+    /**
+     * Scope a query to request params
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array|null $countries
+     * 
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFilterByCountries($query, array|null $countries=null)
+    {
+        if ($countries && !empty($countries)) {
+            $query->whereJsonContains('countries', $countries);
+        }
+
+        return $query;
+    }
+
     protected function countries(): Attribute
     {
         return Attribute::make(

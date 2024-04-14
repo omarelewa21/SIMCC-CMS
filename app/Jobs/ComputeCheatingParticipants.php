@@ -56,7 +56,7 @@ class ComputeCheatingParticipants implements ShouldQueue
                 'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
                 'for_map_list'                      => $this->forMapList
             ])
-            ->when($this->countries, fn($query) => $query->whereJsonContains('countries', $this->countries ?? null))
+            ->FilterByCountries($this->countries)
             ->first();
 
             if ($cheatingStatus) {
