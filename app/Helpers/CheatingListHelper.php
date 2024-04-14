@@ -15,7 +15,6 @@ use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -221,7 +220,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
-            ->when($request->has('country') && !$request->has('percentage'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
@@ -444,7 +443,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 1)
-            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
@@ -641,7 +640,7 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request, $forMapList = false)
     {
         if($request->has('percentage') && $request->has('number_of_incorrect_answers')) {
             return Participants::distinct()
@@ -651,13 +650,15 @@ class CheatingListHelper
             })
             ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->where([
-                'cheating_participants.competition_id'      => $competition->id,
-                'cheating_participants.criteria_cheating_percentage' => $request->percentage,
-                'cheating_participants.criteria_number_of_same_incorrect_answers' => $request->number_of_incorrect_answers
+                'cheating_participants.competition_id'                              => $competition->id,
+                'cheating_participants.criteria_cheating_percentage'                => $request->percentage,
+                'cheating_participants.criteria_number_of_same_incorrect_answers'   => $request->number_of_incorrect_answers,
+                'cheating_participants.is_same_participant'                         => $forMapList
             ])
             ->exists()
             ? ''
-            : sprintf("No Integrity Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
+            : sprintf("No %s Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
+                $forMapList ? 'Multiple Attempts' : 'Integrity',
                 $request->percentage,
                 $request->number_of_incorrect_answers,
                 $request->has('country')

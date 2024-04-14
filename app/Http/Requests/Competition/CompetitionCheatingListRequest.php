@@ -53,6 +53,7 @@ class CompetitionCheatingListRequest extends FormRequest
             'country'           => 'array',
             'country.*'         => 'integer|exists:all_countries,id',
             'number_of_incorrect_answers' => 'integer',
+            'get_data'          => 'boolean',
         ];
     }
 }
