@@ -34,7 +34,7 @@ class ComputeCheatingParticipantsService
             'number_of_same_incorrect_answers'  => $numberOFSameIncorrect ?? 5,
             'for_map_list'                      => $forMapList
         ])
-        ->when($countries, fn($query) => $query->whereJsonContains('countries', $countries))
+        ->FilterByCountries($countries)
         ->firstOrFail();
     }
 

@@ -15,7 +15,6 @@ use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -93,11 +92,10 @@ class CheatingListHelper
             'competition_id'                    => $competition->id,
             'cheating_percentage'               => $request->percentage ?? 85,
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'for_map_list'                      => $request->for_map_list ?? 0
+            'for_map_list'                      => $request->for_map_list ?? 0,
         ])
-        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->FilterByCountries($request->country)
         ->first();
-
         if($cheatingStatus) {
             $cheatingStatus->update([
                 'status'                => 'In Progress',
@@ -221,7 +219,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
-            ->when($request->has('country') && !$request->has('percentage'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
@@ -405,7 +403,7 @@ class CheatingListHelper
                 'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
                 'for_map_list'                      => 0
         ])
-        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->FilterByCountries($request->country)
         ->first();
 
         if($cheatingStatus?->status === 'Completed')
@@ -444,7 +442,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 1)
-            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+            ->when($request->has('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
             ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
@@ -574,7 +572,7 @@ class CheatingListHelper
             'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
             'for_map_list'                      => 1
         ])
-        ->when($request->countries, fn($query) => $query->whereJsonContains('countries', $request->countries))
+        ->FilterByCountries($request->country)
         ->first();
 
         if($cheatingStatus?->status === 'Completed')
@@ -626,7 +624,7 @@ class CheatingListHelper
 
         return response()->json([
             'status'            => 201,
-            'message'           => static::getMessageForCheatingData($competition, $request),
+            'message'           => static::getMessageForCheatingData($competition, $request, true),
             'competition'       => $competition->name,
             'filter_options'    => static::getFilterOptions($data),
             'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
@@ -641,31 +639,40 @@ class CheatingListHelper
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
-    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
+    public static function getMessageForCheatingData(Competition $competition, CompetitionCheatingListRequest $request, $forMapList = false)
     {
-        if($request->has('percentage') && $request->has('number_of_incorrect_answers')) {
-            return Participants::distinct()
-            ->join('cheating_participants', function (JoinClause $join) {
-                    $join->on('participants.index_no', 'cheating_participants.participant_index')
-                        ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
-            })
-            ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
-            ->where([
-                'cheating_participants.competition_id'      => $competition->id,
-                'cheating_participants.criteria_cheating_percentage' => $request->percentage,
-                'cheating_participants.criteria_number_of_same_incorrect_answers' => $request->number_of_incorrect_answers
-            ])
-            ->exists()
-            ? ''
-            : sprintf("No Integrity Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
-                $request->percentage,
-                $request->number_of_incorrect_answers,
-                $request->has('country')
-                    ? Arr::join(Countries::whereIn('id', $request->country)->pluck('display_name')->toArray(), ', ')
-                    : 'All Countries'
-            );
-        }
-            
+        if($request->has('get_data')) {
+            $hasParticipants = Participants::distinct()
+                ->join('cheating_participants', function (JoinClause $join) {
+                        $join->on('participants.index_no', 'cheating_participants.participant_index')
+                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+                })
+                ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
+                ->where([
+                    'cheating_participants.competition_id'                              => $competition->id,
+                    'cheating_participants.criteria_cheating_percentage'                => $request->percentage,
+                    'cheating_participants.criteria_number_of_same_incorrect_answers'   => $request->number_of_incorrect_answers,
+                    'cheating_participants.is_same_participant'                         => $forMapList
+                ])
+                ->exists();
+
+            if($hasParticipants) return '';
+            return $forMapList
+                ? sprintf("No Multiple Attempts Cases Found for countries: %s",
+                    $request->has('country')
+                        ? Arr::join(Countries::whereIn('id', $request->country)->pluck('display_name')->toArray(), ', ')
+                        : 'All Countries'
+                    )
+
+                : sprintf("No Integrity Cases Found for cirteria (Percentage: %s, Number of incorrect answers: %s) and for countries: %s",
+                    $request->percentage,
+                    $request->number_of_incorrect_answers,
+                    $request->has('country')
+                        ? Arr::join(Countries::whereIn('id', $request->country)->pluck('display_name')->toArray(), ', ')
+                        : 'All Countries'
+                    );
+            }
+                
         return '';
     }
 
@@ -796,7 +803,7 @@ class CheatingListHelper
         return $competition->participants()
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
+            ->with(['school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'

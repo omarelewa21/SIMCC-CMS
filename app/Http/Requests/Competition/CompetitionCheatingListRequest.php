@@ -30,8 +30,10 @@ class CompetitionCheatingListRequest extends FormRequest
             if(empty(array_diff($competitionCountries, $requestCountries))) {
                 $this->offsetUnset('country');
             } else {
+                $countries = array_intersect($competitionCountries, $requestCountries);
+                sort($countries);
                 $this->merge([
-                    'country' => array_intersect($competitionCountries, $requestCountries),
+                    'country' => $countries,
                 ]);
             }
         }
@@ -53,6 +55,7 @@ class CompetitionCheatingListRequest extends FormRequest
             'country'           => 'array',
             'country.*'         => 'integer|exists:all_countries,id',
             'number_of_incorrect_answers' => 'integer',
+            'get_data'          => 'boolean',
         ];
     }
 }
