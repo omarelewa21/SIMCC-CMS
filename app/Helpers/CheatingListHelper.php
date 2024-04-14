@@ -96,6 +96,7 @@ class CheatingListHelper
         ])
         ->FilterByCountries($request->country)
         ->first();
+
         if($cheatingStatus) {
             $cheatingStatus->update([
                 'status'                => 'In Progress',

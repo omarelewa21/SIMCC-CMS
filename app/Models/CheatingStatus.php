@@ -54,6 +54,8 @@ class CheatingStatus extends Model
     {
         if ($countries && !empty($countries)) {
             $query->whereJsonContains('countries', $countries);
+        } else {
+            $query->whereNull('countries');
         }
 
         return $query;
