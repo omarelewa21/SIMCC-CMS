@@ -803,7 +803,7 @@ class CheatingListHelper
         return $competition->participants()
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
+            ->with(['school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'
