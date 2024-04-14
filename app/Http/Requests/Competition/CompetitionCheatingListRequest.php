@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Competition;
 
+use App\Models\Countries;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CompetitionCheatingListRequest extends FormRequest
@@ -23,10 +24,16 @@ class CompetitionCheatingListRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        if($this->has('country')) {
-            $this->merge([
-                'country' => json_decode($this->country, true),
-            ]);
+        if($this->filled('country')) {
+            $requestCountries = json_decode($this->country, true);
+            $competitionCountries = Countries::getCompetitionCountryList($this->route()->competition);
+            if(empty(array_diff($competitionCountries, $requestCountries))) {
+                $this->merge(['country' => null]);
+            } else {
+                $countries = array_intersect($competitionCountries, $requestCountries);
+                sort($countries);
+                $this->merge(['country' => $countries]);
+            }
         }
     }
 
@@ -43,9 +50,10 @@ class CompetitionCheatingListRequest extends FormRequest
             'search'            => 'string',
             'percentage'        => 'numeric',
             'question_number'   => 'integer',
-            'country'           => 'array',
+            'country'           => 'array|nullable:min:1',
             'country.*'         => 'integer|exists:all_countries,id',
             'number_of_incorrect_answers' => 'integer',
+            'get_data'          => 'boolean',
         ];
     }
 }
