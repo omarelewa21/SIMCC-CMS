@@ -25,8 +25,14 @@ class CompetitionCheatingListRequest extends FormRequest
     protected function prepareForValidation()
     {
         if($this->has('country')) {
+            $requestCountries = $this->query('country');
+            if (is_string($requestCountries)) {
+                // Assuming the string is like "[41,202]", strip the brackets and explode by comma
+                $requestCountries = trim($requestCountries, "[]");
+                $requestCountries = explode(',', $requestCountries);
+            }
             $competitionCountries = Countries::getCompetitionCountryList($this->route()->competition);
-            $requestCountries = json_decode($this->country, true);
+
             if(empty(array_diff($competitionCountries, $requestCountries))) {
                 $this->offsetUnset('country');
             } else {
