@@ -651,12 +651,12 @@ class CheatingListHelper
                 ->when($request->has('country'), fn($query) => $query->whereIn('participants.country_id', $request->country))
                 ->where([
                     'cheating_participants.competition_id'                              => $competition->id,
-                    'cheating_participants.criteria_cheating_percentage'                => $request->percentage,
-                    'cheating_participants.criteria_number_of_same_incorrect_answers'   => $request->number_of_incorrect_answers,
+                    'cheating_participants.criteria_cheating_percentage'                => $request->percentage ?? 85,
+                    'cheating_participants.criteria_number_of_same_incorrect_answers'   => $request->number_of_incorrect_answers ?? 5,
                     'cheating_participants.is_same_participant'                         => $forMapList
                 ])
                 ->exists();
-
+            
             if($hasParticipants) return '';
             return $forMapList
                 ? sprintf("No Multiple Attempts Cases Found for countries: %s",
