@@ -627,9 +627,9 @@ class CheatingListHelper
             'School'                                        => 'school',
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
+            'System generated IAC'                          => 'is_iac',
             'Group ID'                                      => 'group_id',
             'No. Of Answers Uploaded'                       => 'number_of_answers',
-            'System generated IAC'                          => 'is_iac',
             ...$headers
         ];
 
