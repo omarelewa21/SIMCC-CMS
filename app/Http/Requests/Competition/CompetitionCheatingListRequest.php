@@ -76,7 +76,7 @@ class CompetitionCheatingListRequest extends FormRequest
                 $validator->errors()->add(
                     'countries',
                     sprintf(
-                        "You need to revoke countries: %s, before you can perform IAC integrity check or MAP check"
+                        "You need to revoke IAC confirmation from these countries: %s, before you can perform IAC integrity check or MAP check on them"
                         , Arr::join($confirmedCountries, ', ', ' and ')
                     )
                 );
