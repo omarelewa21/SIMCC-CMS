@@ -7,9 +7,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 
 class RestoreFromEliminationRequest extends FormRequest
 {
+    use \App\Traits\IntegrityTrait;
+
     private Competition $competition;
 
     function __construct(Route $route) {
@@ -46,5 +49,27 @@ class RestoreFromEliminationRequest extends FormRequest
             ],
             'mode'             => 'required|in:system,custom',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $confirmedCountries = $this->hasParticipantBelongsToConfirmedCountry($this->competition, $this->participants);
+            if ($confirmedCountries) {
+                $validator->errors()->add(
+                    'countries',
+                    sprintf(
+                        "You need to revoke IAC confirmation from these countries: %s, before you can remove IAC incidents from those countries."
+                        , Arr::join($confirmedCountries, ', ', ' and ')
+                    )
+                );
+            }
+        });
     }
 }
