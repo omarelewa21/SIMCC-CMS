@@ -734,14 +734,14 @@ class CheatingListHelper
                 $reason = collect([]);
                 foreach($participant->integrityCases as $integrityCase){
                     if($integrityCase->mode === 'system') {
-                        $type->push('System');
+                        $type->push('System Generated IAC');
                         $reason->push($integrityCase->reason);
                     }else{
-                        $type->push('Custom');
+                        $type->push('IAC Incident');
                         $reason->push($integrityCase->reason);
                     }
                 }
-                $data['type'] = $type->join(', ', ' and ') . ' Generated IAC';
+                $data['type'] = $type->join(', ', ' and ');
                 $data['reason'] = $reason->join(', ', ' -- ');
                 unset($data['integrity_cases']);
                 return $data;
