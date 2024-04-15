@@ -69,6 +69,7 @@ class CompetitionCheatingListRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            if(!$this->recompute) return;
             $countries = $this->filled('country') ? $this->country : Countries::getCompetitionCountryList($this->route()->competition);
             $confirmedCountries = $this->hasConfirmedCountry($this->route()->competition, $countries);
 
