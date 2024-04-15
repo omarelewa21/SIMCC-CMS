@@ -731,14 +731,18 @@ class CheatingListHelper
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
                 $type = collect([]);
+                $reason = collect([]);
                 foreach($participant->integrityCases as $integrityCase){
                     if($integrityCase->mode === 'system') {
                         $type->push('System');
+                        $reason->push($integrityCase->reason);
                     }else{
                         $type->push('Custom');
+                        $reason->push($integrityCase->reason);
                     }
                 }
                 $data['type'] = $type->join(', ', ' and ') . ' Generated IAC';
+                $data['reason'] = $reason->join(', ', ' -- ');
                 unset($data['integrity_cases']);
                 return $data;
             });
