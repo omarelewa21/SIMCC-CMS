@@ -4,9 +4,12 @@ namespace App\Http\Requests\Competition;
 
 use App\Models\Countries;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Arr;
 
 class CompetitionCheatingListRequest extends FormRequest
 {
+    use \App\Traits\IntegrityTrait;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -55,5 +58,29 @@ class CompetitionCheatingListRequest extends FormRequest
             'number_of_incorrect_answers' => 'integer',
             'get_data'          => 'boolean',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $countries = $this->filled('country') ? $this->country : Countries::getCompetitionCountryList($this->route()->competition);
+            $confirmedCountries = $this->hasConfirmedCountry($this->route()->competition, $countries);
+
+            if ($confirmedCountries){
+                $validator->errors()->add(
+                    'countries',
+                    sprintf(
+                        "You need to revoke countries: %s, before you can perform IAC integrity check or MAP check"
+                        , Arr::join($confirmedCountries, ', ', ' and ')
+                    )
+                );
+            }
+        });
     }
 }
