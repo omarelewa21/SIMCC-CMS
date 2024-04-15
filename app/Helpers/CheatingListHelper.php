@@ -359,7 +359,7 @@ class CheatingListHelper
             case 'In Progress':
                 $response = [
                     'status'    => 202,
-                    'message'   => "Generating $list list is in progress"
+                    'message'   => "Generating $list list in progress"
                 ];
                 break;
             case 'Failed':
@@ -377,7 +377,7 @@ class CheatingListHelper
             default:
                 return response()->json([
                     'status'        => 206,
-                    'message'       => "Generating $list list is not started",
+                    'message'       => "$list list Generation has not begun",
                     'progress'      => 0,
                     'competition'   => $competition->name
                 ], 206);
