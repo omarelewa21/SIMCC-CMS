@@ -28,6 +28,7 @@ trait IntegrityTrait
             ->join('all_countries', 'all_countries.id', '=', 'competition_countries_for_integrity_check.country_id')
             ->where('competition_countries_for_integrity_check.is_confirmed', 1)
             ->select('all_countries.display_name as name')
+            ->distinct()
             ->get();
 
         if($countries->isEmpty()) return false;
