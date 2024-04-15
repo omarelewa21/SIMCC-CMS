@@ -8,7 +8,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Query\Builder;
 
-class EliminateFromComputeRequest extends FormRequest
+class RestoreFromEliminationRequest extends FormRequest
 {
     private Competition $competition;
 
@@ -34,8 +34,8 @@ class EliminateFromComputeRequest extends FormRequest
     public function rules()
     {
         return [
-            'participants' => "required|array|min:1",
-            'participants.*.index'    => [
+            'participants'      => "required|array|min:1",
+            'participants.*'    => [
                 'required',
                 Rule::exists('participants', 'index_no')
                     ->where(function (Builder $query) {
@@ -44,7 +44,6 @@ class EliminateFromComputeRequest extends FormRequest
                         return $query->whereIn('competition_organization_id', $competitionOrganizations);
                     }),
             ],
-            'participants.*.reason'   => 'string|nullable',
             'mode'             => 'required|in:system,custom',
         ];
     }
