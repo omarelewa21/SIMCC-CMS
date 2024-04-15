@@ -543,7 +543,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
-            'reason'                                        => 'reason',
+            'Reason'                                        => 'reason',
             'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
@@ -631,7 +631,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
-            'reason'                                        => 'reason',
+            'Reason'                                        => 'reason',
             'Group ID'                                      => 'group_id',
             'No. Of Answers Uploaded'                       => 'number_of_answers',
             ...$headers
