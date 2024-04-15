@@ -374,7 +374,7 @@ class CheatingListHelper
             case 'Completed':
                 $response = [
                     'status'    => 200,
-                    'message'   => "$list list generated successfully",
+                    'message'   => "No $list Cases Found",
                 ];
                 break;
             default:
