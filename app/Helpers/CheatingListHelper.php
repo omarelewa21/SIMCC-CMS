@@ -259,9 +259,10 @@ class CheatingListHelper
         $participant->country = $participant->country->display_name;
         $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
         $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
+        $participant->reason = $participant->integrityCases?->first()?->reason;
         
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'criteria_cheating_percentage',
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'criteria_cheating_percentage',
             'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions', 
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
             'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
@@ -482,9 +483,10 @@ class CheatingListHelper
         $participant->country = $participant->country->display_name;
         $participant->number_of_answers = $participant->answers_count;
         $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
+        $participant->reason = $participant->integrityCases?->first()?->reason;
 
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'group_id', 'number_of_answers'
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'group_id', 'number_of_answers'
         );
     
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
@@ -541,6 +543,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
+            'reason'                                        => 'reason',
             'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
@@ -628,6 +631,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
+            'reason'                                        => 'reason',
             'Group ID'                                      => 'group_id',
             'No. Of Answers Uploaded'                       => 'number_of_answers',
             ...$headers
