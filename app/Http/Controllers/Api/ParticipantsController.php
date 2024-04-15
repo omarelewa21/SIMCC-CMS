@@ -18,6 +18,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
+use App\Http\Requests\Participant\RestoreFromEliminationRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
@@ -26,6 +27,7 @@ use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use PDF;
 
@@ -473,7 +475,7 @@ class ParticipantsController extends Controller
         try {
             $round = $competition->rounds()->with('roundsAwards')->first();
             $defaultAwardRank = $round->roundsAwards->count() + 1;
-            $participantIndexes = $request->participants;
+            $participantIndexes = Arr::pluck($request->participants, 'index');
 
             Participants::whereIn('index_no', $participantIndexes)
                 ->where('status', '<>', Participants::STATUS_CHEATING)
@@ -497,18 +499,11 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
             
-            foreach($participantIndexes as $participantIndex) {
-                if($request->reason) {
-                    IntegrityCase::updateOrCreate(
-                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
-                        ['reason' => $request->reason],
-                    );
-                } else {
-                    IntegrityCase::updateOrCreate(
-                        ['participant_index' => $participantIndex, 'mode' => $request->mode],
-                        []
-                    );
-                }
+            foreach($participantIndexes as $i => $participantIndex) {
+                IntegrityCase::updateOrCreate(
+                    ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                    ['reason' => $request->participants[$i]['reason'] ?? null],
+                );
             }
 
         } catch (\Exception $e) {
@@ -526,7 +521,7 @@ class ParticipantsController extends Controller
         ]);
     }
 
-    public function deleteEliminatedParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
+    public function deleteEliminatedParticipantsFromCompute(Competition $competition, RestoreFromEliminationRequest $request)
     {
         DB::beginTransaction();
         try {
