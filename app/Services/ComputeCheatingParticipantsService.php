@@ -216,10 +216,9 @@ class ComputeCheatingParticipantsService
             })
             ->where([
                 'cheating_participants.competition_id'      => $this->competition->id,
-                'participants.status'                       => Participants::STATUS_CHEATING,
                 'cheating_participants.is_same_participant' => $this->forMapList
             ])
-            ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
+            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
             ->delete();
     }
 

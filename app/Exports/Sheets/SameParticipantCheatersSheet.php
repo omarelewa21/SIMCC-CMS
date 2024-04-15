@@ -53,9 +53,10 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
             'Country',
             'Grade',
             'System generated IAC',
+            'Reason',
             'Group ID',
             'No. Of Answers Uploaded',
-            ...array_slice($headers, 9)
+            ...array_slice($headers, 10)
         ];
     }
 
