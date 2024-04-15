@@ -124,6 +124,11 @@ class Competition extends Base
         return $this->hasManyThrough(Participants::class, CompetitionOrganization::class, 'competition_id', 'competition_organization_id', 'id', 'id');
     }
 
+    public function integrityCases()
+    {
+        return $this->hasMany(CheatingParticipants::class, 'competition_id', 'id');
+    }
+
     public function integrityCheckCountries()
     {
         return $this->hasMany(IntegrityCheckCompetitionCountries::class, 'competition_id', 'id');
