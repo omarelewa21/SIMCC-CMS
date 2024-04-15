@@ -7,6 +7,7 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Jobs\ComputeCheatingParticipants;
+use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Countries;
@@ -29,6 +30,8 @@ class CheatingListHelper
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
+            $request->merge(['for_map_list' => 0]);
+
             if ($request->recompute) {
                 $this->fireJob($competition, $request);
                 return response()->json([
@@ -359,7 +362,7 @@ class CheatingListHelper
             case 'In Progress':
                 $response = [
                     'status'    => 202,
-                    'message'   => "Generating $list list is in progress"
+                    'message'   => "Generating $list list in progress"
                 ];
                 break;
             case 'Failed':
@@ -377,7 +380,7 @@ class CheatingListHelper
             default:
                 return response()->json([
                     'status'        => 206,
-                    'message'       => "Generating $list list is not started",
+                    'message'       => "$list list Generation has not begun",
                     'progress'      => 0,
                     'competition'   => $competition->name
                 ], 206);
@@ -398,21 +401,25 @@ class CheatingListHelper
      */
     public function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::where([
+        $cheatingStatuses = CheatingStatus::where([
                 'competition_id'                    => $competition->id,
-                'cheating_percentage'               => $request->percentage ?? 85,
-                'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-                'for_map_list'                      => 0
-        ])
-        ->FilterByCountries($request->country)
-        ->first();
+                'for_map_list'                      => 0,
+        ])->get();
 
-        if($cheatingStatus?->status === 'Completed')
-        return $request->mode === 'csv'
-            ? $this->getCheatingCSVFile($competition, $request)
-            : $this->returnCheatingDataForUI($competition, $request);
+        $InProgressCheatingStatus = $cheatingStatuses->firstWhere('status', 'In Progress');
+        if($InProgressCheatingStatus) return $this->returnCheatingStatus($competition, $InProgressCheatingStatus);
 
-        return $this->returnCheatingStatus($competition, $cheatingStatus);
+        if($competition->integrityCases()->where('is_same_participant', 0)->exists()) {
+            return $request->mode === 'csv'
+                ? $this->getCheatingCSVFile($competition, $request)
+                : $this->returnCheatingDataForUI($competition, $request);
+        }
+
+        if($cheatingStatuses->isEmpty()) {
+            return $this->returnCheatingStatus($competition, null);
+        }
+
+        return $this->returnCheatingStatus($competition, $cheatingStatuses->last());
     }
     
     /**
@@ -567,19 +574,23 @@ class CheatingListHelper
      */
     public function returnSameParticipantCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $cheatingStatus = CheatingStatus::where([
+        $cheatingStatuses = CheatingStatus::where([
             'competition_id'                    => $competition->id,
-            'cheating_percentage'               => $request->percentage ?? 85,
-            'number_of_same_incorrect_answers'  => $request->number_of_incorrect_answers ?? 5,
-            'for_map_list'                      => 1
-        ])
-        ->FilterByCountries($request->country)
-        ->first();
+            'for_map_list'                      => 1,
+        ])->get();
 
-        if($cheatingStatus?->status === 'Completed')
-         return $this->returnSameParticipantCheatingList($competition, $request);
+        $InProgressCheatingStatus = $cheatingStatuses->firstWhere('status', 'In Progress');
+        if($InProgressCheatingStatus) return $this->returnCheatingStatus($competition, $InProgressCheatingStatus, 'Multiple Attempts');
 
-        return $this->returnCheatingStatus($competition, $cheatingStatus, 'Multiple Attempts');
+        if($competition->integrityCases()->where('is_same_participant', 1)->exists()) {
+            return $this->returnSameParticipantCheatingList($competition, $request);
+        }
+
+        if($cheatingStatuses->isEmpty()) {
+            return $this->returnCheatingStatus($competition, null, 'Multiple Attempts');
+        }
+
+        return $this->returnCheatingStatus($competition, $cheatingStatuses->last(), 'Multiple Attempts');
     }
 
     /**
