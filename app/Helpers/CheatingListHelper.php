@@ -7,7 +7,6 @@ use App\Exports\CheatersExport;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\Competition\ConfirmCountryForIntegrityRequest;
 use App\Jobs\ComputeCheatingParticipants;
-use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Countries;
