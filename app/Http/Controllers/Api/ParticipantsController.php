@@ -510,14 +510,26 @@ class ParticipantsController extends Controller
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants elimination is unsuccessfull {$e->getMessage()}",
+                "message"   => $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
         }
         DB::commit();
+        switch ($request->mode) {
+            case 'system':
+                $message = "System Generated IAC Participants Created Successfully";
+                break;
+            case 'custom':
+                $message = "IAC Incident Participant Created Successfully";
+                break;
+            default:
+                $message = "MAP IAC Participants Created Successfully";
+                break;
+        }
+
         return response()->json([
             "status"    => 200,
-            "message"   => "Participants eliminated successfully"
+            "message"   => $message
         ]);
     }
 
@@ -549,9 +561,21 @@ class ParticipantsController extends Controller
         }
 
         DB::commit();
+        switch ($request->mode) {
+            case 'system':
+                $message = "System Generated IAC Participants restored successfully";
+                break;
+            case 'custom':
+                $message = "IAC Incident Participant restored successfully";
+                break;
+            default:
+                $message = "MAP IAC Participants restored successfully";
+                break;
+        }
+
         return response()->json([
             "status"    => 200,
-            "message"   => "Participants restored successfully"
+            "message"   => $message
         ]);
     }
 
