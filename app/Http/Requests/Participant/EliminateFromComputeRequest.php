@@ -48,7 +48,7 @@ class EliminateFromComputeRequest extends FormRequest
                     }),
             ],
             'participants.*.reason'   => 'string|nullable',
-            'mode'             => 'required|in:system,custom',
+            'mode'             => 'required|in:system,custom,map',
         ];
     }
 

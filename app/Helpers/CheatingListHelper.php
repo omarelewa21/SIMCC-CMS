@@ -465,7 +465,7 @@ class CheatingListHelper
                 'cheating_participants.group_id'
             )
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
-                'integrityCases' => fn($query) => $query->where('mode', 'system')]
+                'integrityCases' => fn($query) => $query->where('mode', 'map')]
             )
             ->withCount('answers')
             ->get();
@@ -733,13 +733,18 @@ class CheatingListHelper
                 $type = collect([]);
                 $reason = collect([]);
                 foreach($participant->integrityCases as $integrityCase){
-                    if($integrityCase->mode === 'system') {
-                        $type->push('System Generated IAC');
-                        $reason->push($integrityCase->reason);
-                    }else{
-                        $type->push('IAC Incident');
-                        $reason->push($integrityCase->reason);
+                    switch($integrityCase->mode){
+                        case 'map':
+                            $type->push('MAP IAC');
+                            break;
+                        case 'custom':
+                            $type->push('IAC Incident');
+                            break;
+                        default:
+                            $type->push('System Generated IAC');
+                            break;
                     }
+                    $reason->push($integrityCase->reason);
                 }
                 $data['type'] = $type->join(', ', ' and ');
                 $data['reason'] = $reason->join(', ', ' -- ');

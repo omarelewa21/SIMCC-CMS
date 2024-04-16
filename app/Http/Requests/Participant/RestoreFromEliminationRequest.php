@@ -47,7 +47,7 @@ class RestoreFromEliminationRequest extends FormRequest
                         return $query->whereIn('competition_organization_id', $competitionOrganizations);
                     }),
             ],
-            'mode'             => 'required|in:system,custom',
+            'mode'             => 'required|in:system,custom,map',
         ];
     }
 
