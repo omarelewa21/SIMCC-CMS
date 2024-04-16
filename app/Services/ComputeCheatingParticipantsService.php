@@ -113,6 +113,8 @@ class ComputeCheatingParticipantsService
      */
     protected function detectCheaters()
     {
+        is_null($this->countries) && $this->setCountriesList();
+
         IntegrityCheckCompetitionCountries::setCompetitionCountries($this->competition, $this->countries);
     
         $this->groupParticipantsByCountrySchoolAndGrade()
@@ -398,5 +400,20 @@ class ComputeCheatingParticipantsService
             $data['is_same_participant'] = true;
             CheatingParticipants::create($data);
         }
+    }
+
+    /**
+     * Only compute countries that has participants with answers
+     * 
+     * @return void
+     */
+    private function setCountriesList()
+    {
+        $this->countries = $this->competition->participants()
+            ->has('answers')
+            ->select('participants.country_id')
+            ->distinct()
+            ->pluck('country_id')
+            ->toArray();
     }
 }
