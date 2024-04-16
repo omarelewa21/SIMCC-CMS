@@ -617,7 +617,7 @@ class CheatingListHelper
 
         $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_slice(array_keys($data->max()), 9);
+            $headers = array_slice(array_keys($data->max()), 10);
             foreach($headers as $key => $header) {
                 $headers[sprintf("Q%s", $key+1)] = $header;
                 unset($headers[$key]);
