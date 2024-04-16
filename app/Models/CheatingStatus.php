@@ -27,12 +27,24 @@ class CheatingStatus extends Model
 
     protected $appends = ['original_countries'];
 
+    protected $casts = [
+        'created_at' => 'datetime:Y-m-d H:i',
+        'updated_at' => 'datetime:Y-m-d H:i',
+     ];
+
     /**
      * Get the competition that owns the cheating status.
      */
     public function competition()
     {
         return $this->belongsTo(Competition::class);
+    }
+
+    protected function runBy(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? User::find($value)->name : null,
+        );
     }
 
     /**
