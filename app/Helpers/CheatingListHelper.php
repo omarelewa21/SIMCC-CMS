@@ -779,6 +779,7 @@ class CheatingListHelper
     public function confirmCountryForIntegrityCheck(Competition $competition, ConfirmCountryForIntegrityRequest $request)
     {
         try {
+            $isRevoke = false;
             foreach($request->countries as $country) {
                 $competition->integrityCheckCountries()
                     ->updateOrCreate(
@@ -789,11 +790,13 @@ class CheatingListHelper
                             'confirmed_at' => now()
                         ]
                     );
+                
+                $isRevoke = !$country['is_confirmed'];
             }
 
             return response()->json([
                 'status'    => 200,
-                'message'   => 'Country has been confirmed for integrity check'
+                'message'   => sprintf("Country has been %s successfully", $isRevoke ? "revoked" : "confirmed")
             ], 200);
 
         } catch (\Exception $e) {
