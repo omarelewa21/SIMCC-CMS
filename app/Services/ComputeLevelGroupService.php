@@ -369,19 +369,4 @@ class ComputeLevelGroupService
             ->where('group_id', $this->group->id)
             ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
     }
-
-    private static function awardAndGlobalRankWillBeComputedTogether()
-    {
-        return !in_array('award', request('not_to_compute'))
-            && !in_array('global_rank', request('not_to_compute'));
-    }
-
-    private static function awardsNotFullyModeratedToComputeGlobalRanking(CompetitionLevels $level, CompetitionMarkingGroup $group)
-    {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
-
-        return LevelGroupCompute::where('level_id', $level->id)
-            ->where('awards_moderated', false)
-            ->exists();
-    }
 }
