@@ -103,7 +103,8 @@ class CheatingListHelper
             $cheatingStatus->update([
                 'status'                => 'In Progress',
                 'progress_percentage'   => 1,
-                'compute_error_message' => null
+                'compute_error_message' => null,
+                'run_by'                => auth()->id()
             ]);
         } else {
             CheatingStatus::create([
@@ -114,7 +115,8 @@ class CheatingListHelper
                 'for_map_list'                      => $request->for_map_list ?? 0,
                 'status'                            => 'In Progress',
                 'progress_percentage'               => 1,
-                'compute_error_message'             => null
+                'compute_error_message'             => null,
+                'run_by'                            => auth()->id()
             ]);
         }
 
