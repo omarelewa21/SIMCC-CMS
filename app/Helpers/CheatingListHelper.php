@@ -103,7 +103,8 @@ class CheatingListHelper
             $cheatingStatus->update([
                 'status'                => 'In Progress',
                 'progress_percentage'   => 1,
-                'compute_error_message' => null
+                'compute_error_message' => null,
+                'run_by'                => auth()->id()
             ]);
         } else {
             CheatingStatus::create([
@@ -114,7 +115,8 @@ class CheatingListHelper
                 'for_map_list'                      => $request->for_map_list ?? 0,
                 'status'                            => 'In Progress',
                 'progress_percentage'               => 1,
-                'compute_error_message'             => null
+                'compute_error_message'             => null,
+                'run_by'                            => auth()->id()
             ]);
         }
 
@@ -697,23 +699,9 @@ class CheatingListHelper
             'competition_id'    => $competition->id,
             'for_map_list'      => 0
             ])
-            ->select('competition_id', 'cheating_percentage', 'number_of_same_incorrect_answers', 'countries')
-            ->get()
-            ->map(function($cheatingStatus){
-                $cheatingStatus->participants_count = Participants::distinct()
-                    ->join('cheating_participants', function (JoinClause $join) {
-                        $join->on('participants.index_no', 'cheating_participants.participant_index')
-                            ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
-                    })
-                    ->where([
-                        'cheating_participants.competition_id'      => $cheatingStatus->competition_id,
-                        'cheating_participants.criteria_cheating_percentage' => $cheatingStatus->cheating_percentage,
-                        'cheating_participants.criteria_number_of_same_incorrect_answers' => $cheatingStatus->number_of_same_incorrect_answers
-                    ])
-                    ->when($cheatingStatus->original_countries && !empty($cheatingStatus->original_countries), fn($query) => $query->whereIn('participants.country_id', $cheatingStatus->original_countries))
-                    ->count();
-                return $cheatingStatus;
-            });
+            ->orderBy('updated_at', 'desc')
+            ->select('*', 'total_cases_count as participants_count')
+            ->get();
     }
 
     public function getIntegrityCasesByCountry(Competition $competition, Countries $country)

@@ -25,14 +25,12 @@ class CheatingStatus extends Model
      */
     protected $guarded = [];
 
-     /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-
     protected $appends = ['original_countries'];
+
+    protected $casts = [
+        'created_at' => 'datetime:Y-m-d H:i',
+        'updated_at' => 'datetime:Y-m-d H:i',
+     ];
 
     /**
      * Get the competition that owns the cheating status.
@@ -40,6 +38,13 @@ class CheatingStatus extends Model
     public function competition()
     {
         return $this->belongsTo(Competition::class);
+    }
+
+    protected function runBy(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? User::find($value)->name : null,
+        );
     }
 
     /**
