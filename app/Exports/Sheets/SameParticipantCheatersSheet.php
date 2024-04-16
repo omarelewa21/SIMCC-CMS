@@ -52,7 +52,7 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
             'School',
             'Country',
             'Grade',
-            'System generated IAC',
+            'MAP IAC',
             'Reason',
             'Group ID',
             'No. Of Answers Uploaded',
