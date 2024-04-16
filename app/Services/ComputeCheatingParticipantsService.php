@@ -53,6 +53,8 @@ class ComputeCheatingParticipantsService
                 ? $this->detectCheatersWhoTookCompetitionTwiceOrMore()
                 : $this->detectCheaters();
 
+            $this->cheatStatus->total_cases_count = $this->getTotalCasesCount();
+            $this->cheatStatus->save();
             $this->updateCheatStatus(100, 'Completed');
         }
 
@@ -415,5 +417,22 @@ class ComputeCheatingParticipantsService
             ->distinct()
             ->pluck('country_id')
             ->toArray();
+    }
+
+    /**
+     * Get total cases count
+     * 
+     * @return int
+     */
+    private function getTotalCasesCount(): int
+    {
+        return Participants::join('cheating_participants', function (JoinClause $join) {
+            $join->on('participants.index_no', 'cheating_participants.participant_index')
+                ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
+            })
+            ->where('cheating_participants.competition_id', $this->competition->id)
+            ->where('cheating_participants.is_same_participant', $this->forMapList)
+            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
+            ->count();
     }
 }
