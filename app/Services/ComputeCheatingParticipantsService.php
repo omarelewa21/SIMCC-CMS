@@ -432,7 +432,7 @@ class ComputeCheatingParticipantsService
             })
             ->where('cheating_participants.competition_id', $this->competition->id)
             ->where('cheating_participants.is_same_participant', $this->forMapList)
-            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
+            ->whereDoesntHave('integrityCases', fn($query) => $query->where('mode', 'system'))
             ->count();
     }
 }
