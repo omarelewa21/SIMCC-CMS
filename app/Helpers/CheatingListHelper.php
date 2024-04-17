@@ -53,7 +53,7 @@ class CheatingListHelper
 
     /**
      * Get Same Participant Cheating List Data or Start the job
-     * 
+     *
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      */
@@ -132,9 +132,9 @@ class CheatingListHelper
 
     /**
      * Get filter options For cheating list
-     * 
+     *
      * @param Illuminate\Support\Collection $cheaters
-     * 
+     *
      */
     public static function getFilterOptions($cheaters)
     {
@@ -153,7 +153,7 @@ class CheatingListHelper
 
     /**
      * Get cheating list
-     * 
+     *
      * @param Competition $competition
      * @return Illuminate\Support\Collection
      */
@@ -166,7 +166,7 @@ class CheatingListHelper
             })
             ->where('cheating_participants.competition_id', $competition->id)
             ->select(
-                'participants.index_no', 'participants.name', 'participants.school_id', 
+                'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade', 'cheating_participants.group_id',
                 'cheating_participants.number_of_cheating_questions', 'cheating_participants.cheating_percentage'
             )
@@ -192,11 +192,11 @@ class CheatingListHelper
 
      /**
      * Generate cheating list CSV file
-     * 
+     *
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      * @param bool $forCSV
-     * 
+     *
      * @return Illuminate\Http\Response
      */
     public static function getCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
@@ -210,7 +210,7 @@ class CheatingListHelper
 
     /**
      * Get cheating list for CSV
-     * 
+     *
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Support\Collection
@@ -247,10 +247,10 @@ class CheatingListHelper
 
     /**
      * Get cheating participant ready for CSV
-     * 
+     *
      * @param Participant $participant
      * @param bool $forCSV
-     * 
+     *
      * @return array
      */
     private static function getCheatingParticipantDataReady($participant, $forCSV = false)
@@ -262,21 +262,21 @@ class CheatingListHelper
         $participant->number_of_correct_answers = $participant->answers->where('is_correct', true)->count();
         $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
         $participant->reason = $participant->integrityCases?->first()?->reason;
-        
+
         $filtered = $participant->only(
             'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'criteria_cheating_percentage',
-            'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions', 
+            'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions',
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
             'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
         );
-        
+
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
         return array_merge($filtered, $questions);
     }
-    
+
     /**
      * Get questions and different questions
-     * 
+     *
      * @param Participant $participant
      * @return array
      */
@@ -302,7 +302,7 @@ class CheatingListHelper
 
     /**
      * Get cheating csv file
-     * 
+     *
      * @param Competition $competition
      * @param CompetitionCheatingListRequest $request
      * @return Illuminate\Http\Response
@@ -332,7 +332,7 @@ class CheatingListHelper
 
     /**
      * Get file name
-     * 
+     *
      * @param string $fileName
      * @return string
      */
@@ -352,10 +352,10 @@ class CheatingListHelper
 
     /**
      * Get cheating status
-     * 
+     *
      * @param Competition $competition
      * @param CheatingStatus|null $cheatingStatus
-     * 
+     *
      * @return Illuminate\Http\JsonResponse
      */
     public function returnCheatingStatus(Competition $competition, CheatingStatus|null $cheatingStatus, $list = 'Integrity')
@@ -423,7 +423,7 @@ class CheatingListHelper
 
         return $this->returnCheatingStatus($competition, $cheatingStatuses->last());
     }
-    
+
     /**
      * Get same participant cheaters data
      * @param Competition $competition
@@ -490,7 +490,7 @@ class CheatingListHelper
         $filtered = $participant->only(
             'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'group_id', 'number_of_answers'
         );
-    
+
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
         return array_merge($filtered, $questions);
     }
@@ -529,13 +529,12 @@ class CheatingListHelper
             $lastGroup = $record['group_id'];
         }
 
-        $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_slice(array_keys($data->max()), 17);
-            foreach($headers as $key => $header) {
-                $headers[sprintf("Q%s", $key+1)] = $header;
-                unset($headers[$key]);
-            }
+            $headers = collect($data->first(fn($value) => $value == $data->max()))
+                ->filter(fn($value, $key) => preg_match('/^Q\d+$/', $key))
+                ->keys()
+                ->mapWithKeys(fn($value, $key) => [$value => $value])
+                ->toArray();
         }
 
         $headers =  [
@@ -551,14 +550,14 @@ class CheatingListHelper
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',
             'No of qns with same answer'                    => 'number_of_cheating_questions',
-            'No of qns with same answer percentage'         => 'cheating_percentage', 
+            'No of qns with same answer percentage'         => 'cheating_percentage',
             'No of qns with same correct answer'            => 'number_of_same_correct_answers',
             'No of qns with same incorrect answer'          => 'number_of_same_incorrect_answers',
             'No of correct answers'                         => 'number_of_correct_answers',
             'Qns with same incorrect answer'                => 'different_questions',
             ...$headers
         ];
-        
+
         return response()->json([
             'status'            => 201,
             'message'           => static::getMessageForCheatingData($competition, $request),
@@ -616,14 +615,12 @@ class CheatingListHelper
             }
             $lastGroup = $record['group_id'];
         }
-
-        $headers = [];
         if($data->isNotEmpty()) {
-            $headers = array_slice(array_keys($data->max()), 10);
-            foreach($headers as $key => $header) {
-                $headers[sprintf("Q%s", $key+1)] = $header;
-                unset($headers[$key]);
-            }
+            $headers = collect($data->first(fn($value) => $value == $data->max()))
+                ->filter(fn($value, $key) => preg_match('/^Q\d+$/', $key))
+                ->keys()
+                ->mapWithKeys(fn($value, $key) => [$value => $value])
+                ->toArray();
         }
 
         $headers =  [
@@ -672,7 +669,7 @@ class CheatingListHelper
                     'cheating_participants.is_same_participant'                         => $forMapList
                 ])
                 ->exists();
-            
+
             if($hasParticipants) return '';
             return $forMapList
                 ? sprintf("No Multiple Attempts Cases Found for countries: %s",
@@ -689,7 +686,7 @@ class CheatingListHelper
                         : 'All Countries'
                     );
             }
-                
+
         return '';
     }
 
@@ -778,7 +775,7 @@ class CheatingListHelper
                             'confirmed_at' => now()
                         ]
                     );
-                
+
                 $isRevoke = !$country['is_confirmed'];
             }
 
