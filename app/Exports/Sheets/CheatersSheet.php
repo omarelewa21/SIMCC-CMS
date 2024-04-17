@@ -84,6 +84,6 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
      */
     public function title(): string
     {
-        return 'Cheaters Sheet';
+        return 'Integrity List';
     }
 }

@@ -77,6 +77,6 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
      */
     public function title(): string
     {
-        return 'Same Students Participating Multiple Times';
+        return 'MAP List';
     }
 }
