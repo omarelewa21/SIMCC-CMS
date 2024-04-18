@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tasks\CreateTaskService;
 use App\Services\Tasks\DuplicateTaskService;
-use App\Services\Tasks\UpdateTaskService;
+use App\Services\Tasks\UpdateTaskAnswersService;
 
 class TasksController extends Controller
 {
@@ -268,7 +268,8 @@ class TasksController extends Controller
     {
         DB::beginTransaction();
         try {
-            (new UpdateTaskService())->updateAnswer($request->all());
+            new UpdateTaskAnswersService($request);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
