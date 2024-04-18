@@ -40,7 +40,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Compute cheating participants
-     * 
+     *
      * @return void
      */
     public function computeCheatingParticipants()
@@ -62,10 +62,10 @@ class ComputeCheatingParticipantsService
             $this->updateCheatStatus($this->cheatStatus->progress_percentage, 'Failed', $e->getMessage());
         }
     }
-    
+
     /**
      * compute participant answers scores and update is_correct column
-     * 
+     *
      * @return void
      */
     protected function computeParticipantAnswersScores()
@@ -76,7 +76,6 @@ class ComputeCheatingParticipantsService
                 ->each(function($level){
                     ParticipantsAnswer::where('level_id', $level->id)
                     ->when($this->countries, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('country_id', $this->countries)))
-                    ->whereNull('is_correct')
                     ->chunkById(50000, function ($participantAnswers) use($level){
                         foreach ($participantAnswers as $participantAnswer) {
                             $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer();
@@ -92,11 +91,11 @@ class ComputeCheatingParticipantsService
 
     /**
      * update competition_cheat_compute_status table with new status and progress percentage
-     * 
+     *
      * @param int $progressPercentage
      * @param string $status
      * @param string|null $errorMessage
-     * 
+     *
      * @return void
      */
     private function updateCheatStatus($progressPercentage, $status = 'In Progress', $errorMessage = null)
@@ -110,7 +109,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * detect cheaters and store them in competition_cheating_participants table
-     * 
+     *
      * @return void
      */
     protected function detectCheaters()
@@ -118,7 +117,7 @@ class ComputeCheatingParticipantsService
         is_null($this->countries) && $this->setCountriesList();
 
         IntegrityCheckCompetitionCountries::setCompetitionCountries($this->competition, $this->countries);
-    
+
         $this->groupParticipantsByCountrySchoolAndGrade()
             ->each(function ($group) {
                 $this->compareAnswersBetweenParticipants($group);
@@ -129,7 +128,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Group participants by country, school, and grade
-     * 
+     *
      * @return Collection
      */
     private function groupParticipantsByCountrySchoolAndGrade()
@@ -157,16 +156,16 @@ class ComputeCheatingParticipantsService
 
     /**
      * Compare answers between participants in the group
-     * 
+     *
      * @param Collection $group
-     * 
+     *
      * @return void
      */
     private function compareAnswersBetweenParticipants($group)
     {
         $group->each(function ($participant, $participantKey) use ($group) {
             $group->each(function ($otherParticipant, $otherParticipantKey) use ($participant, $participantKey) {
-                if ($participantKey < $otherParticipantKey) { // Avoid comparing participants with previous participants in the group 
+                if ($participantKey < $otherParticipantKey) { // Avoid comparing participants with previous participants in the group
                     $this->compareAnswersBetweenTwoParticipants($participant, $otherParticipant);
                 }
             });
@@ -175,10 +174,10 @@ class ComputeCheatingParticipantsService
 
     /**
      * Compare answers between two participants and create cheating participants in cheating_participants table
-     * 
+     *
      * @param Participant $participant
      * @param Participant $otherParticipant
-     * 
+     *
      * @return void
      */
     private function compareAnswersBetweenTwoParticipants($participant1, $participant2)
@@ -209,7 +208,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Clear records in cheating_participants table
-     * 
+     *
      * @return void
      */
     private function clearRecords()
@@ -228,10 +227,10 @@ class ComputeCheatingParticipantsService
 
     /**
      * Detect if two answers are match
-     * 
+     *
      * @param ParticipantAnswer $p1Answer
      * @param ParticipantAnswer|null $p2Answer
-     * 
+     *
      * @return bool
      */
     private function isTwoAnswersMatch($p1Answer, $p2Answer)
@@ -244,10 +243,10 @@ class ComputeCheatingParticipantsService
 
     /**
      * Get default data array
-     * 
+     *
      * @param Participant $participant1
      * @param Participant $participant2
-     * 
+     *
      * @return array
      */
     private function getDefaultDataArray($participant1, $participant2)
@@ -269,14 +268,14 @@ class ComputeCheatingParticipantsService
 
     /**
      * Detect if a cheating participant should be created
-     * 
+     *
      * @param array $dataArray
-     * 
+     *
      * @return bool
      */
     private function shouldCreateCheatingParticipant($dataArray)
     {
-        return 
+        return
             (
                 $this->qNumber && $this->qNumber > 0
                 && $dataArray['number_of_cheating_questions'] >= $this->qNumber
@@ -290,11 +289,11 @@ class ComputeCheatingParticipantsService
 
     /**
      * Generate group id
-     * 
+     *
      * @param Participant $participant1
      * @param Participant $participant2
      * @param array $dataArray
-     * 
+     *
      * @return string
      */
     private function generateGroupId($participant1, $forSameParticipant = false, $dataArray = [])
@@ -325,10 +324,10 @@ class ComputeCheatingParticipantsService
 
     /**
      * Compare two different question arrays and return true if they are same
-     * 
+     *
      * @param array $differntQuestionArray
      * @param array $differentQuestionIds
-     * 
+     *
      * @return bool
      */
     private function compareTwoDiffentQuestionArrays($differntQuestionArray, $differentQuestionIds)
@@ -339,7 +338,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Detect cheater who took the competition twice or more
-     * 
+     *
      * @return void
      */
     private function detectCheatersWhoTookCompetitionTwiceOrMore()
@@ -352,7 +351,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Group participants by name, country, and school
-     * 
+     *
      * @return LazyCollection
      */
     private function groupParticipantsByNameCountryAndSchool(): LazyCollection
@@ -364,7 +363,7 @@ class ComputeCheatingParticipantsService
             ->select(
                 'participants.index_no',
                 'participants.name',
-                'participants.country_id', 
+                'participants.country_id',
                 'participants.school_id',
                 'participants.grade'
             )
@@ -384,9 +383,9 @@ class ComputeCheatingParticipantsService
 
     /**
      * Store group as potential case of same participant take same competition twice
-     * 
+     *
      * @param Collection $group
-     * 
+     *
      * @return void
      */
     private function storeGroupAsPotentialCaseOfSameParticipantTakeSameCompetitionTwice($group)
@@ -406,7 +405,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Only compute countries that has participants with answers
-     * 
+     *
      * @return void
      */
     private function setCountriesList()
@@ -421,7 +420,7 @@ class ComputeCheatingParticipantsService
 
     /**
      * Get total cases count
-     * 
+     *
      * @return int
      */
     private function getTotalCasesCount(): int
