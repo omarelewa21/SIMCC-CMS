@@ -243,4 +243,17 @@ class Tasks extends Base
     {
         return CollectionSections::where('tasks', 'LIKE', "%$task_id%")->exists();
     }
+
+    public function getCorrectAnswer()
+    {
+        if($this->answer_type == 'mcq'){
+            return $this->taskAnswers()
+                ->join('task_labels', 'task_labels.task_answers_id', '=', 'task_answers.id')
+                ->where('task_answers.answer', 1)
+                ->select('task_answers.id', 'task_labels.content as answer')
+                ->first();
+        }
+
+        return $this->taskAnswers()->first();
+    }
 }

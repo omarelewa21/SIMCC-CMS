@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
+use App\Http\Controllers\Api\ParticipantAnswersController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,9 +95,11 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("", [ParticipantsController::class, "list"])->name('participant.list');
         Route::patch("", [ParticipantsController::class, "update"])->name('participant.update');
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
+        Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
         Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
         Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
+        Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
     });
 
     Route::group(["prefix" => "competition"], function () {
@@ -126,6 +129,9 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
         Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
         Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
+        Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
+        Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
+        Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
     });
 
     Route::group(["prefix" => "marking"], function () {

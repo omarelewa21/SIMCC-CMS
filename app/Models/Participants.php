@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use App\Http\Requests\getParticipantListRequest;
 use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
@@ -66,10 +66,10 @@ class Participants extends Base
      * Scope a query to request params
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  getParticipantListRequest $request
+     * @param  Request $request
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeFilterList($query, getParticipantListRequest $request)
+    public function scopeFilterList($query, Request $request)
     {
         switch (auth()->user()->role_id) {
             case 2:
@@ -168,7 +168,7 @@ class Participants extends Base
 
     public function competition()
     {
-        return $this->competition_organization()->with('competition')->first()->competition;
+        return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)

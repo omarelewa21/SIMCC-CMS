@@ -13,7 +13,6 @@ use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\LevelGroupCompute;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -21,6 +20,7 @@ use App\Services\MarkingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class MarkingController extends Controller
 {
@@ -226,6 +226,7 @@ class MarkingController extends Controller
             $data = [];
             MarkingService::setTotalParticipantsByCountryByGrade($data, $countries, $totalParticipants);
             MarkingService::setTotalParticipantsWithAnswersAndAbsentees($data, $countries, $totalParticipantsWithAnswer);
+            MarkingService::adjustDataTotalToIncludeAllCountries($data, $countries);
 
             return response()->json([
                 "status"        => 200,
@@ -283,21 +284,25 @@ class MarkingController extends Controller
      */
     public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
-        ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
-        dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+        try {
 
-        LevelGroupCompute::updateOrCreate(
-            ['level_id' => $level->id, 'group_id' => $group->id],
-            ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-        );
+            ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+            dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
+            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
-        \ResponseCache::clear();
+            \ResponseCache::clear();
 
-        return response()->json([
-            "status"    => 200,
-            "message"   => "Level computing is in progress",
-        ], 200);
+            return response()->json([
+                "status"    => 200,
+                "message"   => "Level computing is in progress",
+            ], 200);
 
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => $e->getCode() ?? 500,
+                "message"   => $e->getMessage() ?? "Level couldn't be computed",
+            ], $e->getCode() ?? 500);
+        }
     }
 
     /**
@@ -324,10 +329,7 @@ class MarkingController extends Controller
                     foreach($competition->groups as $group){
                         if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
-                            LevelGroupCompute::updateOrCreate(
-                                ['level_id' => $level->id, 'group_id' => $group->id],
-                                ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
-                            );
+                            ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
                         }
                     }
                 }
@@ -426,7 +428,7 @@ class MarkingController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Participant results retrival unsuccessful",
-                "error"     => $e->getMessage()
+                "error"     => strval($e)
             ], 500);
         }
     }
@@ -445,17 +447,20 @@ class MarkingController extends Controller
             $awardsRankArray = collect(['PERFECT SCORE'])
                     ->merge($level->rounds->roundsAwards->pluck('name'))
                     ->push($level->rounds->default_award_name);
-
+            
             foreach($request->all() as $data){
-                $participantResults = $level->participantResults()->where('competition_participants_results.participant_index', $data['participant_index'])
+                $participantResults = $level->participantResults()
+                    ->where('competition_participants_results.participant_index', $data['participant_index'])
                     ->firstOrFail();
-                $globalRankNumber = explode(" ", $participantResults->global_rank);
 
-                if($participantResults->award != "PERFECT SCORE"){
+                $globalRankNumber = explode(" ", $participantResults->global_rank);
+                if(Str::upper($participantResults->award) != "PERFECT SCORE"){
                     $participantResults->update([
                         'award'         => $data['award'],
                         'award_rank'    => $awardsRankArray->search($data['award']) + 1,
-                        'global_rank'   => sprintf("%s %s", $data['award'], Arr::last($globalRankNumber))
+                        'global_rank'   => $participantResults->global_rank
+                            ? sprintf("%s %s", $data['award'], Arr::last($globalRankNumber))
+                            : Null
                     ]);
                 }
             }

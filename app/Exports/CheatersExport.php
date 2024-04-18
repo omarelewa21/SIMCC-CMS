@@ -2,61 +2,29 @@
 
 namespace App\Exports;
 
-use App\Helpers\CheatingListHelper;
+use App\Exports\Sheets\CheatersSheet;
+use App\Exports\Sheets\SameParticipantCheatersSheet;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\Competition;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-
-class CheatersExport implements FromCollection, WithStyles
+class CheatersExport implements WithMultipleSheets
 {
-
-    private $competition;
-
-    function __construct(Competition $competition)
-    {
-        $this->competition = $competition;
-    }
+    function __construct(
+        private Competition $competition,
+        private CompetitionCheatingListRequest $request
+    ){}
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
-    public function collection()
+     * @return array
+     */
+    public function sheets(): array
     {
-        $dataCollection = CheatingListHelper::getCheatersDataForCSV($this->competition);
-        $returnedCollection = collect();
-        $lastGroup = null;
-        foreach($dataCollection as $key=>$record) {
-            if($key !== 0 && $lastGroup !== $record['group_id']) {
-                $returnedCollection->push(['-'], $record);
-            }else{
-                $returnedCollection->push($record);
-            }
-            $lastGroup = $record['group_id'];
-        }
-        $header = array_keys($dataCollection->max());
-        $header[0] = 'Index';
-        $header[1] = 'Name';
-        $header[2] = 'School';
-        $header[3] = 'Country';
-        $header[4] = 'Grade';
-        $header[5] = 'Group ID';
-        $header[6] = 'No of qns';
-        $header[7] = 'No of qns with same answer';
-        $header[8] = 'No of qns with same answer percentage'; 
-        $header[9] = 'No of qns with same correct answer';
-        $header[10] = 'No of qns with same incorrect answer';
-        $header[11] = 'No of correct answers';
-        $header[12] = 'Qns with same incorrect answer';
-        return $returnedCollection->prepend($header);
+        $sheets[0] = new CheatersSheet($this->competition, $this->request);
+        $sheets[1] = new SameParticipantCheatersSheet($this->competition, $this->request);
+
+        return $sheets;
     }
 
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            // Style the first row as bold text.
-            1    => ['font' => ['bold' => true]],
-        ];
-    }
+    
 }

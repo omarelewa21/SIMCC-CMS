@@ -1066,26 +1066,31 @@ class CompetitionController extends Controller
                 array_unique(Arr::pluck($request->participants, 'grade')),
                 true
             );
+            $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
+                ->pluck('grade', 'index_no');
+
             $createdBy = auth()->id();
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                // if($participantData['grade'] !== Participants::where('index_no', $participantData['index_number'])->value('grade')) {
+                // if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
                 //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
                 // }
-                $level = $levels[$participantData['grade']];
+
+                $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
                 if ($levelTaskCount > count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
-                ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
+                DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
+                // ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
                 for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
                         'task_id'   => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    =>$participantData['answers'][$i],
+                        'answer'    => $participantData['answers'][$i],
                         'created_by_userid' => $createdBy,
                         'created_at'    => $createdAt
                     ]);
@@ -1116,7 +1121,7 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'participant', 'index', 'certificate number', 'competition', 'organization', 'country',
+                'participant', 'index', 'certificate number', 'status', 'competition', 'organization', 'country',
                 'level', 'grade', 'school', 'tuition', 'points', 'award', 'school_rank', 'country_rank', 'global rank'
             ];
             $competitionService = new CompetitionService($competition);
@@ -1226,29 +1231,39 @@ class CompetitionController extends Controller
     public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
     {
         try {
-            if ($request->recompute != 1 && CheatingStatus::where('competition_id', $competition->id)->exists())
-                return CheatingListHelper::returnCheatStatusAndData($competition, $request);
+            if($request->get_status) {
+                return CheatingListHelper::returnCheatingStatus($competition);
+            }
 
-            // CompetitionService::validateIfCanGenerateCheatingPage($competition);
+            if ($request->recompute) {
+                DB::transaction(function () use($competition, $request) {
+                    CheatingStatus::updateOrCreate(
+                        ['competition_id' => $competition->id],
+                        [
+                            'status' => 'In Progress',
+                            'progress_percentage' => 1,
+                            'compute_error_message' => null
+                        ]
+                    );
+    
+                    dispatch(new ComputeCheatingParticipants(
+                        $competition,
+                        $request->question_number,
+                        $request->percentage,
+                        $request->number_of_incorrect_answers,
+                        $request->country
+                    ));
+                });
 
-            DB::beginTransaction();
+                return response()->json([
+                    'status'    => 201,
+                    'message'   => 'Computing cheating participants has been started.',
+                    'progress'  => 1
+                ], 201);
+            }
 
-            CheatingStatus::updateOrCreate(
-                ['competition_id' => $competition->id],
-                [
-                    'status' => 'In Progress',
-                    'progress_percentage' => 1,
-                    'compute_error_message' => null
-                ]
-            );
+            return CheatingListHelper::returnCheatingData($competition, $request);
 
-            dispatch(new ComputeCheatingParticipants($competition, $request->question_number, $request->percentage, $request->number_of_incorrect_answers));
-            DB::commit();
-
-            return response()->json([
-                'status'    => 201,
-                'message'   => 'Computing cheating participants has been started.'
-            ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

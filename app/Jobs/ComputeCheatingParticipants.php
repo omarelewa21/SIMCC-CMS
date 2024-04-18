@@ -19,20 +19,28 @@ class ComputeCheatingParticipants implements ShouldQueue
     protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
     protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
     protected $number_of_incorrect_answers; // If number of incorrect answers > $number_of_incorrect_answers, then the participant is considered as cheater
+    protected $countryId;       // If countryId is not null, then only compute the cheating participants from the country
 
-    public $timeout = 1000;
+    public $timeout = 5000;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Competition $competition, $qNumber=null, $percentage=null, $number_of_incorrect_answers=null)
+    public function __construct(
+        Competition $competition,
+        $qNumber=null,
+        $percentage=null,
+        $number_of_incorrect_answers=null,
+        $countryId=null
+    )
     {
         $this->competition = $competition;
         $this->qNumber = $qNumber;
         $this->percentage = $percentage;
         $this->number_of_incorrect_answers = $number_of_incorrect_answers;
+        $this->countryId = $countryId;
     }
 
     /**
@@ -43,7 +51,13 @@ class ComputeCheatingParticipants implements ShouldQueue
     public function handle()
     {
         try {
-            (new ComputeCheatingParticipantsService($this->competition, $this->qNumber, $this->percentage ?? 95, $this->number_of_incorrect_answers ?? 1))->computeCheatingParticipants();
+            (new ComputeCheatingParticipantsService(
+                $this->competition,
+                $this->qNumber, $this->percentage ?? 95,
+                $this->number_of_incorrect_answers ?? 1,
+                $this->countryId
+            )
+            )->computeCheatingParticipants();
 
         } catch (\Exception $e) {
             CheatingStatus::updateOrCreate(

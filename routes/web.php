@@ -17,3 +17,6 @@ Route::get('/', function () {
     abort(404);
     return view('welcome');
 });
+
+Route::get('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReport'])->name('test.answer-report');
+Route::post('/test/answer-report/{competition}', [\App\Http\Controllers\TestingController::class, 'answerReportPost'])->name('test.answer-report.post');

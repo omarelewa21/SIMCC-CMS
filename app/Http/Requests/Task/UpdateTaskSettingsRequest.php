@@ -2,14 +2,11 @@
 
 namespace App\Http\Requests\Task;
 
-use App\Traits\TaskAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateTaskSettingsRequest extends FormRequest
 {
-    use TaskAuthorizeRequestTrait;
-
     /**
      * Get the validation rules that apply to the request.
      *

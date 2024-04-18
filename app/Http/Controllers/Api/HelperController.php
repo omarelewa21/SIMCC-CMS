@@ -4,16 +4,12 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
-use App\Models\CompetitionLevels;
-use App\Models\CompetitionOrganization;
 use App\Models\Countries;
 use App\Models\Languages;
 use App\Models\Participants;
 use App\Models\Roles;
 use App\Models\School;
 use App\Models\User;
-use App\Models\TasksAnswers;
-use http\Env\Response;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +17,19 @@ use Illuminate\Support\Facades\DB;
 class HelperController extends Controller
 {
   
-    public function getCountryList () {
-        $list = Countries::all(['id','Dial','display_name','ISO3166-1-Alpha-2']);
+    public function getCountryList (Request $request) {
+        $request->validate([
+            "competition_id" => ['integer',Rule::exists("competition",'id')]
+        ]);
+
+        if($request->competition_id) {
+            $countryIds = Competition::find($request->competition_id)
+                ->participants()->pluck('participants.country_id')->unique()->toArray();
+            $list = Countries::whereIn('id',$countryIds)->get(['id','Dial','display_name','ISO3166-1-Alpha-2']);
+
+        } else {
+            $list = Countries::all(['id','Dial','display_name','ISO3166-1-Alpha-2']);
+        }
 
         return response()->json([
             "status" => 200,
