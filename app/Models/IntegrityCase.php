@@ -32,7 +32,7 @@ class IntegrityCase extends Model
             get: fn ($value, $attributes) => sprintf(
                 "%s, %s",
                 User::whereId($value)->value('name'),
-                Carbon::parse($attributes['created_at'])->diffForHumans()
+                Carbon::parse($attributes['created_at'])->format("Y-m-d H:i")
             )
         );
     }
