@@ -265,6 +265,16 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
+    public function getAnswerUpdates($answerId)
+    {
+        $updates = UpdatedAnswer::with('updated_by')->where('answer_id', $answerId)->get();
+
+        if ($updates->isEmpty()) {
+            return response()->json(['message' => 'No updates found for this answer.'], 404);
+        }
+
+        return response()->json(['updates' => $updates], 200);
+    }
 
     public function approvePossibleAnswers(Request $request)
     {

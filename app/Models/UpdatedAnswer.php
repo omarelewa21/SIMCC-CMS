@@ -9,7 +9,7 @@ class UpdatedAnswer extends Model
 {
     use HasFactory;
 
-    protected $table = 'updated_answers'; 
+    protected $table = 'updated_answers';
 
     protected $fillable = [
         'level_id', 'task_id', 'answer_id', 'participant_index',
@@ -31,7 +31,7 @@ class UpdatedAnswer extends Model
         return $this->belongsTo(ParticipantsAnswer::class, 'answer_id');
     }
 
-    public function user()
+    public function updated_by()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
