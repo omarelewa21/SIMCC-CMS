@@ -263,9 +263,10 @@ class CheatingListHelper
         $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
         $participant->reason = $participant->integrityCases?->first()?->reason;
         $participant->iac_created_by = $participant->integrityCases?->first()?->created_by;
+        $participant->iac_created_at = $participant->integrityCases?->first()?->created_at->format('Y-m-d H:i');
 
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'iac_created_by', 'criteria_cheating_percentage',
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'iac_created_by', 'iac_created_at', 'criteria_cheating_percentage',
             'criteria_number_of_same_incorrect_answers', 'group_id', 'number_of_questions',
             'number_of_cheating_questions', 'cheating_percentage', 'number_of_same_correct_answers',
             'number_of_same_incorrect_answers', 'number_of_correct_answers', 'different_questions'
@@ -488,9 +489,10 @@ class CheatingListHelper
         $participant->is_iac = $participant->integrityCases->isNotEmpty() ? 'Yes' : 'No';
         $participant->reason = $participant->integrityCases?->first()?->reason;
         $participant->iac_created_by = $participant->integrityCases?->first()?->created_by;
+        $participant->iac_created_at = $participant->integrityCases?->first()?->created_at->format('Y-m-d H:i');
 
         $filtered = $participant->only(
-            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'iac_created_by', 'group_id', 'number_of_answers'
+            'index_no', 'name', 'school', 'country', 'grade', 'is_iac', 'reason', 'iac_created_by', 'iac_created_at', 'group_id', 'number_of_answers'
         );
 
         if(!$forCSV) $filtered['country_id'] = $participant->country_id;
@@ -548,7 +550,8 @@ class CheatingListHelper
             'System generated IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
             'IAC Created By'                                => 'iac_created_by',
-            'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
+            'IAC Created Date/Time (UTC)'                   => 'iac_created_at',
+            'Criteria Matching Answers Percentage'          => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',
@@ -635,6 +638,7 @@ class CheatingListHelper
             'MAP IAC'                                       => 'is_iac',
             'Reason'                                        => 'reason',
             'IAC Created By'                                => 'iac_created_by',
+            'IAC Created Date/Time (UTC)'                   => 'iac_created_at',
             'Group ID'                                      => 'group_id',
             'No. Of Answers Uploaded'                       => 'number_of_answers',
             ...$headers
@@ -830,7 +834,8 @@ class CheatingListHelper
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
                 $data['reason'] = $participant->integrityCases->first()->reason;
-                $data['iac_created_by'] = $participant->integrityCases->first()->created_by;
+                $data['created_by'] = $participant->integrityCases->first()->created_by;
+                $data['created_at'] = $participant->integrityCases->first()->created_at->format('Y-m-d H:i');
 
                 unset($data['integrity_cases']);
                 return $data;

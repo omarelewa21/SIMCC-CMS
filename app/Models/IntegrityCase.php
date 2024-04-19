@@ -13,6 +13,11 @@ class IntegrityCase extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'created_at' => 'datetime:Y-m-d H:i',
+        'updated_at' => 'datetime:Y-m-d H:i',
+     ];
+
     public static function booted()
     {
         parent::booted();
@@ -29,11 +34,7 @@ class IntegrityCase extends Model
     protected function createdBy(): Attribute
     {
         return Attribute::make(
-            get: fn ($value, $attributes) => sprintf(
-                "%s, %s",
-                User::whereId($value)->value('name'),
-                Carbon::parse($attributes['created_at'])->format("Y-m-d H:i")
-            )
+            get: fn ($value) => User::whereId($value)->value('name')
         );
     }
 }
