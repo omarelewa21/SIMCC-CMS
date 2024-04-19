@@ -8,6 +8,7 @@ use App\Models\ParticipantsAnswer;
 use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
+use App\Models\UpdatedAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -214,13 +215,56 @@ class PossibleSimilarAnswersController extends Controller
     public function getTaskPossibleSimilarParticipants($answerId)
     {
         $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
-        $participants = $possibleSimilarAnswer->participants()->get();
+        $participants = $possibleSimilarAnswer->participants();
         return response()->json([
             "status" => 200,
             "message" => "Success",
             'data' => $participants
         ], 200);
     }
+
+    public function updateParticipantAnswer(Request $request)
+    {
+        $request->validate([
+            'answer_id' => 'required|exists:participant_answers,id',
+            'new_answer' => 'required',
+        ]);
+
+        $participantAnswerId = $request->answer_id;
+        $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+        $newAnswer = $request->new_answer;
+        $reason = $request->reason;
+        $oldAnswer = $participantAnswer->answer;
+
+        if ($oldAnswer === $newAnswer) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'No update needed as the answer has not changed.'
+            ], 500);
+        }
+
+        $updateRecord = new UpdatedAnswer([
+            'level_id' => $participantAnswer->level_id,
+            'task_id' => $participantAnswer->task_id,
+            'answer_id' => $participantAnswerId,
+            'participant_index' => $participantAnswer->participant_index,
+            'old_answer' => $oldAnswer,
+            'new_answer' => $newAnswer,
+            'reason' => $reason,
+            'updated_by' => auth()->id()
+        ]);
+
+        $updateRecord->save();
+
+        $participantAnswer->answer = $newAnswer;
+        $participantAnswer->save();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Participant answer updated successfully.',
+        ], 200);
+    }
+
 
     public function approvePossibleAnswers(Request $request)
     {

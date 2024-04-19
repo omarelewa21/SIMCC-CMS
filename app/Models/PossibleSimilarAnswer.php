@@ -46,15 +46,27 @@ class PossibleSimilarAnswer extends Model
 
     public function participants()
     {
-        $participantIds = $this->participants_answers_indices ?? [];
+        $participantsAnswersIndices = $this->participants_answers_indices ?? [];
 
-        if (empty($participantIds)) {
-            return Participants::where('id', null);
+        if (empty($participantsAnswersIndices)) {
+            return collect();
         }
-        return Participants::with(['country', 'school', 'competition_organization'])->whereIn('index_no', function ($query) use ($participantIds) {
-            $query->select('participant_index')
-                ->from('participant_answers')
-                ->whereIn('id', $participantIds);
-        });
+
+        $allParticipants = collect();
+
+        foreach ($participantsAnswersIndices as $answerIndex) {
+            $participants = Participants::with(['country', 'school', 'competition_organization'])
+                ->whereIn('index_no', function ($query) use ($answerIndex) {
+                    $query->select('participant_index')
+                        ->from('participant_answers')
+                        ->where('id', $answerIndex);
+                })->get()->each(function ($participant) use ($answerIndex) {
+                    $participant->participant_answer_id = $answerIndex;
+                });
+
+            $allParticipants = $allParticipants->merge($participants);
+        }
+
+        return $allParticipants;
     }
 }
