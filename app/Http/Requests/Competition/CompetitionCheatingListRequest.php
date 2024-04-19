@@ -70,8 +70,8 @@ class CompetitionCheatingListRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if(!$this->recompute) return;
-            $countries = $this->filled('country') ? $this->country : Countries::getCompetitionCountryList($this->route()->competition);
-            $confirmedCountries = $this->hasConfirmedCountry($this->route()->competition, $countries);
+            $countryIds = $this->filled('country') ? $this->country : Countries::getCompetitionCountryList($this->route()->competition);
+            $confirmedCountries = $this->hasConfirmedCountry($this->route()->competition, $countryIds);
 
             if ($confirmedCountries){
                 $validator->errors()->add(
@@ -79,6 +79,17 @@ class CompetitionCheatingListRequest extends FormRequest
                     sprintf(
                         "You need to revoke IAC confirmation from these countries: %s, before you can perform IAC integrity check or MAP check on them"
                         , Arr::join($confirmedCountries, ', ', ' and ')
+                    )
+                );
+            }
+
+            $countriesWithNoAnswersUploaded = $this->getCountriesWithNoAnswersUploaded($this->route()->competition, $countryIds);
+            if ($countriesWithNoAnswersUploaded){
+                $validator->errors()->add(
+                    'countries',
+                    sprintf(
+                        "You need to upload answers for these countries: %s, before you can perform IAC integrity check"
+                        , Arr::join($countriesWithNoAnswersUploaded, ', ', ' and ')
                     )
                 );
             }
