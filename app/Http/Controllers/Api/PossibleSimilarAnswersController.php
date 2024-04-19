@@ -265,16 +265,26 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
-    public function getAnswerUpdates($answerId)
+    public function getAnswerUpdates(Tasks $task, Request $request)
     {
-        $updates = UpdatedAnswer::with('updated_by')->where('answer_id', $answerId)->get();
+        $request->validate([
+            'level_id' => 'required|integer|exists:competition_levels,id',
+        ]);
 
-        if ($updates->isEmpty()) {
-            return response()->json(['message' => 'No updates found for this answer.'], 404);
-        }
+        $levelId = $request->level_id;
+        $taskId = $task->id;
 
-        return response()->json(['updates' => $updates], 200);
+        $updates = UpdatedAnswer::with('updated_by')
+            ->where('level_id', $levelId)
+            ->where('task_id', $taskId)
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $updates
+        ], 200);
     }
+
 
     public function approvePossibleAnswers(Request $request)
     {
