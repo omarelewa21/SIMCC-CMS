@@ -21,13 +21,13 @@ class PossibleSimilarAnswer extends Model
         'answer_id',
         'answer_key',
         'possible_key',
-        'participants_indices',
+        'participants_answers_indices',
         'approved_by',
         'approved_at',
         'status',
     ];
 
-    protected $casts = ['participants_indices' => 'array'];
+    protected $casts = ['participants_answers_indices' => 'array'];
 
     public function task()
     {
@@ -46,7 +46,15 @@ class PossibleSimilarAnswer extends Model
 
     public function participants()
     {
-        $indices = $this->participants_indices ?? [];
-        return Participants::whereIn('index_no', $indices);
+        $participantIds = $this->participants_answers_indices ?? [];
+
+        if (empty($participantIds)) {
+            return Participants::where('id', null);
+        }
+        return Participants::with(['country', 'school', 'competition_organization'])->whereIn('index_no', function ($query) use ($participantIds) {
+            $query->select('participant_index')
+                ->from('participant_answers')
+                ->whereIn('id', $participantIds);
+        });
     }
 }

@@ -81,7 +81,7 @@ class PossibleSimilarAnswersController extends Controller
             $possibleKeys = $answersData['possible_keys'];
 
             // Update or create records based on modified data
-            foreach ($possibleKeys as $possibleKey => $participants) {
+            foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
@@ -89,7 +89,7 @@ class PossibleSimilarAnswersController extends Controller
                     'answer_key' => $answerKey,
                     'possible_key' => $possibleKey,
                 ], [
-                    'participants_indices' => $participants
+                    'participants_answers_indices' => $participantsAnwers
                 ]);
             }
 
@@ -159,11 +159,11 @@ class PossibleSimilarAnswersController extends Controller
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
                 ->whereNotNull('answer')
-                ->select('answer', 'participant_index')
+                ->select('answer', 'id')
                 ->get()
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
-                    return [$key => $items->pluck('participant_index')->all()];
+                    return [$key => $items->pluck('id')->all()];
                 });
 
             // Return a single array with the correct answer_key and all unique participant answers
@@ -178,11 +178,11 @@ class PossibleSimilarAnswersController extends Controller
         // Handle non-MCQ tasks as before
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
             ->whereNotNull('answer')
-            ->select('answer', 'participant_index')
+            ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
-                return [$key => $items->pluck('participant_index')->all()];
+                return [$key => $items->pluck('id')->all()];
             });
 
         $taskAnswer = $task->taskAnswers[0];
@@ -190,14 +190,14 @@ class PossibleSimilarAnswersController extends Controller
             $normalizedKey = intval($taskAnswer->answer);
             $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
                 ->whereNotNull('answer')
-                ->select('answer', 'participant_index', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
+                ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
                 ->get()
                 ->filter(function ($participantAnswer) use ($normalizedKey) {
                     return intval($participantAnswer->numeric_answer) === $normalizedKey;
                 })
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
-                    return [$key => $items->pluck('participant_index')->all()];
+                    return [$key => $items->pluck('id')->all()];
                 });
 
             $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
