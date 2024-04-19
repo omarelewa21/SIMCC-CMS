@@ -709,7 +709,7 @@ class CheatingListHelper
             'for_map_list'      => 0
             ])
             ->orderBy('updated_at', 'desc')
-            ->select('competition_cheat_compute_status.*', 'total_cases_count as participants_count')
+            ->select('*', 'total_cases_count as participants_count')
             ->get();
     }
 
