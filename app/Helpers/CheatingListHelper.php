@@ -373,12 +373,16 @@ class CheatingListHelper
                 $response = [
                     'status'    => 417,
                     'message'   => "Generating $list list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'computed_countries'    => IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+                    'remaining_countries'   => IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
                 ];
                 break;
             case 'Completed':
                 $response = [
-                    'status'    => 200,
-                    'message'   => "No $list Cases Found",
+                    'status'                => 200,
+                    'message'               => "No $list Cases Found",
+                    'computed_countries'    => IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+                    'remaining_countries'   => IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
                 ];
                 break;
             default:
