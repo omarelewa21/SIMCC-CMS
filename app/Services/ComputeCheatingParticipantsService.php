@@ -276,15 +276,51 @@ class ComputeCheatingParticipantsService
     private function shouldCreateCheatingParticipant($dataArray)
     {
         return
-            (
-                $this->qNumber && $this->qNumber > 0
-                && $dataArray['number_of_cheating_questions'] >= $this->qNumber
-            )
-            ||
-            (
-                $dataArray['number_of_cheating_questions'] > 0 && $dataArray['number_of_questions'] > 0
-                && ($dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions']) * 100 >= $this->percentage
-            );
+            $this->participantsDoentExistBefore($dataArray) &&
+            ($this->checkQNumber($dataArray) || $this->checkPercentage($dataArray));
+    }
+
+    /**
+     * Check if qNumber is set and greater than 0
+     *
+     * @param array $dataArray
+     *
+     * @return void
+     */
+    private function checkQNumber($dataArray)
+    {
+        return $this->qNumber && $this->qNumber > 0 && $dataArray['number_of_cheating_questions'] >= $this->qNumber;
+    }
+
+    /**
+     * Check if percentage is set
+     *
+     * @param array $dataArray
+     *
+     * @return void
+     */
+    private function checkPercentage($dataArray)
+    {
+        return $dataArray['number_of_cheating_questions'] > 0 && $dataArray['number_of_questions'] > 0
+            && ($dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions']) * 100 >= $this->percentage;
+    }
+
+    /**
+     * Check if participants do not exist before
+     *
+     * @param array $dataArray
+     *
+     * @return bool
+     */
+    private function participantsDoentExistBefore($dataArray)
+    {
+        return CheatingParticipants::where(
+            fn($query) => $query->where('participant_index', $dataArray['participant_index'])
+                ->where('cheating_with_participant_index', $dataArray['cheating_with_participant_index'])
+        )->orWhere(
+            fn($query) => $query->where('cheating_with_participant_index', $dataArray['participant_index'])
+                ->Where('participant_index', $dataArray['cheating_with_participant_index'])
+        )->doesntExist();
     }
 
     /**
