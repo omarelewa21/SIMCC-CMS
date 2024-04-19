@@ -43,7 +43,7 @@ class CheatingStatus extends Model
     protected function createdBy(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value ? User::find($value)->name : null,
+            get: fn ($value, $attributes) => $attributes['run_by'] ? User::find($attributes['run_by'])->name : null,
         );
     }
 
