@@ -548,7 +548,7 @@ class CheatingListHelper
             'System generated IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
             'IAC Created By'                                => 'iac_created_by',
-            'Criteria Integrity Percentage'                 => 'criteria_cheating_percentage',
+            'Criteria Matching Answers Percentage'          => 'criteria_cheating_percentage',
             'Criteria No of Same Incorrect Answers'         => 'criteria_number_of_same_incorrect_answers',
             'Group ID'                                      => 'group_id',
             'No of qns'                                     => 'number_of_questions',

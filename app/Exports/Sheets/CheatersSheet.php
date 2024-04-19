@@ -58,7 +58,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'System generated IAC',
             'Reason',
             'IAC Created By',
-            'Criteria Integrity Percentage',
+            'Criteria Matching Answers Percentage',
             'Criteria No of Same Incorrect Answers',
             'Group ID',
             'No of qns',
