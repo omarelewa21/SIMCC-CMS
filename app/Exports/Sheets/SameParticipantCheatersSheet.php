@@ -59,6 +59,7 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
             'MAP IAC',
             'Reason',
             'IAC Created By',
+            'IAC Created Date/Time (UTC)'
             'Group ID',
             'No. Of Answers Uploaded',
             ...$headers,
