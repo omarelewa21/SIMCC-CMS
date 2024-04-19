@@ -213,15 +213,12 @@ class ComputeCheatingParticipantsService
      */
     private function clearRecords()
     {
-        CheatingParticipants::join('participants', function (JoinClause $join) {
-            $join->on('participants.index_no', 'cheating_participants.participant_index')
-                ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
-            })
-            ->where([
-                'cheating_participants.competition_id'      => $this->competition->id,
-                'cheating_participants.is_same_participant' => $this->forMapList
+        CheatingParticipants::where([
+                'competition_id'      => $this->competition->id,
+                'is_same_participant' => $this->forMapList
             ])
-            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
+            ->whereDoesntHave('integrityCases', fn($query) => $query->whereIn('mode', ['map', 'system']))
+            ->whereDoesntHave('otherIntegrityCases', fn($query) => $query->whereIn('mode', ['map', 'system']))
             ->delete();
     }
 
