@@ -17,13 +17,17 @@ class PossibleSimilarAnswer extends Model
 
     protected $fillable = [
         'task_id',
+        'level_id',
         'answer_id',
         'answer_key',
         'possible_key',
+        'participants_indices',
         'approved_by',
         'approved_at',
         'status',
     ];
+
+    protected $casts = ['participants_indices' => 'array'];
 
     public function task()
     {
@@ -38,5 +42,11 @@ class PossibleSimilarAnswer extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function participants()
+    {
+        $indices = $this->participants_indices ?? [];
+        return Participants::whereIn('index_no', $indices);
     }
 }
