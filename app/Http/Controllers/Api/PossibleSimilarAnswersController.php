@@ -56,82 +56,47 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
-    public function getTaskPossibleSimilarAnswers(Tasks $task)
+    public function getTaskPossibleSimilarAnswers(Tasks $task, Request $request)
     {
+        $request->validate([
+            'level_id' => 'required|integer|exists:competition_levels,id',
+        ]);
+
         try {
-            $answerData = [];
-            return $similarAnswers = $this->fetchSimilarAnswersForTask($task->id);
-            $isMCQ = $task->answer_type == 'mcq';
+            $levelId = $request->level_id;
 
-            // Process MCQ tasks separately
-            if ($isMCQ && !empty($similarAnswers)) {
-                $similarAnswer = $similarAnswers[0]; // Assuming MCQ tasks will have a single entry in $similarAnswers
+            $answersData = $this->fetchSimilarAnswersForTask($task->id);
+            $taskId = $answersData['task_id'];
+            $answerKey = trim($answersData['answer_key']);
+            $answerId = $answersData['answer_id'] ?? null;
 
-                // Filter and process possible keys for MCQ task
-                $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
-                    return trim($possibleKey) === (isset($similarAnswer['answer_key']) ? trim($similarAnswer['answer_key']) : null);
-                })->values();
+            // Remove correct answer key for similar answers
+            $answersData['possible_keys'] = collect($answersData['possible_keys'])
+                ->reject(function ($value, $key) use ($answerKey) {
+                    return $key === $answerKey;
+                })
+                ->all();
 
-                foreach ($filteredPossibleKeys as $key) {
-                    $answerData[] = [
-                        'task_id' => $task->id,
-                        'answer_id' => $similarAnswer['answer_id'] ?? null, // This might be null for MCQ tasks
-                        'answer_key' => $similarAnswer['answer_key'],
-                        'possible_key' => $key,
-                    ];
-                }
+            $possibleKeys = $answersData['possible_keys'];
 
-                // Skip further processing for MCQ tasks
-            } else {
-                // Handle non-MCQ tasks
-                foreach ($similarAnswers as $similarAnswer) {
-                    $filteredPossibleKeys = collect($similarAnswer['possible_keys'])->reject(function ($possibleKey) use ($similarAnswer) {
-                        return trim($possibleKey) === (isset($similarAnswer['answer_key']) ? trim($similarAnswer['answer_key']) : null);
-                    })->values();
-
-                    foreach ($filteredPossibleKeys as $key) {
-                        $answerData[] = [
-                            'task_id' => $task->id,
-                            'answer_id' => $similarAnswer['answer_id'] ?? null,
-                            'answer_key' => $similarAnswer['answer_key'],
-                            'possible_key' => $key,
-                        ];
-                    }
-                }
-            }
-
-            // First, group all keys by task_id for targeted deletion.
-            $tasksWithKeys = collect($answerData)->groupBy('task_id')->map(function ($groupedItems) {
-                return $groupedItems->map(function ($item) {
-                    return [
-                        'answer_id' => $item['answer_id'],
-                        'possible_key' => (string) $item['possible_key'],
-                    ];
-                });
-            });
-
-            // Update or create records.
-            foreach ($answerData as $data) {
+            // Update or create records based on modified data
+            foreach ($possibleKeys as $possibleKey => $participants) {
                 PossibleSimilarAnswer::updateOrCreate([
-                    'task_id' => $data['task_id'],
-                    'answer_id' => $data['answer_id'],
-                    'possible_key' => $data['possible_key'],
-                ], $data);
+                    'task_id' => $taskId,
+                    'level_id' => $levelId,
+                    'answer_id' => $answerId,
+                    'answer_key' => $answerKey,
+                    'possible_key' => $possibleKey,
+                ], [
+                    'participants_indices' => $participants
+                ]);
             }
 
-            // Delete records that are not in the answerData for each specific task_id.
-            foreach ($tasksWithKeys as $taskId => $keys) {
-                PossibleSimilarAnswer::where('task_id', $taskId)
-                    ->whereNot(function ($query) use ($keys) {
-                        foreach ($keys as $key) {
-                            $query->orWhere(function ($orQuery) use ($key) {
-                                $orQuery->where('answer_id', $key['answer_id'])
-                                    ->where('possible_key', $key['possible_key']);
-                            });
-                        }
-                    })
-                    ->delete();
-            }
+            // Delete records that are not in the updated list
+             PossibleSimilarAnswer::where('level_id', $levelId)
+                ->where('task_id', $taskId)
+                ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
+                ->delete();
 
             // Fetch updated possible similar answers and transform the collection
             $possibleSimilarAnswers = $task->possibleSimilarAnswers()
@@ -168,14 +133,11 @@ class PossibleSimilarAnswersController extends Controller
         }
     }
 
-
-
     protected function fetchSimilarAnswersForTask($taskId)
     {
         $task = Tasks::with('taskAnswers')->find($taskId);
         $isMCQ = $task->answer_type == 'mcq';
 
-        // For MCQ tasks, identify the correct answer's label as the answer_key
         if ($isMCQ) {
             // Find the correct answer's position
             $correctAnswerPosition = $task->taskAnswers()
@@ -183,10 +145,15 @@ class PossibleSimilarAnswersController extends Controller
                 ->value('position');
 
             // Fetch the label of the correct answer using its position
-            $correctAnswerLabel = $task->taskAnswers()
+            $correctAnswerData = $task->taskAnswers()
                 ->join('task_labels', 'task_labels.task_answers_id', '=', 'task_answers.id')
                 ->where('task_answers.position', $correctAnswerPosition)
-                ->value('task_labels.content'); // Directly fetching the content as 'answer_key'
+                ->select('task_answers.id as answer_id', 'task_labels.content as content')
+                ->first();
+
+            $correctAnswerId = $correctAnswerData->answer_id;
+            $correctAnswerLabel = $correctAnswerData->content;
+
 
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
@@ -200,17 +167,15 @@ class PossibleSimilarAnswersController extends Controller
 
             // Return a single array with the correct answer_key and all unique participant answers
             return [
-                [
-                    'task_id' => $taskId,
-                    'answer_key' => $correctAnswerLabel,
-                    'possible_keys' => $uniqueParticipantAnswers->all()
-                ]
+                'task_id' => $taskId,
+                'answer_key' => $correctAnswerLabel,
+                'answer_id' => $correctAnswerId,
+                'possible_keys' => $uniqueParticipantAnswers->all()
             ];
         }
 
 
         // Handle non-MCQ tasks as before
-        $response = [];
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
             ->whereNotNull('answer')
             ->select('answer', 'participant_index')
@@ -220,36 +185,31 @@ class PossibleSimilarAnswersController extends Controller
                 return [$key => $items->pluck('participant_index')->all()];
             });
 
-        foreach ($task->taskAnswers as $taskAnswer) {
-            if ($taskAnswer->answer !== null) {
-                $normalizedKey = intval($taskAnswer->answer);
-                $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                    ->whereNotNull('answer')
-                    ->select('answer', 'participant_index', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
-                    ->get()
-                    ->filter(function ($participantAnswer) use ($normalizedKey) {
-                        return intval($participantAnswer->numeric_answer) === $normalizedKey;
-                    })
-                    ->groupBy('answer')
-                    ->mapWithKeys(function ($items, $key) {
-                        return [$key => $items->pluck('participant_index')->all()];
-                    });
+        $taskAnswer = $task->taskAnswers[0];
+        if ($taskAnswer->answer !== null) {
+            $normalizedKey = intval($taskAnswer->answer);
+            $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
+                ->whereNotNull('answer')
+                ->select('answer', 'participant_index', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
+                ->get()
+                ->filter(function ($participantAnswer) use ($normalizedKey) {
+                    return intval($participantAnswer->numeric_answer) === $normalizedKey;
+                })
+                ->groupBy('answer')
+                ->mapWithKeys(function ($items, $key) {
+                    return [$key => $items->pluck('participant_index')->all()];
+                });
 
-                $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
+            $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
 
-                $response[] = [
-                    'task_id' => $taskId,
-                    'answer_id' => $taskAnswer->id,
-                    'answer_key' => $taskAnswer->answer,
-                    'possible_keys' => $combinedAnswers->all()
-                ];
-            }
+            return [
+                'task_id' => $taskId,
+                'answer_id' => $taskAnswer->id,
+                'answer_key' => $taskAnswer->answer,
+                'possible_keys' => $combinedAnswers->all()
+            ];
         }
-
-        return $response;
     }
-
-
 
     public function approvePossibleAnswers(Request $request)
     {
