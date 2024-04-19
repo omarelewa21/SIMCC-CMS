@@ -834,7 +834,8 @@ class CheatingListHelper
                 $data['school'] = $participant->school->name;
                 $data['country'] = $participant->country->name;
                 $data['reason'] = $participant->integrityCases->first()->reason;
-                $data['iac_created_by'] = $participant->integrityCases->first()->created_by;
+                $data['created_by'] = $participant->integrityCases->first()->created_by;
+                $data['created_at'] = $participant->integrityCases->first()->created_at->format('Y-m-d H:i');
 
                 unset($data['integrity_cases']);
                 return $data;
