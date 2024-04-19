@@ -8,6 +8,7 @@ use App\Models\ParticipantsAnswer;
 use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
+use App\Models\UpdatedAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +82,7 @@ class PossibleSimilarAnswersController extends Controller
             $possibleKeys = $answersData['possible_keys'];
 
             // Update or create records based on modified data
-            foreach ($possibleKeys as $possibleKey => $participants) {
+            foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
@@ -89,7 +90,7 @@ class PossibleSimilarAnswersController extends Controller
                     'answer_key' => $answerKey,
                     'possible_key' => $possibleKey,
                 ], [
-                    'participants_indices' => $participants
+                    'participants_answers_indices' => $participantsAnwers
                 ]);
             }
 
@@ -159,11 +160,11 @@ class PossibleSimilarAnswersController extends Controller
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
                 ->whereNotNull('answer')
-                ->select('answer', 'participant_index')
+                ->select('answer', 'id')
                 ->get()
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
-                    return [$key => $items->pluck('participant_index')->all()];
+                    return [$key => $items->pluck('id')->all()];
                 });
 
             // Return a single array with the correct answer_key and all unique participant answers
@@ -178,11 +179,11 @@ class PossibleSimilarAnswersController extends Controller
         // Handle non-MCQ tasks as before
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
             ->whereNotNull('answer')
-            ->select('answer', 'participant_index')
+            ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
-                return [$key => $items->pluck('participant_index')->all()];
+                return [$key => $items->pluck('id')->all()];
             });
 
         $taskAnswer = $task->taskAnswers[0];
@@ -190,14 +191,14 @@ class PossibleSimilarAnswersController extends Controller
             $normalizedKey = intval($taskAnswer->answer);
             $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
                 ->whereNotNull('answer')
-                ->select('answer', 'participant_index', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
+                ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
                 ->get()
                 ->filter(function ($participantAnswer) use ($normalizedKey) {
                     return intval($participantAnswer->numeric_answer) === $normalizedKey;
                 })
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
-                    return [$key => $items->pluck('participant_index')->all()];
+                    return [$key => $items->pluck('id')->all()];
                 });
 
             $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
@@ -214,12 +215,65 @@ class PossibleSimilarAnswersController extends Controller
     public function getTaskPossibleSimilarParticipants($answerId)
     {
         $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
-        $participants = $possibleSimilarAnswer->participants()->get();
+        $participants = $possibleSimilarAnswer->participants();
         return response()->json([
             "status" => 200,
             "message" => "Success",
             'data' => $participants
         ], 200);
+    }
+
+    public function updateParticipantAnswer(Request $request)
+    {
+        $request->validate([
+            'answer_id' => 'required|exists:participant_answers,id',
+            'new_answer' => 'required',
+        ]);
+
+        $participantAnswerId = $request->answer_id;
+        $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+        $newAnswer = $request->new_answer;
+        $reason = $request->reason;
+        $oldAnswer = $participantAnswer->answer;
+
+        if ($oldAnswer === $newAnswer) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'No update needed as the answer has not changed.'
+            ], 500);
+        }
+
+        $updateRecord = new UpdatedAnswer([
+            'level_id' => $participantAnswer->level_id,
+            'task_id' => $participantAnswer->task_id,
+            'answer_id' => $participantAnswerId,
+            'participant_index' => $participantAnswer->participant_index,
+            'old_answer' => $oldAnswer,
+            'new_answer' => $newAnswer,
+            'reason' => $reason,
+            'updated_by' => auth()->id()
+        ]);
+
+        $updateRecord->save();
+
+        $participantAnswer->answer = $newAnswer;
+        $participantAnswer->save();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Participant answer updated successfully.',
+        ], 200);
+    }
+
+    public function getAnswerUpdates($answerId)
+    {
+        $updates = UpdatedAnswer::with('updated_by')->where('answer_id', $answerId)->get();
+
+        if ($updates->isEmpty()) {
+            return response()->json(['message' => 'No updates found for this answer.'], 404);
+        }
+
+        return response()->json(['updates' => $updates], 200);
     }
 
     public function approvePossibleAnswers(Request $request)
