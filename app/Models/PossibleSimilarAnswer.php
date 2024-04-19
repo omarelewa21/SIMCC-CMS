@@ -43,4 +43,10 @@ class PossibleSimilarAnswer extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function participants()
+    {
+        $indices = $this->participants_indices ?? [];
+        return Participants::whereIn('index_no', $indices);
+    }
 }

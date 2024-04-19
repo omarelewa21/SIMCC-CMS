@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Svg\Tag\Rect;
 
 class PossibleSimilarAnswersController extends Controller
 {
@@ -93,7 +94,7 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Delete records that are not in the updated list
-             PossibleSimilarAnswer::where('level_id', $levelId)
+            PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
                 ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
                 ->delete();
@@ -174,7 +175,6 @@ class PossibleSimilarAnswersController extends Controller
             ];
         }
 
-
         // Handle non-MCQ tasks as before
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
             ->whereNotNull('answer')
@@ -209,6 +209,17 @@ class PossibleSimilarAnswersController extends Controller
                 'possible_keys' => $combinedAnswers->all()
             ];
         }
+    }
+
+    public function getTaskPossibleSimilarParticipants($answerId)
+    {
+        $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
+        $participants = $possibleSimilarAnswer->participants()->get();
+        return response()->json([
+            "status" => 200,
+            "message" => "Success",
+            'data' => $participants
+        ], 200);
     }
 
     public function approvePossibleAnswers(Request $request)
