@@ -5,6 +5,7 @@ namespace App\Http\Requests\Competition;
 use App\Models\Countries;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Route;
 
 class CompetitionCheatingListRequest extends FormRequest
 {
@@ -83,6 +84,7 @@ class CompetitionCheatingListRequest extends FormRequest
                 );
             }
 
+            if(Route::currentRouteName() === 'competition.cheaters.sameParticipant') return;
             $countriesWithNoAnswersUploaded = $this->getCountriesWithNoAnswersUploaded($this->route()->competition, $countryIds);
             if ($countriesWithNoAnswersUploaded){
                 $validator->errors()->add(
