@@ -60,12 +60,12 @@ class PossibleSimilarAnswersController extends Controller
 
     public function getTaskPossibleSimilarAnswers(Tasks $task, Request $request)
     {
-        // $request->validate([
-        //     'level_id' => 'required|integer|exists:competition_levels,id',
-        // ]);
+        $request->validate([
+            'level_id' => 'required|integer|exists:competition_levels,id',
+        ]);
 
         try {
-            $levelId = $request->level_id??null;
+            $levelId = $request->level_id;
 
             $answersData = $this->fetchSimilarAnswersForTask($task->id);
             $taskId = $answersData['task_id'];
@@ -85,7 +85,7 @@ class PossibleSimilarAnswersController extends Controller
             foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
-                    // 'level_id' => $levelId,
+                    'level_id' => $levelId,
                     'answer_id' => $answerId,
                     'answer_key' => $answerKey,
                     'possible_key' => $possibleKey,
