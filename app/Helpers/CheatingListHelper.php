@@ -201,7 +201,10 @@ class CheatingListHelper
      */
     public static function getCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getCheatersCollection($competition, $request)
+        $dataCollection = static::getCheatersCollection($competition, $request);
+        if($dataCollection->isEmpty()) return $dataCollection;
+
+        return $dataCollection
             ->map(fn($participant) => static::getCheatingParticipantDataReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
@@ -437,7 +440,10 @@ class CheatingListHelper
      */
     public static function getSameParticipantCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getSameParticipantCheatersCollection($competition, $request)
+        $dataCollection = static::getSameParticipantCheatersCollection($competition, $request);
+        if($dataCollection->isEmpty()) return $dataCollection;
+
+        return $dataCollection
             ->map(fn($participant) => static::getSameParticipantCheatingParticipantReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
@@ -543,6 +549,8 @@ class CheatingListHelper
                 ->keys()
                 ->mapWithKeys(fn($value, $key) => [$value => $value])
                 ->toArray();
+        } else {
+            $headers = [];
         }
 
         $headers =  [
@@ -631,6 +639,8 @@ class CheatingListHelper
                 ->keys()
                 ->mapWithKeys(fn($value, $key) => [$value => $value])
                 ->toArray();
+        } else {
+            $headers = [];
         }
 
         $headers =  [
