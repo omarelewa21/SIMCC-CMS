@@ -247,44 +247,51 @@ class PossibleSimilarAnswersController extends Controller
     public function updateParticipantAnswer(Request $request)
     {
         $request->validate([
-            'answer_id' => 'required|exists:participant_answers,id',
+            'answer_id' => 'required|array|min:1',
+            'answer_id.*' => 'exists:participant_answers,id',
             'new_answer' => 'required',
         ]);
 
-        $participantAnswerId = $request->answer_id;
-        $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
         $newAnswer = $request->new_answer;
         $reason = $request->reason;
-        $oldAnswer = $participantAnswer->answer;
+        $updateResults = [];
 
-        if ($oldAnswer === $newAnswer) {
-            return response()->json([
-                'status' => 500,
-                'message' => 'No update needed as the answer has not changed.'
-            ], 500);
+        foreach ($request->answer_id as $participantAnswerId) {
+            $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+            if (!$participantAnswer) {
+                continue;  // Skip if not found
+            }
+
+            $oldAnswer = $participantAnswer->answer;
+            if ($oldAnswer === $newAnswer) {
+                $updateResults[$participantAnswerId] = 'No update needed as the answer has not changed.';
+                continue;
+            }
+
+            $updateRecord = new UpdatedAnswer([
+                'level_id' => $participantAnswer->level_id,
+                'task_id' => $participantAnswer->task_id,
+                'answer_id' => $participantAnswerId,
+                'participant_index' => $participantAnswer->participant_index,
+                'old_answer' => $oldAnswer,
+                'new_answer' => $newAnswer,
+                'reason' => $reason,
+                'updated_by' => auth()->id()
+            ]);
+
+            $updateRecord->save();
+
+            $participantAnswer->answer = $newAnswer;
+            $participantAnswer->save();
+            $updateResults[$participantAnswerId] = 'Participant answer updated successfully.';
         }
-
-        $updateRecord = new UpdatedAnswer([
-            'level_id' => $participantAnswer->level_id,
-            'task_id' => $participantAnswer->task_id,
-            'answer_id' => $participantAnswerId,
-            'participant_index' => $participantAnswer->participant_index,
-            'old_answer' => $oldAnswer,
-            'new_answer' => $newAnswer,
-            'reason' => $reason,
-            'updated_by' => auth()->id()
-        ]);
-
-        $updateRecord->save();
-
-        $participantAnswer->answer = $newAnswer;
-        $participantAnswer->save();
 
         return response()->json([
             'status' => 200,
-            'message' => 'Participant answer updated successfully.',
+            'results' => $updateResults,
         ], 200);
     }
+
 
     public function getAnswerUpdates(Tasks $task, Request $request)
     {
