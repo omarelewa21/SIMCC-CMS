@@ -23,6 +23,8 @@ class UpdateTaskAnswersService
         $taskData = $this->request->only(['answer_type', 'answer_structure', 'answer_layout', 'answer_sorting']);
         if ($this->task->update($taskData)) {
             $this->proceedToAddOrUpdateAnswers();
+        } else {
+            throw new \Exception('Failed to update task answers');
         }
     }
 
@@ -95,6 +97,8 @@ class UpdateTaskAnswersService
     private function updateTaskMark()
     {
         $correctAnswersId = $this->getCorrectAnswerFromRequest();
+        if(is_null($correctAnswersId)) return;
+
         CompetitionTasksMark::join('task_answers', 'task_answers.id', '=', 'competition_tasks_mark.task_answers_id')
             ->where('task_answers.task_id', $this->task->id)
             ->update(['task_answers_id' => $correctAnswersId]);
