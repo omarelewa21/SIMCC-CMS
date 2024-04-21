@@ -531,14 +531,6 @@ class CheatingListHelper
     public function returnCheatingDataForUI(Competition $competition, CompetitionCheatingListRequest $request)
     {
         $data = static::getCheatersData($competition, $request);
-        if($data->isEmpty()) {
-            return response()->json([
-                'status'    => 404,
-                'computed_countries'=> IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
-                'remaining_countries'=> IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
-                'message'   => "No Intgerity Cases Found"
-            ], 404);
-        }
 
         $returnedCollection = collect();
         $lastGroup = null;
@@ -630,12 +622,6 @@ class CheatingListHelper
     public function returnSameParticipantCheatingList(Competition $competition, CompetitionCheatingListRequest $request)
     {
         $data = static::getSameParticipantCheatersData($competition, $request);
-        if($data->isEmpty()) {
-            return response()->json([
-                'status'    => 404,
-                'message'   => "No Multiple Attempts Cases Found"
-            ], 404);
-        }
 
         $returnedCollection = collect();
         $lastGroup = null;
