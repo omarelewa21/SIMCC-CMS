@@ -17,6 +17,27 @@ use Svg\Tag\Rect;
 
 class PossibleSimilarAnswersController extends Controller
 {
+    public function getCompetitionLevels(Competition $competition)
+    {
+        try {
+            $competition = $competition->load('levels');
+            return response()->json([
+                "status" => 200,
+                "message" => "Success",
+                "data" => [
+                    'name' => $competition->name,
+                    'levels' => $competition->levels
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => "Internal Server Error {$e->getMessage()}",
+                "error"     => strval($e)
+            ], 500);
+        }
+    }
+
     public function getCompetitionLevelsAndTasks(Competition $competition, Request $request)
     {
         $request->validate([
