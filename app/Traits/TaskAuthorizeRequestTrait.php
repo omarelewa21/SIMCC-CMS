@@ -10,6 +10,8 @@ trait TaskAuthorizeRequestTrait
 
     public function authorize()
     {
+        if(auth()->user()->hasRole('Super Admin')) return true;
+
         return $this->authorizeTaskId($this->id);
     }
 
