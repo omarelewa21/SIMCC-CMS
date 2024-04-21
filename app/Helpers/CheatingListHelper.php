@@ -548,8 +548,8 @@ class CheatingListHelper
         $headers =  [
             'Index'                                         => 'index_no',
             'Name'                                          => 'name',
-            'School'                                        => 'school',
             'Country'                                       => 'country',
+            'School'                                        => 'school',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
@@ -636,8 +636,8 @@ class CheatingListHelper
         $headers =  [
             'Index'                                         => 'index_no',
             'Name'                                          => 'name',
-            'School'                                        => 'school',
             'Country'                                       => 'country',
+            'School'                                        => 'school',
             'Grade'                                         => 'grade',
             'MAP IAC'                                       => 'is_iac',
             'Reason'                                        => 'reason',
