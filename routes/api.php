@@ -151,6 +151,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
         Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
         Route::group(['prefix' => 'possible_similar_answers'], function () {
+            Route::get("/competition_levels/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevels"])->name('marking.possible_similar_answers.competition_levels');
             Route::get("/levels_tasks/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevelsAndTasks"])->name('marking.possible_similar_answers.level_taks');
             Route::get("/{task}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarAnswers"])->name('competition.possible_similar_answers.list');
             Route::get("/participants/{id}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarParticipants"])->name('competition.possible_similar_answers.list');
