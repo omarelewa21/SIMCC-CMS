@@ -161,6 +161,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
             Route::get("/levels_tasks/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevelsAndTasks"])->name('marking.possible_similar_answers.level_taks');
             Route::get("/{task}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarAnswers"])->name('competition.possible_similar_answers.list');
             Route::get("/participants/{id}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarParticipants"])->name('competition.possible_similar_answers.list');
+            Route::post("/update_answer", [PossibleSimilarAnswersController::class, "updateParticipantAnswer"])->name('competition.possible_similar_answers.update_answer');
+            Route::get("/answer_updates/{task}", [PossibleSimilarAnswersController::class, "getAnswerUpdates"])->name('competition.possible_similar_answers.answer_updates');
             Route::post("/", [PossibleSimilarAnswersController::class, "approvePossibleAnswers"])->name('competition.possible_similar_answers.approve');
         });
     });

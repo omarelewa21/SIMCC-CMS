@@ -21,13 +21,13 @@ class PossibleSimilarAnswer extends Model
         'answer_id',
         'answer_key',
         'possible_key',
-        'participants_indices',
+        'participants_answers_indices',
         'approved_by',
         'approved_at',
         'status',
     ];
 
-    protected $casts = ['participants_indices' => 'array'];
+    protected $casts = ['participants_answers_indices' => 'array'];
 
     public function task()
     {
@@ -46,7 +46,27 @@ class PossibleSimilarAnswer extends Model
 
     public function participants()
     {
-        $indices = $this->participants_indices ?? [];
-        return Participants::whereIn('index_no', $indices);
+        $participantsAnswersIndices = $this->participants_answers_indices ?? [];
+
+        if (empty($participantsAnswersIndices)) {
+            return collect();
+        }
+
+        $allParticipants = collect();
+
+        foreach ($participantsAnswersIndices as $answerIndex) {
+            $participants = Participants::with(['country', 'school', 'competition_organization'])
+                ->whereIn('index_no', function ($query) use ($answerIndex) {
+                    $query->select('participant_index')
+                        ->from('participant_answers')
+                        ->where('id', $answerIndex);
+                })->get()->each(function ($participant) use ($answerIndex) {
+                    $participant->participant_answer_id = $answerIndex;
+                });
+
+            $allParticipants = $allParticipants->merge($participants);
+        }
+
+        return $allParticipants;
     }
 }
