@@ -201,7 +201,10 @@ class CheatingListHelper
      */
     public static function getCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getCheatersCollection($competition, $request)
+        $dataCollection = static::getCheatersCollection($competition, $request);
+        if($dataCollection->isEmpty()) return $dataCollection;
+
+        return $dataCollection
             ->map(fn($participant) => static::getCheatingParticipantDataReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
@@ -373,12 +376,16 @@ class CheatingListHelper
                 $response = [
                     'status'    => 417,
                     'message'   => "Generating $list list failed at perentage {$cheatingStatus->progress_percentage} with error: {$cheatingStatus->compute_error_message}",
+                    'computed_countries'    => IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+                    'remaining_countries'   => IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
                 ];
                 break;
             case 'Completed':
                 $response = [
-                    'status'    => 200,
-                    'message'   => "No $list Cases Found",
+                    'status'                => 200,
+                    'message'               => "No $list Cases Found",
+                    'computed_countries'    => IntegrityCheckCompetitionCountries::getComputedCountriesList($competition),
+                    'remaining_countries'   => IntegrityCheckCompetitionCountries::getRemainingCountriesList($competition),
                 ];
                 break;
             default:
@@ -433,7 +440,10 @@ class CheatingListHelper
      */
     public static function getSameParticipantCheatersData(Competition $competition, CompetitionCheatingListRequest $request, bool $forCSV = false)
     {
-        return static::getSameParticipantCheatersCollection($competition, $request)
+        $dataCollection = static::getSameParticipantCheatersCollection($competition, $request);
+        if($dataCollection->isEmpty()) return $dataCollection;
+
+        return $dataCollection
             ->map(fn($participant) => static::getSameParticipantCheatingParticipantReady($participant, $forCSV))
             ->sortBy('group_id')
             ->unique(fn($participant) => sprintf("%s-%s", $participant['index_no'], $participant['group_id']))
@@ -539,13 +549,15 @@ class CheatingListHelper
                 ->keys()
                 ->mapWithKeys(fn($value, $key) => [$value => $value])
                 ->toArray();
+        } else {
+            $headers = [];
         }
 
         $headers =  [
             'Index'                                         => 'index_no',
             'Name'                                          => 'name',
-            'School'                                        => 'school',
             'Country'                                       => 'country',
+            'School'                                        => 'school',
             'Grade'                                         => 'grade',
             'System generated IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
@@ -627,13 +639,15 @@ class CheatingListHelper
                 ->keys()
                 ->mapWithKeys(fn($value, $key) => [$value => $value])
                 ->toArray();
+        } else {
+            $headers = [];
         }
 
         $headers =  [
             'Index'                                         => 'index_no',
             'Name'                                          => 'name',
-            'School'                                        => 'school',
             'Country'                                       => 'country',
+            'School'                                        => 'school',
             'Grade'                                         => 'grade',
             'MAP IAC'                                       => 'is_iac',
             'Reason'                                        => 'reason',
@@ -705,7 +719,7 @@ class CheatingListHelper
             'for_map_list'      => 0
             ])
             ->orderBy('updated_at', 'desc')
-            ->select('*', 'total_cases_count as participants_count')
+            ->select('competition_cheat_compute_status.*', 'total_cases_count as participants_count')
             ->get();
     }
 

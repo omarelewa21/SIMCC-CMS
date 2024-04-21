@@ -25,7 +25,7 @@ class CheatingStatus extends Model
      */
     protected $guarded = [];
 
-    protected $appends = ['original_countries'];
+    protected $appends = ['original_countries', 'created_by'];
 
     protected $casts = [
         'created_at' => 'datetime:Y-m-d H:i',
@@ -40,10 +40,10 @@ class CheatingStatus extends Model
         return $this->belongsTo(Competition::class);
     }
 
-    protected function runBy(): Attribute
+    protected function createdBy(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value ? User::find($value)->name : null,
+            get: fn ($value, $attributes) => $attributes['run_by'] ? User::find($attributes['run_by'])->name : null,
         );
     }
 
@@ -52,7 +52,7 @@ class CheatingStatus extends Model
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  array|null $countries
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFilterByCountries($query, array|null $countries=null)
@@ -73,7 +73,7 @@ class CheatingStatus extends Model
                 $values
                     ? Countries::whereIn('id', json_decode($values, true))->pluck('display_name')->join(', ')
                     : "All Countries",
-                
+
             set: fn ($values) => is_array($values) ? '[' . Arr::join($values, ',') . ']' : $values
         );
     }
