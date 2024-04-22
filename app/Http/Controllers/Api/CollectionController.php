@@ -76,7 +76,7 @@ class CollectionController extends Controller
             /**
              * Lists of availabe filters
              */
-            
+
             $availCollectionsStatus = $collections->map(function ($item) {
                 return $item['status'];
             })->push('verified')->unique()->values();
@@ -158,7 +158,7 @@ class CollectionController extends Controller
         try {
             $collection = Collections::findOrFail($request->collection_id);
             $settings = $request->settings;
-            if ($collection->allowedToUpdateAll()) {
+            if ($collection->allowedToUpdateAll() || auth()->user()->hasRole('Super Admin')) {
                 $collection->update($settings);
             } else {
                 $collection->update([
