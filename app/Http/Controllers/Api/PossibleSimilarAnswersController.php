@@ -147,9 +147,12 @@ class PossibleSimilarAnswersController extends Controller
                 "status" => 200,
                 "message" => "Success",
                 "data" => [
-                    'answer_key' => $answerKey,
-                    'correct_answer_participants' => $correctAnswerParticipants,
-                    'possible_keys' => $orderedPossibleKeys
+                    [
+
+                        'answer_key' => $answerKey,
+                        'correct_answer_participants' => $correctAnswerParticipants,
+                        'possible_keys' => $orderedPossibleKeys
+                    ]
                 ],
             ], 200);
         } catch (\Exception $e) {
