@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
+use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
@@ -93,6 +94,8 @@ class PossibleSimilarAnswersController extends Controller
             $answerKey = trim($answersData['answer_key']);
             $answerId = $answersData['answer_id'] ?? null;
 
+            $correctAnswerParticipants = $this->getPartiticpantsForCorrectAnswer($answersData['possible_keys'][$answerKey]);
+
             // Remove correct answer key for similar answers
             $answersData['possible_keys'] = collect($answersData['possible_keys'])
                 ->reject(function ($value, $key) use ($answerKey) {
@@ -127,10 +130,11 @@ class PossibleSimilarAnswersController extends Controller
                 ->get();
 
             $transformed = $possibleSimilarAnswers->groupBy('answer_key')
-                ->map(function ($items, $answerKey) {
+                ->map(function ($items, $answerKey) use ($correctAnswerParticipants) {
                     $sortedItems = $items->sortBy('possible_key'); // Sort items within the group
                     return [
                         'answer_key' => $answerKey,
+                        'correct_answer_participants' => $correctAnswerParticipants,
                         'possible_keys' => $sortedItems->map(function ($item) {
                             return [
                                 'id' => $item->id,
@@ -231,6 +235,30 @@ class PossibleSimilarAnswersController extends Controller
                 'possible_keys' => $combinedAnswers->all()
             ];
         }
+    }
+
+    protected function getPartiticpantsForCorrectAnswer($participantsAnswersIndices)
+    {
+        if (empty($participantsAnswersIndices)) {
+            return collect();
+        }
+
+        $allParticipants = collect();
+
+        foreach ($participantsAnswersIndices as $answerIndex) {
+            $participants = Participants::with(['country', 'school', 'competition_organization'])
+                ->whereIn('index_no', function ($query) use ($answerIndex) {
+                    $query->select('participant_index')
+                        ->from('participant_answers')
+                        ->where('id', $answerIndex);
+                })->get()->each(function ($participant) use ($answerIndex) {
+                    $participant->participant_answer_id = $answerIndex;
+                });
+
+            $allParticipants = $allParticipants->merge($participants);
+        }
+
+        return $allParticipants;
     }
 
     public function getTaskPossibleSimilarParticipants($answerId)
