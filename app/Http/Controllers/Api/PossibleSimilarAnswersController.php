@@ -93,8 +93,11 @@ class PossibleSimilarAnswersController extends Controller
             $taskId = $answersData['task_id'];
             $answerKey = trim($answersData['answer_key']);
             $answerId = $answersData['answer_id'] ?? null;
-
-            $correctAnswerParticipants = $this->getPartiticpantsForCorrectAnswer($answersData['possible_keys'][$answerKey]);
+            
+            $correctAnswerParticipants = [];
+            if (isset($answersData['possible_keys'][$answerKey])) {
+                $correctAnswerParticipants = $this->getPartiticpantsForCorrectAnswer($answersData['possible_keys'][$answerKey]);
+            }
 
             // Remove correct answer key for similar answers
             $answersData['possible_keys'] = collect($answersData['possible_keys'])
