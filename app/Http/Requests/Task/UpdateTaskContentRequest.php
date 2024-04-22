@@ -35,6 +35,8 @@ class UpdateTaskContentRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+        if(auth()->user()->hasRole('Super Admin')) return;
+
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
             if ($task->isTaskRestricted()) {

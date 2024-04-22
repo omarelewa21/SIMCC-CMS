@@ -174,7 +174,7 @@ class TasksController extends Controller
     {
         try {
             $task = Tasks::find($request->id);
-            if ($task->status !== Tasks::STATUS_VERIFIED) {
+            if ($task->status !== Tasks::STATUS_VERIFIED || auth()->user()->hasRole('Super Admin')) {
                 $task->identifier = $request->identifier;
                 $task->taskContents->first()->task_title = $request->title;
                 $task->description = $request->description;
