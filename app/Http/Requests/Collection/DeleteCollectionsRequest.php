@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Collection;
 
-use App\Models\Collections;
 use App\Rules\CheckCollectionUse;
 use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;

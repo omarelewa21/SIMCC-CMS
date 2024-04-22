@@ -36,6 +36,8 @@ class AddSectionRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+        if(auth()->user()->hasRole('Super Admin')) return;
+
         $collection = Collections::find($this->collection_id);
         $validator->after(function ($validator) use ($collection) {
             if ($collection->isCollectionRestricted()) {
