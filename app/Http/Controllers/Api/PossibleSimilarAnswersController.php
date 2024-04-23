@@ -102,7 +102,7 @@ class PossibleSimilarAnswersController extends Controller
             // Remove correct answer key for similar answers
             $answersData['possible_keys'] = collect($answersData['possible_keys'])
                 ->reject(function ($value, $key) use ($answerKey) {
-                    return $key === $answerKey;
+                    return $key == $answerKey;
                 })
                 ->all();
 
