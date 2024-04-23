@@ -143,11 +143,11 @@ class PossibleSimilarAnswersController extends Controller
             return response()->json([
                 "status" => 200,
                 "message" => "Success",
-                "data" => [
+                "data" => [[
                     'answer_key' => $answerKey,
                     'correct_answer_participants' => $correctAnswerParticipants,
                     'possible_keys' => $orderedPossibleKeys
-                ],
+                ]],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
