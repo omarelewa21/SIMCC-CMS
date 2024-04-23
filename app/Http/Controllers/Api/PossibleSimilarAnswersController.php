@@ -107,10 +107,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->all();
 
             $possibleKeys = $answersData['possible_keys'];
-            $currentAnswerKey = PossibleSimilarAnswer::where('task_id', $taskId)->where('level_id', $levelId)->first()?->answer_key;
-            if ($currentAnswerKey != $answerKey) {
-                PossibleSimilarAnswer::where('task_id', $taskId)->where('level_id', $levelId)->delete();
-            }
+
             // Update or create records based on modified data
             foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
                 PossibleSimilarAnswer::updateOrCreate([
