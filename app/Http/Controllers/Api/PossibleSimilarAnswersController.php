@@ -10,6 +10,7 @@ use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
 use App\Models\UpdatedAnswer;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -92,8 +93,7 @@ class PossibleSimilarAnswersController extends Controller
             $answersData = $this->fetchSimilarAnswersForTask($task->id);
             $taskId = $answersData['task_id'];
             $answerKey = trim($answersData['answer_key']);
-            $answerId = $answersData['answer_id'] ?? null;
-            
+
             $correctAnswerParticipants = [];
             if (isset($answersData['possible_keys'][$answerKey])) {
                 $correctAnswerParticipants = $this->getPartiticpantsForCorrectAnswer($answersData['possible_keys'][$answerKey]);
@@ -113,11 +113,10 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'answer_id' => $answerId,
-                    'answer_key' => $answerKey,
                     'possible_key' => $possibleKey,
                 ], [
-                    'participants_answers_indices' => $participantsAnwers
+                    'answer_key' => $answerKey,
+                    'participants_answers_indices' => $participantsAnwers,
                 ]);
             }
 
@@ -127,37 +126,33 @@ class PossibleSimilarAnswersController extends Controller
                 ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
                 ->delete();
 
-            // Fetch updated possible similar answers and transform the collection
-            $possibleSimilarAnswers = $task->possibleSimilarAnswers()
-                ->with(['task', 'answer', 'approver'])
-                ->get();
-
-            $transformed = $possibleSimilarAnswers->groupBy('answer_key')
-                ->map(function ($items, $answerKey) use ($correctAnswerParticipants) {
-                    $sortedItems = $items->sortBy('possible_key'); // Sort items within the group
+            $orderedPossibleKeys = $task->possibleSimilarAnswers()
+                ->with(['task', 'approver'])
+                ->get()
+                ->map(function ($answer) {
                     return [
-                        'answer_key' => $answerKey,
-                        'correct_answer_participants' => $correctAnswerParticipants,
-                        'possible_keys' => $sortedItems->map(function ($item) {
-                            return [
-                                'id' => $item->id,
-                                'possible_key' => $item->possible_key,
-                                'status' => $item->status,
-                                'approver' => optional($item->approver)->name, // assuming 'approver' is an object with a 'name' attribute
-                            ];
-                        })->values(),
+                        'id' => $answer->id,
+                        'possible_key' => $answer->possible_key,
+                        'status' => $answer->status,
+                        'approver' => $answer->approver,
                     ];
-                })->values();
+                })
+                ->sortBy('possible_key')
+                ->values();
 
             return response()->json([
                 "status" => 200,
                 "message" => "Success",
-                "data" => $transformed,
+                "data" => [
+                    'answer_key' => $answerKey,
+                    'correct_answer_participants' => $correctAnswerParticipants,
+                    'possible_keys' => $orderedPossibleKeys
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Internal Server Error {$e->getMessage()}",
+                "message"   => $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
         }
@@ -173,6 +168,9 @@ class PossibleSimilarAnswersController extends Controller
             $correctAnswerPosition = $task->taskAnswers()
                 ->where('answer', '1') // '1' indicates the correct answer
                 ->value('position');
+            if (!$correctAnswerPosition) {
+                throw new Exception('There\'s no configured answer for this task');
+            }
 
             // Fetch the label of the correct answer using its position
             $correctAnswerData = $task->taskAnswers()
@@ -180,6 +178,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->where('task_answers.position', $correctAnswerPosition)
                 ->select('task_answers.id as answer_id', 'task_labels.content as content')
                 ->first();
+
 
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
@@ -215,29 +214,30 @@ class PossibleSimilarAnswersController extends Controller
             });
 
         $taskAnswer = $task->taskAnswers[0];
-        if ($taskAnswer->answer !== null) {
-            $normalizedKey = intval($taskAnswer->answer);
-            $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                ->whereNotNull('answer')
-                ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
-                ->get()
-                ->filter(function ($participantAnswer) use ($normalizedKey) {
-                    return intval($participantAnswer->numeric_answer) === $normalizedKey;
-                })
-                ->groupBy('answer')
-                ->mapWithKeys(function ($items, $key) {
-                    return [$key => $items->pluck('id')->all()];
-                });
-
-            $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
-
-            return [
-                'task_id' => $taskId,
-                'answer_id' => $taskAnswer->id,
-                'answer_key' => $taskAnswer->answer,
-                'possible_keys' => $combinedAnswers->all()
-            ];
+        if (!$taskAnswer->answer) {
+            throw new Exception('There\'s no configured answer for this task');
         }
+        $normalizedKey = intval($taskAnswer->answer);
+        $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
+            ->whereNotNull('answer')
+            ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
+            ->get()
+            ->filter(function ($participantAnswer) use ($normalizedKey) {
+                return intval($participantAnswer->numeric_answer) === $normalizedKey;
+            })
+            ->groupBy('answer')
+            ->mapWithKeys(function ($items, $key) {
+                return [$key => $items->pluck('id')->all()];
+            });
+
+        $combinedAnswers = $similarAnswers->union($allParticipantsAnswers);
+
+        return [
+            'task_id' => $taskId,
+            'answer_id' => $taskAnswer->id,
+            'answer_key' => $taskAnswer->answer,
+            'possible_keys' => $combinedAnswers->all()
+        ];
     }
 
     protected function getPartiticpantsForCorrectAnswer($participantsAnswersIndices)
