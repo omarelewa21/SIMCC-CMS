@@ -108,7 +108,7 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => $possibleKey,
+                    'possible_key' => strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnwers,
@@ -128,7 +128,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->delete();
 
             $orderedPossibleKeys = $task->possibleSimilarAnswers()
-                ->with(['task', 'approver'])
+                ->with(['approver'])
                 ->get()
                 ->map(function ($answer) {
                     return [
