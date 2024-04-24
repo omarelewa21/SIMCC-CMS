@@ -100,11 +100,6 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Remove correct answer key for similar answers
-            $answersData['possible_keys'] = collect($answersData['possible_keys'])
-                ->reject(function ($value, $key) use ($answerKey) {
-                    return $key == $answerKey;
-                })
-                ->all();
 
             $possibleKeys = $answersData['possible_keys'];
 
@@ -119,6 +114,12 @@ class PossibleSimilarAnswersController extends Controller
                     'participants_answers_indices' => $participantsAnwers,
                 ]);
             }
+
+            // Delete
+            PossibleSimilarAnswer::where('level_id', $levelId)
+                ->where('task_id', $taskId)
+                ->where('possible_key', $answerKey)
+                ->delete();
 
             // Delete records that are not in the updated list
             PossibleSimilarAnswer::where('level_id', $levelId)
