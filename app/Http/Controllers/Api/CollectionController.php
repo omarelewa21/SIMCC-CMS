@@ -351,7 +351,6 @@ class CollectionController extends Controller
 
     private function CheckUploadedAnswersCount($collection_id)
     {
-        // if(auth()->user()->hasRole('Super Admin')) return;
         $uploadAnswersCount = CompetitionLevels::with(['participantsAnswersUploaded'])->where('collection_id', $collection_id)->get()->pluck('participantsAnswersUploaded')->flatten()->count();
         $uploadAnswersCount == 0 ?:  abort(403, 'Unauthorized action, Answers have been uploaded to collection');;
     }

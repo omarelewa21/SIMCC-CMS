@@ -23,16 +23,4 @@ class DeleteSectionRequest extends FormRequest
             'id.*'          => 'required|integer|distinct|exists:collection_sections,id'
         ];
     }
-
-    public function withValidator($validator)
-    {
-        // if(auth()->user()->hasRole('Super Admin')) return;
-
-        $collection = Collections::find($this->collection_id);
-        $validator->after(function ($validator) use ($collection) {
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, Deleting sections is not allowed');
-            }
-        });
-    }
 }

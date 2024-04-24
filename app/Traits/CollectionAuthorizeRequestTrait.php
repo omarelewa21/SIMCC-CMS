@@ -10,8 +10,6 @@ trait CollectionAuthorizeRequestTrait
 
     public function authorize()
     {
-        // if(auth()->user()->hasRole('Super Admin')) return true;
-
         if($this->mode && $this->mode == 'delete'){
             return $this->authorizeForDelete();
         }

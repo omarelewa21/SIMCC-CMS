@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Collection;
 
-use App\Models\Collections;
 use App\Traits\CollectionAuthorizeRequestTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,22 +25,5 @@ class AddSectionRequest extends FormRequest
             'allow_skip'        => 'boolean|required',
             'description'       => 'string|max:65535',
         ];
-    }
-    /**
-     * Configure the validator instance.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
-     */
-    public function withValidator($validator)
-    {
-        // if(auth()->user()->hasRole('Super Admin')) return;
-
-        $collection = Collections::find($this->collection_id);
-        $validator->after(function ($validator) use ($collection) {
-            if (!$collection->status == Collections::STATUS_VERIFIED) {
-                $validator->errors()->add('authorize', 'Collection is verified, Adding new sections is not allowed');
-            }
-        });
     }
 }
