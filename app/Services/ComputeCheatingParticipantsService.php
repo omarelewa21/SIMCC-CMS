@@ -27,7 +27,8 @@ class ComputeCheatingParticipantsService
         protected $percentage=85,
         protected $numberOFSameIncorrect=5,
         protected $countries = null,
-        protected $forMapList = false
+        protected $forMapList = false,
+        protected $userId = null,
     )
     {
         $this->cheatStatus = CheatingStatus::where([
@@ -488,6 +489,7 @@ class ComputeCheatingParticipantsService
             'countries'                         => $this->countries,
             'grades'                            => $this->grades,
             'total_cases_count'                 => $this->getTotalCasesCount(),
+            'run_by'                            => $this->userId,
         ]);
     }
 }

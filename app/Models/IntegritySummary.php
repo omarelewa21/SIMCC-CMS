@@ -28,14 +28,6 @@ class IntegritySummary extends Model
 
     protected $appends = ['original_countries'];
 
-    public static function booted()
-    {
-        parent::booted();
-        static::creating(function ($summary) {
-            $summary->run_by = auth()->id();
-        });
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class, 'run_by');
@@ -51,7 +43,7 @@ class IntegritySummary extends Model
     protected function grades(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? sort(json_decode($value, true)) : null,
+            get: fn($value) => $value ? Arr::sort(json_decode($value, true)) : null,
             set: fn($value) => $value ? json_encode($value) : null,
         );
     }
