@@ -39,6 +39,8 @@ class ComputeCheatingParticipantsService
         ])
         ->FilterByCountries($countries)
         ->firstOrFail();
+
+        $this->grades = GradeService::getGradesWithVerifiedCollections($competition);
     }
 
     /**
@@ -73,23 +75,24 @@ class ComputeCheatingParticipantsService
      */
     protected function computeParticipantAnswersScores()
     {
-        DB::transaction(function(){
-            $this->competition->rounds()->with('levels')->get()
-                ->pluck('levels')->flatten()
-                ->each(function($level){
-                    ParticipantsAnswer::where('level_id', $level->id)
+        $progress = 1;
+
+        $this->competition->rounds()->with('levels')->get()
+            ->pluck('levels')->flatten()
+            ->each(function($level) use (&$progress){
+                ParticipantsAnswer::where('level_id', $level->id)
                     ->when($this->countries, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('country_id', $this->countries)))
-                    ->chunkById(50000, function ($participantAnswers) use($level){
+                    ->when($this->grades, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('grade', $this->grades)))
+                    ->chunkById(3000, function ($participantAnswers) use(&$progress){
                         foreach ($participantAnswers as $participantAnswer) {
                             $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer();
                             $participantAnswer->score = $participantAnswer->getAnswerMark();
                             $participantAnswer->save();
                         }
+                        $progress = $progress <= 50 ? $progress + 5 : $progress;
+                        $this->updateCheatStatus($progress);
                     });
-                });
-
-            $this->updateCheatStatus(40);
-        });
+            });
     }
 
     /**
@@ -139,7 +142,6 @@ class ComputeCheatingParticipantsService
     {
         $groups = collect();
 
-        $this->grades = GradeService::getGradesWithVerifiedCollections($this->competition);
         $this->competition->participants()
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->whereIn('participants.grade', $this->grades)
@@ -188,6 +190,7 @@ class ComputeCheatingParticipantsService
      */
     private function compareAnswersBetweenTwoParticipants($participant1, $participant2)
     {
+        $progress = 60;
         $dataArray = $this->getDefaultDataArray($participant1, $participant2);
         $sameQuestionIds = [];
         foreach($participant1->answers as $p1Answer){
@@ -210,6 +213,8 @@ class ComputeCheatingParticipantsService
 
             CheatingParticipants::create($dataArray);
         }
+        $progress = $progress <= 50 ? $progress + 5 : $progress;
+        $this->updateCheatStatus($progress);
     }
 
     /**
@@ -429,6 +434,7 @@ class ComputeCheatingParticipantsService
      */
     private function storeGroupAsPotentialCaseOfSameParticipantTakeSameCompetitionTwice($group)
     {
+        $progress = 50;
         $groupId = $this->generateGroupId($group->first(), true);
 
         foreach($group as $index => $participant) {
@@ -439,6 +445,9 @@ class ComputeCheatingParticipantsService
             $data['group_id'] = $groupId;
             $data['is_same_participant'] = true;
             CheatingParticipants::create($data);
+
+            $progress = $progress <= 90 ? $progress + 5 : $progress;
+            $this->updateCheatStatus($progress);
         }
     }
 
