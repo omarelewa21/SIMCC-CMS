@@ -16,7 +16,8 @@ class IntegritySummary extends Model
         'cheating_percentage',
         'number_of_same_incorrect_answers',
         'countries',
-        'grades',
+        'computed_grades',
+        'remaining_grades',
         'total_cases_count',
         'run_by',
     ];
@@ -40,11 +41,19 @@ class IntegritySummary extends Model
         );
     }
 
-    protected function grades(): Attribute
+    protected function computedGrades(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? Arr::sort(json_decode($value, true)) : null,
+            get: fn($value) => $value ? array_values(Arr::sort(json_decode($value, true))) : null,
             set: fn($value) => $value ? json_encode($value) : null,
+        );
+    }
+
+    protected function remainingGrades(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? array_values(Arr::sort(json_decode($value, true))) : null,
+            set: fn($value) => is_null($value) || empty($value) ? null : json_encode($value)
         );
     }
 

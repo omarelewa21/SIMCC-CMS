@@ -3,8 +3,11 @@
 namespace App\Http\Requests\Competition;
 
 use App\Models\Competition;
+use App\Models\IntegritySummary;
+use App\Services\GradeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class ConfirmCountryForIntegrityRequest extends FormRequest
@@ -41,5 +44,26 @@ class ConfirmCountryForIntegrityRequest extends FormRequest
             'countries.*.id' => ["required", Rule::exists('competition_countries_for_integrity_check', 'country_id')->where('competition_id', $this->competition->id)],
             'countries.*.is_confirmed' => "required|boolean"
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $requestCountries = Arr::pluck($this->countries, 'id');
+            $condition = IntegritySummary::where('competition_id', $this->competition->id)
+                ->whereJsonContains('countries', $requestCountries)
+                ->whereNull('remaining_grades')
+                ->doesntExist();
+
+            if ($condition) {
+                $validator->errors()->add('Grades', 'You must generate integrity check for all grades before confirming a country.');
+            }
+        });
     }
 }
