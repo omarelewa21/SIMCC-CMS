@@ -18,6 +18,7 @@ return new class extends Migration
     {
         Schema::create('integrity_summaries', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('competition_id')->constrained('competition')->cascadeOnDelete();
             $table->json('countries')->nullable();
             $table->json('grades')->nullable();
             $table->unsignedMediumInteger('total_cases_count')->default(0);
@@ -30,6 +31,7 @@ return new class extends Migration
             ->each(function ($status) {
                 DB::table('integrity_summaries')
                     ->insert([
+                        'competition_id' => $status->competition_id,
                         'countries' => empty($status->original_countries) ? null : json_encode($status->original_countries),
                         'total_cases_count' => $status->total_cases_count,
                         'run_by' => $status->run_by,
