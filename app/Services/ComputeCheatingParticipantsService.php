@@ -6,6 +6,7 @@ use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\IntegrityCheckCompetitionCountries;
+use App\Models\IntegritySummary;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Query\JoinClause;
@@ -15,6 +16,7 @@ use Illuminate\Support\LazyCollection;
 class ComputeCheatingParticipantsService
 {
     protected CheatingStatus $cheatStatus;
+    protected array $grades;
 
     /**
      * @param Competition $competition
@@ -124,6 +126,7 @@ class ComputeCheatingParticipantsService
             });
 
         IntegrityCheckCompetitionCountries::updateCountriesComputeStatus($this->competition, $this->countries);
+        $this->addIntegritySummary();
     }
 
     /**
@@ -135,8 +138,10 @@ class ComputeCheatingParticipantsService
     {
         $groups = collect();
 
+        $this->grades = GradeService::getGradesWithVerifiedCollections($this->competition);
         $this->competition->participants()
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
+            ->whereIn('participants.grade', $this->grades)
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
@@ -467,5 +472,22 @@ class ComputeCheatingParticipantsService
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->whereDoesntHave('integrityCases', fn($query) => $query->where('mode', $this->forMapList ? 'map' : 'system'))
             ->count();
+    }
+
+    /**
+     * Add integrity summary
+     *
+     * @return void
+     */
+    private function addIntegritySummary()
+    {
+        IntegritySummary::create([
+            'competition_id'                    => $this->competition->id,
+            'cheating_percentage'               => $this->percentage,
+            'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect,
+            'countries'                         => $this->countries,
+            'grades'                            => $this->grades,
+            'total_cases_count'                 => $this->getTotalCasesCount(),
+        ]);
     }
 }
