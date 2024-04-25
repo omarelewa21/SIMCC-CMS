@@ -10,7 +10,6 @@ use App\Models\IntegritySummary;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
 
 class ComputeCheatingParticipantsService
@@ -496,9 +495,32 @@ class ComputeCheatingParticipantsService
             'cheating_percentage'               => $this->percentage,
             'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect,
             'countries'                         => $this->countries,
-            'grades'                            => $this->grades,
+            'computed_grades'                   => $this->grades,
+            'remaining_grades'                  => $this->getRemainingGrades(),
             'total_cases_count'                 => $this->getTotalCasesCount(),
             'run_by'                            => $this->userId,
         ]);
+    }
+
+    /**
+     * Get remaining grades
+     *
+     * @return array
+     */
+    private function getRemainingGrades(): array
+    {
+        $allCompetitionGrades = $this->getAllCompetitionGrades();
+        return array_values(array_diff($allCompetitionGrades, $this->grades));
+    }
+
+    /**
+     * Get all competition grades
+     *
+     * @return array
+     */
+    private function getAllCompetitionGrades(): array
+    {
+        return $this->competition->levels()->select('competition_levels.grades')
+            ->pluck('grades')->flatten()->unique()->toArray();
     }
 }
