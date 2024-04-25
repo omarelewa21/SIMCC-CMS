@@ -18,8 +18,9 @@ class IntegritySummary extends Model
     ];
 
     protected $casts = [
-        'countries' => 'array',
-        'grades' => 'array',
+        'countries'     => 'array',
+        'created_at'    => 'datetime:Y-m-d H:i',
+        'updated_at'    => 'datetime:Y-m-d H:i',
     ];
 
     public static function booted()
@@ -39,6 +40,14 @@ class IntegritySummary extends Model
     {
         return Attribute::make(
             get: fn($value) => $value ? User::whereId($value)->value('name') : null,
+        );
+    }
+
+    protected function grades(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? sort(json_decode($value, true)) : null,
+            set: fn($value) => $value ? json_encode($value) : null,
         );
     }
 }
