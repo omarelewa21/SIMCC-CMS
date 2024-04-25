@@ -6,6 +6,7 @@ use App\Models\CheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\IntegrityCheckCompetitionCountries;
+use App\Models\IntegritySummary;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Query\JoinClause;
@@ -15,6 +16,7 @@ use Illuminate\Support\LazyCollection;
 class ComputeCheatingParticipantsService
 {
     protected CheatingStatus $cheatStatus;
+    protected array $grades;
 
     /**
      * @param Competition $competition
@@ -25,7 +27,8 @@ class ComputeCheatingParticipantsService
         protected $percentage=85,
         protected $numberOFSameIncorrect=5,
         protected $countries = null,
-        protected $forMapList = false
+        protected $forMapList = false,
+        protected $userId = null,
     )
     {
         $this->cheatStatus = CheatingStatus::where([
@@ -36,6 +39,8 @@ class ComputeCheatingParticipantsService
         ])
         ->FilterByCountries($countries)
         ->firstOrFail();
+
+        $this->grades = GradeService::getGradesWithVerifiedCollections($competition);
     }
 
     /**
@@ -70,23 +75,24 @@ class ComputeCheatingParticipantsService
      */
     protected function computeParticipantAnswersScores()
     {
-        DB::transaction(function(){
-            $this->competition->rounds()->with('levels')->get()
-                ->pluck('levels')->flatten()
-                ->each(function($level){
-                    ParticipantsAnswer::where('level_id', $level->id)
+        $progress = 1;
+
+        $this->competition->rounds()->with('levels')->get()
+            ->pluck('levels')->flatten()
+            ->each(function($level) use (&$progress){
+                ParticipantsAnswer::where('level_id', $level->id)
                     ->when($this->countries, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('country_id', $this->countries)))
-                    ->chunkById(50000, function ($participantAnswers) use($level){
+                    ->when($this->grades, fn($query) => $query->whereHas('participant', fn($query) => $query->whereIn('grade', $this->grades)))
+                    ->chunkById(3000, function ($participantAnswers) use(&$progress){
                         foreach ($participantAnswers as $participantAnswer) {
                             $participantAnswer->is_correct = $participantAnswer->getIsCorrectAnswer();
                             $participantAnswer->score = $participantAnswer->getAnswerMark();
                             $participantAnswer->save();
                         }
+                        $progress = $progress <= 50 ? $progress + 5 : $progress;
+                        $this->updateCheatStatus($progress);
                     });
-                });
-
-            $this->updateCheatStatus(40);
-        });
+            });
     }
 
     /**
@@ -124,6 +130,7 @@ class ComputeCheatingParticipantsService
             });
 
         IntegrityCheckCompetitionCountries::updateCountriesComputeStatus($this->competition, $this->countries);
+        $this->addIntegritySummary();
     }
 
     /**
@@ -137,6 +144,7 @@ class ComputeCheatingParticipantsService
 
         $this->competition->participants()
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
+            ->whereIn('participants.grade', $this->grades)
             ->select('participants.*')
             ->with(['answers' => fn($query) => $query->orderBy('task_id')])
             ->withCount('answers')
@@ -182,6 +190,7 @@ class ComputeCheatingParticipantsService
      */
     private function compareAnswersBetweenTwoParticipants($participant1, $participant2)
     {
+        $progress = 60;
         $dataArray = $this->getDefaultDataArray($participant1, $participant2);
         $sameQuestionIds = [];
         foreach($participant1->answers as $p1Answer){
@@ -204,6 +213,8 @@ class ComputeCheatingParticipantsService
 
             CheatingParticipants::create($dataArray);
         }
+        $progress = $progress <= 50 ? $progress + 5 : $progress;
+        $this->updateCheatStatus($progress);
     }
 
     /**
@@ -423,6 +434,7 @@ class ComputeCheatingParticipantsService
      */
     private function storeGroupAsPotentialCaseOfSameParticipantTakeSameCompetitionTwice($group)
     {
+        $progress = 50;
         $groupId = $this->generateGroupId($group->first(), true);
 
         foreach($group as $index => $participant) {
@@ -433,6 +445,9 @@ class ComputeCheatingParticipantsService
             $data['group_id'] = $groupId;
             $data['is_same_participant'] = true;
             CheatingParticipants::create($data);
+
+            $progress = $progress <= 90 ? $progress + 5 : $progress;
+            $this->updateCheatStatus($progress);
         }
     }
 
@@ -467,5 +482,23 @@ class ComputeCheatingParticipantsService
             ->when($this->countries, fn($query) => $query->whereIn('participants.country_id', $this->countries))
             ->whereDoesntHave('integrityCases', fn($query) => $query->where('mode', $this->forMapList ? 'map' : 'system'))
             ->count();
+    }
+
+    /**
+     * Add integrity summary
+     *
+     * @return void
+     */
+    private function addIntegritySummary()
+    {
+        IntegritySummary::create([
+            'competition_id'                    => $this->competition->id,
+            'cheating_percentage'               => $this->percentage,
+            'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect,
+            'countries'                         => $this->countries,
+            'grades'                            => $this->grades,
+            'total_cases_count'                 => $this->getTotalCasesCount(),
+            'run_by'                            => $this->userId,
+        ]);
     }
 }

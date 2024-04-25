@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Competition;
 
 use App\Models\Countries;
+use App\Services\GradeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
@@ -90,9 +91,17 @@ class CompetitionCheatingListRequest extends FormRequest
                 $validator->errors()->add(
                     'countries',
                     sprintf(
-                        "You need to upload answers for these countries: %s, before you can perform IAC integrity check"
-                        , Arr::join($countriesWithNoAnswersUploaded, ', ', ' and ')
+                        "You need to upload answers for these countries: %s, before you can perform IAC integrity check",
+                        Arr::join($countriesWithNoAnswersUploaded, ', ', ' and ')
                     )
+                );
+            }
+
+            $gradesWithVerifiedCollections = GradeService::getGradesWithVerifiedCollections($this->route()->competition);
+            if(empty($gradesWithVerifiedCollections)) {
+                $validator->errors()->add(
+                    'grades',
+                    "There is no verified collections in this competition, you need to verify at least one collection to perform IAC integrity check"
                 );
             }
         });
