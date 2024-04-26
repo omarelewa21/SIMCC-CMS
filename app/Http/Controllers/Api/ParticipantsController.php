@@ -456,7 +456,7 @@ class ParticipantsController extends Controller
                     'group_rank'        => null,
                     'report'            => null,
                 ]);
-            
+
             foreach($participantIndexes as $i => $participantIndex) {
                 IntegrityCase::updateOrCreate(
                     ['participant_index' => $participantIndex, 'mode' => $request->mode],
@@ -540,16 +540,28 @@ class ParticipantsController extends Controller
     public function editResult(Participants $participant, EditResultRequest $request)
     {
         try {
-            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)
-                ->first();
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+            if(!$participantResult) {
+                $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
+                $participantResult = CompetitionParticipantsResults::create([
+                    'participant_index' => $participant->index_no,
+                    'level_id'          => $participantLevelId,
+                ]);
+            }
+
+            $award = $request->filled('award') ? $request->award : $participantResult->award;
 
             foreach($request->all() as $key => $value) {
                 switch($key) {
                     case 'award':
+                        $participantResult->award = $award;
+                        break;
                     case 'country_rank':
                     case 'school_rank':
-                    case 'global_rank':
                         $participantResult->$key = $value;
+                        break;
+                    case 'global_rank':
+                        $participantResult->$key = "$award $value";
                         break;
                     default:
                         break;
