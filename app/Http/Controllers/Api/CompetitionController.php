@@ -1084,9 +1084,9 @@ class CompetitionController extends Controller
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                // if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
-                //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
-                // }
+                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                    throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+                }
 
                 $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
@@ -1141,7 +1141,7 @@ class CompetitionController extends Controller
                 $request
             )->get();
 
-            if ($data->count() === 0) return [];
+            throw_if($data->count() === 0, new \Exception('No data found'));
 
             if ($request->mode === 'csv') return $data->prepend($header);
 
@@ -1162,8 +1162,8 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,
-                'message'   => "Failed to fetch report",
-                'error'     => $e->getMessage()
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
             ], 500);
         }
     }

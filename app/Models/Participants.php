@@ -41,6 +41,8 @@ class Participants extends Base
         "last_modified_userid"
     ];
 
+    protected $appends = ['iac_status'];
+
      /**
      * Get the prunable model query.
      *
@@ -253,5 +255,31 @@ class Participants extends Base
             $password .= $characters[rand(0, $charactersLength - 1)];
         }
         return encrypt($password);
+    }
+
+    protected function iacStatus(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value, $attributes) {
+                $value = $attributes['status'];
+                if ($value !== Participants::STATUS_CHEATING || $this->integrityCases()->doesntExist()) return $value;
+                $status = collect([]);
+                foreach($this->integrityCases as $case) {
+                    switch($case->mode){
+                        case 'map':
+                            $status->push('MAP IAC');
+                            break;
+                        case 'custom':
+                            $status->push('IAC Incident');
+                            break;
+                        default:
+                            $status->push('System Generated IAC');
+                            break;
+                    }
+                }
+
+                return $status->join(', ', ' and ');
+            }
+        );
     }
 }
