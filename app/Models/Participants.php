@@ -156,7 +156,7 @@ class Participants extends Base
                     $this->password = self::generatePassword();
                     $this->save();
                     return $this->password;
-                } 
+                }
             },
         );
     }
@@ -194,6 +194,11 @@ class Participants extends Base
     public function integrityCases()
     {
         return $this->hasMany(IntegrityCase::class, 'participant_index', 'index_no');
+    }
+
+    public function result()
+    {
+        return $this->hasOne(CompetitionParticipantsResults::class, 'participant_index', 'index_no');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
