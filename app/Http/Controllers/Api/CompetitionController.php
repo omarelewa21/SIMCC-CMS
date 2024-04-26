@@ -1141,8 +1141,10 @@ class CompetitionController extends Controller
             $currentPage = $data->currentPage();
             $lastPage = $data->lastPage();
             $total = $data->total();
+            $from = $data->firstItem();
+            $to = $data->lastItem();
             $data = $data->map(fn ($result) => $competitionService->appendIntegrityStatus($result))
-                ->paginate($request->limits ?? 10, $request->page ?? 1);
+                ->paginate($request->limits ?? 10);
 
             return [
                 'filterOptions'     => $filterOptions,
@@ -1152,7 +1154,9 @@ class CompetitionController extends Controller
                     'data'          => $data->items(),
                     'last_page'     => $lastPage,
                     'per_page'      => $perPage,
-                    'total'         => $total
+                    'total'         => $total,
+                    'from'          => $from,
+                    'to'            => $to
                 ],
             ];
         } catch (\Exception $e) {
