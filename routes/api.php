@@ -166,6 +166,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
             Route::get("/answer_updates/{task}", [PossibleSimilarAnswersController::class, "getAnswerUpdates"])->name('competition.possible_similar_answers.answer_updates');
             Route::post("/", [PossibleSimilarAnswersController::class, "approvePossibleAnswers"])->name('competition.possible_similar_answers.approve');
         });
+        Route::post("/participant/{participant}", [MarkingController::class, "markSingleParticipant"])->name('mark.single.participant');
     });
 
     Route::group(["prefix" => "tasks"], function () {
