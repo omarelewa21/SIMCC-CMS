@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class HelperController extends Controller
 {
-  
+
     public function getCountryList (Request $request) {
         $request->validate([
             "competition_id" => ['integer',Rule::exists("competition",'id')]
@@ -250,12 +250,40 @@ class HelperController extends Controller
 
     public function getParticipantInfo(Participants $participant) {
         try {
-            $data = $participant->load('school:id,name','country:id,display_name as name')->toArray();
+            $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')->toArray();
             $data['school'] = $data['school']['name'];
             $data['country'] = $data['country']['name'];
+            $answers = collect($data['answers'])->sortBy('id')->map(function ($answer, $key) {
+                $answerKey = $answer['answer'];
+                if(!is_null($answer['is_correct'])) {
+                    $answerKey .= $answer['is_correct'] ? ' (Correct)' : ' (Wrong)';
+                }
+                return [
+                    "Q" . $key+1 => $answerKey,
+                ];
+            })->collapse();
+
+            $data = array_merge($data, $answers->toArray());
+            unset($data['answers']);
+
+
+            $headers = [
+                'Index'     => 'index_no',
+                'Name'      => 'name',
+                'Country'   => 'country',
+                'School'    => 'school',
+                'Grade'     => 'grade',
+                'status'    => 'status',
+                'No. of answers uploaded' => $answers->count(),
+            ];
+
+            for($i = 1; $i <= $answers->count(); $i++) {
+                $headers["Q$i"] = "Q$i";
+            }
 
             return response()->json([
                 'status' => 200,
+                'headers' => $headers,
                 'data'   => $data
             ]);
 
@@ -266,7 +294,7 @@ class HelperController extends Controller
                 'error'     => strval($e)
             ]);
         }
-        
-        
+
+
     }
 }
