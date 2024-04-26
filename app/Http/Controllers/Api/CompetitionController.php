@@ -1129,12 +1129,14 @@ class CompetitionController extends Controller
             if ($request->mode === 'csv') return $data->prepend($header);
 
             $filterOptions = $competitionService->getReportFilterOptions($data->toArray());
+
             $data = CollectionHelper::searchCollection(
                 $request->search,
                 $data,
                 array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
                 $request->limits ?? 10
-            );
+            )->map(fn ($result) => $competitionService->appendIntegrityStatus($result))
+            ->paginate($request->limits ?? 10, $request->page ?? 1);
 
             return [
                 'filterOptions'     => $filterOptions,

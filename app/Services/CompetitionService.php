@@ -19,9 +19,9 @@ class CompetitionService
 
     /**
      * get query for competition report
-     * 
+     *
      * @param string $mode csv or all
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Builder $query
      */
     public function getReportQuery(string $mode): Builder
@@ -32,7 +32,8 @@ class CompetitionService
                     ->push($round->default_award_name);
 
         return
-            CompetitionParticipantsResults::leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+            CompetitionParticipantsResults::with('integrityCases')
+                ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
                 ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
                 ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
                 ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
@@ -50,7 +51,7 @@ class CompetitionService
                 ->orderByRaw(
                     "competition_levels.id,
                     FIELD(competition_participants_results.award, '". $awardsRankArray->implode("','") ."'),
-                    competition_participants_results.points desc;"
+                    competition_participants_results.points desc"
                 );
     }
 
@@ -95,6 +96,7 @@ class CompetitionService
             CONCAT(COALESCE(schools.name_in_certificate, schools.name)) as `school`,
             tuition_school.name as tuition_centre,
             participants.index_no,
+            competition_participants_results.participant_index,
             participants.name as name,
             participants.certificate_no,
             competition_participants_results.points,
@@ -108,7 +110,7 @@ class CompetitionService
 
     /**
      * apply filter to the query
-     * 
+     *
      * @param \Illuminate\Http\Request $reques
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder $query
@@ -123,6 +125,31 @@ class CompetitionService
         if ($request->filled('award')) $query->where('competition_participants_results.award', $request->award);
 
         return $query;
+    }
+
+    public function appendIntegrityStatus($result)
+    {
+        $reason = collect([]);
+        $type = collect([]);
+        foreach($result->integrityCases as $integrityCase){
+            switch($integrityCase->mode){
+                case 'map':
+                    $type->push('MAP IAC');
+                    break;
+                case 'custom':
+                    $type->push('IAC Incident');
+                    break;
+                default:
+                    $type->push('System Generated IAC');
+                    break;
+            }
+            $reason->push($integrityCase->reason);
+        }
+        if($type->isNotEmpty()) {
+            $result->setAttribute('status', $type->join(', ', ' and '));
+        };
+        $result->setAttribute('reason', $reason->join(', ', ' and '));
+        return $result;
     }
 
     public function setReportSchoolRanking(array $data, &$participants, &$currentLevel, &$currentSchool, &$currentPoints, &$counter)
@@ -244,7 +271,7 @@ class CompetitionService
 
     /**
      * Get filter options for report data
-     * 
+     *
      * @param array $data
      * @return \Illuminate\Support\Collection
      */
