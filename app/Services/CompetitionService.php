@@ -35,14 +35,13 @@ class CompetitionService
         return Participants::with('integrityCases')
                 ->leftJoin('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-                ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-                ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
                 ->leftJoin('schools', 'participants.school_id', 'schools.id')
                 ->leftJoin('schools AS tuition_school', 'participants.tuition_centre_id', 'tuition_school.id')
                 ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
                 ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+                ->leftJoin('competition', 'competition.id', 'competition_organization.competition_id')
                 ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
-                ->where('competition_organization.competition_id', $this->competition->id)
+                ->where('competition.id', $this->competition->id)
                 ->groupBy('participants.index_no')
                 ->when(
                     $mode === 'csv',
