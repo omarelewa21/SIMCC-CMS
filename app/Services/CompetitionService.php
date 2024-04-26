@@ -7,6 +7,7 @@ use App\Models\CompetitionParticipantsResults;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use App\Models\Competition;
+use App\Models\Participants;
 
 class CompetitionService
 {
@@ -31,18 +32,18 @@ class CompetitionService
                     ->merge($round->roundsAwards->pluck('name'))
                     ->push($round->default_award_name);
 
-        return
-            CompetitionParticipantsResults::with('integrityCases')
+        return Participants::with('integrityCases')
+                ->leftJoin('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
                 ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
                 ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
-                ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->leftJoin('schools', 'participants.school_id', 'schools.id')
                 ->leftJoin('schools AS tuition_school', 'participants.tuition_centre_id', 'tuition_school.id')
                 ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
                 ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
                 ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
-                ->where('competition.id', $this->competition->id)
+                ->where('competition_organization.competition_id', $this->competition->id)
+                ->groupBy('participants.index_no')
                 ->when(
                     $mode === 'csv',
                     fn($query) => $this->getCompetitionReportQueryForCSV($query),
@@ -121,8 +122,8 @@ class CompetitionService
 
         if ($request->filled('grade')) $query->where('participants.grade', $request->grade);
         if ($request->filled('country')) $query->where('participants.country_id', $request->country);
-        if ($request->filled('school')) $query->where('participants.school_id', $request->school);
         if ($request->filled('award')) $query->where('competition_participants_results.award', $request->award);
+        if ($request->filled('status')) $query->where('participants.status', $request->status);
 
         return $query;
     }
@@ -253,16 +254,16 @@ class CompetitionService
     public function getReportFilterOptions(array $data): array
     {
         $collection = collect($data);
-        $grades = $collection->pluck('grade')->unique()->values();
+        $grades = $collection->pluck('grade')->sort()->unique()->values();
         $countries = $collection->pluck('country', 'country_id')->unique();
-        $schools = $collection->pluck('school', 'school_id')->unique();
-        $awards = $collection->pluck('award')->unique()->values();
+        $awards = $collection->pluck('award')->unique()->reject(fn($award) => $award == null)->values();
+        $statusses = $collection->pluck('status')->unique()->values();
 
         return [
             'grade'     => $grades,
             'country'   => $countries,
-            'school'    => $schools,
-            'award'     => $awards
+            'award'     => $awards,
+            'status'    => $statusses,
         ];
     }
 

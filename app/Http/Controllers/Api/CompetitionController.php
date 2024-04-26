@@ -1124,7 +1124,7 @@ class CompetitionController extends Controller
                 $request
             )->get();
 
-            if ($data->count() === 0) return [];
+            throw_if($data->count() === 0, new \Exception('No data found'));
 
             if ($request->mode === 'csv') return $data->prepend($header);
 
@@ -1145,8 +1145,8 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,
-                'message'   => "Failed to fetch report",
-                'error'     => $e->getMessage()
+                'message'   => $e->getMessage(),
+                'error'     => strval($e)
             ], 500);
         }
     }

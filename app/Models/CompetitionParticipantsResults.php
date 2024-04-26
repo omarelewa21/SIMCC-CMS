@@ -46,29 +46,4 @@ class CompetitionParticipantsResults extends Model
     {
         return $this->hasMany(IntegrityCase::class, 'participant_index', 'participant_index');
     }
-
-    protected function status(): Attribute
-    {
-        return Attribute::make(
-            get: function ($value) {
-                if ($value !== Participants::STATUS_CHEATING || $this->intgrityCases?->isEmpty()) return $value;
-                $status = collect([]);
-                foreach($this->integrityCases as $case) {
-                    switch($case->mode){
-                        case 'map':
-                            $status->push('MAP IAC');
-                            break;
-                        case 'custom':
-                            $status->push('IAC Incident');
-                            break;
-                        default:
-                            $status->push('System Generated IAC');
-                            break;
-                    }
-                }
-
-                return $status->join(', ', ' and ');
-            }
-        );
-    }
 }
