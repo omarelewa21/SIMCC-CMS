@@ -43,6 +43,6 @@ class CompetitionParticipantsResults extends Model
 
     public function integrityCases()
     {
-        return $this->hasMany(integrityCase::class, 'participant_index', 'participant_index');
+        return $this->hasMany(IntegrityCase::class, 'participant_index', 'participant_index');
     }
 }
