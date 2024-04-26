@@ -171,6 +171,11 @@ class Participants extends Base
         return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
     }
 
+    public function result()
+    {
+        return $this->hasOne(CompetitionParticipantsResults::class, 'participant_index', 'index_no');
+    }
+
     public static function generateIndexNo(Countries $country, $isPrivate=false)
     {
         // Get the dial code for the country
