@@ -250,7 +250,9 @@ class HelperController extends Controller
 
     public function getParticipantInfo(Participants $participant) {
         try {
-            $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')->toArray();
+            $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')
+                ->withCount('answers')
+                ->toArray();
             $data['school'] = $data['school']['name'];
             $data['country'] = $data['country']['name'];
             $answers = collect($data['answers'])->sortBy('id')->map(function ($answer, $key) {
@@ -274,7 +276,7 @@ class HelperController extends Controller
                 'School'    => 'school',
                 'Grade'     => 'grade',
                 'status'    => 'status',
-                'No. of answers uploaded' => $answers->count(),
+                'No. of answers uploaded' => 'answers_count',
             ];
 
             for($i = 1; $i <= $answers->count(); $i++) {
