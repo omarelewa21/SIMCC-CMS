@@ -1067,9 +1067,9 @@ class CompetitionController extends Controller
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                // if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
-                //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
-                // }
+                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                    throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+                }
 
                 $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
