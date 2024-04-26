@@ -251,7 +251,7 @@ class HelperController extends Controller
     public function getParticipantInfo(Participants $participant) {
         try {
             $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')
-                ->withCount('answers')
+                ->loadCount('answers')
                 ->toArray();
             $data['school'] = $data['school']['name'];
             $data['country'] = $data['country']['name'];
