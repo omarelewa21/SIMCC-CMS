@@ -1146,6 +1146,7 @@ class CompetitionController extends Controller
             if ($request->mode === 'csv') return $data->prepend($header);
 
             $filterOptions = $competitionService->getReportFilterOptions($data->toArray());
+
             $data = CollectionHelper::searchCollection(
                 $request->search,
                 $data,

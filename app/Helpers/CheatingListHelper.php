@@ -11,6 +11,7 @@ use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Countries;
 use App\Models\IntegrityCheckCompetitionCountries;
+use App\Models\IntegritySummary;
 use App\Models\Participants;
 use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
@@ -714,12 +715,9 @@ class CheatingListHelper
 
     public static function getCheatingCriteriaStatsData(Competition $competition)
     {
-        return CheatingStatus::where([
-            'competition_id'    => $competition->id,
-            'for_map_list'      => 0
-            ])
+        return IntegritySummary::where('competition_id', $competition->id,)
             ->orderBy('updated_at', 'desc')
-            ->select('competition_cheat_compute_status.*', 'total_cases_count as participants_count')
+            ->select('integrity_summaries.*', 'total_cases_count as participants_count')
             ->get();
     }
 

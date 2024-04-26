@@ -17,6 +17,8 @@ class ComputeCheatingParticipants implements ShouldQueue
 
     public $timeout = 5000;
 
+    protected $userId = null;
+
     /**
      * Create a new job instance.
      *
@@ -30,7 +32,9 @@ class ComputeCheatingParticipants implements ShouldQueue
         protected $countries=null,
         protected $forMapList = false
 
-    ) {}
+    ) {
+        $this->userId = auth()->id();
+    }
 
     /**
      * Execute the job.
@@ -45,10 +49,11 @@ class ComputeCheatingParticipants implements ShouldQueue
                 $this->qNumber, $this->percentage ?? 85,
                 $this->numberOFSameIncorrect ?? 5,
                 $this->countries,
-                $this->forMapList ?? false
+                $this->forMapList ?? false,
+                userId: $this->userId
             ))->computeCheatingParticipants();
         }
-        
+
         catch (\Exception $e) {
             $cheatingStatus = CheatingStatus::where([
                 'competition_id'                    => $this->competition->id,

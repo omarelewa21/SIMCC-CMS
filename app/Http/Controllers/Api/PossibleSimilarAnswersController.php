@@ -100,11 +100,6 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Remove correct answer key for similar answers
-            $answersData['possible_keys'] = collect($answersData['possible_keys'])
-                ->reject(function ($value, $key) use ($answerKey) {
-                    return $key === $answerKey;
-                })
-                ->all();
 
             $possibleKeys = $answersData['possible_keys'];
 
@@ -113,12 +108,18 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => $possibleKey,
+                    'possible_key' => strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnwers,
                 ]);
             }
+
+            // Delete
+            PossibleSimilarAnswer::where('level_id', $levelId)
+                ->where('task_id', $taskId)
+                ->where('possible_key', $answerKey)
+                ->delete();
 
             // Delete records that are not in the updated list
             PossibleSimilarAnswer::where('level_id', $levelId)
@@ -127,7 +128,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->delete();
 
             $orderedPossibleKeys = $task->possibleSimilarAnswers()
-                ->with(['task', 'approver'])
+                ->with(['approver'])
                 ->get()
                 ->map(function ($answer) {
                     return [
@@ -143,14 +144,11 @@ class PossibleSimilarAnswersController extends Controller
             return response()->json([
                 "status" => 200,
                 "message" => "Success",
-                "data" => [
-                    [
-
-                        'answer_key' => $answerKey,
-                        'correct_answer_participants' => $correctAnswerParticipants,
-                        'possible_keys' => $orderedPossibleKeys
-                    ]
-                ],
+                "data" => [[
+                    'answer_key' => $answerKey,
+                    'correct_answer_participants' => $correctAnswerParticipants,
+                    'possible_keys' => $orderedPossibleKeys
+                ]],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
