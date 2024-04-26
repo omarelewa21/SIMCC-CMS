@@ -1135,13 +1135,25 @@ class CompetitionController extends Controller
                 $data,
                 array("competition", "organization", "country", "level", "school", "name", "index_no", "certificate_no", "award", "global_rank"),
                 $request->limits ?? 10
-            )->map(fn ($result) => $competitionService->appendIntegrityStatus($result))
-            ->paginate($request->limits ?? 10, $request->page ?? 1);
+            );
+
+            $perPage = $data->perPage();
+            $currentPage = $data->currentPage();
+            $lastPage = $data->lastPage();
+            $total = $data->total();
+            $data = $data->map(fn ($result) => $competitionService->appendIntegrityStatus($result))
+                ->paginate($request->limits ?? 10, $request->page ?? 1);
 
             return [
                 'filterOptions'     => $filterOptions,
                 'header'            => $header,
-                'data'              => $data,
+                'data'              => [
+                    'current_page'  => $currentPage,
+                    'data'          => $data->items(),
+                    'last_page'     => $lastPage,
+                    'per_page'      => $perPage,
+                    'total'         => $total
+                ],
             ];
         } catch (\Exception $e) {
             return response()->json([
