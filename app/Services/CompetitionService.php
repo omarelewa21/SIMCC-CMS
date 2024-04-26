@@ -127,31 +127,6 @@ class CompetitionService
         return $query;
     }
 
-    public function appendIntegrityStatus($result)
-    {
-        $reason = collect([]);
-        $type = collect([]);
-        foreach($result->integrityCases as $integrityCase){
-            switch($integrityCase->mode){
-                case 'map':
-                    $type->push('MAP IAC');
-                    break;
-                case 'custom':
-                    $type->push('IAC Incident');
-                    break;
-                default:
-                    $type->push('System Generated IAC');
-                    break;
-            }
-            $reason->push($integrityCase->reason);
-        }
-        if($type->isNotEmpty()) {
-            $result->setAttribute('status', $type->join(', ', ' and '));
-        };
-        $result->setAttribute('reason', $reason->join(', ', ' and '));
-        return $result;
-    }
-
     public function setReportSchoolRanking(array $data, &$participants, &$currentLevel, &$currentSchool, &$currentPoints, &$counter)
     {
         collect($data)->sortBy([
