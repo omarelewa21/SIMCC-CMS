@@ -215,7 +215,7 @@ class PossibleSimilarAnswersController extends Controller
             });
 
         $taskAnswer = $task->taskAnswers[0];
-        if (!$taskAnswer->answer) {
+        if ($taskAnswer->answer == null) {
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
