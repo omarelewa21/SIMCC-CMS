@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
@@ -236,7 +237,7 @@ class Participants extends Base
     {
         return Attribute::make(
             get: function ($value, $attributes) {
-                $value = $attributes['status'];
+                $value = Arr::has($attributes, 'status') ? $attributes['status'] : null;
                 if ($value !== Participants::STATUS_CHEATING || $this->integrityCases()->doesntExist()) return $value;
                 $status = collect([]);
                 foreach($this->integrityCases as $case) {
