@@ -146,7 +146,7 @@ class Competition extends Base
 
     public function getComputeStatusAttribute()
     {
-        return true;
+        return 'Finished';
     }
 
     public function getGenerateReportBtnAttribute()
