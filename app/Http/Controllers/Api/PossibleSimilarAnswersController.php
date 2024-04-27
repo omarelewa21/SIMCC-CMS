@@ -90,7 +90,7 @@ class PossibleSimilarAnswersController extends Controller
         try {
             $levelId = $request->level_id;
 
-            $answersData = $this->fetchSimilarAnswersForTask($task->id);
+             $answersData = $this->fetchSimilarAnswersForTask($task->id);
             $taskId = $answersData['task_id'];
             $answerKey = trim($answersData['answer_key']);
 
@@ -108,7 +108,7 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => strval($possibleKey),
+                    'possible_key' => strval($possibleKey) ?? "",
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnwers,
