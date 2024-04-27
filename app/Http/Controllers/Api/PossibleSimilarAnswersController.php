@@ -105,10 +105,11 @@ class PossibleSimilarAnswersController extends Controller
 
             // Update or create records based on modified data
             foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
+                $possibleKey = ($possibleKey == null || $possibleKey == '') ? '' : strval($possibleKey);
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => strval($possibleKey ?? ''),
+                    'possible_key' => strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
@@ -207,7 +208,6 @@ class PossibleSimilarAnswersController extends Controller
 
         // Handle non-MCQ tasks as before
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            ->whereNotNull('answer')
             ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
@@ -221,7 +221,6 @@ class PossibleSimilarAnswersController extends Controller
         }
         $normalizedKey = intval($taskAnswer->answer);
         $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            // ->whereNotNull('answer')
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
             ->get()
             ->filter(function ($participantAnswer) use ($normalizedKey) {
