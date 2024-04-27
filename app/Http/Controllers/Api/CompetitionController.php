@@ -1073,7 +1073,7 @@ class CompetitionController extends Controller
 
                 $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
-                if ($levelTaskCount > count($participantData['answers'])) {
+                if ($levelTaskCount !== count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
