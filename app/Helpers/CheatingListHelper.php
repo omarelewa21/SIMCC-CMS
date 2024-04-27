@@ -413,6 +413,8 @@ class CheatingListHelper
      */
     public function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
+        if($request->mode === 'csv') return $this->getCheatingCSVFile($competition, $request);
+
         $cheatingStatuses = CheatingStatus::where([
                 'competition_id'                    => $competition->id,
                 'for_map_list'                      => 0,
@@ -422,9 +424,7 @@ class CheatingListHelper
         if($InProgressCheatingStatus) return $this->returnCheatingStatus($competition, $InProgressCheatingStatus);
 
         if($competition->integrityCases()->where('is_same_participant', 0)->exists()) {
-            return $request->mode === 'csv'
-                ? $this->getCheatingCSVFile($competition, $request)
-                : $this->returnCheatingDataForUI($competition, $request);
+            return $this->returnCheatingDataForUI($competition, $request);
         }
 
         if($cheatingStatuses->isEmpty()) {
