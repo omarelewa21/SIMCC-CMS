@@ -77,9 +77,9 @@ class ParticipantsAnswer extends Model
         if (!$this->checkIfApprovedSimilarAnswerIsCorrect()) return $this->getWrongOrBlankMarks($this->level_id);
 
         $competitionTaskMark = $this->task->taskAnswers()
-            ->join('competition_tasks_marks', 'competition_tasks_marks.task_answers_id', 'task_answers.id')
-            ->where('competition_tasks_marks.level_id', $this->level_id)
-            ->select('competition_tasks_marks.marks')
+            ->join('competition_tasks_mark', 'competition_tasks_mark.task_answers_id', 'task_answers.id')
+            ->where('competition_tasks_mark.level_id', $this->level_id)
+            ->select('competition_tasks_mark.marks')
             ->first();
 
         return $competitionTaskMark ? $competitionTaskMark->marks : $this->getWrongOrBlankMarks($this->level_id);
