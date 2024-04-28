@@ -27,7 +27,7 @@ class PossibleSimilarAnswer extends Model
         'status',
     ];
 
-    protected $casts = ['possible_key' => 'string', 'participants_answers_indices' => 'array'];
+    protected $casts = ['participants_answers_indices' => 'array'];
 
     public function task()
     {
