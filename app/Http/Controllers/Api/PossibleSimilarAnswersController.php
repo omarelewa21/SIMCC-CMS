@@ -100,21 +100,18 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Remove correct answer key for similar answers
-
             $possibleKeys = $answersData['possible_keys'];
-
             // Update or create records based on modified data
-            foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
+            foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => strval($possibleKey),
+                    'possible_key' => $possibleKey ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
-                    'participants_answers_indices' => $participantsAnwers,
+                    'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-
             // Delete
             PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
@@ -180,14 +177,12 @@ class PossibleSimilarAnswersController extends Controller
                 ->select('task_answers.id as answer_id', 'task_labels.content as content')
                 ->first();
 
-
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
 
-
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                ->whereNotNull('answer')
+                // ->whereNotNull('answer')
                 ->select('answer', 'id')
                 ->get()
                 ->groupBy('answer')
@@ -206,7 +201,6 @@ class PossibleSimilarAnswersController extends Controller
 
         // Handle non-MCQ tasks as before
         $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            ->whereNotNull('answer')
             ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
@@ -220,7 +214,6 @@ class PossibleSimilarAnswersController extends Controller
         }
         $normalizedKey = intval($taskAnswer->answer);
         $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            ->whereNotNull('answer')
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
             ->get()
             ->filter(function ($participantAnswer) use ($normalizedKey) {
