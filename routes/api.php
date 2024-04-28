@@ -117,7 +117,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/rounds", [CompetitionController::class, "deleteRounds"])->name('competition.rounds.delete');
         Route::post("/organization", [CompetitionController::class, "addOrganizationRoute"])->name('competition.organization.add');
         Route::delete("/organization", [CompetitionController::class, "deleteOrganization"])->name('competition.organization.delete');
-        Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date'); 
+        Route::patch("/organization", [CompetitionController::class, "updateOrganizationDate"])->name('competition.organization.update.date');
         Route::patch("/organization/update_extended_end_date", [CompetitionController::class, "updateExtendedEndDate"])->name('competition.organization.update.extended_end_date');
         Route::get("/awards/{round}", [CompetitionController::class, "getRoundAwards"])->name('competition.round.award.add');
         Route::post("/awards", [CompetitionController::class, "addRoundAwards"])->name('competition.round.award.add');
@@ -155,6 +155,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
         Route::get("awards/stats/{group}",[MarkingController::class,"getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::post("/participant/{participant}", [MarkingController::class, "markSingleParticipant"])->name('mark.single.participant');
     });
 
     Route::group(["prefix" => "tasks"], function () {

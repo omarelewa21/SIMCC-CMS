@@ -179,6 +179,11 @@ class Participants extends Base
         return $this->hasMany(IntegrityCase::class, 'participant_index', 'index_no');
     }
 
+    public function result()
+    {
+        return $this->hasOne(CompetitionParticipantsResults::class, 'participant_index', 'index_no');
+    }
+
     public static function generateIndexNo(Countries $country, $isPrivate=false)
     {
         // Get the dial code for the country
