@@ -103,10 +103,11 @@ class PossibleSimilarAnswersController extends Controller
             $possibleKeys = $answersData['possible_keys'];
             // Update or create records based on modified data
             foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
+                
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => is_null($possibleKey) || empty($possibleKey) || !$possibleKey ? strval($possibleKey) : '',
+                    'possible_key' => is_null($possibleKey) || empty($possibleKey) || !$possibleKey ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
