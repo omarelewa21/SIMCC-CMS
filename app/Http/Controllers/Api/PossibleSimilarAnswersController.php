@@ -106,7 +106,7 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => is_null($possibleKey) ? null : strval($possibleKey),
+                    'possible_key' => $possibleKey ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
