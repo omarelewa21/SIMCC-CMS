@@ -830,12 +830,12 @@ class CheatingListHelper
         }
     }
 
-    public function getCustomLabeledIntegrityCasesData(Competition $competition)
+    public static function getCustomLabeledIntegrityCasesData(Competition $competition)
     {
         return $competition->participants()
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with(['school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
+            ->with(['answers', 'school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'
