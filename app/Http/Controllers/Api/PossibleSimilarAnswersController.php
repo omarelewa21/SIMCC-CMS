@@ -106,13 +106,12 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => is_null($possibleKey) || empty($possibleKey) ? null : strval($possibleKey),
+                    'possible_key' => strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-
             // Delete
             PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
