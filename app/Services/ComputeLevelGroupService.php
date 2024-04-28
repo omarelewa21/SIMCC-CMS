@@ -31,14 +31,14 @@ class ComputeLevelGroupService
             ['level_id' => $level->id, 'group_id' => $group->id],
             ['computing_status' => LevelGroupCompute::STATUS_IN_PROGRESS, 'compute_progress_percentage' => 1, 'compute_error_message' => null]
         );
-        
+
         MarkingLogs::create([
             'level_id' => $level->id,
             'group_id' => $group->id,
         ]);
         DB::commit();
     }
-    
+
     public function computeResutlsForGroupLevel(array $request)
     {
         $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
@@ -51,7 +51,7 @@ class ComputeLevelGroupService
 
         $this->updateParticipantsStatus();
         $this->setupIACStudentResults();
-        
+
         if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
             in_array('remark', $request['not_to_compute']) ?: $this->remark();
             if(!in_array('award', $request['not_to_compute'])) {
@@ -279,7 +279,7 @@ class ComputeLevelGroupService
                 if($index === 0){
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
                 } elseif ($participantResult->points === $results[$index-1]->points){
-                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank); 
+                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank);
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $globalRankNumber));
                 } else {
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));

@@ -263,4 +263,13 @@ class Participants extends Base
             }
         );
     }
+
+    public function markAnswers()
+    {
+        $this->answers->each(function($answer) {
+            $answer->is_correct = $answer->getIsCorrectAnswer();
+            $answer->score = $answer->getAnswerMark();
+            $answer->save();
+        });
+    }
 }
