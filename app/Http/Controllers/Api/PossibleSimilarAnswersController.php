@@ -187,7 +187,6 @@ class PossibleSimilarAnswersController extends Controller
                 ->get()
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
-                    $key = is_null($key) ? '' : $key;
                     return [$key => $items->pluck('id')->all()];
                 });
 
