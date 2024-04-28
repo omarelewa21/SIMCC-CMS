@@ -100,22 +100,19 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Remove correct answer key for similar answers
-
             $possibleKeys = $answersData['possible_keys'];
-
             // Update or create records based on modified data
             foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
-                $possibleKey = ($possibleKey == null || $possibleKey == '') ? '' : strval($possibleKey);
+                $possibleKey = ($possibleKey === null || $possibleKey === '') ? '' : strval($possibleKey);
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => strval($possibleKey),
+                    'possible_key' => $possibleKey,
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-
 
             // Delete
             PossibleSimilarAnswer::where('level_id', $levelId)
@@ -189,7 +186,7 @@ class PossibleSimilarAnswersController extends Controller
 
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                ->whereNotNull('answer')
+                // ->whereNotNull('answer')
                 ->select('answer', 'id')
                 ->get()
                 ->groupBy('answer')
