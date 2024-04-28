@@ -103,11 +103,10 @@ class PossibleSimilarAnswersController extends Controller
             $possibleKeys = $answersData['possible_keys'];
             // Update or create records based on modified data
             foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
-                
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => is_null($possibleKey) || empty($possibleKey) || !$possibleKey ? '' : strval($possibleKey),
+                    'possible_key' => is_null($possibleKey) || empty($possibleKey) ? null : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
@@ -179,10 +178,8 @@ class PossibleSimilarAnswersController extends Controller
                 ->select('task_answers.id as answer_id', 'task_labels.content as content')
                 ->first();
 
-
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
-
 
             // Gather unique participant answers for the task with their indices
             $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
@@ -191,6 +188,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->get()
                 ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
+                    $key = is_null($key) ? '' : $key;
                     return [$key => $items->pluck('id')->all()];
                 });
 
