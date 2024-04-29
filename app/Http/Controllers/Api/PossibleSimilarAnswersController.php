@@ -262,6 +262,7 @@ class PossibleSimilarAnswersController extends Controller
     {
         $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
         $participants = $possibleSimilarAnswer->participants();
+
         return response()->json([
             "status" => 200,
             "message" => "Success",
@@ -280,16 +281,27 @@ class PossibleSimilarAnswersController extends Controller
         $newAnswer = $request->new_answer;
         $reason = $request->reason;
         $updateResults = [];
+        $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
             $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+
             if (!$participantAnswer) {
-                continue;  // Skip if not found
+                continue;
+            }
+
+            $participant = $participantAnswer->participant;
+
+            if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
+                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' Integrity case exists ';
+                $allUpdated = false;
+                continue;
             }
 
             $oldAnswer = $participantAnswer->answer;
             if ($oldAnswer === $newAnswer) {
-                $updateResults[$participantAnswerId] = 'No update needed as the answer has not changed.';
+                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' No update needed as the answer has not changed ';
+                $allUpdated = false;
                 continue;
             }
 
@@ -308,14 +320,22 @@ class PossibleSimilarAnswersController extends Controller
 
             $participantAnswer->answer = $newAnswer;
             $participantAnswer->save();
-            $updateResults[$participantAnswerId] = 'Participant answer updated successfully.';
+            $updateResults[$participantAnswerId] = 'Participant answer updated successfully for participant index ' . $participantAnswer->participant_index . '.';
         }
 
+        $statusCode = $allUpdated ? 200 : 500;
+
+        $message = $allUpdated ? 'All participants updated successfully.' : 'Some participants could not be updated. Results: ' . implode('; ', $updateResults);
+        // $message = $allUpdated ? $message . implode('; ', $updateResults) : $message;
+
         return response()->json([
-            'status' => 200,
-            'results' => $updateResults,
-        ], 200);
+            'status' => $statusCode,
+            'message' => $message
+        ], $statusCode);
     }
+
+
+
 
 
     public function getAnswerUpdates(Tasks $task, Request $request)
