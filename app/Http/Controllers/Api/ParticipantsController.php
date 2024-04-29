@@ -18,14 +18,16 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
+use App\Http\Requests\Participant\RestoreFromEliminationRequest;
 use App\Models\CompetitionParticipantsResults;
-use App\Models\EliminatedCheatingParticipants;
+use App\Models\IntegrityCase;
 use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use PDF;
 
@@ -467,65 +469,141 @@ class ParticipantsController extends Controller
     }
 
 
-    public function eliminateParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function eliminateParticipantsFromCompute(Competition $competition, EliminateFromComputeRequest $request)
     {
         DB::beginTransaction();
         try {
-            foreach ($request->participants as $participant_index) {
-                EliminatedCheatingParticipants::updateOrCreate(
-                    ['participant_index' => $participant_index],
-                    ['reason' => $request->reason]
+            $round = $competition->rounds()->with('roundsAwards')->first();
+            $defaultAwardRank = $round->roundsAwards->count() + 1;
+            $participantIndexes = Arr::pluck($request->participants, 'index');
+
+            Participants::whereIn('index_no', $participantIndexes)
+                ->where('status', '<>', Participants::STATUS_CHEATING)
+                ->update([
+                    'status' => Participants::STATUS_CHEATING,
+                    'eliminated_by' => auth()->id(),
+                    'eliminated_at' => now()
+                ]);
+
+            CompetitionParticipantsResults::whereIn('participant_index', $participantIndexes)
+                ->update([
+                    'ref_award'         => $round->default_award_name,
+                    'award'             => $round->default_award_name,
+                    'award_rank'        => $defaultAwardRank,
+                    'points'            => null,
+                    'percentile'        => null,
+                    'school_rank'       => null,
+                    'country_rank'      => null,
+                    'global_rank'       => null,
+                    'group_rank'        => null,
+                    'report'            => null,
+                ]);
+
+            foreach($participantIndexes as $i => $participantIndex) {
+                IntegrityCase::updateOrCreate(
+                    ['participant_index' => $participantIndex, 'mode' => $request->mode],
+                    ['reason' => $request->participants[$i]['reason'] ?? null],
                 );
             }
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
         DB::commit();
+        switch ($request->mode) {
+            case 'system':
+                $message = "System Generated IAC Participants Created Successfully";
+                break;
+            case 'custom':
+                $message = "IAC Incident Participant Created Successfully";
+                break;
+            default:
+                $message = "MAP IAC Participants Created Successfully";
+                break;
+        }
+
         return response()->json([
             "status"    => 200,
-            "message"   => "Participants eliminated successfully"
+            "message"   => $message
         ]);
     }
 
-    public function deleteEliminatedParticipantsFromCompute(EliminateFromComputeRequest $request)
+    public function deleteEliminatedParticipantsFromCompute(Competition $competition, RestoreFromEliminationRequest $request)
     {
         DB::beginTransaction();
         try {
-            EliminatedCheatingParticipants::whereIn('participant_index', $request->participants)
-                ->delete();
+            $participantIndexes = $request->participants;
+            foreach($participantIndexes as $participantIndex) {
+                IntegrityCase::where([
+                    'participant_index' => $participantIndex,
+                    'mode' => $request->mode
+                ])->delete();
+
+                if(IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
+
+                Participants::where('index_no', $participantIndex)->update([
+                    'status' => Participants::STATUS_ACTIVE
+                ]);
+            }
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participants deletetion from elimination is unsuccessfull",
-                "error"     => $e->getMessage()
+                "message"   => "Participants deletetion from elimination is unsuccessfull {$e->getMessage()}",
+                "error"     => strval($e)
             ], 500);
         }
+
         DB::commit();
+        switch ($request->mode) {
+            case 'system':
+                $message = "System Generated IAC Participants restored successfully";
+                break;
+            case 'custom':
+                $message = "IAC Incident Participant restored successfully";
+                break;
+            default:
+                $message = "MAP IAC Participants restored successfully";
+                break;
+        }
+
         return response()->json([
             "status"    => 200,
-            "message"   => "Participants deleted from elimination successfully"
+            "message"   => $message
         ]);
     }
 
     public function editResult(Participants $participant, EditResultRequest $request)
     {
         try {
-            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)
-                ->first();
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+            if(!$participantResult) {
+                $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
+                $participantResult = CompetitionParticipantsResults::create([
+                    'participant_index' => $participant->index_no,
+                    'level_id'          => $participantLevelId,
+                ]);
+            }
+
+            $award = $request->filled('award') ? $request->award : $participantResult->award;
 
             foreach($request->all() as $key => $value) {
                 switch($key) {
                     case 'award':
+                        $participantResult->award = $award;
+                        break;
                     case 'country_rank':
                     case 'school_rank':
-                    case 'global_rank':
                         $participantResult->$key = $value;
+                        break;
+                    case 'global_rank':
+                        $participantResult->$key = "$award $value";
                         break;
                     default:
                         break;

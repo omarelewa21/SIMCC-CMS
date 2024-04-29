@@ -20,4 +20,14 @@ class Countries extends Model
     {
         return $this->hasMany(Participants::class, 'country_id');
     }
+
+    public static function getCompetitionCountryList(Competition $competition): array
+    {
+        return $competition->participants()
+            ->select('participants.country_id')
+            ->distinct()
+            ->get()
+            ->pluck('country_id')
+            ->toArray();
+    }
 }

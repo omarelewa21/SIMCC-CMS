@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EditParticipantAwardRequest;
 use App\Http\Requests\StoreCompetitionMarkingGroupRequest;
@@ -13,6 +14,7 @@ use App\Jobs\ComputeLevel;
 use App\Jobs\ComputeLevelGroupJob;
 use App\Models\CompetitionLevels;
 use App\Models\CompetitionParticipantsResults;
+use App\Models\Participants;
 use App\Services\ComputeAwardStatsService;
 use App\Services\ComputeLevelGroupService;
 use App\Services\ComputeLevelService;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use App\Helpers\ValiateLevelGroupForComputingHelper;
 
 class MarkingController extends Controller
 {
@@ -220,7 +223,7 @@ class MarkingController extends Controller
     public function getActiveParticipantsByCountryByGrade(Competition $competition, getActiveParticipantsByCountryRequest $request)
     {
         try {
-            [$countries, $totalParticipants, $totalParticipantsWithAnswer] 
+            [$countries, $totalParticipants, $totalParticipantsWithAnswer]
                 = MarkingService::getActiveParticipantsByCountryByGradeData($competition, $request);
 
             $data = [];
@@ -279,14 +282,14 @@ class MarkingController extends Controller
      * Compute single level group results
      * @param \App\Models\CompetitionLevels $level
      * @param \App\Models\CompetitionMarkingGroup $group
-     * 
+     *
      * @return response
      */
     public function computeResultsForSingleLevelGroup(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
         try {
 
-            ComputeLevelGroupService::validateLevelGroupForComputing($level, $group);
+            (new ValiateLevelGroupForComputingHelper($level, $group))->validate();
             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
             ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
 
@@ -315,7 +318,7 @@ class MarkingController extends Controller
     public function computeCompetitionResults(Competition $competition, Request $request)
     {
         $competition->load('rounds.levels', 'groups');
-    
+
         try {
             if($competition->groups->count() === 0){
                 return response()->json([
@@ -327,7 +330,7 @@ class MarkingController extends Controller
             foreach($competition->rounds as $round){
                 foreach($round->levels as $level){
                     foreach($competition->groups as $group){
-                        if(ComputeLevelGroupService::validateLevelGroupForComputing($level, $group, false)) {
+                        if((new ValiateLevelGroupForComputingHelper($level, $group))->validate(throwException: false)) {
                             dispatch(new ComputeLevelGroupJob($level, $group, $request->all()));
                             ComputeLevelGroupService::storeLevelGroupRecords($level, $group, $request);
                         }
@@ -406,7 +409,7 @@ class MarkingController extends Controller
                 ->orderBy('competition_participants_results.percentile', 'DESC')
                 ->get();
         }
-        
+
         try {
             $headerData = [
                 'competition'   => $level->rounds->competition->name,
@@ -447,7 +450,7 @@ class MarkingController extends Controller
             $awardsRankArray = collect(['PERFECT SCORE'])
                     ->merge($level->rounds->roundsAwards->pluck('name'))
                     ->push($level->rounds->default_award_name);
-            
+
             foreach($request->all() as $data){
                 $participantResults = $level->participantResults()
                     ->where('competition_participants_results.participant_index', $data['participant_index'])
@@ -480,7 +483,7 @@ class MarkingController extends Controller
 
     /**
      * get participant results
-     * 
+     *
      * @param \App\Models\CompetitionMarkingGroup $group
      */
     public function getAwardsStats(CompetitionMarkingGroup $group)
@@ -505,7 +508,7 @@ class MarkingController extends Controller
                 "message"   => "Awards stats retrival unsuccessful - " . $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
-        } 
+        }
     }
 
     public function refreshMarkingList(Competition $competition)
@@ -514,5 +517,36 @@ class MarkingController extends Controller
         return response()->json([
             'status' => 'success',
         ]);
+    }
+
+    public function markSingleParticipant(Participants $participant)
+    {
+        try {
+            DB::beginTransaction();
+
+            $participant->markAnswers();
+            $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
+
+            CompetitionParticipantsResults::updateOrCreate([
+                'participant_index' => $participant->index_no
+            ], [
+                'level_id'  => $participantLevelId,
+                'points'    => $participant->answers->sum('score')
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'status'    => 200,
+                'message'   => 'Participant Marks Updated Successfully'
+            ], 200);
+        }
+
+        catch (\Exception $e) {
+            return response()->json([
+                "status"    => 500,
+                "message"   => $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        }
     }
 }

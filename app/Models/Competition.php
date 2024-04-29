@@ -124,6 +124,16 @@ class Competition extends Base
         return $this->hasManyThrough(Participants::class, CompetitionOrganization::class, 'competition_id', 'competition_organization_id', 'id', 'id');
     }
 
+    public function integrityCases()
+    {
+        return $this->hasMany(CheatingParticipants::class, 'competition_id', 'id');
+    }
+
+    public function integrityCheckCountries()
+    {
+        return $this->hasMany(IntegrityCheckCompetitionCountries::class, 'competition_id', 'id');
+    }
+
     public function setAllowedGradesAttribute($value)
     {
         $this->attributes['allowed_grades'] = json_encode($value);
@@ -136,22 +146,7 @@ class Competition extends Base
 
     public function getComputeStatusAttribute()
     {
-        $statusses = $this->levels()
-            ->join('level_group_compute', 'level_group_compute.level_id', 'competition_levels.id')
-            ->pluck('level_group_compute.computing_status')
-            ->unique();
-
-        if ($statusses->count() > 0  && $statusses->contains(LevelGroupCompute::STATUS_FINISHED)) {
-            return LevelGroupCompute::STATUS_FINISHED;
-        }
-        if ($statusses->count() === 0 || $statusses->contains(LevelGroupCompute::STATUS_NOT_STARTED)) {
-            return LevelGroupCompute::STATUS_NOT_STARTED;
-        }
-        if ($statusses->contains(LevelGroupCompute::STATUS_IN_PROGRESS) || $statusses->contains(LevelGroupCompute::STATUS_BUG_DETECTED)) {
-            return LevelGroupCompute::STATUS_IN_PROGRESS;
-        }
-
-        return LevelGroupCompute::STATUS_FINISHED;
+        return 'Finished';
     }
 
     public function getGenerateReportBtnAttribute()
