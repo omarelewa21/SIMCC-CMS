@@ -1065,13 +1065,20 @@ class CompetitionController extends Controller
                 true
             );
             $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-                ->pluck('grade', 'index_no');
+                ->select('grade', 'index_no', 'status')
+                ->with(['integrityCases' => fn($query) => $query->where('mode', 'system')])
+                ->get();
+
+            $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
+            if($systemIACParticipants->isNotEmpty()) {
+                throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are System IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
+            }
 
             $createdBy = auth()->id();
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                if($levels[$participantData['grade']]['grade'] != $participants->first(fn($participant) => $participant->index_no === $participantData['index_number'])?->grade) {
                     throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
                 }
 
@@ -1082,7 +1089,6 @@ class CompetitionController extends Controller
                 }
 
                 DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
-                // ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
                 for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
