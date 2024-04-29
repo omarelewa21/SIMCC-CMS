@@ -106,7 +106,7 @@ class PossibleSimilarAnswersController extends Controller
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => $possibleKey ? '' : strval($possibleKey),
+                    'possible_key' => is_null($possibleKey) ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
                     'participants_answers_indices' => $participantsAnswers,
@@ -262,6 +262,7 @@ class PossibleSimilarAnswersController extends Controller
     {
         $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
         $participants = $possibleSimilarAnswer->participants();
+
         return response()->json([
             "status" => 200,
             "message" => "Success",
@@ -282,9 +283,17 @@ class PossibleSimilarAnswersController extends Controller
         $updateResults = [];
 
         foreach ($request->answer_id as $participantAnswerId) {
-            $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+             $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+
             if (!$participantAnswer) {
-                continue;  // Skip if not found
+                continue;
+            }
+
+            $participant = $participantAnswer->participant;
+
+            if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
+                $updateResults[$participantAnswerId] = 'Cannot update participant answer because integrity case with system mode exists.';
+                continue;
             }
 
             $oldAnswer = $participantAnswer->answer;
@@ -316,6 +325,7 @@ class PossibleSimilarAnswersController extends Controller
             'results' => $updateResults,
         ], 200);
     }
+
 
 
     public function getAnswerUpdates(Tasks $task, Request $request)
