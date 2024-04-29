@@ -55,12 +55,14 @@ class PossibleSimilarAnswer extends Model
         $allParticipants = collect();
 
         foreach ($participantsAnswersIndices as $answerIndex) {
-            $participants = Participants::with(['country', 'school', 'competition_organization'])
+            $participants = Participants::with(['country', 'school', 'competition_organization', 'integrityCases'])
                 ->whereIn('index_no', function ($query) use ($answerIndex) {
                     $query->select('participant_index')
                         ->from('participant_answers')
                         ->where('id', $answerIndex);
                 })->get()->each(function ($participant) use ($answerIndex) {
+                    $hasSystemMode = $participant->integrityCases->contains('mode', 'system');
+                    $participant->integrity_update_enable = !$hasSystemMode; 
                     $participant->participant_answer_id = $answerIndex;
                 });
 
@@ -69,4 +71,6 @@ class PossibleSimilarAnswer extends Model
 
         return $allParticipants;
     }
+
+
 }
