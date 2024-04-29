@@ -406,12 +406,18 @@ class CompetitionController extends Controller
             foreach ($levels as $row) {
                 //                if($c==1){dd(isset($row['id'] ));}
                 if (isset($row['id'])) {
-
                     $level = CompetitionLevels::findOrFail($row['id']);
                     $level->name = $row['name'];
-                    $level->grades = $row['grades'];
 
+                    if(count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
+                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn($query) => $query->where('level_id', $level->id))
+                            ->whereHas('integrityCases', fn($query) => $query->where('mode', 'system'))->exists();
+                        throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are System IAC, you must remove them first before changing assigned grades or collection to this level");
+                    }
+
+                    $level->grades = $row['grades'];
                     if ($level->collection_id != $row['collection_id']) {
+
 
                         if ($level->collection_id != null) {
                             CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
@@ -447,9 +453,10 @@ class CompetitionController extends Controller
                 "message" => "Update rounds successful"
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
-                "status" => 500,
-                "message" => "Update rounds unsuccessful" . $e
+                "status"    => 500,
+                "message"   => $e->getMessage()
             ]);
         }
     }
