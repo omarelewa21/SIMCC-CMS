@@ -406,13 +406,17 @@ class CompetitionController extends Controller
             foreach ($levels as $row) {
                 //                if($c==1){dd(isset($row['id'] ));}
                 if (isset($row['id'])) {
-
                     $level = CompetitionLevels::findOrFail($row['id']);
                     $level->name = $row['name'];
+
+                    if(count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
+                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn($query) => $query->where('level_id', $level->id))
+                            ->whereHas('integrityCases', fn($query) => $query->where('mode', 'system'))->exists();
+                        throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are System IAC, you must remove them first before changing assigned grades or collection to this level");
+                    }
+
                     $level->grades = $row['grades'];
-
                     if ($level->collection_id != $row['collection_id']) {
-
                         if ($level->collection_id != null) {
                             CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
                             CompetitionTasksMark::where('level_id', $level->id)->delete();
@@ -447,9 +451,10 @@ class CompetitionController extends Controller
                 "message" => "Update rounds successful"
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
-                "status" => 500,
-                "message" => "Update rounds unsuccessful" . $e
+                "status"    => 500,
+                "message"   => $e->getMessage()
             ]);
         }
     }
@@ -1060,13 +1065,20 @@ class CompetitionController extends Controller
                 true
             );
             $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-                ->pluck('grade', 'index_no');
+                ->select('grade', 'index_no', 'status')
+                ->with(['integrityCases' => fn($query) => $query->where('mode', 'system')])
+                ->get();
+
+            $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
+            if($systemIACParticipants->isNotEmpty()) {
+                throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are System IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
+            }
 
             $createdBy = auth()->id();
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                if($levels[$participantData['grade']]['grade'] != $participants->first(fn($participant) => $participant->index_no === $participantData['index_number'])?->grade) {
                     throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
                 }
 
@@ -1077,7 +1089,6 @@ class CompetitionController extends Controller
                 }
 
                 DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
-                // ParticipantsAnswer::where('participant_index', $participantData['index_number'])->delete();
                 for($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
                         'level_id'  => $level->id,
