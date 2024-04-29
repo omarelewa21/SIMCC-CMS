@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Helpers\AnswerUploadHelper;
+use App\Helpers\CheatingListHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CollectionSections;
 use App\Models\CompetitionLevels;
@@ -30,11 +31,14 @@ use Carbon\Carbon;
 use App\Models\Competition;
 use App\Models\CompetitionOrganizationDate;
 use App\Helpers\General\CollectionHelper;
+use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Http\Requests\CompetitionListRequest;
 use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
+use App\Jobs\ComputeCheatingParticipants;
+use App\Models\CheatingStatus;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -42,6 +46,8 @@ use App\Rules\CheckOrganizationCountryPartnerExist;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+
+//update participant session once competition mode change, add this changes once participant session done
 
 class CompetitionController extends Controller
 {
@@ -416,7 +422,8 @@ class CompetitionController extends Controller
                         if ($level->collection_id != null) {
                             CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
                             CompetitionTasksMark::where('level_id', $level->id)->delete();
-                            DB::table('participant_answers')->where('level_id', $level->id)->delete();
+
+
                         }
 
                         $level->collection_id = $row['collection_id'];
@@ -1066,13 +1073,13 @@ class CompetitionController extends Controller
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
-                    throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
-                }
+                // if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                //     throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
+                // }
 
                 $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
-                if ($levelTaskCount !== count($participantData['answers'])) {
+                if ($levelTaskCount > count($participantData['answers'])) {
                     throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
                 }
 
@@ -1123,12 +1130,11 @@ class CompetitionController extends Controller
                 $request
             )->get();
 
-            throw_if($data->count() === 0, new \Exception('No data found'));
+            if ($data->count() === 0) return [];
 
             if ($request->mode === 'csv') return $data->prepend($header);
 
             $filterOptions = $competitionService->getReportFilterOptions($data->toArray());
-
             $data = CollectionHelper::searchCollection(
                 $request->search,
                 $data,
@@ -1144,8 +1150,8 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
+                'message'   => "Failed to fetch report",
+                'error'     => $e->getMessage()
             ], 500);
         }
     }
@@ -1213,6 +1219,93 @@ class CompetitionController extends Controller
                     "countries" => $countries->pluck('ac.display_name', 'ac.id')
                 ], 200);
                 break;
+        }
+    }
+
+    /**
+     * Get all participants that are cheating
+     *
+     * @param Competition $competition
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipants(Competition $competition, CompetitionCheatingListRequest $request)
+    {
+        try {
+            if($request->get_status) {
+                return CheatingListHelper::returnCheatingStatus($competition);
+            }
+
+            if ($request->recompute) {
+                DB::transaction(function () use($competition, $request) {
+                    CheatingStatus::updateOrCreate(
+                        ['competition_id' => $competition->id],
+                        [
+                            'status' => 'In Progress',
+                            'progress_percentage' => 1,
+                            'compute_error_message' => null
+                        ]
+                    );
+    
+                    dispatch(new ComputeCheatingParticipants(
+                        $competition,
+                        $request->question_number,
+                        $request->percentage,
+                        $request->number_of_incorrect_answers,
+                        $request->country
+                    ));
+                });
+
+                return response()->json([
+                    'status'    => 201,
+                    'message'   => 'Computing cheating participants has been started.',
+                    'progress'  => 1
+                ], 201);
+            }
+
+            return CheatingListHelper::returnCheatingData($competition, $request);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'    => intval($e->getCode()) ? intval($e->getCode()) : 500,
+                'message'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all participants that are cheating by group
+     *
+     * @param int $group_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getcheatingParticipantsByGroup($group_id)
+    {
+        try {
+            $data = Participants::whereIn('index_no', function ($query) use ($group_id) {
+                $query->select('participant_index')
+                    ->from('cheating_participants')
+                    ->where('group_id', $group_id)
+                    ->union(function ($query) use ($group_id) {
+                        $query->select('cheating_with_participant_index')
+                            ->from('cheating_participants')
+                            ->where('group_id', $group_id);
+                    });
+            })
+                ->select('index_no', 'name', 'school_id', 'country_id', 'grade')
+                ->with('answers', 'isCheater')
+                ->distinct()
+                ->get();
+
+            $headers = collect(['index_no', 'name'])->merge(
+                $data->first()->answers->map(function ($answer, $index) {
+                    return 'Q' . ($index + 1);
+                })
+            );
+
+            return response()->json(['status' => 200, 'headers' => $headers, 'data' => $data], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'message' => $e->getMessage()], 500);
         }
     }
 }

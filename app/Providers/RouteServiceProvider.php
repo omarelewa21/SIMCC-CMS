@@ -69,9 +69,6 @@ class RouteServiceProvider extends ServiceProvider
         Route::bind('participant', function ($value) {
             return \App\Models\Participants::where('index_no', $value)->firstOrFail();
         });
-        Route::bind('country', function ($value) {
-            return \App\Models\Countries::findOrFail($value);
-        });
     }
 
     /**

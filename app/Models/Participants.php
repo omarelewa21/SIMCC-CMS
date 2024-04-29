@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\scopeExcludeCheatingParticipants;
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Carbon\Carbon;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
@@ -18,10 +16,6 @@ class Participants extends Base
     use HasFactory, Filterable, SoftDeletes, Prunable;
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-
-    const STATUS_CHEATING = 'iac';
-    const STATUS_ACTIVE = 'active';
-    const STATUS_RESULT_COMPUTED = 'result computed';
 
     private static $whiteListFilter = [
         'status',
@@ -40,8 +34,6 @@ class Participants extends Base
         'password',
         "last_modified_userid"
     ];
-
-    protected $appends = ['iac_status'];
 
      /**
      * Get the prunable model query.
@@ -164,24 +156,19 @@ class Participants extends Base
         return $this->belongsTo(CompetitionOrganization::class, "competition_organization_id", "id");
     }
 
+    public function isCheater()
+    {
+        return $this->hasOne(EliminatedCheatingParticipants::class, 'participant_index', 'index_no');
+    }
+
     public function answers()
     {
-        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new scopeExcludeCheatingParticipants);
+        return $this->hasMany(ParticipantsAnswer::class, 'participant_index', 'index_no')->withoutGlobalScope(new DiscardElminatedParticipantsAnswersScope);
     }
 
     public function competition()
     {
         return $this->hasOneThrough(Competition::class, CompetitionOrganization::class, 'id', 'id', 'competition_organization_id', 'competition_id');
-    }
-
-    public function integrityCases()
-    {
-        return $this->hasMany(IntegrityCase::class, 'participant_index', 'index_no');
-    }
-
-    public function result()
-    {
-        return $this->hasOne(CompetitionParticipantsResults::class, 'participant_index', 'index_no');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)
@@ -236,40 +223,5 @@ class Participants extends Base
             $password .= $characters[rand(0, $charactersLength - 1)];
         }
         return encrypt($password);
-    }
-
-    protected function iacStatus(): Attribute
-    {
-        return Attribute::make(
-            get: function ($value, $attributes) {
-                $value = Arr::has($attributes, 'status') ? $attributes['status'] : null;
-                if ($value !== Participants::STATUS_CHEATING || $this->integrityCases()->doesntExist()) return $value;
-                $status = collect([]);
-                foreach($this->integrityCases as $case) {
-                    switch($case->mode){
-                        case 'map':
-                            $status->push('MAP IAC');
-                            break;
-                        case 'custom':
-                            $status->push('IAC Incident');
-                            break;
-                        default:
-                            $status->push('System Generated IAC');
-                            break;
-                    }
-                }
-
-                return $status->join(', ', ' and ');
-            }
-        );
-    }
-
-    public function markAnswers()
-    {
-        $this->answers->each(function($answer) {
-            $answer->is_correct = $answer->getIsCorrectAnswer();
-            $answer->score = $answer->getAnswerMark();
-            $answer->save();
-        });
     }
 }

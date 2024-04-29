@@ -17,7 +17,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
 
     function __construct(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $this->dataCollection = CheatingListHelper::getCheatersData($competition, $request, true);
+        $this->dataCollection = CheatingListHelper::getCheatersDataForCSV($competition, $request);
     }
 
     /**
@@ -35,18 +35,15 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             }
             $lastGroup = $record['group_id'];
         }
+
         return $returnedCollection;
     }
 
     public function headings(): array
     {
+        $headers = [];
         if($this->dataCollection->isNotEmpty()) {
-            $headers = collect($this->dataCollection->first(fn($value) => $value == $this->dataCollection->max()))
-                ->filter(fn($value, $key) => preg_match('/^Q\d+$/', $key))
-                ->keys()
-                ->toArray();
-        } else {
-            $headers = [];
+            $headers = array_keys($this->dataCollection->max());
         }
 
         return [
@@ -55,21 +52,15 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'School',
             'Country',
             'Grade',
-            'System generated IAC',
-            'Reason',
-            'IAC Created By',
-            'IAC Created Date/Time (UTC)',
-            'Criteria Matching Answers Percentage',
-            'Criteria No of Same Incorrect Answers',
             'Group ID',
             'No of qns',
             'No of qns with same answer',
-            'No of qns with same answer percentage',
+            'No of qns with same answer percentage', 
             'No of qns with same correct answer',
             'No of qns with same incorrect answer',
             'No of correct answers',
             'Qns with same incorrect answer',
-            ...$headers,
+            ...array_slice($headers, 13)
         ];
     }
 
@@ -86,6 +77,6 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
      */
     public function title(): string
     {
-        return 'Integrity List';
+        return 'Cheaters Sheet';
     }
 }

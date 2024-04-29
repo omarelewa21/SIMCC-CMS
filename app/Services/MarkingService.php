@@ -200,7 +200,7 @@ class MarkingService
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
 
-        $numberOfTasksIds = $levelTaskIds->count('count_tasks');
+        // $numberOfTasksIds = $levelTaskIds->count('count_tasks');
 
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
@@ -208,7 +208,7 @@ class MarkingService
         ->whereIn('task_answers.task_id', $levelTaskIds)
         ->select('task_answers.task_id')->distinct()->count();
 
-        return $numberOfCorrectAnswersWithMarks >= $numberOfTasksIds;
+        return $numberOfCorrectAnswersWithMarks >= $numberOfCorrectAnswersWithMarks;
 
         // Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
     }

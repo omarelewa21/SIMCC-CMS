@@ -15,9 +15,13 @@ class ComputeCheatingParticipants implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 5000;
+    protected $competition;
+    protected $qNumber;         // If cheating question number >= $qNumber, then the participant is considered as cheater
+    protected $percentage;      // If cheating percentage >= $percentage, then the participant is considered as cheater
+    protected $number_of_incorrect_answers; // If number of incorrect answers > $number_of_incorrect_answers, then the participant is considered as cheater
+    protected $countryId;       // If countryId is not null, then only compute the cheating participants from the country
 
-    protected $userId = null;
+    public $timeout = 5000;
 
     /**
      * Create a new job instance.
@@ -25,15 +29,18 @@ class ComputeCheatingParticipants implements ShouldQueue
      * @return void
      */
     public function __construct(
-        protected Competition $competition,
-        protected $qNumber=null,
-        protected $percentage=null,
-        protected $numberOFSameIncorrect=null,
-        protected $countries=null,
-        protected $forMapList = false
-
-    ) {
-        $this->userId = auth()->id();
+        Competition $competition,
+        $qNumber=null,
+        $percentage=null,
+        $number_of_incorrect_answers=null,
+        $countryId=null
+    )
+    {
+        $this->competition = $competition;
+        $this->qNumber = $qNumber;
+        $this->percentage = $percentage;
+        $this->number_of_incorrect_answers = $number_of_incorrect_answers;
+        $this->countryId = $countryId;
     }
 
     /**
@@ -46,42 +53,21 @@ class ComputeCheatingParticipants implements ShouldQueue
         try {
             (new ComputeCheatingParticipantsService(
                 $this->competition,
-                $this->qNumber, $this->percentage ?? 85,
-                $this->numberOFSameIncorrect ?? 5,
-                $this->countries,
-                $this->forMapList ?? false,
-                userId: $this->userId
-            ))->computeCheatingParticipants();
-        }
+                $this->qNumber, $this->percentage ?? 95,
+                $this->number_of_incorrect_answers ?? 1,
+                $this->countryId
+            )
+            )->computeCheatingParticipants();
 
-        catch (\Exception $e) {
-            $cheatingStatus = CheatingStatus::where([
-                'competition_id'                    => $this->competition->id,
-                'cheating_percentage'               => $this->percentage ?? 85,
-                'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
-                'for_map_list'                      => $this->forMapList
-            ])
-            ->FilterByCountries($this->countries)
-            ->first();
-
-            if ($cheatingStatus) {
-                $cheatingStatus->update([
-                    'status'                => 'Failed',
-                    'progress_percentage'   => 0,
+        } catch (\Exception $e) {
+            CheatingStatus::updateOrCreate(
+                ['competition_id' => $this->competition->id],
+                [
+                    'status' => 'Failed',
+                    'progress_percentage' => 0,
                     'compute_error_message' => $e->getMessage()
-                ]);
-            } else {
-                CheatingStatus::create([
-                    'competition_id'                    => $this->competition->id,
-                    'cheating_percentage'               => $this->percentage ?? 85,
-                    'number_of_same_incorrect_answers'  => $this->numberOFSameIncorrect ?? 5,
-                    'countries'                         => $this->countries ?? null,
-                    'for_map_list'                      => $this->forMapList,
-                    'status'                            => 'Failed',
-                    'progress_percentage'               => 0,
-                    'compute_error_message'             => $e->getMessage()
-                ]);
-            }
+                ]
+            );
         }
     }
 }

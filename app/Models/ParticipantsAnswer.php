@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\scopeExcludeCheatingParticipants;
+use App\Models\Scopes\DiscardElminatedParticipantsAnswersScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,7 +22,7 @@ class ParticipantsAnswer extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new scopeExcludeCheatingParticipants);
+        static::addGlobalScope(new DiscardElminatedParticipantsAnswersScope);
     }
 
     public function task()

@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Collections;
-use App\Models\Competition;
-
 class GradeService
 {
     const ALLOWED_GRADE_NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -39,22 +36,5 @@ class GradeService
             }
         }
         return $availableGrades;
-    }
-
-    /**
-     * Get Grades attached to levels that has verified collection
-     *
-     * @return array
-     */
-    public static function getGradesWithVerifiedCollections(Competition $competition): array
-    {
-        return $competition->levels()
-            ->join('collection', 'collection.id', 'competition_levels.collection_id')
-            ->where('collection.status', Collections::STATUS_VERIFIED)
-            ->select('competition_levels.grades')
-            ->pluck('grades')
-            ->flatten()
-            ->unique()
-            ->toArray();
     }
 }

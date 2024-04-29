@@ -26,16 +26,6 @@ class CheatingParticipants extends Model
         return $this->belongsTo(Participants::class, 'cheating_with_participant_index', 'index_no');
     }
 
-    public function integrityCases()
-    {
-        return $this->hasMany(IntegrityCase::class, 'participant_index', 'participant_index');
-    }
-
-    public function otherIntegrityCases()
-    {
-        return $this->hasMany(IntegrityCase::class, 'participant_index', 'cheating_with_participant_index');
-    }
-
     public function competition()
     {
         return $this->belongsTo(Competition::class);

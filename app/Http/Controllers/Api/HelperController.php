@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ParticipantResource;
 use App\Models\Competition;
 use App\Models\Countries;
 use App\Models\Languages;
@@ -17,14 +16,15 @@ use Illuminate\Support\Facades\DB;
 
 class HelperController extends Controller
 {
-
+  
     public function getCountryList (Request $request) {
         $request->validate([
             "competition_id" => ['integer',Rule::exists("competition",'id')]
         ]);
 
         if($request->competition_id) {
-            $countryIds = Countries::getCompetitionCountryList(Competition::find($request->competition_id));
+            $countryIds = Competition::find($request->competition_id)
+                ->participants()->pluck('participants.country_id')->unique()->toArray();
             $list = Countries::whereIn('id',$countryIds)->get(['id','Dial','display_name','ISO3166-1-Alpha-2']);
 
         } else {
@@ -246,59 +246,5 @@ class HelperController extends Controller
         } catch (\Exception $e) {
             return $e;
         }
-    }
-
-    public function getParticipantInfo(Participants $participant) {
-        try {
-            $participant->markAnswers();
-
-            $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')
-                ->loadCount('answers')
-                ->toArray();
-            $data['school'] = $data['school']['name'];
-            $data['country'] = $data['country']['name'];
-            $answers = collect($data['answers'])->sortBy('id')->map(function ($answer, $key) {
-                $answerKey = $answer['answer'];
-                if(!is_null($answer['is_correct'])) {
-                    $answerKey .= $answer['is_correct'] ? ' (Correct)' : ' (Wrong)';
-                }
-                return [
-                    "Q" . $key+1 => $answerKey,
-                ];
-            })->collapse();
-
-            $data = array_merge($data, $answers->toArray());
-            unset($data['answers']);
-
-
-            $headers = [
-                'Index'     => 'index_no',
-                'Name'      => 'name',
-                'Country'   => 'country',
-                'School'    => 'school',
-                'Grade'     => 'grade',
-                'status'    => 'status',
-                'No. of answers uploaded' => 'answers_count',
-            ];
-
-            for($i = 1; $i <= $answers->count(); $i++) {
-                $headers["Q$i"] = "Q$i";
-            }
-
-            return response()->json([
-                'status' => 200,
-                'headers' => $headers,
-                'data'   => $data
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'    => 500,
-                'message'   => $e->getMessage(),
-                'error'     => strval($e)
-            ]);
-        }
-
-
     }
 }

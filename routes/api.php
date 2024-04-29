@@ -47,8 +47,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get('ConvertCompetitionOrganizationTable', [HelperController::class, 'ConvertCompetitionOrganizationTable'])->name('info.convert.competitionOrganization'); //run this first to add organization_id on previous competitonpartner table
         Route::get('CreateSchoolForOrganization', [HelperController::class, 'CreateSchoolForOrganization'])->name('info.convert.CreateSchoolForOrganization'); //run this to generate organization school based on the user country
         Route::get('setIndexCounterCountryTable', [HelperController::class, 'setIndexCounterCountryTable'])->name('info.convert.setIndexCounterCountryTable'); //store latest student index in country table
-        Route::get('GenerateCertNum', [HelperController::class, 'GenerateCertNum'])->name('info.convert.GenerateCertNum'); //generate cert no.\
-        Route::get('participant/{participant}', [HelperController::class, 'getParticipantInfo'])->name('info.participant.info');
+        Route::get('GenerateCertNum', [HelperController::class, 'GenerateCertNum'])->name('info.convert.GenerateCertNum'); //generate cert no.
     });
 
     Route::group(["prefix" => "notification"], function () {
@@ -99,8 +98,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
         Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
         Route::patch("/swapIndex", [ParticipantsController::class, "swapIndex"])->name('participant.swapIndex');
-        Route::post("/eliminate/{competition}", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.eliminate');
-        Route::delete("/eliminate/{competition}", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.eliminate.delete');
+        Route::post("/compute/cheaters/eliminate", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate');
+        Route::delete("/compute/cheaters/eliminate", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.compute.cheaters.eliminate.delete');
         Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
     });
 
@@ -129,16 +128,11 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::delete("/overall_awards", [CompetitionController::class, "deleteOverallAwardsGroups"])->name('competition.overall.award.delete');
         Route::get("/{competition}/report", [CompetitionController::class, "report"])->name('competition.report');
         Route::get("/{competition}/countries", [CompetitionController::class, "competitionCountries"])->name('competition.countries');
+        Route::get("/compute/cheaters/{competition}", [CompetitionController::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
+        Route::get("/compute/cheaters/group/{group_id}", [CompetitionController::class, "getcheatingParticipantsByGroup"])->name('competition.compute.cheaters.group');
         Route::get("/answers/{competition}", [ParticipantAnswersController::class, "list"])->name('competition.answers.list');
         Route::delete("/answers/{competition}", [ParticipantAnswersController::class, "delete"])->name('competition.answers.delete');
         Route::get("/answers/report/{competition}", [ParticipantAnswersController::class, "answerReport"])->name('competition.answers.report');
-        Route::get("/compute/cheaters/{competition}", [CheatingListHelper::class, "getcheatingParticipants"])->name('competition.compute.cheaters');
-        Route::get("/cheaters/same-participant/{competition}", [CheatingListHelper::class, "getSameParticipantCheatingList"])->name('competition.cheaters.sameParticipant');
-        Route::get("/cheaters/confirmed-countries/{competition}", [CheatingListHelper::class, "getConfirmedCountriesForIntegrityCheck"])->name('competition.cheaters.confirmedCountries');
-        Route::post("/cheaters/confirmed-countries/{competition}", [CheatingListHelper::class, "confirmCountryForIntegrityCheck"])->name('competition.cheaters.setConfirmedCountries');
-        Route::get("/cheaters/custom-labeled-integrity-cases/{competition}", [CheatingListHelper::class, "getCustomLabeledIntegrityCases"])->name('competition.cheaters.customLabeledIntegrityCases');
-        Route::get("/cheaters/criteria-stats/{competition}", [CheatingListHelper::class, "getCheatingCriteriaStats"])->name('competition.cheaters.stats');
-        Route::get("/cheaters/{competition}/{country}", [CheatingListHelper::class, "getIntegrityCasesByCountry"])->name('competition.cheaters.byCountry');
     });
 
     Route::group(["prefix" => "marking"], function () {
@@ -150,13 +144,21 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}", [MarkingController::class, "markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/refresh/{competition}", [MarkingController::class, "refreshMarkingList"])->name('competition.marking.refresh');
-        Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
-        Route::post("/compute/level/{level}/{group}",[MarkingController::class,"computeResultsForSingleLevelGroup"])->name('competition.marking.compute.level.group');
-        Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
-        Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
-        Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
-        Route::get("awards/stats/{group}",[MarkingController::class,"getAwardsStats"])->name('competition.marking.awards.stats');
-        Route::post("/participant/{participant}", [MarkingController::class, "markSingleParticipant"])->name('mark.single.participant');
+        Route::post("/compute/level/{level}", [MarkingController::class, "computeResultsForSingleLevel"])->name('competition.marking.compute.level');
+        Route::post("/compute/level/{level}/{group}", [MarkingController::class, "computeResultsForSingleLevelGroup"])->name('competition.marking.compute.level.group');
+        Route::post("/compute/{competition}", [MarkingController::class, "computeCompetitionResults"])->name('competition.marking.compute.competition');
+        Route::get("/moderate/{level}/{group}", [MarkingController::class, "moderateList"])->name('competition.marking.moderate.list');
+        Route::patch("/moderate/{level}", [MarkingController::class, "editParticipantAward"])->name('competition.marking.moderate.edit');
+        Route::get("awards/stats/{group}", [MarkingController::class, "getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::group(['prefix' => 'possible_similar_answers'], function () {
+            Route::get("/competition_levels/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevels"])->name('marking.possible_similar_answers.competition_levels');
+            Route::get("/levels_tasks/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevelsAndTasks"])->name('marking.possible_similar_answers.level_taks');
+            Route::get("/{task}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarAnswers"])->name('competition.possible_similar_answers.list');
+            Route::get("/participants/{id}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarParticipants"])->name('competition.possible_similar_answers.list');
+            Route::post("/update_answer", [PossibleSimilarAnswersController::class, "updateParticipantAnswer"])->name('competition.possible_similar_answers.update_answer');
+            Route::get("/answer_updates/{task}", [PossibleSimilarAnswersController::class, "getAnswerUpdates"])->name('competition.possible_similar_answers.answer_updates');
+            Route::post("/", [PossibleSimilarAnswersController::class, "approvePossibleAnswers"])->name('competition.possible_similar_answers.approve');
+        });
     });
 
     Route::group(["prefix" => "tasks"], function () {

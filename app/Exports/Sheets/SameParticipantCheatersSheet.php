@@ -17,7 +17,7 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
 
     function __construct(Competition $competition, CompetitionCheatingListRequest $request)
     {
-        $this->dataCollection = CheatingListHelper::getSameParticipantCheatersData($competition, $request, true);
+        $this->dataCollection = CheatingListHelper::getSameParticipantCheatersDataForCSV($competition, $request);
     }
 
     /**
@@ -41,28 +41,14 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
 
     public function headings(): array
     {
-        if($this->dataCollection->isNotEmpty()) {
-            $headers = collect($this->dataCollection->first(fn($value) => $value == $this->dataCollection->max()))
-                ->filter(fn($value, $key) => preg_match('/^Q\d+$/', $key))
-                ->keys()
-                ->toArray();
-        } else {
-            $headers = [];
-        }
-
         return [
             'Index',
             'Name',
             'School',
             'Country',
             'Grade',
-            'MAP IAC',
-            'Reason',
-            'IAC Created By',
-            'IAC Created Date/Time (UTC)',
             'Group ID',
             'No. Of Answers Uploaded',
-            ...$headers,
         ];
     }
 
@@ -79,6 +65,6 @@ class SameParticipantCheatersSheet implements FromCollection, WithHeadings, With
      */
     public function title(): string
     {
-        return 'MAP List';
+        return 'Same Students Participating Multiple Times';
     }
 }
