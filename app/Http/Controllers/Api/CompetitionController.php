@@ -1079,13 +1079,13 @@ class CompetitionController extends Controller
 
             foreach ($request->participants as $participantData) {
                 if($levels[$participantData['grade']]['grade'] != $participants->first(fn($participant) => $participant->index_no === $participantData['index_number'])?->grade) {
-                    throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
+                    throw ValidationException::withMessages(["The imported grade for student with index {$participantData['index_number']} does not match the registered grade in the system"]);
                 }
 
                 $level = $levels[$participantData['grade']]['level'];
                 $levelTaskCount = $level->tasks->count();
                 if ($levelTaskCount !== count($participantData['answers'])) {
-                    throw ValidationException::withMessages(["Answers count for participant with index {$participantData['index_number']} does not match the number of tasks in his grade level"]);
+                    throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
                 }
 
                 DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
