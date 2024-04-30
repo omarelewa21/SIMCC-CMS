@@ -112,21 +112,16 @@ class PossibleSimilarAnswersController extends Controller
                     'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-
             // Delete
-            DB::table('possible_similar_answers')
-                ->where('level_id', $levelId)
+            PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
                 ->where('possible_key', $answerKey)
                 ->delete();
 
             // Delete records that are not in the updated list
-            $keysToExclude = array_map('strval', array_keys($possibleKeys));
-
-            DB::table('possible_similar_answers')
-                ->where('level_id', $levelId)
+            PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
-                ->whereNotIn('possible_key', $keysToExclude)
+                ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
                 ->delete();
 
             $orderedPossibleKeys = $task->possibleSimilarAnswers()
@@ -185,12 +180,12 @@ class PossibleSimilarAnswersController extends Controller
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
 
-            $results = DB::table('participant_answers')
-                ->where('task_id', $taskId)
+            // Gather unique participant answers for the task with their indices
+            $uniqueParticipantAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
+                // ->whereNotNull('answer')
                 ->select('answer', 'id')
-                ->get();
-
-            $uniqueParticipantAnswers = $results->groupBy('answer')
+                ->get()
+                ->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
                     return [$key => $items->pluck('id')->all()];
                 });
@@ -205,13 +200,10 @@ class PossibleSimilarAnswersController extends Controller
         }
 
         // Handle non-MCQ tasks as before
-
-        $results = DB::table('participants_answers')
-            ->where('task_id', $taskId)
+        $allParticipantsAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id')
-            ->get();
-
-        $allParticipantsAnswers = $results->groupBy('answer')
+            ->get()
+            ->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
                 return [$key => $items->pluck('id')->all()];
             });
@@ -221,14 +213,12 @@ class PossibleSimilarAnswersController extends Controller
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
-        $results = DB::table('participants_answers')
-            ->where('task_id', $taskId)
+        $similarAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
-            ->get();
-
-        $similarAnswers = $results->filter(function ($participantAnswer) use ($normalizedKey) {
-            return intval($participantAnswer->numeric_answer) === $normalizedKey;
-        })
+            ->get()
+            ->filter(function ($participantAnswer) use ($normalizedKey) {
+                return intval($participantAnswer->numeric_answer) === $normalizedKey;
+            })
             ->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
                 return [$key => $items->pluck('id')->all()];
@@ -285,7 +275,7 @@ class PossibleSimilarAnswersController extends Controller
         $request->validate([
             'answer_id' => 'required|array|min:1',
             'answer_id.*' => 'exists:participant_answers,id',
-            'new_answer' => 'required',
+            'new_answer' => 'present',
         ]);
 
         $newAnswer = $request->new_answer;
@@ -294,10 +284,7 @@ class PossibleSimilarAnswersController extends Controller
         $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
-            
-            $participantAnswer = DB::table('participants_answers')
-            ->where('id', $participantAnswerId)
-            ->first();
+            $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
 
             if (!$participantAnswer) {
                 continue;
