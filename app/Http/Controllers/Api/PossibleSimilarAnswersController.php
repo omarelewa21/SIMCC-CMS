@@ -295,9 +295,7 @@ class PossibleSimilarAnswersController extends Controller
 
         foreach ($request->answer_id as $participantAnswerId) {
             
-            $participantAnswer = DB::table('participants_answers')
-            ->where('id', $participantAnswerId)
-            ->first();
+            $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
 
             if (!$participantAnswer) {
                 continue;
