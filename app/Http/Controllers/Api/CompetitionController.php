@@ -455,7 +455,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
