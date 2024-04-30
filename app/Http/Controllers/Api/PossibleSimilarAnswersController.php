@@ -112,7 +112,7 @@ class PossibleSimilarAnswersController extends Controller
                     'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-            
+
             // Delete
             DB::table('possible_similar_answers')
                 ->where('level_id', $levelId)
@@ -294,7 +294,10 @@ class PossibleSimilarAnswersController extends Controller
         $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
-            $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+            
+            $participantAnswer = DB::table('participants_answers')
+            ->where('id', $participantAnswerId)
+            ->first();
 
             if (!$participantAnswer) {
                 continue;
