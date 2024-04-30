@@ -109,7 +109,7 @@ class PossibleSimilarAnswersController extends Controller
                     'possible_key' => is_null($possibleKey) ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
-                    'participants_answers_indices' => $participantsAnswers,
+                    'participant_answers_indices' => $participantsAnswers,
                 ]);
             }
 
@@ -206,7 +206,7 @@ class PossibleSimilarAnswersController extends Controller
 
         // Handle non-MCQ tasks as before
 
-        $results = DB::table('participants_answers')
+        $results = DB::table('participant_answers')
             ->where('task_id', $taskId)
             ->select('answer', 'id')
             ->get();
@@ -221,7 +221,7 @@ class PossibleSimilarAnswersController extends Controller
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
-        $results = DB::table('participants_answers')
+        $results = DB::table('participant_answers')
             ->where('task_id', $taskId)
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
             ->get();
@@ -294,7 +294,7 @@ class PossibleSimilarAnswersController extends Controller
         $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
-            
+
             $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
 
             if (!$participantAnswer) {
