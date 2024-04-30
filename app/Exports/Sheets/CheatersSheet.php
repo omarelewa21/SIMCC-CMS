@@ -55,7 +55,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
             'School',
             'Country',
             'Grade',
-            'System generated IAC',
+            'Integrity IAC',
             'Reason',
             'IAC Created By',
             'IAC Created Date/Time (UTC)',

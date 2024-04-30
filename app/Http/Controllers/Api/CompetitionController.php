@@ -412,7 +412,7 @@ class CompetitionController extends Controller
                     if(count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
                         $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn($query) => $query->where('level_id', $level->id))
                             ->whereHas('integrityCases', fn($query) => $query->where('mode', 'system'))->exists();
-                        throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are System IAC, you must remove them first before changing assigned grades or collection to this level");
+                        throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are Integrity IAC, you must remove them first before changing assigned grades or collection to this level");
                     }
 
                     $level->grades = $row['grades'];
@@ -1071,7 +1071,7 @@ class CompetitionController extends Controller
 
             $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
             if($systemIACParticipants->isNotEmpty()) {
-                throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are System IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
+                throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are Integrity IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
             }
 
             $createdBy = auth()->id();

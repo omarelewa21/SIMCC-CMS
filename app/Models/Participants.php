@@ -254,7 +254,7 @@ class Participants extends Base
                             $status->push('IAC Incident');
                             break;
                         default:
-                            $status->push('System Generated IAC');
+                            $status->push('Integrity IAC');
                             break;
                     }
                 }
