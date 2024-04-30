@@ -372,16 +372,15 @@ class PossibleSimilarAnswersController extends Controller
             '*.status' => ['required', 'string', Rule::in($validStatuses)]
         ]);
 
-        $responses = [];
-
         foreach ($request->all() as $answerUpdate) {
-            $possibleAnswer = PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id']);
-            $possibleAnswer->status = $answerUpdate['status'];
-            $possibleAnswer->approved_by = Auth::id();
-            $possibleAnswer->approved_at = now();
-            $possibleAnswer->save();
-            $responses[] = $possibleAnswer;
+            $status = $answerUpdate['status'];
+            PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id'])->fill([
+                'status' => $status,
+                'approved_by' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? Auth::id() : null,
+                'approved_at' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? now() : null,
+            ])->save();
         }
+
         return response()->json([
             'message' => 'Possible similar answers status updated successfully.',
             'status' => 200
