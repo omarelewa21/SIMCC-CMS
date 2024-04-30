@@ -275,7 +275,7 @@ class PossibleSimilarAnswersController extends Controller
         $request->validate([
             'answer_id' => 'required|array|min:1',
             'answer_id.*' => 'exists:participant_answers,id',
-            'new_answer' => 'required',
+            'new_answer' => 'present',
         ]);
 
         $newAnswer = $request->new_answer;
