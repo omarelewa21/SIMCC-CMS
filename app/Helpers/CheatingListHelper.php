@@ -560,7 +560,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'School'                                        => 'school',
             'Grade'                                         => 'grade',
-            'System generated IAC'                          => 'is_iac',
+            'Integrity IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
             'IAC Created By'                                => 'iac_created_by',
             'IAC Created Date/Time (UTC)'                   => 'iac_created_at',
@@ -746,7 +746,7 @@ class CheatingListHelper
                             $type->push('IAC Incident');
                             break;
                         default:
-                            $type->push('System Generated IAC');
+                            $type->push('Integrity IAC');
                             break;
                     }
                     $reason->push($integrityCase->reason);

@@ -475,7 +475,7 @@ class ParticipantsController extends Controller
         DB::commit();
         switch ($request->mode) {
             case 'system':
-                $message = "System Generated IAC Participants Created Successfully";
+                $message = "Integrity IAC Participants Created Successfully";
                 break;
             case 'custom':
                 $message = "IAC Incident Participant Created Successfully";
@@ -521,7 +521,7 @@ class ParticipantsController extends Controller
         DB::commit();
         switch ($request->mode) {
             case 'system':
-                $message = "System Generated IAC Participants restored successfully";
+                $message = "Integrity IAC Participants restored successfully";
                 break;
             case 'custom':
                 $message = "IAC Incident Participant restored successfully";
