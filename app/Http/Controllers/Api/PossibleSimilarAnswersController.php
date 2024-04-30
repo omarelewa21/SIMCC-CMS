@@ -181,7 +181,7 @@ class PossibleSimilarAnswersController extends Controller
             $correctAnswerLabel = $correctAnswerData->content;
 
             // Gather unique participant answers for the task with their indices
-            $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
+            $uniqueParticipantAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
                 // ->whereNotNull('answer')
                 ->select('answer', 'id')
                 ->get()
@@ -200,7 +200,7 @@ class PossibleSimilarAnswersController extends Controller
         }
 
         // Handle non-MCQ tasks as before
-        $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
+        $allParticipantsAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
@@ -213,7 +213,7 @@ class PossibleSimilarAnswersController extends Controller
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
-        $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
+        $similarAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
             ->get()
             ->filter(function ($participantAnswer) use ($normalizedKey) {
@@ -284,7 +284,7 @@ class PossibleSimilarAnswersController extends Controller
         $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
-            $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+            $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
 
             if (!$participantAnswer) {
                 continue;
