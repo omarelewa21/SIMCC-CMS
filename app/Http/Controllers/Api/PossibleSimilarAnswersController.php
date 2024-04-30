@@ -112,16 +112,21 @@ class PossibleSimilarAnswersController extends Controller
                     'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
+            
             // Delete
-            PossibleSimilarAnswer::where('level_id', $levelId)
+            DB::table('possible_similar_answers')
+                ->where('level_id', $levelId)
                 ->where('task_id', $taskId)
                 ->where('possible_key', $answerKey)
                 ->delete();
 
             // Delete records that are not in the updated list
-            PossibleSimilarAnswer::where('level_id', $levelId)
+            $keysToExclude = array_map('strval', array_keys($possibleKeys));
+
+            DB::table('possible_similar_answers')
+                ->where('level_id', $levelId)
                 ->where('task_id', $taskId)
-                ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
+                ->whereNotIn('possible_key', $keysToExclude)
                 ->delete();
 
             $orderedPossibleKeys = $task->possibleSimilarAnswers()
@@ -180,12 +185,12 @@ class PossibleSimilarAnswersController extends Controller
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
 
-            // Gather unique participant answers for the task with their indices
-            $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                // ->whereNotNull('answer')
+            $results = DB::table('participant_answers')
+                ->where('task_id', $taskId)
                 ->select('answer', 'id')
-                ->get()
-                ->groupBy('answer')
+                ->get();
+
+            $uniqueParticipantAnswers = $results->groupBy('answer')
                 ->mapWithKeys(function ($items, $key) {
                     return [$key => $items->pluck('id')->all()];
                 });
@@ -200,10 +205,13 @@ class PossibleSimilarAnswersController extends Controller
         }
 
         // Handle non-MCQ tasks as before
-        $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
+
+        $results = DB::table('participants_answers')
+            ->where('task_id', $taskId)
             ->select('answer', 'id')
-            ->get()
-            ->groupBy('answer')
+            ->get();
+
+        $allParticipantsAnswers = $results->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
                 return [$key => $items->pluck('id')->all()];
             });
@@ -213,12 +221,14 @@ class PossibleSimilarAnswersController extends Controller
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
-        $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
+        $results = DB::table('participants_answers')
+            ->where('task_id', $taskId)
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
-            ->get()
-            ->filter(function ($participantAnswer) use ($normalizedKey) {
-                return intval($participantAnswer->numeric_answer) === $normalizedKey;
-            })
+            ->get();
+
+        $similarAnswers = $results->filter(function ($participantAnswer) use ($normalizedKey) {
+            return intval($participantAnswer->numeric_answer) === $normalizedKey;
+        })
             ->groupBy('answer')
             ->mapWithKeys(function ($items, $key) {
                 return [$key => $items->pluck('id')->all()];
