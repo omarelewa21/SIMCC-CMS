@@ -418,8 +418,8 @@ class CompetitionController extends Controller
                     $level->grades = $row['grades'];
                     if ($level->collection_id != $row['collection_id']) {
                         if ($level->collection_id != null) {
-                            CompetitionTaskDifficulty::where('level_id', $level->id)->delete();
-                            CompetitionTasksMark::where('level_id', $level->id)->delete();
+                            DB::table('competition_task_difficulty')->where('level_id', $level->id)->delete();
+                            DB::table('competition_tasks_mark')->where('level_id', $level->id)->delete();
                             DB::table('participant_answers')->where('level_id', $level->id)->delete();
                         }
 
