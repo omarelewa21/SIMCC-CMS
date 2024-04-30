@@ -1111,7 +1111,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" =>  $e->status,
                 "message" => $e->getMessage()
-            ], $e->status);
+            ], 400);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
