@@ -330,7 +330,7 @@ class ComputeLevelGroupService
     private function setupIACStudentResults()
     {
         $round = $this->level->rounds()->with('roundsAwards')->first();
-        $defaultAwardRank = $round->roundsAwards->count() + 1;
+        $defaultAwardRank = $round->roundsAwards->count() + 2;
 
         $this->level->participants()
             ->whereIn('participants.country_id', $this->groupCountriesIds)
@@ -366,8 +366,7 @@ class ComputeLevelGroupService
 
     private function clearAwardForParticipants()
     {
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        CompetitionParticipantsResults::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
     }
 }
