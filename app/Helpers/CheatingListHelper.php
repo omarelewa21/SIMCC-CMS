@@ -835,7 +835,7 @@ class CheatingListHelper
         return $competition->participants()
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->when(request('country'), fn($query) => $query->whereIn('participants.country_id', request('country')))
+            ->when(request('country'), fn($query) => $query->whereIn('participants.country_id', json_decode(request('country'), true)))
             ->with(['answers', 'school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
