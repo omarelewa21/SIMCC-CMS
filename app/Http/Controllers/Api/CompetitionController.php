@@ -1096,8 +1096,8 @@ class CompetitionController extends Controller
             $createdAt = now();
 
             foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants->first(fn($participant) => $participant->index_no === $participantData['index_number'])?->grade) {
-                    throw ValidationException::withMessages(["The imported grade for student with index {$participantData['index_number']} does not match the registered grade in the system"]);
+                if($levels[$participantData['grade']]['grade'] != $participants[$participantData['index_number']]) {
+                    throw ValidationException::withMessages(["Grade for participant with index {$participantData['index_number']} does not match the grade in the database"]);
                 }
 
                 $level = $levels[$participantData['grade']]['level'];
