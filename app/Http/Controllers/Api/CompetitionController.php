@@ -35,6 +35,7 @@ use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
+use App\Models\Collections;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1083,6 +1084,10 @@ class CompetitionController extends Controller
                 }
 
                 $level = $levels[$participantData['grade']]['level'];
+                if($level->collection->status !== Collections::STATUS_VERIFIED) {
+                    throw ValidationException::withMessages([sprintf('Collection "%s" attached to %s is not verified, you must verify the collection first', $level->collection->name, $participantData['grade'])]);
+                }
+
                 $levelTaskCount = $level->tasks->count();
                 if ($levelTaskCount !== count($participantData['answers'])) {
                     throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
