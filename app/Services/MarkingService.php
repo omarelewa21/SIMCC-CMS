@@ -85,7 +85,7 @@ class MarkingService
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
-                    'moderation_status'             => $levelGroupCompute?->awards_moderated,
+                    'moderation_status'             => $levelGroupCompute?->awards_moderated ?? 0,
                     'total_participants'            => $totalParticipantsCount,
                     'answers_uploaded'              => $answersUploadedCount,
                     'marked_participants'           => $markedAnswersCount,
