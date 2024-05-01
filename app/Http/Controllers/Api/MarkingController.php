@@ -556,6 +556,10 @@ class MarkingController extends Controller
                 'points'    => $participant->answers->sum('score')
             ]);
 
+            $participant->integrityCases()->delete();
+            $participant->status = Participants::STATUS_RESULT_COMPUTED;
+            $participant->save();
+
             DB::commit();
             return response()->json([
                 'status'    => 200,
