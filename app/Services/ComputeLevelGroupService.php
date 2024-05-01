@@ -315,6 +315,7 @@ class ComputeLevelGroupService
         Participants::join('competition_participants_results', 'competition_participants_results.participant_index', 'participants.index_no')
             ->where('competition_participants_results.level_id', $this->level->id)
             ->where('competition_participants_results.group_id', $this->group->id)
+            ->where('participants.status', '<>', Participants::STATUS_CHEATING)
             ->update(['participants.status' => 'result computed']);
     }
 
