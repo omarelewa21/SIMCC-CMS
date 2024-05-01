@@ -73,7 +73,7 @@ class UpdateTaskAnswersService
     private function updateExistingAnswer(array $answer, int $key)
     {
         $taskAnswer = TasksAnswers::find($answer['answer_id']);
-        $taskAnswer->answer = $answer['answer'];
+        $taskAnswer->answer = strval($answer['answer']);
         $taskAnswer->position = $key + 1;
         $taskAnswer->save();
 
