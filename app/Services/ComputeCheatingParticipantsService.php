@@ -205,7 +205,7 @@ class ComputeCheatingParticipantsService
             }
         }
 
-        if($dataArray['number_of_same_incorrect_answers'] > $this->numberOFSameIncorrect && $this->shouldCreateCheatingParticipant($dataArray) ) {
+        if($dataArray['number_of_same_incorrect_answers'] >= $this->numberOFSameIncorrect && $this->shouldCreateCheatingParticipant($dataArray) ) {
             $dataArray['different_question_ids'] = $participant1->answers->whereNotIn('task_id', $sameQuestionIds)->pluck('task_id')->toArray();
             $dataArray['group_id'] = $this->generateGroupId($participant1, false, $dataArray);
             $dataArray['cheating_percentage'] = ( $dataArray['number_of_cheating_questions'] / $dataArray['number_of_questions'] ) * 100;
