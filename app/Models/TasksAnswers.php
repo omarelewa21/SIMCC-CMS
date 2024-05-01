@@ -20,7 +20,7 @@ class TasksAnswers extends Model
         parent::booted();
 
         static::saving(function($task_answer) {
-            if(empty($task_answer->answer)) {
+            if(empty($task_answer->answer) && $task_answer->answer != "0") {
                 $task_answer->answer = null;
             }
         });
