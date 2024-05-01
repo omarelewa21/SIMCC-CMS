@@ -545,15 +545,20 @@ class MarkingController extends Controller
     {
         try {
             DB::beginTransaction();
-            $participant->answers->each(function($answer) {
-                $answer->is_correct = $answer->getIsCorrectAnswer();
-                $answer->score = $answer->getAnswerMark();
-                $answer->save();
-            });
 
-            $participant->result()->update([
-                'points' => $participant->answers->sum('score')
+            $participant->markAnswers();
+            $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
+
+            CompetitionParticipantsResults::updateOrCreate([
+                'participant_index' => $participant->index_no
+            ], [
+                'level_id'  => $participantLevelId,
+                'points'    => $participant->answers->sum('score')
             ]);
+
+            $participant->integrityCases()->delete();
+            $participant->status = Participants::STATUS_RESULT_COMPUTED;
+            $participant->save();
 
             DB::commit();
             return response()->json([

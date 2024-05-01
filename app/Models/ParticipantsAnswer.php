@@ -63,13 +63,40 @@ class ParticipantsAnswer extends Model
     {
         $taskAnswerId = $this->getTaskAnswerIdIfParticipantAnswerKeyExists();
 
-        if (!$taskAnswerId) return $this->getWrongOrBlankMarks($this->level_id);
+        if (!$taskAnswerId) return $this->checkForUA();
 
         $competitionTaskMark = CompetitionTasksMark::where(
             ['level_id' => $this->level_id, 'task_answers_id' => $taskAnswerId]
         )->first();
 
+        return $competitionTaskMark ? $competitionTaskMark->marks : $this->checkForUA();
+    }
+
+    private function checkForUA()
+    {
+        if (!$this->checkIfApprovedSimilarAnswerIsCorrect()) return $this->getWrongOrBlankMarks($this->level_id);
+
+        $competitionTaskMark = $this->task->taskAnswers()
+            ->join('competition_tasks_mark', 'competition_tasks_mark.task_answers_id', 'task_answers.id')
+            ->where('competition_tasks_mark.level_id', $this->level_id)
+            ->select('competition_tasks_mark.marks')
+            ->first();
+
         return $competitionTaskMark ? $competitionTaskMark->marks : $this->getWrongOrBlankMarks($this->level_id);
+    }
+
+    private function getCorrectAnswerId()
+    {
+        if ($this->task->answer_type === 'mcq') {
+            return $this->task->taskAnswers()
+                ->where('answer', "1")
+                ->value('id');
+        }
+        $taskAnswer = $this->task->taskAnswers()
+            ->where('answer', $this->answer)
+            ->first();
+
+        return $taskAnswer ? $taskAnswer->id : null;
     }
 
     private function getWrongOrBlankMarks()

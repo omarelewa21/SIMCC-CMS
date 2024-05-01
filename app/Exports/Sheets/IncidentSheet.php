@@ -3,7 +3,6 @@
 namespace App\Exports\Sheets;
 
 use App\Helpers\CheatingListHelper;
-use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\Competition;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -11,13 +10,24 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTitle
+class IncidentSheet implements FromCollection, WithHeadings, WithStyles, WithTitle
 {
     private $dataCollection;
 
-    function __construct(Competition $competition, CompetitionCheatingListRequest $request)
+    function __construct(Competition $competition)
     {
-        $this->dataCollection = CheatingListHelper::getCheatersData($competition, $request, true);
+        $this->dataCollection = CheatingListHelper::getCustomLabeledIntegrityCasesData($competition)
+            ->map(function($data) {
+                unset($data['school_id']);
+                unset($data['country_id']);
+                unset($data['laravel_through_key']);
+                unset($data['iac_status']);
+                foreach($data['answers'] as $key => $answer) {
+                    $data["Q".($key+1)] = sprintf("%s %s", $answer['answer'], $answer['is_correct'] ? '(Correct)' : '(Wrong)');
+                }
+                unset($data['answers']);
+                return $data;
+            });
     }
 
     /**
@@ -25,17 +35,7 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
     */
     public function collection()
     {
-        $returnedCollection = collect();
-        $lastGroup = null;
-        foreach($this->dataCollection as $key=>$record) {
-            if($key !== 0 && $lastGroup !== $record['group_id']) {
-                $returnedCollection->push(['-'], $record);
-            }else{
-                $returnedCollection->push($record);
-            }
-            $lastGroup = $record['group_id'];
-        }
-        return $returnedCollection;
+        return $this->dataCollection;
     }
 
     public function headings(): array
@@ -52,23 +52,12 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
         return [
             'Index',
             'Name',
+            'Grade',
             'School',
             'Country',
-            'Grade',
-            'Integrity IAC',
             'Reason',
             'IAC Created By',
             'IAC Created Date/Time (UTC)',
-            'Criteria Matching Answers Percentage',
-            'Criteria No of Same Incorrect Answers',
-            'Group ID',
-            'No of qns',
-            'No of qns with same answer',
-            'No of qns with same answer percentage',
-            'No of qns with same correct answer',
-            'No of qns with same incorrect answer',
-            'No of correct answers',
-            'Qns with same incorrect answer',
             ...$headers,
         ];
     }
@@ -86,6 +75,6 @@ class CheatersSheet implements FromCollection, WithHeadings, WithStyles, WithTit
      */
     public function title(): string
     {
-        return 'Integrity List';
+        return 'IAC Indcidents';
     }
 }

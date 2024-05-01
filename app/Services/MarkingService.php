@@ -14,9 +14,9 @@ class MarkingService
 {
     /**
      * Get mark list
-     * 
+     *
      * @param \App\Models\Competition $competition
-     * 
+     *
      * @return array
      */
     public function markList(Competition $competition)
@@ -27,7 +27,7 @@ class MarkingService
         );
         $countryGroups = $this->getListCompetitionGroupsWithCountries($competition);
         $rounds = $competition->rounds
-            ->mapWithKeys(function ($round) use($countryGroups) {            
+            ->mapWithKeys(function ($round) use($countryGroups) {
                 return [$round['name'] => $this->getLevelList($round, $countryGroups)];
             });
 
@@ -69,7 +69,7 @@ class MarkingService
             $levels = [];
             foreach($countryGroups as $group_id=>$countryGroup){
                 $countryGroupIds = $countryGroup->keys()->toArray();
-                
+
                 $totalParticipantsCount = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
                 $markedAnswersCount = $markedAnswers->whereIn('country_id', $countryGroupIds)->sum('marked_participants');
                 $absentees = $absentees->whereIn('country_id', $countryGroupIds);
@@ -85,6 +85,7 @@ class MarkingService
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
+                    'moderation_status'             => $levelGroupCompute?->awards_moderated,
                     'total_participants'            => $totalParticipantsCount,
                     'answers_uploaded'              => $answersUploadedCount,
                     'marked_participants'           => $markedAnswersCount,
@@ -170,9 +171,9 @@ class MarkingService
 
     /**
      * Check if competition are ready for computing
-     * 
+     *
      * @param App\Models\Competition $competition
-     * 
+     *
      * @return bool
      */
     public function isCompetitionReadyForCompute(Competition $competition) {
@@ -188,9 +189,9 @@ class MarkingService
 
     /**
      * check if level is ready for computing - returns true if (all tasks has corresponding true answers and level has uploaded answers)
-     * 
+     *
      * @param App\Models\CompetitionLevel $level
-     * 
+     *
      * @return bool
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
@@ -215,9 +216,9 @@ class MarkingService
 
     /**
      * get cut off points for participant results
-     * 
+     *
      * @param Illuminate\Database\Eloquent\Collection $participantResults
-     * 
+     *
      * @return array
      */
     public function getCutOffPoints($participantResults)
@@ -234,14 +235,14 @@ class MarkingService
 
     /**
      * get participants count (with and without answers) by country and grade
-     * 
+     *
      * @param App\Models\Competition $competition
      * @param Illuminate\Http\Request $request
-     * 
+     *
      * @return array
      */
     public static function getActiveParticipantsByCountryByGradeData(Competition $competition, Request $request)
-    {       
+    {
         $countries = Countries::whereIn('id', $request->countries)->select('id', 'display_name')
             ->get()
             ->mapWithKeys(fn($country)=>[
@@ -269,11 +270,11 @@ class MarkingService
 
     /**
      * get all participants count by country and grade
-     * 
+     *
      * @param array $data by reference
      * @param Illuminate\Database\Eloquent\Collection $countries
      * @param Illuminate\Database\Eloquent\Collection $totalParticipants
-     * 
+     *
      * @return void
      */
     public static function setTotalParticipantsByCountryByGrade(&$data, $countries, $totalParticipants)
@@ -300,11 +301,11 @@ class MarkingService
 
     /**
      * get participants (with answers) and absentees count by country and grade
-     * 
+     *
      * @param array $data by reference
      * @param Illuminate\Database\Eloquent\Collection $countries
      * @param Illuminate\Database\Eloquent\Collection $totalParticipantsWithAnswer
-     * 
+     *
      * @return void
      */
     public static function setTotalParticipantsWithAnswersAndAbsentees(&$data, $countries, $totalParticipantsWithAnswer)

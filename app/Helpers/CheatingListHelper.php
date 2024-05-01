@@ -413,6 +413,8 @@ class CheatingListHelper
      */
     public function returnCheatingData(Competition $competition, CompetitionCheatingListRequest $request)
     {
+        if($request->mode === 'csv') return $this->getCheatingCSVFile($competition, $request);
+
         $cheatingStatuses = CheatingStatus::where([
                 'competition_id'                    => $competition->id,
                 'for_map_list'                      => 0,
@@ -422,9 +424,7 @@ class CheatingListHelper
         if($InProgressCheatingStatus) return $this->returnCheatingStatus($competition, $InProgressCheatingStatus);
 
         if($competition->integrityCases()->where('is_same_participant', 0)->exists()) {
-            return $request->mode === 'csv'
-                ? $this->getCheatingCSVFile($competition, $request)
-                : $this->returnCheatingDataForUI($competition, $request);
+            return $this->returnCheatingDataForUI($competition, $request);
         }
 
         if($cheatingStatuses->isEmpty()) {
@@ -560,7 +560,7 @@ class CheatingListHelper
             'Country'                                       => 'country',
             'School'                                        => 'school',
             'Grade'                                         => 'grade',
-            'System generated IAC'                          => 'is_iac',
+            'Integrity IAC'                          => 'is_iac',
             'Reason'                                        => 'reason',
             'IAC Created By'                                => 'iac_created_by',
             'IAC Created Date/Time (UTC)'                   => 'iac_created_at',
@@ -746,7 +746,7 @@ class CheatingListHelper
                             $type->push('IAC Incident');
                             break;
                         default:
-                            $type->push('System Generated IAC');
+                            $type->push('Integrity IAC');
                             break;
                     }
                     $reason->push($integrityCase->reason);
@@ -830,12 +830,13 @@ class CheatingListHelper
         }
     }
 
-    public function getCustomLabeledIntegrityCasesData(Competition $competition)
+    public static function getCustomLabeledIntegrityCasesData(Competition $competition)
     {
         return $competition->participants()
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
-            ->with(['school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
+            ->when(request('country'), fn($query) => $query->whereIn('participants.country_id', json_decode(request('country'), true)))
+            ->with(['answers', 'school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
                 'participants.country_id', 'participants.grade'

@@ -100,21 +100,18 @@ class PossibleSimilarAnswersController extends Controller
             }
 
             // Remove correct answer key for similar answers
-
             $possibleKeys = $answersData['possible_keys'];
-
             // Update or create records based on modified data
-            foreach ($possibleKeys as $possibleKey => $participantsAnwers) {
+            foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
                 PossibleSimilarAnswer::updateOrCreate([
                     'task_id' => $taskId,
                     'level_id' => $levelId,
-                    'possible_key' => strval($possibleKey),
+                    'possible_key' => is_null($possibleKey) ? '' : strval($possibleKey),
                 ], [
                     'answer_key' => $answerKey,
-                    'participants_answers_indices' => $participantsAnwers,
+                    'participants_answers_indices' => $participantsAnswers,
                 ]);
             }
-
             // Delete
             PossibleSimilarAnswer::where('level_id', $levelId)
                 ->where('task_id', $taskId)
@@ -180,14 +177,12 @@ class PossibleSimilarAnswersController extends Controller
                 ->select('task_answers.id as answer_id', 'task_labels.content as content')
                 ->first();
 
-
             $correctAnswerId = $correctAnswerData->answer_id;
             $correctAnswerLabel = $correctAnswerData->content;
 
-
             // Gather unique participant answers for the task with their indices
-            $uniqueParticipantAnswers = ParticipantsAnswer::where('task_id', $taskId)
-                ->whereNotNull('answer')
+            $uniqueParticipantAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
+                // ->whereNotNull('answer')
                 ->select('answer', 'id')
                 ->get()
                 ->groupBy('answer')
@@ -205,8 +200,7 @@ class PossibleSimilarAnswersController extends Controller
         }
 
         // Handle non-MCQ tasks as before
-        $allParticipantsAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            ->whereNotNull('answer')
+        $allParticipantsAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id')
             ->get()
             ->groupBy('answer')
@@ -215,12 +209,11 @@ class PossibleSimilarAnswersController extends Controller
             });
 
         $taskAnswer = $task->taskAnswers[0];
-        if (!$taskAnswer->answer) {
+        if ($taskAnswer->answer === null) {
             throw new Exception('There\'s no configured answer for this task');
         }
         $normalizedKey = intval($taskAnswer->answer);
-        $similarAnswers = ParticipantsAnswer::where('task_id', $taskId)
-            ->whereNotNull('answer')
+        $similarAnswers = ParticipantsAnswer::withoutGlobalScopes()->where('task_id', $taskId)
             ->select('answer', 'id', DB::raw('CAST(answer AS UNSIGNED) as numeric_answer'))
             ->get()
             ->filter(function ($participantAnswer) use ($normalizedKey) {
@@ -269,6 +262,7 @@ class PossibleSimilarAnswersController extends Controller
     {
         $possibleSimilarAnswer = PossibleSimilarAnswer::findOrFail($answerId);
         $participants = $possibleSimilarAnswer->participants();
+
         return response()->json([
             "status" => 200,
             "message" => "Success",
@@ -281,22 +275,33 @@ class PossibleSimilarAnswersController extends Controller
         $request->validate([
             'answer_id' => 'required|array|min:1',
             'answer_id.*' => 'exists:participant_answers,id',
-            'new_answer' => 'required',
+            'new_answer' => 'present',
         ]);
 
         $newAnswer = $request->new_answer;
         $reason = $request->reason;
         $updateResults = [];
+        $allUpdated = true;
 
         foreach ($request->answer_id as $participantAnswerId) {
-            $participantAnswer = ParticipantsAnswer::find($participantAnswerId);
+            $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
+
             if (!$participantAnswer) {
-                continue;  // Skip if not found
+                continue;
+            }
+
+            $participant = $participantAnswer->participant;
+
+            if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
+                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' Integrity case exists ';
+                $allUpdated = false;
+                continue;
             }
 
             $oldAnswer = $participantAnswer->answer;
             if ($oldAnswer === $newAnswer) {
-                $updateResults[$participantAnswerId] = 'No update needed as the answer has not changed.';
+                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' No update needed as the answer has not changed ';
+                $allUpdated = false;
                 continue;
             }
 
@@ -315,14 +320,22 @@ class PossibleSimilarAnswersController extends Controller
 
             $participantAnswer->answer = $newAnswer;
             $participantAnswer->save();
-            $updateResults[$participantAnswerId] = 'Participant answer updated successfully.';
+            $updateResults[$participantAnswerId] = 'Participant answer updated successfully for participant index ' . $participantAnswer->participant_index . '.';
         }
 
+        $statusCode = $allUpdated ? 200 : 500;
+
+        $message = $allUpdated ? 'All participants updated successfully.' : 'Some participants could not be updated. Results: ' . implode('; ', $updateResults);
+        // $message = $allUpdated ? $message . implode('; ', $updateResults) : $message;
+
         return response()->json([
-            'status' => 200,
-            'results' => $updateResults,
-        ], 200);
+            'status' => $statusCode,
+            'message' => $message
+        ], $statusCode);
     }
+
+
+
 
 
     public function getAnswerUpdates(Tasks $task, Request $request)
@@ -359,16 +372,15 @@ class PossibleSimilarAnswersController extends Controller
             '*.status' => ['required', 'string', Rule::in($validStatuses)]
         ]);
 
-        $responses = [];
-
         foreach ($request->all() as $answerUpdate) {
-            $possibleAnswer = PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id']);
-            $possibleAnswer->status = $answerUpdate['status'];
-            $possibleAnswer->approved_by = Auth::id();
-            $possibleAnswer->approved_at = now();
-            $possibleAnswer->save();
-            $responses[] = $possibleAnswer;
+            $status = $answerUpdate['status'];
+            PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id'])->fill([
+                'status' => $status,
+                'approved_by' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? Auth::id() : null,
+                'approved_at' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? now() : null,
+            ])->save();
         }
+
         return response()->json([
             'message' => 'Possible similar answers status updated successfully.',
             'status' => 200

@@ -250,6 +250,8 @@ class HelperController extends Controller
 
     public function getParticipantInfo(Participants $participant) {
         try {
+            $participant->markAnswers();
+
             $data = $participant->load('school:id,name','country:id,display_name as name', 'answers')
                 ->loadCount('answers')
                 ->toArray();

@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Exports\Sheets\CheatersSheet;
+use App\Exports\Sheets\IncidentSheet;
 use App\Exports\Sheets\SameParticipantCheatersSheet;
 use App\Http\Requests\Competition\CompetitionCheatingListRequest;
 use App\Models\Competition;
@@ -22,9 +23,10 @@ class CheatersExport implements WithMultipleSheets
     {
         $sheets[0] = new CheatersSheet($this->competition, $this->request);
         $sheets[1] = new SameParticipantCheatersSheet($this->competition, $this->request);
+        $sheets[2] = new IncidentSheet($this->competition);
 
         return $sheets;
     }
 
-    
+
 }
