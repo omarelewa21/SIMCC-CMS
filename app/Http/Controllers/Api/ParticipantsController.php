@@ -474,7 +474,7 @@ class ParticipantsController extends Controller
         DB::beginTransaction();
         try {
             $round = $competition->rounds()->with('roundsAwards')->first();
-            $defaultAwardRank = $round->roundsAwards->count() + 1;
+            $defaultAwardRank = $round->roundsAwards->count() + 2;
             $participantIndexes = Arr::pluck($request->participants, 'index');
 
             Participants::whereIn('index_no', $participantIndexes)

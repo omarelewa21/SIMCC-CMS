@@ -330,7 +330,7 @@ class ComputeLevelGroupService
     private function setupIACStudentResults()
     {
         $round = $this->level->rounds()->with('roundsAwards')->first();
-        $defaultAwardRank = $round->roundsAwards->count() + 1;
+        $defaultAwardRank = $round->roundsAwards->count() + 2;
 
         $this->level->participants()
             ->whereIn('participants.country_id', $this->groupCountriesIds)
