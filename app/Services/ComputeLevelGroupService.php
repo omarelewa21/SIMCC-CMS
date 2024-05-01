@@ -366,8 +366,7 @@ class ComputeLevelGroupService
 
     private function clearAwardForParticipants()
     {
-        CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        CompetitionParticipantsResults::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->update(['award' => null, 'ref_award' => null, 'percentile' => null]);
     }
 }
