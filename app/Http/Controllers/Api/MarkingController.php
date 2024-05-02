@@ -369,7 +369,7 @@ class MarkingController extends Controller
     {
         try {
             $countryIds = $group->countries()->pluck('all_countries.id')->toArray();
-            $newAnswerUploadFound = ParticipantsAnswer::join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            $newAnswerUploadFound = Participants::join('participant_answers', 'participants.index_no', 'participant_answers.participant_index')
                 ->whereIn('participants.country_id', $countryIds)
                 ->where('participant_answers.level_id', $level->id)
                 ->whereNull('participant_answers.score')
