@@ -40,6 +40,7 @@ class ProcessAnswerUpload implements ShouldQueue
     private function updateParticipantStatus()
     {
         Participants::whereIn('index_no', Arr::pluck($this->request['participants'], 'index_number'))
+                ->doesntHave('integrityCases')
                 ->update(['status' => Participants::STATUS_ACTIVE]);
     }
 
