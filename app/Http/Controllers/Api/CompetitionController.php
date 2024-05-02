@@ -35,7 +35,9 @@ use App\Http\Requests\CreateCompetitionRequest;
 use App\Http\Requests\DeleteCompetitionRequest;
 use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
+use App\Jobs\ProcessAnswerUpload;
 use App\Models\Collections;
+use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -1060,15 +1062,24 @@ class CompetitionController extends Controller
         DB::beginTransaction();
         try {
             $competition = Competition::find($request->competition_id);
+
             $levels = AnswerUploadHelper::getLevelsForGradeSet(
                 $competition,
                 array_unique(Arr::pluck($request->participants, 'grade')),
                 true
             );
+
             $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-                ->select('grade', 'index_no', 'status')
+                ->select('grade', 'index_no', 'status', 'country_id')
                 ->with(['integrityCases' => fn($query) => $query->where('mode', 'system')])
                 ->get();
+
+            $countryIds = $participants->pluck('country_id')->unique();
+            $confirmedCountries = IntegrityCheckCompetitionCountries::whereIn('country_id', $countryIds)
+                ->where('competition_id', $competition->id)->where('is_confirmed', 1)->with('country:id,display_name as name')->get();
+            if($confirmedCountries->isNotEmpty()) {
+                throw ValidationException::withMessages([sprintf("The following countries have confirmed integrity checks: %s, you must revoke them first before uploading answers", $confirmedCountries->pluck('country.name')->implode(', '))]);
+            }
 
             $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
             if($systemIACParticipants->isNotEmpty()) {
@@ -1106,6 +1117,8 @@ class CompetitionController extends Controller
                 }
             }
 
+            ProcessAnswerUpload::dispatch($competition, $request->all());
+
             DB::commit();
             return response()->json([
                 "status"    =>  201,
@@ -1120,8 +1133,9 @@ class CompetitionController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                "status" =>  500,
-                "message" => 'students answers uploaded unsuccessful ' . $e->getMessage()
+                "status"    =>  500,
+                "message"   => 'students answers uploaded unsuccessful ' . $e->getMessage(),
+                "error"     => strval($e)
             ], 500);
         }
     }
