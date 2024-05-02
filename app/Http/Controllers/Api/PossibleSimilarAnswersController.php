@@ -125,6 +125,7 @@ class PossibleSimilarAnswersController extends Controller
                 ->delete();
 
             $orderedPossibleKeys = $task->possibleSimilarAnswers()
+                ->where('level_id', $levelId)
                 ->with(['approver'])
                 ->get()
                 ->map(function ($answer) {
