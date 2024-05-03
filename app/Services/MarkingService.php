@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionRounds;
 use App\Models\Countries;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class MarkingService
@@ -65,6 +65,7 @@ class MarkingService
             $markedAnswers = $this->getLevelMarkedAnswers($level);
             $absentees = $this->getLevelAbsentees($level);
             $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
+            $levelGroupHasAnswers = $this->getLevelGroupHasAnswers($level);
 
             $levels = [];
             foreach($countryGroups as $group_id=>$countryGroup){
@@ -81,7 +82,7 @@ class MarkingService
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
-                    'level_is_ready_to_compute'     => $isLevelReadyToCompute,
+                    'level_is_ready_to_compute'     => $isLevelReadyToCompute && $levelGroupHasAnswers->whereIn('country_id', $countryGroupIds)->isNotEmpty(),
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
@@ -95,7 +96,7 @@ class MarkingService
                     'marking_group_id'              => $group_id,
                     'computed_at'                   => $firstLogs?->computed_at->format('Y-m-d'),
                     'computed_by'                   => $firstLogs?->computed_by,
-                    'logs'                          => $logs,
+                    'logs'                          => $logs->values(),
                 ];
             }
             return $levels;
@@ -190,13 +191,11 @@ class MarkingService
     /**
      * check if level is ready for computing - returns true if (all tasks has corresponding true answers and level has uploaded answers)
      *
-     * @param App\Models\CompetitionLevel $level
-     *
+     * @param \App\Models\CompetitionLevels $level
      * @return bool
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
         if($level->rounds->roundsAwards()->doesntExist()) return false;
-        if($level->participantsAnswersUploaded()->doesntExist()) return false;
 
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
@@ -212,6 +211,40 @@ class MarkingService
         return $numberOfCorrectAnswersWithMarks >= $numberOfTasksIds;
 
         // Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
+    }
+
+    /**
+     * check if level is ready for computing - returns true if (all tasks has corresponding true answers and level has uploaded answers)
+     *
+     * @param \App\Models\CompetitionLevels $level
+     * @param \App\Models\CompetitionMarkingGroup $group
+     *
+     * @return bool
+     */
+    public static function noAnswersUploadedForLevelAndGroup(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    {
+        $countryIds = $group->countries->pluck('id')->toArray();
+        return $level->participantsAnswersUploaded()
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->whereIn('participants.country_id', $countryIds)
+            ->doesntExist();
+    }
+
+    /**
+     * get level group has answers
+     *
+     * @param \App\Models\CompetitionLevels $level
+     *
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    private function getLevelGroupHasAnswers(CompetitionLevels $level): Collection
+    {
+        return $level->participantsAnswersUploaded()
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->groupBy('participants.country_id')
+            ->select('participants.country_id')
+            ->get();
     }
 
     /**

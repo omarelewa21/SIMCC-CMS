@@ -38,7 +38,11 @@ class ValiateLevelGroupForComputingHelper
             ],
             [
                 'validate' => fn() => !MarkingService::isLevelReadyToCompute($this->level),
-                'message'  => "Level {$this->level->name} is not ready to compute, please check that all tasks in this level has answers and student answers are uploaded to this level"
+                'message'  => "Level {$this->level->name} is not ready to compute, please check that all tasks in this level has marks the round has awards registered"
+            ],
+            [
+                'validate' => fn() => MarkingService::noAnswersUploadedForLevelAndGroup($this->level, $this->group),
+                'message'  => "There is no answers uploaded for this level and group, please upload answers first"
             ],
             [
                 'validate' => fn() => ! $this->integrityCheckConducted(),
@@ -97,7 +101,7 @@ class ValiateLevelGroupForComputingHelper
 
     private function isRankingIncludedInRequest(): bool
     {
-        
+
         return count(
             array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
         ) < 3;
