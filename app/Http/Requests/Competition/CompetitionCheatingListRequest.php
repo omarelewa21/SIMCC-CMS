@@ -71,6 +71,7 @@ class CompetitionCheatingListRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+        return;
         $validator->after(function ($validator) {
             if(!$this->recompute) return;
 
