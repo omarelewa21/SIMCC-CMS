@@ -26,6 +26,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use App\Helpers\ValiateLevelGroupForComputingHelper;
+use App\Models\ParticipantsAnswer;
+use Exception;
 
 class MarkingController extends Controller
 {
@@ -365,53 +367,62 @@ class MarkingController extends Controller
      */
     public function moderateList(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
     {
-        $level->load('rounds.competition', 'participantResults');
-
-        if($request->has('is_for_report') && $request->is_for_report){
-            $data = CompetitionParticipantsResults::where('level_id', $level->id)
-                ->whereHas('participant', function($query)use($group){
-                    $query->whereIn('country_id', $group->countries()->pluck('all_countries.id')->toArray());
-                })
-                ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
-                ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
-                ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
-                ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
-                ->leftJoin('schools', 'participants.school_id', 'schools.id')
-                ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
-                ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-                ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
-                ->select(
-                    DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
-                    DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
-                    DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
-                    DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
-                    'participants.grade',
-                    DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
-                    'participants.index_no as index',
-                    DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
-                    'competition_participants_results.points',
-                    DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
-                    'competition_participants_results.school_rank',
-                    'competition_participants_results.country_rank',
-                    'competition_participants_results.award_rank',
-                    'competition_participants_results.percentile',
-                    DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
-                )
-                ->distinct('index')->orderBy('points', 'DESC')->orderBy('percentile', 'DESC')->get();
-
-            return $data;
-        }
-
-        else{
-            $data = $level->participantResults()
-                ->where('competition_participants_results.group_id', $group->id)
-                ->with('participant.school:id,name', 'participant.country:id,display_name as name')
-                ->orderBy('competition_participants_results.points', 'DESC')
-                ->orderBy('competition_participants_results.percentile', 'DESC')
-                ->get();
-        }
-
         try {
+            $countryIds = $group->countries()->pluck('all_countries.id')->toArray();
+            $newAnswerUploadFound = Participants::join('participant_answers', 'participants.index_no', 'participant_answers.participant_index')
+                ->whereIn('participants.country_id', $countryIds)
+                ->where('participant_answers.level_id', $level->id)
+                ->whereNull('participant_answers.score')
+                ->exists();
+
+            throw_if($newAnswerUploadFound, new Exception('Please exit the Moderation Page and ensure all new students are marked first. You will need to complete this step before you can moderate the results again.'));
+
+            $level->load('rounds.competition', 'participantResults');
+
+            if($request->has('is_for_report') && $request->is_for_report){
+                $data = CompetitionParticipantsResults::where('level_id', $level->id)
+                    ->whereHas('participant', function($query)use($group){
+                        $query->whereIn('country_id', $group->countries()->pluck('all_countries.id')->toArray());
+                    })
+                    ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
+                    ->leftJoin('competition_rounds', 'competition_levels.round_id', 'competition_rounds.id')
+                    ->leftJoin('competition', 'competition.id', 'competition_rounds.competition_id')
+                    ->leftJoin('participants', 'participants.index_no', 'competition_participants_results.participant_index')
+                    ->leftJoin('schools', 'participants.school_id', 'schools.id')
+                    ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
+                    ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+                    ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
+                    ->select(
+                        DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
+                        DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
+                        DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
+                        DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
+                        'participants.grade',
+                        DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
+                        'participants.index_no as index',
+                        DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
+                        'competition_participants_results.points',
+                        DB::raw("CONCAT('\"', competition_participants_results.award, '\"') AS award"),
+                        'competition_participants_results.school_rank',
+                        'competition_participants_results.country_rank',
+                        'competition_participants_results.award_rank',
+                        'competition_participants_results.percentile',
+                        DB::raw("CONCAT('\"', competition_participants_results.global_rank, '\"') AS global_rank")
+                    )
+                    ->distinct('index')->orderBy('points', 'DESC')->orderBy('percentile', 'DESC')->get();
+
+                return $data;
+            }
+
+            else{
+                $data = $level->participantResults()
+                    ->where('competition_participants_results.group_id', $group->id)
+                    ->with('participant.school:id,name', 'participant.country:id,display_name as name')
+                    ->orderBy('competition_participants_results.points', 'DESC')
+                    ->orderBy('competition_participants_results.percentile', 'DESC')
+                    ->get();
+            }
+
             $headerData = [
                 'competition'   => $level->rounds->competition->name,
                 'round'         => $level->rounds->name,
@@ -429,10 +440,12 @@ class MarkingController extends Controller
                 'data'          => $data
             ], 200);
 
-        } catch (\Exception $e) {
+        }
+
+        catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
-                "message"   => "Participant results retrival unsuccessful",
+                "message"   => $e->getMessage(),
                 "error"     => strval($e)
             ], 500);
         }
