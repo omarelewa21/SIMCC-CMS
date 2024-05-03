@@ -65,7 +65,6 @@ class MarkingService
             $markedAnswers = $this->getLevelMarkedAnswers($level);
             $absentees = $this->getLevelAbsentees($level);
             $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
-            $levelGroupHasAnswers = $this->getLevelGroupHasAnswers($level);
 
             $levels = [];
             foreach($countryGroups as $group_id=>$countryGroup){
@@ -82,7 +81,7 @@ class MarkingService
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
-                    'level_is_ready_to_compute'     => $isLevelReadyToCompute && $levelGroupHasAnswers->whereIn('country_id', $countryGroupIds)->isNotEmpty(),
+                    'level_is_ready_to_compute'     => $isLevelReadyToCompute && $answersUploadedCount > 0,
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
@@ -228,23 +227,6 @@ class MarkingService
             ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
             ->whereIn('participants.country_id', $countryIds)
             ->doesntExist();
-    }
-
-    /**
-     * get level group has answers
-     *
-     * @param \App\Models\CompetitionLevels $level
-     *
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    private function getLevelGroupHasAnswers(CompetitionLevels $level): Collection
-    {
-        return $level->participantsAnswersUploaded()
-            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
-            ->groupBy('participants.country_id')
-            ->select('participants.country_id')
-            ->get();
     }
 
     /**
