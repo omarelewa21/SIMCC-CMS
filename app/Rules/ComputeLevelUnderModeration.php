@@ -54,6 +54,6 @@ class ComputeLevelUnderModeration implements Rule
      */
     public function message()
     {
-        return "Attention!\nYou are attempting to modify the unique answer after the moderation process has been completed. To proceed with updates, please revert the moderation status to 'Moderation in-Progress'.\n\nNote that changing the unique answer after moderation process has completed will also require a complete re-mark and moderation for all associated countries link to this grade. Please ensure to review and re-moderate accordingly to maintain data accuracy and integrity.";
+        return "Attention!<br>You are attempting to modify the unique answer after the moderation process has been completed. To proceed with updates, please revert the moderation status to 'Moderation in-Progress'.<br><br>Note that changing the unique answer after moderation process has completed will also require a complete re-mark and moderation for all associated countries linked to this grade. Please ensure to review and re-moderate accordingly to maintain data accuracy and integrity.";
     }
 }
