@@ -10,6 +10,7 @@ use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
 use App\Models\TasksAnswers;
 use App\Models\UpdatedAnswer;
+use App\Rules\ComputeLevelUnderModeration;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -367,24 +368,30 @@ class PossibleSimilarAnswersController extends Controller
             PossibleSimilarAnswer::STATUS_APPROVED,
             PossibleSimilarAnswer::STATUS_DECLINED,
         ];
+        try {
+            $request->validate([
+                '*.answer_id' => ['required', 'integer', 'exists:possible_similar_answers,id', new ComputeLevelUnderModeration],
+                '*.status' => ['required', 'string', Rule::in($validStatuses)]
+            ]);
 
-        $request->validate([
-            '*.answer_id' => 'required|integer|exists:possible_similar_answers,id',
-            '*.status' => ['required', 'string', Rule::in($validStatuses)]
-        ]);
+            foreach ($request->all() as $answerUpdate) {
+                $status = $answerUpdate['status'];
+                PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id'])->fill([
+                    'status' => $status,
+                    'approved_by' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? Auth::id() : null,
+                    'approved_at' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? now() : null,
+                ])->save();
+            }
 
-        foreach ($request->all() as $answerUpdate) {
-            $status = $answerUpdate['status'];
-            PossibleSimilarAnswer::findOrFail($answerUpdate['answer_id'])->fill([
-                'status' => $status,
-                'approved_by' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? Auth::id() : null,
-                'approved_at' => ($status == PossibleSimilarAnswer::STATUS_APPROVED) ? now() : null,
-            ])->save();
+            return response()->json([
+                'message' => 'Possible similar answers status updated successfully.',
+                'status' => 200
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'status' => 500
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'Possible similar answers status updated successfully.',
-            'status' => 200
-        ], 200);
     }
 }
