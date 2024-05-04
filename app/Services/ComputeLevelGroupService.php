@@ -41,10 +41,10 @@ class ComputeLevelGroupService
 
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
+        // $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
 
-        if($clearPreviousRecords) {
-            $this->clearRecords();
+        if($this->firstTimeCompute($this->level, $this->group)) {
+            // $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
         }
@@ -88,7 +88,7 @@ class ComputeLevelGroupService
     {
         DB::transaction(function () {
             CompetitionParticipantsResults
-                ::filterByLevelAndGroup($this->level->id, $this->group->id, false)
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->delete();
 
             Participants::join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
@@ -130,7 +130,7 @@ class ComputeLevelGroupService
                 ->groupBy('participant_index')
                 ->orderBy('points', 'DESC')
                 ->get()
-                ->each(function($participantAnswer) use(&$attendeesIds){
+                ->each(function($participantAnswer) {
                     CompetitionParticipantsResults::updateOrCreate([
                         'participant_index'     => $participantAnswer->participant_index,
                         'level_id'              => $participantAnswer->level_id,
@@ -299,8 +299,7 @@ class ComputeLevelGroupService
 
     public static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
-        return CompetitionParticipantsResults
-            ::filterByLevelAndGroup($level->id, $group->id, false)->doesntExist();
+        return CompetitionParticipantsResults::filterByLevelAndGroup($level->id, $group->id)->doesntExist();
     }
 
     private function checkIfShouldClearPrevRecords($request): bool
