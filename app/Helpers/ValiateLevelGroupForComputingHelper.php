@@ -61,8 +61,12 @@ class ValiateLevelGroupForComputingHelper
                 'message'  => "Some of the awards have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please compute award first before computing ranking"
             ],
             [
+                'validate' => fn() => $this->shouldRunOtherRankingBeforeGlobalRanking(),
+                'message'  => "You are computing global ranking while some of the school or country ranking have not been computed yet for this level, please ensure that school and country ranking have been computed first"
+            ],
+            [
                 'validate' => fn() => $this->computeGlobalRankWhileSomeAnswersNotComputedInOtherGroups(),
-                'message'  => "You are computing global ranking while some of the students in other groups in this level {$this->level->name} have not been computed yet, please ensure that all groups in this level have been computed first"
+                'message'  => "You are computing global ranking while some of the students in other groups in this level {$this->level->name} have not been marked yet, please ensure that all groups in this level have been marked first"
             ],
             [
                 'validate' => fn() => $this->computeGlobalRankWhileSomeAwardsNotComputedInOtherGroups(),
@@ -101,7 +105,6 @@ class ValiateLevelGroupForComputingHelper
 
     private function isRankingIncludedInRequest(): bool
     {
-
         return count(
             array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
         ) < 3;
@@ -109,8 +112,6 @@ class ValiateLevelGroupForComputingHelper
 
     private function checkIfAwardIsNotSet(): bool
     {
-        if(request('clear_previous_results')) return false;
-
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $this->group->id)
             ->whereNull('award')
@@ -163,5 +164,16 @@ class ValiateLevelGroupForComputingHelper
 
         return $integrityChecks->count() === count($countryIds)
             && $integrityChecks->every(fn($check) => $check->is_confirmed );
+    }
+
+    private function shouldRunOtherRankingBeforeGlobalRanking()
+    {
+        if(in_array('global_rank', request('not_to_compute'))) return false;
+        if(!in_array('country_rank', request('not_to_compute')) && !in_array('school_rank', request('not_to_compute'))) return false;
+
+        return CompetitionParticipantsResults::where('level_id', $this->level->id)
+            ->whereRelation('participant', 'status', 'result computed')
+            ->where(fn($query) => $query->whereNull('country_rank')->orWhereNull('school_rank'))
+            ->exists();
     }
 }
