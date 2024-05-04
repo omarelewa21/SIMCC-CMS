@@ -373,6 +373,7 @@ class MarkingController extends Controller
                 ->whereIn('participants.country_id', $countryIds)
                 ->where('participant_answers.level_id', $level->id)
                 ->whereNull('participant_answers.score')
+                ->where('participants.status', '<>', Participants::STATUS_CHEATING)
                 ->exists();
 
             throw_if($newAnswerUploadFound, new Exception('Please exit the Moderation Page and ensure all new students are marked first. You will need to complete this step before you can moderate the results again.'));
