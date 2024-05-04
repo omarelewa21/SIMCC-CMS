@@ -179,6 +179,7 @@ class ComputeLevelGroupService
                 ->groupBy('award');
 
             foreach($participantResults as $results) {
+                $results =  $results->sortByDesc('points');
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('country_rank', $index+1);
@@ -211,6 +212,7 @@ class ComputeLevelGroupService
                 ->groupBy('award');
 
             foreach($participantResults as $results) {
+                $results =  $results->sortByDesc('points');
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('school_rank', $index+1);
@@ -275,6 +277,7 @@ class ComputeLevelGroupService
             ->groupBy('award');
 
         foreach($participantResults as $award => $results) {
+            $results =  $results->sortByDesc('points');
             foreach($results as $index => $participantResult){
                 if($index === 0){
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
