@@ -105,7 +105,6 @@ class ValiateLevelGroupForComputingHelper
 
     private function isRankingIncludedInRequest(): bool
     {
-
         return count(
             array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
         ) < 3;
@@ -113,8 +112,6 @@ class ValiateLevelGroupForComputingHelper
 
     private function checkIfAwardIsNotSet(): bool
     {
-        if(request('clear_previous_results')) return false;
-
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->where('group_id', $this->group->id)
             ->whereNull('award')
