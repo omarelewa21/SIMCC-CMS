@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionRounds;
 use App\Models\Countries;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class MarkingService
@@ -81,7 +81,7 @@ class MarkingService
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
-                    'level_is_ready_to_compute'     => $isLevelReadyToCompute,
+                    'level_is_ready_to_compute'     => $isLevelReadyToCompute && $answersUploadedCount > 0,
                     'computing_status'              => $levelGroupCompute?->computing_status ?? 'Not Started',
                     'compute_progress_percentage'   => $levelGroupCompute?->compute_progress_percentage ?? 0,
                     'compute_error_message'         => $levelGroupCompute?->compute_error_message ?? null,
@@ -190,13 +190,11 @@ class MarkingService
     /**
      * check if level is ready for computing - returns true if (all tasks has corresponding true answers and level has uploaded answers)
      *
-     * @param App\Models\CompetitionLevel $level
-     *
+     * @param \App\Models\CompetitionLevels $level
      * @return bool
      */
     public static function isLevelReadyToCompute(CompetitionLevels $level){
         if($level->rounds->roundsAwards()->doesntExist()) return false;
-        if($level->participantsAnswersUploaded()->doesntExist()) return false;
 
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
@@ -212,6 +210,23 @@ class MarkingService
         return $numberOfCorrectAnswersWithMarks >= $numberOfTasksIds;
 
         // Log::info(sprintf("%s: %s %s %s %s", $level->id, $numberOfTasksIds, $numberOfCorrectAnswersWithMarks, $level->participantsAnswersUploaded()->count(), $level->rounds->roundsAwards()->count()));
+    }
+
+    /**
+     * check if level is ready for computing - returns true if (all tasks has corresponding true answers and level has uploaded answers)
+     *
+     * @param \App\Models\CompetitionLevels $level
+     * @param \App\Models\CompetitionMarkingGroup $group
+     *
+     * @return bool
+     */
+    public static function noAnswersUploadedForLevelAndGroup(CompetitionLevels $level, CompetitionMarkingGroup $group)
+    {
+        $countryIds = $group->countries->pluck('id')->toArray();
+        return $level->participantsAnswersUploaded()
+            ->join('participants', 'participants.index_no', 'participant_answers.participant_index')
+            ->whereIn('participants.country_id', $countryIds)
+            ->doesntExist();
     }
 
     /**

@@ -55,6 +55,8 @@ class ConfirmCountryForIntegrityRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            if($this->force_confirm == true) return;
+
             $requestCountries = Arr::pluck($this->countries, 'id');
             $condition = IntegritySummary::where('competition_id', $this->competition->id)
                 ->whereJsonContains('countries', $requestCountries)
