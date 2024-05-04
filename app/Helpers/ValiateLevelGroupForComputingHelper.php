@@ -176,10 +176,7 @@ class ValiateLevelGroupForComputingHelper
 
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->whereRelation('participant', 'status', 'result computed')
-            ->where(function($query) {
-                $query->whereNull('country_rank')
-                    ->orWhereNull('school_rank');
-            })
+            ->where(fn($query) => $query->whereNull('country_rank')->orWhereNull('school_rank'))
             ->exists();
     }
 }
