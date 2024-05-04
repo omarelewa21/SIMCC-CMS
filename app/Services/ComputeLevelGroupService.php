@@ -41,10 +41,10 @@ class ComputeLevelGroupService
 
     public function computeResutlsForGroupLevel(array $request)
     {
-        $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
+        // $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
 
-        if($clearPreviousRecords) {
-            $this->clearRecords();
+        if($this->firstTimeCompute($this->level, $this->group)) {
+            // $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
         }
@@ -88,7 +88,7 @@ class ComputeLevelGroupService
     {
         DB::transaction(function () {
             CompetitionParticipantsResults
-                ::filterByLevelAndGroup($this->level->id, $this->group->id, false)
+                ::filterByLevelAndGroup($this->level->id, $this->group->id)
                 ->delete();
 
             Participants::join('competition_organization', 'competition_organization.id', 'participants.competition_organization_id')
@@ -130,7 +130,7 @@ class ComputeLevelGroupService
                 ->groupBy('participant_index')
                 ->orderBy('points', 'DESC')
                 ->get()
-                ->each(function($participantAnswer) use(&$attendeesIds){
+                ->each(function($participantAnswer) {
                     CompetitionParticipantsResults::updateOrCreate([
                         'participant_index'     => $participantAnswer->participant_index,
                         'level_id'              => $participantAnswer->level_id,
@@ -179,6 +179,7 @@ class ComputeLevelGroupService
                 ->groupBy('award');
 
             foreach($participantResults as $results) {
+                $results =  $results->sortByDesc('points');
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('country_rank', $index+1);
@@ -211,6 +212,7 @@ class ComputeLevelGroupService
                 ->groupBy('award');
 
             foreach($participantResults as $results) {
+                $results =  $results->sortByDesc('points');
                 foreach($results as $index => $participantResult){
                     if($index === 0){
                         $participantResult->setAttribute('school_rank', $index+1);
@@ -275,6 +277,7 @@ class ComputeLevelGroupService
             ->groupBy('award');
 
         foreach($participantResults as $award => $results) {
+            $results =  $results->sortByDesc('points');
             foreach($results as $index => $participantResult){
                 if($index === 0){
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
@@ -299,8 +302,7 @@ class ComputeLevelGroupService
 
     public static function firstTimeCompute(CompetitionLevels $level, CompetitionMarkingGroup $group): bool
     {
-        return CompetitionParticipantsResults
-            ::filterByLevelAndGroup($level->id, $group->id, false)->doesntExist();
+        return CompetitionParticipantsResults::filterByLevelAndGroup($level->id, $group->id)->doesntExist();
     }
 
     private function checkIfShouldClearPrevRecords($request): bool
