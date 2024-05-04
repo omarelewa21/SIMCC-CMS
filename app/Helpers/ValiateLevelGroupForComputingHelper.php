@@ -66,7 +66,7 @@ class ValiateLevelGroupForComputingHelper
             ],
             [
                 'validate' => fn() => $this->computeGlobalRankWhileSomeAnswersNotComputedInOtherGroups(),
-                'message'  => "You are computing global ranking while some of the students in other groups in this level {$this->level->name} have not been computed yet, please ensure that all groups in this level have been computed first"
+                'message'  => "You are computing global ranking while some of the students in other groups in this level {$this->level->name} have not been marked yet, please ensure that all groups in this level have been marked first"
             ],
             [
                 'validate' => fn() => $this->computeGlobalRankWhileSomeAwardsNotComputedInOtherGroups(),
