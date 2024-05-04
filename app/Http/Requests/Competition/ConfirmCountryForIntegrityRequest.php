@@ -42,7 +42,8 @@ class ConfirmCountryForIntegrityRequest extends FormRequest
             'countries'     => "required|array",
             'countries.*'   => "required|array",
             'countries.*.id' => ["required", Rule::exists('competition_countries_for_integrity_check', 'country_id')->where('competition_id', $this->competition->id)],
-            'countries.*.is_confirmed' => "required|boolean"
+            'countries.*.is_confirmed' => "required|boolean",
+            'countries.*.force_confirm' => "boolean"
         ];
     }
 
@@ -55,16 +56,18 @@ class ConfirmCountryForIntegrityRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if($this->force_confirm == true) return;
+            foreach($this->countries as $country) {
+                if($country['is_confirmed'] == false) continue;
+                if(isset($country['force_confirm']) && $country['force_confirm'] == true) continue;
 
-            $requestCountries = Arr::pluck($this->countries, 'id');
-            $condition = IntegritySummary::where('competition_id', $this->competition->id)
-                ->whereJsonContains('countries', $requestCountries)
-                ->whereNull('remaining_grades')
-                ->doesntExist();
+                $condition = IntegritySummary::where('competition_id', $this->competition->id)
+                    ->whereJsonContains('countries', $country['id'])
+                    ->whereNull('remaining_grades')
+                    ->doesntExist();
 
-            if ($condition) {
-                $validator->errors()->add('Grades', 'You must generate integrity check for all grades before confirming a country.');
+                if ($condition) {
+                    $validator->errors()->add('Grades', 'You must generate integrity check for all grades before confirming a country.');
+                }
             }
         });
     }
