@@ -60,6 +60,7 @@ class CompetitionCheatingListRequest extends FormRequest
             'country.*'         => 'integer|exists:all_countries,id',
             'number_of_incorrect_answers' => 'integer',
             'get_data'          => 'boolean',
+            'force_compute'     => 'boolean',
         ];
     }
 
@@ -77,7 +78,9 @@ class CompetitionCheatingListRequest extends FormRequest
             $countryIds = $this->filled('country') ? $this->country : Countries::getCompetitionCountryList($this->route()->competition);
 
             $this->validateConfirmedCountry($validator, $countryIds);
-            $this->validateCompetitionGlobalRankStatus($validator);
+            if(!$this->force_compute) {
+                $this->validateCompetitionGlobalRankStatus($validator);
+            }
 
             if(Route::currentRouteName() === 'competition.cheaters.sameParticipant') return;
 
