@@ -32,10 +32,10 @@ class ValiateLevelGroupForComputingHelper
     private function conditions(): array
     {
         return array(
-            // [
-            //     'validate' => fn() => $this->group->levelGroupCompute($this->level->id)->value('computing_status') === LevelGroupCompute::STATUS_IN_PROGRESS,
-            //     'message'  => "Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished"
-            // ],
+            [
+                'validate' => fn() => $this->group->levelGroupCompute($this->level->id)->value('computing_status') === LevelGroupCompute::STATUS_IN_PROGRESS,
+                'message'  => "Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished"
+            ],
             [
                 'validate' => fn() => !MarkingService::isLevelReadyToCompute($this->level),
                 'message'  => "Level {$this->level->name} is not ready to compute, please check that all tasks in this level has marks the round has awards registered"
