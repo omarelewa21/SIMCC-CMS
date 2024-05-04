@@ -175,8 +175,10 @@ class ValiateLevelGroupForComputingHelper
         if(!in_array('country_rank', request('not_to_compute')) && !in_array('school_rank', request('not_to_compute'))) return false;
 
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->whereNull('country_rank')
-            ->orWhereNull('school_rank')
+            ->where(function($query) {
+                $query->whereNull('country_rank')
+                    ->orWhereNull('school_rank');
+            })
             ->exists();
     }
 }
