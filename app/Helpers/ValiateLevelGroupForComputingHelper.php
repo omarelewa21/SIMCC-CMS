@@ -13,9 +13,44 @@ use App\Services\MarkingService;
 
 class ValiateLevelGroupForComputingHelper
 {
+    private $levelGroupCompute;
+    private $requestComputeOptions;
+
     function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup $group)
     {
+        $this->levelGroupCompute = $group->levelGroupCompute($level->id)->first();
+        $this->requestComputeOptions = $this->getComputeOptions();
     }
+
+    private function getComputeOptions(): array
+    {
+        $computeOptions = ['award', 'country_rank', 'school_rank', 'global_rank', 'remark'];
+        $notToCompute = request('not_to_compute') ?? [];
+        return array_diff($computeOptions, $notToCompute);
+    }
+
+    private function willCompute(string $option): bool
+    {
+        return in_array($option, $this->requestComputeOptions);
+    }
+
+    private function willComputeAny(array $options): bool
+    {
+        return count(array_intersect($options, $this->requestComputeOptions)) > 0;
+    }
+
+    private function willComputeAll(array $options): bool
+    {
+        return count(array_intersect($options, $this->requestComputeOptions)) === count($options);
+    }
+
+    private function willNotCompute(string|array $options): bool
+    {
+        return is_array($options)
+            ? count(array_intersect($options, $this->requestComputeOptions)) === 0
+            : !$this->willCompute($options);
+    }
+
 
     public function validate(bool $throwException = true)
     {
@@ -33,7 +68,7 @@ class ValiateLevelGroupForComputingHelper
     {
         return array(
             [
-                'validate' => fn() => $this->group->levelGroupCompute($this->level->id)->value('computing_status') === LevelGroupCompute::STATUS_IN_PROGRESS,
+                'validate' => fn() => $this->levelGroupCompute->computing_status === LevelGroupCompute::STATUS_IN_PROGRESS,
                 'message'  => "Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished"
             ],
             [
@@ -55,6 +90,14 @@ class ValiateLevelGroupForComputingHelper
             [
                 'validate' => fn() => $this->someAnswersIsNotComputed(),
                 'message'  => "Some of the answers have not been computed yet for this level {$this->level->name} and group {$this->group->name}, please select re-mark option to remark them"
+            ],
+            [
+                'validate' => fn() => $this->tryingToRemarkWhileAwardsModerated(),
+                'message'  => "You are trying to re-mark answers while award moderation is completed, please set moderation to in progress first"
+            ],
+            [
+                'validate' => fn() => $this->tryingToComputeAwardWhileAwardsModerated(),
+                'message'  => "You are trying to marks awards while award moderation is completed, please set moderation to in progress first"
             ],
             [
                 'validate' => fn() => $this->awardAndRankingWillBeComputedTogether(),
@@ -85,7 +128,7 @@ class ValiateLevelGroupForComputingHelper
 
     private function someAnswersIsNotComputed(): bool
     {
-        return in_array('remark', request('not_to_compute'))
+        return $this->willNotCompute('remark')
             && !ComputeLevelGroupService::firstTimeCompute($this->level, $this->group)
             && $this->checkIfAnyAnswerHasANullScore();
     }
@@ -102,16 +145,14 @@ class ValiateLevelGroupForComputingHelper
 
     private function awardShouldBeConductedFirst(): bool
     {
-        return in_array('award', request('not_to_compute'))
-            && $this->isRankingIncludedInRequest()
+        return $this->willNotCompute('award')
+            && $this->willComputeRanking()
             && $this->checkIfAwardIsNotSet();
     }
 
-    private function isRankingIncludedInRequest(): bool
+    private function willComputeRanking(): bool
     {
-        return count(
-            array_intersect(request('not_to_compute'), ['country_rank', 'school_rank', 'global_rank'])
-        ) < 3;
+        return $this->willComputeAny(['country_rank', 'school_rank', 'global_rank']);
     }
 
     private function checkIfAwardIsNotSet(): bool
@@ -124,7 +165,7 @@ class ValiateLevelGroupForComputingHelper
 
     private function computeGlobalRankWhileSomeAwardsNotComputedInOtherGroups()
     {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
+        if($this->willNotCompute('global_rank')) return false;
 
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
                 ->whereNull('award')
@@ -133,13 +174,12 @@ class ValiateLevelGroupForComputingHelper
 
     private function awardAndRankingWillBeComputedTogether()
     {
-        return !in_array('award', request('not_to_compute'))
-            && $this->isRankingIncludedInRequest();
+        return $this->willCompute('award') && $this->willComputeRanking();
     }
 
     private function awardsNotFullyModeratedToComputeGlobalRanking()
     {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
+        if($this->willNotCompute('global_rank')) return false;
 
         return LevelGroupCompute::where('level_id', $this->level->id)
             ->where('awards_moderated', false)
@@ -148,7 +188,7 @@ class ValiateLevelGroupForComputingHelper
 
     private function computeGlobalRankWhileSomeAnswersNotComputedInOtherGroups()
     {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
+        if($this->willNotCompute('global_rank')) return false;
 
         return ParticipantsAnswer::where('level_id', $this->level->id)
             ->whereHas('participant', function($query) {
@@ -172,8 +212,8 @@ class ValiateLevelGroupForComputingHelper
 
     private function shouldRunOtherRankingBeforeGlobalRanking()
     {
-        if(in_array('global_rank', request('not_to_compute'))) return false;
-        if(!in_array('country_rank', request('not_to_compute')) && !in_array('school_rank', request('not_to_compute'))) return false;
+        if($this->willNotCompute('global_rank')) return false;
+        if($this->willComputeAll(['country_rank', 'school_rank'])) return false;
 
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->whereRelation('participant', 'status', 'result computed')
@@ -187,5 +227,15 @@ class ValiateLevelGroupForComputingHelper
             ::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->whereNotNull('global_rank')
             ->exists();
+    }
+
+    private function tryingToRemarkWhileAwardsModerated()
+    {
+        return $this->willCompute('remark') && $this->levelGroupCompute->awards_moderated;
+    }
+
+    private function tryingToComputeAwardWhileAwardsModerated()
+    {
+        return $this->willCompute('award') && $this->levelGroupCompute->awards_moderated;
     }
 }
