@@ -41,6 +41,10 @@ class ValiateLevelGroupForComputingHelper
                 'message'  => "Level {$this->level->name} is not ready to compute, please check that all tasks in this level has marks the round has awards registered"
             ],
             [
+                'validate' => fn() => $this->globalRankDoneAlready(),
+                'message'  => "Global ranking is already computed, You can't do further changes to results anymore"
+            ],
+            [
                 'validate' => fn() => MarkingService::noAnswersUploadedForLevelAndGroup($this->level, $this->group),
                 'message'  => "There is no answers uploaded for this level and group, please upload answers first"
             ],
@@ -112,8 +116,8 @@ class ValiateLevelGroupForComputingHelper
 
     private function checkIfAwardIsNotSet(): bool
     {
-        return CompetitionParticipantsResults::where('level_id', $this->level->id)
-            ->where('group_id', $this->group->id)
+        return CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $this->group->id)
             ->whereNull('award')
             ->exists();
     }
@@ -174,6 +178,14 @@ class ValiateLevelGroupForComputingHelper
         return CompetitionParticipantsResults::where('level_id', $this->level->id)
             ->whereRelation('participant', 'status', 'result computed')
             ->where(fn($query) => $query->whereNull('country_rank')->orWhereNull('school_rank'))
+            ->exists();
+    }
+
+    private function globalRankDoneAlready()
+    {
+        return CompetitionParticipantsResults
+            ::filterByLevelAndGroup($this->level->id, $this->group->id)
+            ->whereNotNull('global_rank')
             ->exists();
     }
 }
