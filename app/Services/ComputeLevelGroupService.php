@@ -149,6 +149,7 @@ class ComputeLevelGroupService
         switch($option){
             case 'remark':
                 $this->remark();
+                $this->clearResults(['award', 'country_rank', 'school_rank']);
                 break;
             case 'award':
                 $this->setParticipantsAwards();
@@ -163,6 +164,14 @@ class ComputeLevelGroupService
             case 'global_rank':
                 $this->setParticipantsGlobalRank();
                 break;
+        }
+    }
+
+    private function clearResults(array $options)
+    {
+        foreach($options as $option){
+            CompetitionParticipantsResults::filterByLevelAndGroup($this->level->id, $this->group->id)
+                ->update([$option => null]);
         }
     }
 
