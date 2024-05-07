@@ -13,6 +13,7 @@ use App\Models\ParticipantsAnswer;
 use App\Traits\ComputeOptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ComputeLevelGroupService
 {
@@ -20,13 +21,11 @@ class ComputeLevelGroupService
 
     private int $collectionInitialPoints;
     private array $groupCountriesIds;
-    private array $requestComputeOptions;
 
     public function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup $group)
     {
         $this->collectionInitialPoints = $level->collection()->value('initial_points');
         $this->groupCountriesIds = $group->countries()->pluck('id')->toArray();
-        $this->requestComputeOptions = $this->getComputeOptions();
     }
 
     public static function storeLevelGroupRecords(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
@@ -46,6 +45,8 @@ class ComputeLevelGroupService
 
     public function computeResutlsForGroupLevel(array $request)
     {
+        $this->setRequestComputeOptions($request['not_to_compute']);
+
         if($this->firstTimeCompute($this->level, $this->group)) {
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
@@ -54,7 +55,7 @@ class ComputeLevelGroupService
         $this->updateParticipantsStatus();
         $this->setupIACStudentResults();
 
-        $this->computeResultsAccordingToRequest($request);
+        $this->computeResultsAccordingToRequest();
 
         $this->setParticipantsGroupRank();
         $this->updateComputeProgressPercentage(100);
@@ -139,13 +140,14 @@ class ComputeLevelGroupService
 
     private function computeResultsAccordingToRequest()
     {
-        foreach($this>computeOptions as $option){
+        foreach($this->requestComputeOptions as $option){
             $this->willCompute($option) && $this->compute($option);
         }
     }
 
     private function compute(string $option)
     {
+        Log::info('Computing ' . $option . ' for ' . $this->level->name . ' ' . $this->group->name);
         switch($option){
             case 'remark':
                 $this->remark();
