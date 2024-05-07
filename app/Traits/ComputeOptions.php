@@ -3,12 +3,18 @@ namespace App\Traits;
 
 trait ComputeOptions
 {
-    private array $computeOptions = ['award', 'country_rank', 'school_rank', 'global_rank', 'remark'];
+    private array $computeOptions = ['remark', 'award', 'country_rank', 'school_rank', 'global_rank'];
+    private array $requestComputeOptions = [];
 
-    private function getComputeOptions(): array
+    private function setRequestComputeOptions(array|null $notToCompute = null): void
     {
-        $notToCompute = request('not_to_compute') ?? [];
-        return array_diff($this->computeOptions, $notToCompute);
+        $this->requestComputeOptions = $this->getComputeOptions($notToCompute);
+    }
+
+    private function getComputeOptions(array|null $notToCompute = null): array
+    {
+        $notToCompute = $notToCompute ?? request('not_to_compute', []);
+        return array_values(array_diff($this->computeOptions, $notToCompute));
     }
 
     private function willCompute(string $option): bool

@@ -17,12 +17,11 @@ class ValiateLevelGroupForComputingHelper
     use ComputeOptions;
 
     private $levelGroupCompute;
-    private array $requestComputeOptions;
 
     function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup $group)
     {
         $this->levelGroupCompute = $group->levelGroupCompute($level->id)->first();
-        $this->requestComputeOptions = $this->getComputeOptions();
+        $this->setRequestComputeOptions();
     }
 
     public function validate(bool $throwException = true)
@@ -73,8 +72,16 @@ class ValiateLevelGroupForComputingHelper
                 'message'  => "You are trying to marks awards while award moderation is completed, please set moderation to in progress first"
             ],
             [
+                'validate' => fn() => $this->willCompute('remark') && $this->willComputeRanking(),
+                'message'  => "You can't re-mark answers and compute ranking at the same time, you must remark, mark awards, moderate awards and compute ranking in order"
+            ],
+            [
                 'validate' => fn() => $this->awardAndRankingWillBeComputedTogether(),
                 'message'  => "Award and Ranking will be computed together, please compute award and moderate it first before computing ranking"
+            ],
+            [
+                'validate' => fn() => $this->tryingToComputeRankingWhileAwardsNotModerated(),
+                'message'  => "You are trying to compute ranking while award moderation is not completed, please set moderation to completed first"
             ],
             [
                 'validate' => fn() => $this->awardShouldBeConductedFirst(),
@@ -210,5 +217,10 @@ class ValiateLevelGroupForComputingHelper
     private function tryingToComputeAwardWhileAwardsModerated()
     {
         return $this->willCompute('award') && $this->levelGroupCompute?->awards_moderated;
+    }
+
+    private function tryingToComputeRankingWhileAwardsNotModerated()
+    {
+        return $this->willComputeRanking() && !$this->levelGroupCompute?->awards_moderated;
     }
 }
