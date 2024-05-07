@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\TaskDifficultyController;
 use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
 use App\Http\Controllers\Api\ParticipantAnswersController;
+use App\Http\Controllers\Api\PossibleSimilarAnswersController;
 
 /*
 |--------------------------------------------------------------------------
@@ -149,12 +150,22 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/{competition}", [MarkingController::class, "markingList"])->name('competition.marking.list')->middleware('cacheResponse:604800');
         // Route::get("/{competition}",[MarkingController::class,"markingList"])->name('competition.marking.list');
         Route::post("/refresh/{competition}", [MarkingController::class, "refreshMarkingList"])->name('competition.marking.refresh');
+        Route::post("awards/is_moderated/{level}/{group}",[MarkingController::class,"setAwardsModerated"])->name('competition.marking.awards.is_moderated');
         Route::post("/compute/level/{level}",[MarkingController::class,"computeResultsForSingleLevel"])->name('competition.marking.compute.level');
         Route::post("/compute/level/{level}/{group}",[MarkingController::class,"computeResultsForSingleLevelGroup"])->name('competition.marking.compute.level.group');
         Route::post("/compute/{competition}",[MarkingController::class,"computeCompetitionResults"])->name('competition.marking.compute.competition');
         Route::get("/moderate/{level}/{group}",[MarkingController::class,"moderateList"])->name('competition.marking.moderate.list');
         Route::patch("/moderate/{level}",[MarkingController::class,"editParticipantAward"])->name('competition.marking.moderate.edit');
         Route::get("awards/stats/{group}",[MarkingController::class,"getAwardsStats"])->name('competition.marking.awards.stats');
+        Route::group(['prefix' => 'possible_similar_answers'], function () {
+            Route::get("/competition_levels/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevels"])->name('marking.possible_similar_answers.competition_levels');
+            Route::get("/levels_tasks/{competition}", [PossibleSimilarAnswersController::class, "getCompetitionLevelsAndTasks"])->name('marking.possible_similar_answers.level_taks');
+            Route::get("/{task}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarAnswers"])->name('competition.possible_similar_answers.list');
+            Route::get("/participants/{id}", [PossibleSimilarAnswersController::class, "getTaskPossibleSimilarParticipants"])->name('competition.possible_similar_answers.list');
+            Route::post("/update_answer", [PossibleSimilarAnswersController::class, "updateParticipantAnswer"])->name('competition.possible_similar_answers.update_answer');
+            Route::get("/answer_updates/{task}", [PossibleSimilarAnswersController::class, "getAnswerUpdates"])->name('competition.possible_similar_answers.answer_updates');
+            Route::post("/", [PossibleSimilarAnswersController::class, "approvePossibleAnswers"])->name('competition.possible_similar_answers.approve');
+        });
         Route::post("/participant/{participant}", [MarkingController::class, "markSingleParticipant"])->name('mark.single.participant');
     });
 

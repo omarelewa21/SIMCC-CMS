@@ -246,7 +246,7 @@ class Tasks extends Base
 
     public function getCorrectAnswer()
     {
-        if($this->answer_type == 'mcq'){
+        if ($this->answer_type == 'mcq') {
             return $this->taskAnswers()
                 ->join('task_labels', 'task_labels.task_answers_id', '=', 'task_answers.id')
                 ->where('task_answers.answer', 1)
@@ -255,5 +255,10 @@ class Tasks extends Base
         }
 
         return $this->taskAnswers()->first();
+    }
+
+    public function possibleSimilarAnswers()
+    {
+        return $this->hasMany(PossibleSimilarAnswer::class, 'task_id');
     }
 }

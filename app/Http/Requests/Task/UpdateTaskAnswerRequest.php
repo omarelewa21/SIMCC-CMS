@@ -24,10 +24,11 @@ class UpdateTaskAnswerRequest extends FormRequest
             'answer_structure'  => 'required|integer|exists:answer_structure,id',
             'answer_sorting'    => 'integer|nullable|required_if:answer_type,1|exists:answer_sorting,id',
             'answer_layout'     => 'integer|nullable|required_if:answer_type,1|exists:answer_layout,id',
-            'labels'            => 'required|array',
-            'labels.*'          => 'nullable',
-            'answers'           => ['required', 'array', new CheckAnswerLabelEqual],
-            'answers.*'         => 'string|max:65535|nullable'
+            'answers'           => 'required|array',
+            'answers.*.answer_id' => 'integer|nullable|exists:task_answers,id',
+            'answers.*.label_id'  => 'integer|nullable|exists:task_labels,id',
+            'answers.*.label'     => 'string|nullable',
+            'answers.*.answer'    => 'string|nullable',
         ];
     }
 
@@ -39,6 +40,8 @@ class UpdateTaskAnswerRequest extends FormRequest
      */
     public function withValidator($validator)
     {
+        if(auth()->user()->hasRole('Super Admin')) return;
+
         $task = Tasks::find($this->id);
         $validator->after(function ($validator) use($task){
             if (!$task->status==Tasks::STATUS_VERIFIED) {

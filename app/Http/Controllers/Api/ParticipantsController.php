@@ -18,6 +18,7 @@ use App\Http\Requests\DeleteParticipantRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\EditResultRequest;
 use App\Http\Requests\Participant\EliminateFromComputeRequest;
+use Illuminate\Validation\Rule;
 use App\Http\Requests\Participant\RestoreFromEliminationRequest;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\IntegrityCase;
@@ -28,7 +29,6 @@ use App\Rules\CheckUniqueIdentifierWithCompetitionID;
 use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use PDF;
 
 class ParticipantsController extends Controller
