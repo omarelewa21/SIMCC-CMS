@@ -10,18 +10,23 @@ use App\Models\LevelGroupCompute;
 use App\Models\MarkingLogs;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
+use App\Traits\ComputeOptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ComputeLevelGroupService
 {
+    use ComputeOptions;
+
     private int $collectionInitialPoints;
     private array $groupCountriesIds;
+    private array $requestComputeOptions;
 
     public function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup $group)
     {
         $this->collectionInitialPoints = $level->collection()->value('initial_points');
         $this->groupCountriesIds = $group->countries()->pluck('id')->toArray();
+        $this->requestComputeOptions = $this->getComputeOptions();
     }
 
     public static function storeLevelGroupRecords(CompetitionLevels $level, CompetitionMarkingGroup $group, Request $request)
@@ -41,10 +46,7 @@ class ComputeLevelGroupService
 
     public function computeResutlsForGroupLevel(array $request)
     {
-        // $clearPreviousRecords = $this->firstTimeCompute($this->level, $this->group) || $this->checkIfShouldClearPrevRecords($request);
-
         if($this->firstTimeCompute($this->level, $this->group)) {
-            // $this->clearRecords();
             $this->computeParticipantAnswersScores();
             $this->setupCompetitionParticipantsResultsTable();
         }
@@ -52,16 +54,7 @@ class ComputeLevelGroupService
         $this->updateParticipantsStatus();
         $this->setupIACStudentResults();
 
-        if(array_key_exists('not_to_compute', $request) && is_array($request['not_to_compute'])){
-            in_array('remark', $request['not_to_compute']) ?: $this->remark();
-            if(!in_array('award', $request['not_to_compute'])) {
-                $this->setParticipantsAwards();
-                $this->setParticipantsAwardsRank();
-            }
-            in_array('country_rank', $request['not_to_compute']) ?: $this->setParticipantsCountryRank();
-            in_array('school_rank', $request['not_to_compute']) ?: $this->setParticipantsSchoolRank();
-            in_array('global_rank', $request['not_to_compute']) ?: $this->setParticipantsGlobalRank();
-        };
+        $this->computeResultsAccordingToRequest($request);
 
         $this->setParticipantsGroupRank();
         $this->updateComputeProgressPercentage(100);
@@ -142,6 +135,35 @@ class ComputeLevelGroupService
 
             $this->updateComputeProgressPercentage(25);
         });
+    }
+
+    private function computeResultsAccordingToRequest()
+    {
+        foreach($this>computeOptions as $option){
+            $this->willCompute($option) && $this->compute($option);
+        }
+    }
+
+    private function compute(string $option)
+    {
+        switch($option){
+            case 'remark':
+                $this->remark();
+                break;
+            case 'award':
+                $this->setParticipantsAwards();
+                $this->setParticipantsAwardsRank();
+                break;
+            case 'country_rank':
+                $this->setParticipantsCountryRank();
+                break;
+            case 'school_rank':
+                $this->setParticipantsSchoolRank();
+                break;
+            case 'global_rank':
+                $this->setParticipantsGlobalRank();
+                break;
+        }
     }
 
     private function setParticipantsGroupRank()

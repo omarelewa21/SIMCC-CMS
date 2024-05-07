@@ -17,7 +17,7 @@ class ValiateLevelGroupForComputingHelper
     use ComputeOptions;
 
     private $levelGroupCompute;
-    private $requestComputeOptions;
+    private array $requestComputeOptions;
 
     function __construct(private CompetitionLevels $level, private CompetitionMarkingGroup $group)
     {
@@ -41,7 +41,7 @@ class ValiateLevelGroupForComputingHelper
     {
         return array(
             [
-                'validate' => fn() => $this->levelGroupCompute->computing_status === LevelGroupCompute::STATUS_IN_PROGRESS,
+                'validate' => fn() => $this->levelGroupCompute?->computing_status === LevelGroupCompute::STATUS_IN_PROGRESS,
                 'message'  => "Grades {$this->level->name} is already under computing for this group {$this->group->name}, please wait till finished"
             ],
             [
@@ -204,11 +204,11 @@ class ValiateLevelGroupForComputingHelper
 
     private function tryingToRemarkWhileAwardsModerated()
     {
-        return $this->willCompute('remark') && $this->levelGroupCompute->awards_moderated;
+        return $this->willCompute('remark') && $this->levelGroupCompute?->awards_moderated;
     }
 
     private function tryingToComputeAwardWhileAwardsModerated()
     {
-        return $this->willCompute('award') && $this->levelGroupCompute->awards_moderated;
+        return $this->willCompute('award') && $this->levelGroupCompute?->awards_moderated;
     }
 }
