@@ -117,7 +117,7 @@ class CompetitionService
      */
     public function applyFilterToReport(Builder $query, Request $request): Builder
     {
-        if ($request->mode === 'csv' || count($request->all()) === 0) return $query;
+        if (count($request->all()) === 0) return $query;
 
         if ($request->filled('grade')) $query->where('participants.grade', $request->grade);
         if ($request->filled('country')) $query->where('participants.country_id', $request->country);
