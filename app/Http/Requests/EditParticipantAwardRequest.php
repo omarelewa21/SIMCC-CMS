@@ -52,6 +52,8 @@ class EditParticipantAwardRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            if(!isset($this['0'])) return;
+
             $firstIndex = $this['0']['participant_index'];
             $groupId = CompetitionParticipantsResults::where('participant_index', $firstIndex)->value('group_id');
             $levelGroupModerationCompleted = LevelGroupCompute::where('level_id', $this->level->id)
