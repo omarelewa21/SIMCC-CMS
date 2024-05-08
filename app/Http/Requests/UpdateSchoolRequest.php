@@ -70,10 +70,10 @@ class UpdateSchoolRequest extends FormRequest
                     $validator->errors()->add('Permission Denied', "Only allowed to edit school's from current country");
                 }
 
-                if($this->schoolIsInvolvedInComputedComptitions()) {
-                    $validator->errors()->add('Permission Denied', "School is involved in computed competition, Please contact adminstrator to change its name");
-                
-                }
+                // if($this->schoolIsInvolvedInComputedComptitions()) {
+                //     $validator->errors()->add('Permission Denied', "School is involved in computed competition, Please contact adminstrator to change its name");
+
+                // }
             }
             if ($user->hasRole(['Teacher', 'School Manager']) && $user->school_id != $school->id) {
                 $validator->errors()->add('Permission Denied', "Only allowed to edit own school");
