@@ -67,7 +67,7 @@ class CompetitionService
             participants.country_id,
             participants.school_id,
             participants.status,
-            CONCAT(COALESCE(schools.name_in_certificate, schools.name)) as `school`,
+            CONCAT('\"',COALESCE(schools.name_in_certificate, schools.name),'\"') as `school`,
             CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
             participants.index_no,
             CONCAT('\"',participants.name,'\"') as name,
