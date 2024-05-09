@@ -568,13 +568,14 @@ class MarkingController extends Controller
             DB::beginTransaction();
 
             $participant->markAnswers();
-            $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
+            $participantLevel = $participant->competition->levels()
+                ->with('collection')->whereJsonContains('competition_levels.grades', $participant->grade)->first();
 
             CompetitionParticipantsResults::updateOrCreate([
                 'participant_index' => $participant->index_no
             ], [
-                'level_id'  => $participantLevelId,
-                'points'    => $participant->answers->sum('score')
+                'level_id'  => $participantLevel?->id,
+                'points'    => $participant->answers->sum('score') + $participantLevel?->collection->initial_points,
             ]);
 
             $participant->integrityCases()->delete();
