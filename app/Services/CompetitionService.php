@@ -67,7 +67,7 @@ class CompetitionService
             participants.country_id,
             participants.school_id,
             participants.status,
-            CONCAT(COALESCE(schools.name_in_certificate, schools.name)) as `school`,
+            CONCAT('\"',COALESCE(schools.name_in_certificate, schools.name),'\"') as `school`,
             CONCAT('\"',tuition_school.name,'\"') as tuition_centre,
             participants.index_no,
             CONCAT('\"',participants.name,'\"') as name,
@@ -117,7 +117,7 @@ class CompetitionService
      */
     public function applyFilterToReport(Builder $query, Request $request): Builder
     {
-        if ($request->mode === 'csv' || count($request->all()) === 0) return $query;
+        if (count($request->all()) === 0) return $query;
 
         if ($request->filled('grade')) $query->where('participants.grade', $request->grade);
         if ($request->filled('country')) $query->where('participants.country_id', $request->country);
