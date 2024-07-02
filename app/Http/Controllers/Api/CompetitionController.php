@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Helpers\AnswerUploadHelper;
 use App\Http\Controllers\Controller;
@@ -11,8 +11,6 @@ use App\Models\CompetitionOverallAwards;
 use App\Models\CompetitionOverallAwardsGroups;
 use App\Models\CompetitionRounds;
 use App\Models\CompetitionRoundsAwards;
-use App\Models\CompetitionTaskDifficulty;
-use App\Models\CompetitionTasksMark;
 use App\Models\ParticipantsAnswer;
 use App\Models\Tasks;
 use App\Rules\CheckCompetitionAvailGrades;
