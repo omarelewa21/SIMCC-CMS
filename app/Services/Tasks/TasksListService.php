@@ -53,7 +53,7 @@ class TasksListService
         return (clone $this->baseQueryForFilters)
             ->join('task_contents', 'tasks.id', '=', 'task_contents.task_id')
             ->join('all_languages', 'all_languages.id', '=', 'task_contents.language_id')
-            ->select('all_languages.id', 'all_languages.name');
+            ->select('all_languages.id as filter_id', 'all_languages.name as filter_name');
     }
 
     private function getDomains(): Builder
@@ -67,7 +67,7 @@ class TasksListService
                 $join->on('domains_tags.id', '=', 'taggables.domains_tags_id')
                     ->where('domains_tags.is_tag', 0);
             })
-            ->select('domains_tags.id', 'domains_tags.name');
+            ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
     }
 
     private function getTags(): Builder
@@ -81,12 +81,12 @@ class TasksListService
                 $join->on('domains_tags.id', '=', 'taggables.domains_tags_id')
                     ->where('domains_tags.is_tag', 1);
             })
-            ->select('domains_tags.id', 'domains_tags.name');
+            ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
     }
 
     private function getStatuses(): Builder
     {
-        return (clone $this->baseQueryForFilters)->select('status');
+        return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
     }
 
     private function returnTableData(): LengthAwarePaginator
