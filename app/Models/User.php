@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable 
+class User extends Authenticatable
 {
     use Notifiable, HasFactory, HasApiTokens, Filterable;
 
@@ -124,7 +124,7 @@ class User extends Authenticatable
             get: function($value, $attributes){
                 if (array_key_exists('created_by_userid', $attributes) && !is_null($attributes['created_by_userid'])){
                     return sprintf(
-                        "%s %s", 
+                        "%s %s",
                         User::whereId($attributes['created_by_userid'])->value('username'),
                         !is_null($attributes['created_at']) ? $attributes['created_at'] : '-'
                     );
@@ -140,7 +140,7 @@ class User extends Authenticatable
             get: function($value, $attributes){
                 if (array_key_exists('last_modified_userid', $attributes) && !is_null($attributes['last_modified_userid'])){
                     return sprintf(
-                        "%s %s", 
+                        "%s %s",
                         User::whereId($attributes['last_modified_userid'])->value('username'),
                         !is_null($attributes['updated_at']) ? $attributes['updated_at'] : '-'
                     );
@@ -160,7 +160,7 @@ class User extends Authenticatable
 
     /**
      * Check if authinticated user has given role
-     * 
+     *
      * @param string|array $role
      * @return bool
      */
@@ -173,5 +173,10 @@ class User extends Authenticatable
         }
 
         return str::lower(auth()->user()->role()->value('name')) === str::lower($roles);
+    }
+
+    public function isAdminOrSuperAdmin(): bool
+    {
+        return $this->hasRole(['admin', 'super admin']);
     }
 }
