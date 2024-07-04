@@ -3,14 +3,20 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\StatusScope;
+use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+#[ScopedBy([new StatusScope(Tasks::STATUS_Deleted)])]
 class Tasks extends Base
 {
-    use HasFactory, Filterable;
+    use HasFactory, Filterable, Search;
+
+    protected $searchable = ['identifier', 'description', 'solutions'];
 
     const STATUS_VERIFIED = "Verified";
     const STATUS_PENDING_MODERATION = "Pending Moderation";
@@ -58,6 +64,10 @@ class Tasks extends Base
 
         static::creating(function ($task) {
             $task->created_by_userid = auth()->user()->id;
+        });
+
+        static::saving(function ($task) {
+            $task->last_modified_userid = auth()->user()->id;
         });
 
         static::deleting(function ($task) {
@@ -232,6 +242,25 @@ class Tasks extends Base
             });
         }
         return $query->filter();
+    }
+
+    public function scopeApplyFilters($query, Request $request)
+    {
+        return $query->when($request->filled('lang_id'), function ($query) use ($request) {
+            $query->whereHas('languages', function ($query) use ($request) {
+                $query->where('all_languages.id', $request->lang_id);
+            });
+        })->when($request->filled('domains'), function ($query) use ($request) {
+            $query->whereHas('tags', function ($query) use ($request) {
+                $query->whereIn('domains_tags.id', explode(',', $request->domains));
+            });
+        })->when($request->filled('tags'), function ($query) use ($request) {
+            $query->whereHas('tags', function ($query) use ($request) {
+                $query->whereIn('domains_tags.id', explode(',', $request->tags));
+            });
+        })->when($request->filled('status'), function ($query) use ($request) {
+            $query->where('status', $request->status);
+        });
     }
 
     public function allowedToUpdateAll(): bool

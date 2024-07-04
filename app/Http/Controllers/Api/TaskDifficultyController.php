@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
-use App\Models\CompetitionTaskDifficulty;
 use App\Models\TaskDifficulty;
 use App\Models\TaskDifficultyGroup;
 use App\Rules\CheckDifficultyIdInGroup;

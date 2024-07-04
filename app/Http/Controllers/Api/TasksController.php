@@ -1,24 +1,26 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DomainsTags;
-use App\Models\Languages;
 use App\Models\Tasks;
-use App\Rules\CheckMultipleVaildIds;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Requests\Task\DeleteTaskRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
+use App\Http\Requests\Task\TasksListRequest;
 use App\Http\Requests\Task\UpdateTaskAnswerRequest;
 use App\Http\Requests\Task\UpdateTaskContentRequest;
 use App\Http\Requests\Task\UpdateTaskRecommendationsRequest;
 use App\Http\Requests\Task\UpdateTaskSettingsRequest;
-use Illuminate\Http\Request;
+use App\Models\DomainsTags;
+use App\Models\Languages;
+use App\Rules\CheckMultipleVaildIds;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tasks\CreateTaskService;
 use App\Services\Tasks\DuplicateTaskService;
+use App\Services\Tasks\TasksListService;
 use App\Services\Tasks\UpdateTaskAnswersService;
+use Illuminate\Http\Request;
 
 class TasksController extends Controller
 {
@@ -47,7 +49,7 @@ class TasksController extends Controller
         ]);
     }
 
-    public function list(Request $request)
+    public function oldList(Request $request)
     {
         $vaildate = $request->validate([
             'id'         => 'integer',
@@ -168,6 +170,13 @@ class TasksController extends Controller
                 "message" => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function list(TasksListRequest $request)
+    {
+        return encompass(
+            fn () => (new TasksListService($request))->getWhatUserWants()
+        );
     }
 
     public function update_settings(UpdateTaskSettingsRequest $request)

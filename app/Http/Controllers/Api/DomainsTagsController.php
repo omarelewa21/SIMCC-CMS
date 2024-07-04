@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Database\QueryException;
@@ -193,7 +193,7 @@ class DomainsTagsController extends Controller
         return response()->json([
             "status"    => 200,
             "message"   => "Deleted successfully"
-        ]);       
+        ]);
     }
 
     public function approve(UpdateTagStatusRequest $request)
