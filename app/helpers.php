@@ -42,5 +42,14 @@ if(!function_exists('encompassWithDBTransaction')) {
             report($e);
         }
     }
+}
 
+if(!function_exists('defaultLimit')) {
+    /**
+     * @return int
+     */
+    function defaultLimit()
+    {
+        return 10;
+    }
 }
