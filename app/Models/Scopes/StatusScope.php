@@ -17,6 +17,6 @@ class StatusScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $builder->where('status', $this->comparison, $this->status);
+        $builder->where("{$model->getTable()}.status", $this->comparison, $this->status);
     }
 }
