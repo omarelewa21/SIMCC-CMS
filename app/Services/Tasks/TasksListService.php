@@ -6,7 +6,6 @@ use App\Abstracts\GetList;
 use App\Models\Tasks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class TasksListService extends GetList
 {
@@ -67,17 +66,7 @@ class TasksListService extends GetList
         return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
     }
 
-    protected function returnTableData(): LengthAwarePaginator
-    {
-        return $this->getRespectiveUserTasks()
-            ->with($this->getWithRelations())
-            ->filter($this->request)
-            ->search($this->request->search ?? '')
-            ->orderBy('tasks.updated_at', 'desc')
-            ->paginate($this->request->limits ?? defaultLimit());
-    }
-
-    private function getRespectiveUserTasks(): Builder
+    protected function getRespectiveUserModelQuery(): Builder
     {
         return Tasks::when(
             auth()->user()->isAdminOrSuperAdmin(),
@@ -86,7 +75,7 @@ class TasksListService extends GetList
         );
     }
 
-    private function getWithRelations(): array
+    protected function getWithRelations(): array
     {
         $baseRelations = [
             'tags:id,is_tag,domain_id,name',
