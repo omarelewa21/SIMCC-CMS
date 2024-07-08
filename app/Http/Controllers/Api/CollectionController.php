@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Collection\AddSectionRequest;
+use App\Http\Requests\Collection\CollectionListRequest;
 use App\Http\Requests\Collection\CreateCollectionRequest;
 use App\Models\Collections;
 use App\Models\CollectionSections;
@@ -29,21 +30,8 @@ use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
-    public function list(Request $request)
+    public function list(CollectionListRequest $request)
     {
-
-        $vaildated = $request->validate([
-            "id" => "integer",
-            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
-            'status' => 'alpha',
-            'competition_id' => new CheckMultipleVaildIds(new Competition()),
-            'tag_id' => new CheckMultipleVaildIds(new DomainsTags()),
-            'limits' => 'integer',
-            'page' => 'integer',
-            'search' => 'max:255'
-        ]);
-
-
         try {
 
             $limits = $request->limits ? $request->limits : 10; //set default to 10 rows per page
