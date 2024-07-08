@@ -5,7 +5,6 @@ namespace App\Services\Collection;
 use App\Abstracts\GetList;
 use App\Models\Collections;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\JoinClause;
 
 class CollectionsListService extends GetList
 {
@@ -14,17 +13,7 @@ class CollectionsListService extends GetList
         return Collections::class;
     }
 
-    protected function getFilterOptionsQuery(): Builder
-    {
-        return match ($this->request->get('get_filter')) {
-            'tags'          => $this->getTags(),
-            'competitions'  => $this->getCompetition(),
-            'status'        => $this->getStatuses(),
-            default         => Collections::whereRaw('1 = 0'),
-        };
-    }
-
-    private function getCompetition(): Builder
+    protected function getCompetitions(): Builder
     {
         return (clone $this->baseQueryForFilters)
             ->join('competition_levels', 'competition_levels.collection_id', '=', 'collection.id')

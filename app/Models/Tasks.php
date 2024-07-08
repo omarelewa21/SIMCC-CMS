@@ -17,9 +17,9 @@ class Tasks extends Base
     use HasFactory, Filter, Search;
 
     protected $searchable = ['identifier', 'description', 'solutions'];
-    protected $filterable = [
+    public $filterable = [
         'id'        => 'id',
-        'lang_id'   => 'languages.id',
+        'languages' => 'languages.id',
         'domains'   => 'tags.id',
         'tags'      => 'tags.id',
         'status'    => 'status',

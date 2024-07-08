@@ -16,9 +16,9 @@ class Collections extends Base
     const STATUS_ACTIVE = "active";
 
     protected $searchable = ['name', 'identifier', 'description'];
-    protected $filterable = [
+    public $filterable = [
         'id'            => 'id',
-        'competition'   => 'levels.rounds.competition.id',
+        'competitions'  => 'levels.rounds.competition.id',
         'tags'          => 'tags.id',
         'status'        => 'status',
     ];
