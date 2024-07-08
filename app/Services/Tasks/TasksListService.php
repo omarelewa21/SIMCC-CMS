@@ -14,18 +14,7 @@ class TasksListService extends GetList
         return Tasks::class;
     }
 
-    protected function getFilterOptionsQuery(): Builder
-    {
-        return match ($this->request->get('get_filter')) {
-            'languages' => $this->getLanguages(),
-            'domains'   => $this->getDomains(),
-            'tags'      => $this->getTags(),
-            'status'    => $this->getStatuses(),
-            default     => Tasks::whereRaw('1 = 0'),
-        };
-    }
-
-    private function getLanguages(): Builder
+    protected function getLanguages(): Builder
     {
         return (clone $this->baseQueryForFilters)
             ->join('task_contents', 'tasks.id', '=', 'task_contents.task_id')
@@ -33,7 +22,7 @@ class TasksListService extends GetList
             ->select('all_languages.id as filter_id', 'all_languages.name as filter_name');
     }
 
-    private function getDomains(): Builder
+    protected function getDomains(): Builder
     {
         return (clone $this->baseQueryForFilters)
             ->join('taggables', function (JoinClause $join){

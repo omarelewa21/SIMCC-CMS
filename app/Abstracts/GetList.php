@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Str;
 
 abstract class GetList
 {
@@ -36,6 +38,26 @@ abstract class GetList
             ->map(fn($item) => $item->setAppends([]));
     }
 
+    protected function getFilterOptionsQuery(): Builder
+    {
+        if(!property_exists($this->getModel(), 'filterable')) {
+            return $this->getModel()::whereRaw('1 = 0');
+        }
+
+        $filterKey = $this->request->get('get_filter');
+
+        return $this->filterables()->has($filterKey)
+            ? $this->filterables()->get($this->request->get('get_filter'))()
+            : $this->getModel()::whereRaw('1 = 0');
+    }
+
+    private function filterables(): SupportCollection
+    {
+        return collect($this->getInstance()->filterable)
+            ->except('id')
+            ->map(fn($value, $key) => fn() => $this->{Str::camel("get_$key")}());
+    }
+
     protected function returnTableData(): LengthAwarePaginator
     {
         return $this->getRespectiveUserModelQuery()
@@ -60,18 +82,22 @@ abstract class GetList
             ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
     }
 
-    protected function getStatuses(): Builder
+    protected function getStatus(): Builder
     {
         return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
     }
 
     protected function getTable(): string
     {
-        return (new ($this->getModel()))->getTable();
+        return $this->getInstance()->getTable();
+    }
+
+    protected function getInstance(): object
+    {
+        return new ($this->getModel());
     }
 
     protected abstract function getModel(): string;
-    protected abstract function getFilterOptionsQuery(): Builder;
     protected abstract function getWithRelations(): array;
     protected abstract function getRespectiveUserModelQuery(): Builder;
 }
