@@ -4,13 +4,6 @@ namespace App\Traits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-/**
- * Trait Filter
- *
- * Tested with one level of relation only (e.g. 'relation.field')
- *
- * Todo - Test with multiple levels of relation (e.g. 'relation.relation.field')
- */
 trait Filter
 {
     public function scopeFilter($query, Request $request)
