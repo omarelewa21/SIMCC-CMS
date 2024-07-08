@@ -20,6 +20,7 @@ use App\Http\Requests\Collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\Collection\UpdateCollectionSettingsRequest;
 use App\Models\TaskDifficultyVerification;
 use App\Rules\CheckMultipleVaildIds;
+use App\Services\Collection\CollectionsListService;
 use App\Services\Collection\CreateCollectionService;
 use App\Services\Collection\DuplicateCollectionService;
 use Exception;
@@ -30,8 +31,21 @@ use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
-    public function list(CollectionListRequest $request)
+    public function oldList(Request $request)
     {
+
+        $vaildated = $request->validate([
+            "id" => "integer",
+            'name' => 'regex:/^[\.\,\s\(\)\[\]\w-]*$/',
+            'status' => 'alpha',
+            'competition_id' => new CheckMultipleVaildIds(new Competition()),
+            'tag_id' => new CheckMultipleVaildIds(new DomainsTags()),
+            'limits' => 'integer',
+            'page' => 'integer',
+            'search' => 'max:255'
+        ]);
+
+
         try {
 
             $limits = $request->limits ? $request->limits : 10; //set default to 10 rows per page
@@ -112,6 +126,13 @@ class CollectionController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function list(CollectionListRequest $request)
+    {
+        return encompass(
+            fn () => (new CollectionsListService($request))->getWhatUserWants()
+        );
     }
 
     public function create(CreateCollectionRequest $request)
