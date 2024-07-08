@@ -47,25 +47,6 @@ class TasksListService extends GetList
             ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
     }
 
-    private function getTags(): Builder
-    {
-        return (clone $this->baseQueryForFilters)
-            ->join('taggables', function (JoinClause $join){
-                $join->on('taggables.taggable_id', '=', 'tasks.id')
-                    ->where('taggables.taggable_type', Tasks::class);
-                })
-            ->join('domains_tags', function (JoinClause $join){
-                $join->on('domains_tags.id', '=', 'taggables.domains_tags_id')
-                    ->where('domains_tags.is_tag', 1);
-            })
-            ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
-    }
-
-    private function getStatuses(): Builder
-    {
-        return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
-    }
-
     protected function getRespectiveUserModelQuery(): Builder
     {
         return Tasks::when(
