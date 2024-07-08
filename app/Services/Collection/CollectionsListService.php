@@ -20,7 +20,7 @@ class CollectionsListService extends GetList
             'tags'          => $this->getTags(),
             'competitions'  => $this->getCompetition(),
             'status'        => $this->getStatuses(),
-            default     => Collections::whereRaw('1 = 0'),
+            default         => Collections::whereRaw('1 = 0'),
         };
     }
 
