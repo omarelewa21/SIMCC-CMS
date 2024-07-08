@@ -2,42 +2,20 @@
 
 namespace App\Services\Tasks;
 
-use App\Http\Requests\Task\TasksListRequest;
+use App\Abstracts\GetList;
 use App\Models\Tasks;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class TasksListService
+class TasksListService extends GetList
 {
-    private $baseQueryForFilters;
-
-    public function __construct(protected TasksListRequest $request)
+    protected function getModel(): string
     {
-        $this->baseQueryForFilters = $this->getBaseQueryForFilters();
+        return Tasks::class;
     }
 
-    private function getBaseQueryForFilters(): Builder
-    {
-        return Tasks::distinct()->applyFilters($this->request);
-    }
-
-    public function getWhatUserWants(): array|Collection|LengthAwarePaginator
-    {
-        return $this->request->filled('get_filter')
-            ? $this->returnFilterOptions()
-            : $this->returnTableData();
-    }
-
-    private function returnFilterOptions(): array|Collection
-    {
-        return $this->getFilterOptionsQuery()
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));
-    }
-
-    private function getFilterOptionsQuery(): Builder
+    protected function getFilterOptionsQuery(): Builder
     {
         return match ($this->request->get('get_filter')) {
             'languages' => $this->getLanguages(),
@@ -89,7 +67,7 @@ class TasksListService
         return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
     }
 
-    private function returnTableData(): LengthAwarePaginator
+    protected function returnTableData(): LengthAwarePaginator
     {
         return $this->getRespectiveUserTasks()
             ->with($this->getWithRelations())
