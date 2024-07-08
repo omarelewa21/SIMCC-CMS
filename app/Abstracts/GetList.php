@@ -18,7 +18,7 @@ abstract class GetList
 
     protected function getBaseQueryForFilters(): Builder
     {
-        return $this->getModel()::distinct()->applyFilters($this->request);
+        return $this->getModel()::distinct()->filter($this->request);
     }
 
     public function getWhatUserWants(): array|Collection|LengthAwarePaginator

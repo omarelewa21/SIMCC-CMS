@@ -71,7 +71,7 @@ class TasksListService extends GetList
     {
         return $this->getRespectiveUserTasks()
             ->with($this->getWithRelations())
-            ->applyFilters($this->request)
+            ->filter($this->request)
             ->search($this->request->search ?? '')
             ->orderBy('tasks.updated_at', 'desc')
             ->paginate($this->request->limits ?? defaultLimit());
