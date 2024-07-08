@@ -2,42 +2,19 @@
 
 namespace App\Services\Tasks;
 
-use App\Http\Requests\Task\TasksListRequest;
+use App\Abstracts\GetList;
 use App\Models\Tasks;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Pagination\LengthAwarePaginator;
 
-class TasksListService
+class TasksListService extends GetList
 {
-    private $baseQueryForFilters;
-
-    public function __construct(protected TasksListRequest $request)
+    protected function getModel(): string
     {
-        $this->baseQueryForFilters = $this->getBaseQueryForFilters();
+        return Tasks::class;
     }
 
-    private function getBaseQueryForFilters(): Builder
-    {
-        return Tasks::distinct()->applyFilters($this->request);
-    }
-
-    public function getWhatUserWants(): array|Collection|LengthAwarePaginator
-    {
-        return $this->request->filled('get_filter')
-            ? $this->returnFilterOptions()
-            : $this->returnTableData();
-    }
-
-    private function returnFilterOptions(): array|Collection
-    {
-        return $this->getFilterOptionsQuery()
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));
-    }
-
-    private function getFilterOptionsQuery(): Builder
+    protected function getFilterOptionsQuery(): Builder
     {
         return match ($this->request->get('get_filter')) {
             'languages' => $this->getLanguages(),
@@ -70,36 +47,7 @@ class TasksListService
             ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
     }
 
-    private function getTags(): Builder
-    {
-        return (clone $this->baseQueryForFilters)
-            ->join('taggables', function (JoinClause $join){
-                $join->on('taggables.taggable_id', '=', 'tasks.id')
-                    ->where('taggables.taggable_type', Tasks::class);
-                })
-            ->join('domains_tags', function (JoinClause $join){
-                $join->on('domains_tags.id', '=', 'taggables.domains_tags_id')
-                    ->where('domains_tags.is_tag', 1);
-            })
-            ->select('domains_tags.id as filter_id', 'domains_tags.name as filter_name');
-    }
-
-    private function getStatuses(): Builder
-    {
-        return (clone $this->baseQueryForFilters)->select("status as filter_id","status as filter_name");
-    }
-
-    private function returnTableData(): LengthAwarePaginator
-    {
-        return $this->getRespectiveUserTasks()
-            ->with($this->getWithRelations())
-            ->applyFilters($this->request)
-            ->search($this->request->search ?? '')
-            ->orderBy('tasks.updated_at', 'desc')
-            ->paginate($this->request->limits ?? defaultLimit());
-    }
-
-    private function getRespectiveUserTasks(): Builder
+    protected function getRespectiveUserModelQuery(): Builder
     {
         return Tasks::when(
             auth()->user()->isAdminOrSuperAdmin(),
@@ -108,7 +56,7 @@ class TasksListService
         );
     }
 
-    private function getWithRelations(): array
+    protected function getWithRelations(): array
     {
         $baseRelations = [
             'tags:id,is_tag,domain_id,name',

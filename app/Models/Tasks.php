@@ -4,9 +4,9 @@
 namespace App\Models;
 
 use App\Models\Scopes\StatusScope;
+use App\Traits\Filter;
 use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +14,16 @@ use Illuminate\Support\Facades\DB;
 #[ScopedBy([new StatusScope(Tasks::STATUS_Deleted)])]
 class Tasks extends Base
 {
-    use HasFactory, Filterable, Search;
+    use HasFactory, Filter, Search;
 
     protected $searchable = ['identifier', 'description', 'solutions'];
+    protected $filterable = [
+        'id'        => 'id',
+        'lang_id'   => 'languages.id',
+        'domains'   => 'tags.id',
+        'tags'      => 'tags.id',
+        'status'    => 'status',
+    ];
 
     const STATUS_VERIFIED = "Verified";
     const STATUS_PENDING_MODERATION = "Pending Moderation";
@@ -242,25 +249,6 @@ class Tasks extends Base
             });
         }
         return $query->filter();
-    }
-
-    public function scopeApplyFilters($query, Request $request)
-    {
-        return $query->when($request->filled('lang_id'), function ($query) use ($request) {
-            $query->whereHas('languages', function ($query) use ($request) {
-                $query->where('all_languages.id', $request->lang_id);
-            });
-        })->when($request->filled('domains'), function ($query) use ($request) {
-            $query->whereHas('tags', function ($query) use ($request) {
-                $query->whereIn('domains_tags.id', explode(',', $request->domains));
-            });
-        })->when($request->filled('tags'), function ($query) use ($request) {
-            $query->whereHas('tags', function ($query) use ($request) {
-                $query->whereIn('domains_tags.id', explode(',', $request->tags));
-            });
-        })->when($request->filled('status'), function ($query) use ($request) {
-            $query->where('status', $request->status);
-        });
     }
 
     public function allowedToUpdateAll(): bool
