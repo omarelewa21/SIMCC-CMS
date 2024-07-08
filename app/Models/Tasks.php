@@ -18,6 +18,7 @@ class Tasks extends Base
 
     protected $searchable = ['identifier', 'description', 'solutions'];
     protected $filterable = [
+        'id'        => 'id',
         'lang_id'   => 'languages.id',
         'domains'   => 'tags.id',
         'tags'      => 'tags.id',
