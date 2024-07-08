@@ -35,7 +35,18 @@ abstract class GetList
             ->map(fn($item) => $item->setAppends([]));
     }
 
+    protected function returnTableData(): LengthAwarePaginator
+    {
+        return $this->getRespectiveUserModelQuery()
+            ->with($this->getWithRelations())
+            ->filter($this->request)
+            ->search($this->request->search ?? '')
+            ->orderBy((new ($this->getModel()))->getTable() . '.updated_at', 'desc')
+            ->paginate($this->request->limits ?? defaultLimit());
+    }
+
     protected abstract function getModel(): string;
     protected abstract function getFilterOptionsQuery(): Builder;
-    protected abstract function returnTableData(): LengthAwarePaginator;
+    protected abstract function getWithRelations(): array;
+    protected abstract function getRespectiveUserModelQuery(): Builder;
 }
