@@ -8,8 +8,10 @@ use App\Traits\Filter;
 use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 #[ScopedBy([new StatusScope(Tasks::STATUS_Deleted)])]
 class Tasks extends Base
@@ -56,6 +58,7 @@ class Tasks extends Base
         'answer_sorting_id',
         'allow_delete',
         'allow_update_answer',
+        'title'
     );
     public $hidden = ['updated_at', 'created_at'];
     private static $whiteListFilter = [
@@ -233,6 +236,13 @@ class Tasks extends Base
     public function getAllowUpdateAnswerAttribute()
     {
         return $this->allowedToUpdateAll();
+    }
+
+    protected function title(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string|null $value, array $attributes) => Str::headline($attributes['identifier']),
+        );
     }
 
     public static function applyFilter($query, Request $request)
