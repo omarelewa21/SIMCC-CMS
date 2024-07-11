@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
@@ -26,6 +26,7 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
+use App\Services\Participant\ParticipantsListService;
 use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Arr;
@@ -250,6 +251,13 @@ class ParticipantsController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function new_list(getParticipantListRequest $request)
+    {
+        return encompass(
+            fn () => (new ParticipantsListService($request))->getWhatUserWants()
+        );
     }
 
     public function update(Request $request)

@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ParticipantResource;
 use App\Models\Competition;
 use App\Models\Countries;
 use App\Models\Languages;

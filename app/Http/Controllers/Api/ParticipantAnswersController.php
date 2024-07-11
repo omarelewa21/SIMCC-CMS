@@ -8,13 +8,7 @@ use App\Http\Requests\Competition\ParticipantAnswersDeleteRequest;
 use App\Http\Requests\getParticipantListRequest;
 use App\Http\Requests\Participant\AnswerReportRequest;
 use App\Models\Competition;
-use App\Models\ParticipantsAnswer;
-use App\Models\PossibleAnswer;
-use App\Models\Tasks;
-use App\Models\TasksAnswers;
 use App\Services\Competition\ParticipantAnswersListService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 

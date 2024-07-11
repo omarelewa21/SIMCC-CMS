@@ -2,17 +2,26 @@
 
 namespace App\Models;
 
+use App\Traits\Filter;
+use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collections extends Base
 {
-    use HasFactory,Filterable, SoftDeletes;
-    
+    use HasFactory, Filter, SoftDeletes, Search;
+
     const STATUS_VERIFIED = "verified";
     const STATUS_PENDING_MODERATION = "pending moderation";
     const STATUS_ACTIVE = "active";
+
+    protected $searchable = ['name', 'identifier', 'description'];
+    public $filterable = [
+        'id'            => 'id',
+        'competitions'  => 'levels.rounds.competition.id',
+        'tags'          => 'tags.id',
+        'status'        => 'status',
+    ];
 
     private static $whiteListFilter = [
         'name',

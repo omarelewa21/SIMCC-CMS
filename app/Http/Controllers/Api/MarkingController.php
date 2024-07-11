@@ -26,7 +26,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use App\Helpers\ValiateLevelGroupForComputingHelper;
-use App\Models\ParticipantsAnswer;
 use Exception;
 
 class MarkingController extends Controller

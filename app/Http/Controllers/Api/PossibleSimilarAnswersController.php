@@ -8,7 +8,6 @@ use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use App\Models\PossibleSimilarAnswer;
 use App\Models\Tasks;
-use App\Models\TasksAnswers;
 use App\Models\UpdatedAnswer;
 use App\Rules\ComputeLevelUnderModeration;
 use Exception;
@@ -16,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Svg\Tag\Rect;
 
 class PossibleSimilarAnswersController extends Controller
 {

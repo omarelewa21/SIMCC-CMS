@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\participant;
+namespace App\Http\Requests\Participant;
 
 use App\Models\Participants;
 use App\Rules\CheckParticipantGrade;
@@ -13,7 +13,7 @@ class UpdateParticipantRequest extends FormRequest
 {
 
     private Participants $participant;
-    
+
     /**
      * Determine if the user is authorized to make this request.
      *

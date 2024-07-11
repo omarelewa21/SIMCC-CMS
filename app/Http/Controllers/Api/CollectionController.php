@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\General\CollectionHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Collection\AddSectionRequest;
+use App\Http\Requests\Collection\CollectionListRequest;
 use App\Http\Requests\Collection\CreateCollectionRequest;
 use App\Models\Collections;
 use App\Models\CollectionSections;
@@ -17,14 +18,9 @@ use App\Http\Requests\Collection\DeleteSectionRequest;
 use App\Http\Requests\Collection\UpdateCollectionRecommendationsRequest;
 use App\Http\Requests\Collection\UpdateCollectionSectionRequest;
 use App\Http\Requests\Collection\UpdateCollectionSettingsRequest;
-use App\Models\CompetitionRounds;
-use App\Models\CompetitionTaskDifficulty;
-use App\Models\CompetitionTasksMark;
-use App\Models\TaskDifficulty;
-use App\Models\TaskDifficultyGroup;
 use App\Models\TaskDifficultyVerification;
-use App\Models\TasksAnswers;
 use App\Rules\CheckMultipleVaildIds;
+use App\Services\Collection\CollectionsListService;
 use App\Services\Collection\CreateCollectionService;
 use App\Services\Collection\DuplicateCollectionService;
 use Exception;
@@ -35,7 +31,7 @@ use Illuminate\Validation\Rule;
 
 class CollectionController extends Controller
 {
-    public function list(Request $request)
+    public function oldList(Request $request)
     {
 
         $vaildated = $request->validate([
@@ -130,6 +126,13 @@ class CollectionController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function list(CollectionListRequest $request)
+    {
+        return encompass(
+            fn () => (new CollectionsListService($request))->getWhatUserWants()
+        );
     }
 
     public function create(CreateCollectionRequest $request)
