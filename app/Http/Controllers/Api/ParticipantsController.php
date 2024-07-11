@@ -26,6 +26,7 @@ use App\Rules\CheckSchoolStatus;
 use App\Rules\CheckCompetitionAvailGrades;
 use App\Rules\CheckParticipantGrade;
 use App\Rules\CheckUniqueIdentifierWithCompetitionID;
+use App\Services\Participant\ParticipantsListService;
 use App\Services\ParticipantReportService;
 use Exception;
 use Illuminate\Support\Arr;
@@ -145,7 +146,7 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function list(getParticipantListRequest $request)
+    public function oldList(getParticipantListRequest $request)
     {
         $participantCollection = Participants::leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
             ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
@@ -250,6 +251,13 @@ class ParticipantsController extends Controller
                 "error"     => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function list(getParticipantListRequest $request)
+    {
+        return encompass(
+            fn () => (new ParticipantsListService($request))->getWhatUserWants()
+        );
     }
 
     public function update(Request $request)
