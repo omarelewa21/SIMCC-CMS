@@ -51,7 +51,7 @@ abstract class GetList
             : $this->getModel()::whereRaw('1 = 0');
     }
 
-    private function filterables(): SupportCollection
+    protected function filterables(): SupportCollection
     {
         return collect($this->getInstance()->filterable)
             ->except('id')
