@@ -146,7 +146,7 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function oldList(getParticipantListRequest $request)
+    public function list(getParticipantListRequest $request)
     {
         $participantCollection = Participants::leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
             ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
@@ -253,7 +253,7 @@ class ParticipantsController extends Controller
         }
     }
 
-    public function list(getParticipantListRequest $request)
+    public function new_list(getParticipantListRequest $request)
     {
         return encompass(
             fn () => (new ParticipantsListService($request))->getWhatUserWants()
