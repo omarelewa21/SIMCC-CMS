@@ -55,7 +55,7 @@ class TasksListService extends GetList
         ];
 
         return auth()->user()->isAdminOrSuperAdmin()
-            ? $baseRelations
-            : array_merge($baseRelations, ['taskAnswers:id,task_id,answer,position', 'taskAnswers.taskLabels:id,task_answers_id,lang_id,content']);
+            ? array_merge($baseRelations, ['taskAnswers:id,task_id,answer,position', 'taskAnswers.taskLabels:id,task_answers_id,lang_id,content'])
+            : $baseRelations;
     }
 }
