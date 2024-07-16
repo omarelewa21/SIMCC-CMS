@@ -6,6 +6,7 @@ use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use App\Traits\Filter;
 use App\Traits\Search;
 use Carbon\Carbon;
+use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
 {
-    use HasFactory, Filter, SoftDeletes, Prunable, Search;
+    use HasFactory, Filter, SoftDeletes, Prunable, Search, Filterable;
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
