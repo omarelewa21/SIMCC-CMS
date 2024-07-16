@@ -32,7 +32,7 @@ class ParticipantsListService extends GetList
         return $this->getRespectiveUserModelQuery()
             ->with($this->getWithRelations())
             ->withExists('answers as is_answers_uploaded')
-            ->filter($this->request)
+            ->doFilter($this->request)
             ->when($this->request->private,
                 fn($query) => $query->whereNotNull('participants.tuition_centre_id'),
                 fn($query) => $this->request->has('private') ? $query->whereNull('participants.tuition_centre_id') : $query
