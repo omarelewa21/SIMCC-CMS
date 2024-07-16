@@ -91,7 +91,7 @@ class TasksController extends Controller
                 $taskModel = $taskModel->where('created_by_userid', '!=', auth()->user()->id);
             }
 
-            $returnFiltered = Tasks::applyFilter($taskModel, $request)->get()->makeHidden($hide);
+            $returnFiltered = $taskModel->applyFilter($request)->get()->makeHidden($hide);
 
             $taskCollection = collect($returnFiltered);
 

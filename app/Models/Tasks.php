@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Models\Scopes\StatusScope;
 use App\Traits\Filter;
 use App\Traits\Search;
+use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 #[ScopedBy([new StatusScope(Tasks::STATUS_Deleted)])]
 class Tasks extends Base
 {
-    use HasFactory, Filter, Search;
+    use HasFactory, Filter, Filterable, Search;
 
     protected $searchable = ['identifier', 'description', 'solutions'];
     public $filterable = [
@@ -245,7 +246,7 @@ class Tasks extends Base
         );
     }
 
-    public static function applyFilter($query, Request $request)
+    public function scopeApplyFilter($query, Request $request)
     {
         if ($request->filled("domains") || $request->filled("tags")) {
             $query->when($request->filled("domains"), function ($query) use ($request) {

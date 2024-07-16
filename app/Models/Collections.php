@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Traits\Filter;
 use App\Traits\Search;
+use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collections extends Base
 {
-    use HasFactory, Filter, SoftDeletes, Search;
+    use HasFactory, Filter, Filterable, SoftDeletes, Search;
 
     const STATUS_VERIFIED = "verified";
     const STATUS_PENDING_MODERATION = "pending moderation";

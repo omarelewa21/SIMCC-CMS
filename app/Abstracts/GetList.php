@@ -21,7 +21,7 @@ abstract class GetList
 
     protected function getBaseQueryForFilters(): Builder
     {
-        return $this->getModel()::distinct()->filter($this->request);
+        return $this->getModel()::distinct()->doFilter($this->request);
     }
 
     public function getWhatUserWants(): array|Collection|LengthAwarePaginator
@@ -62,7 +62,7 @@ abstract class GetList
     {
         return $this->getRespectiveUserModelQuery()
             ->with($this->getWithRelations())
-            ->filter($this->request)
+            ->doFilter($this->request)
             ->search($this->request->search ?? '')
             ->orderBy("{$this->getTable()}.updated_at", 'desc')
             ->paginate($this->request->limits ?? defaultLimit());

@@ -94,7 +94,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "participant"], function () {
         Route::post("", [ParticipantsController::class, "create"])->name('participant.create');
-        Route::get("", [ParticipantsController::class, "list"])->name('participant.list');
+        Route::get("", [ParticipantsController::class, "oldList"])->name('participant.oldList');
+        Route::get("list", [ParticipantsController::class, "list"])->name('participant.list');
         Route::patch("", [ParticipantsController::class, "update"])->name('participant.update');
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
         Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
@@ -171,7 +172,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "tasks"], function () {
         Route::post("", [TasksController::class, "create"])->name('task.create');
-        Route::get("", [TasksController::class, "list"])->name('task.list');
+        Route::get("", [TasksController::class, "oldList"])->name('task.oldList');
+        Route::get("list", [TasksController::class, "list"])->name('task.list');
         Route::patch("settings", [TasksController::class, "update_settings"])->name('task.update.settings');
         Route::patch("recommendation", [TasksController::class, "update_recommendation"])->name('task.update.recommendation');
         Route::patch("content", [TasksController::class, "update_content"])->name('task.edit.content');
@@ -182,7 +184,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
     });
 
     Route::group(["prefix" => "collection"], function () {
-        Route::get("", [CollectionController::class, "list"])->name('collection.list');
+        Route::get("", [CollectionController::class, "oldList"])->name('collection.oldList');
+        Route::get("list", [CollectionController::class, "list"])->name('collection.list');
         Route::post("", [CollectionController::class, "create"])->name('collection.create');
         Route::delete("", [CollectionController::class, "delete"])->name('collection.delete');
         Route::patch("/settings", [CollectionController::class, "update_settings"])->name('collection.settings.update');
