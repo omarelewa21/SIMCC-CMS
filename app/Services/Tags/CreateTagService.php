@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Tags;
 
 use App\Models\DomainsTags;
 
-class DomainTagsService
+class CreateTagService
 {
     public static function createTag(array $row)
     {
@@ -19,7 +19,7 @@ class DomainTagsService
     }
 
     public static function createDomain(array $row)
-    {                  
+    {
         $domain = DomainsTags::withTrashed()
             ->updateOrCreate([
                 'name'      => $row['name'][0],         //first element of name array is reserve for domain
