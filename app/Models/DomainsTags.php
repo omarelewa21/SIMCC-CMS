@@ -2,18 +2,28 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\StatusScope;
+use App\Traits\Filter;
+use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class DomainsTags extends Model
+#[ScopedBy([new StatusScope('deleted')])]
+class DomainsTags extends Base
 {
-    use HasFactory, Filterable, SoftDeletes;
+    use HasFactory, Filterable, Filter, Search, SoftDeletes;
 
     protected $table = "domains_tags";
-    protected $appends =['topic_domain'];
+    protected $appends =['topic_domain', 'created_by', 'last_modified_by'];
     protected $hidden = ['pivot'];
+    protected $searchable = ['name'];
+    public $filterable = [
+        'id'            => 'id',
+        'domains'       => 'domain_id',
+        'status'        => 'status',
+    ];
 
     private static $whiteListFilter = [
         'name',
@@ -31,7 +41,7 @@ class DomainsTags extends Model
         "deleted_at"
     ];
 
-    
+
     public static function boot() {
         parent::boot();
 

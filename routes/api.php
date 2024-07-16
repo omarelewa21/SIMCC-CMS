@@ -59,7 +59,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
     Route::group(["prefix" => "tag"], function () {
         Route::post("", [DomainsTagsController::class, 'create'])->name('tag.create');
         Route::patch("", [DomainsTagsController::class, 'update'])->name('tag.update');
-        Route::get("", [DomainsTagsController::class, 'list'])->name('tag.list');
+        Route::get("", [DomainsTagsController::class, 'oldList'])->name('tag.oldList');
+        Route::get("list", [DomainsTagsController::class, 'list'])->name('tag.list');
         Route::patch("/approve", [DomainsTagsController::class, "approve"])->name('tag.approve');
         Route::delete("", [DomainsTagsController::class, 'delete'])->name('tag.delete');
     });
