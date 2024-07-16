@@ -97,7 +97,11 @@ abstract class GetList
         return new ($this->getModel());
     }
 
+    protected function getRespectiveUserModelQuery(): Builder
+    {
+        return $this->getModel()::query();
+    }
+
     protected abstract function getModel(): string;
     protected abstract function getWithRelations(): array;
-    protected abstract function getRespectiveUserModelQuery(): Builder;
 }
