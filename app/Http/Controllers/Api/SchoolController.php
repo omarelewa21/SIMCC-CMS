@@ -12,14 +12,15 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\ApproveSchoolRequest;
-use App\Http\Requests\CreateSchoolRequest;
-use App\Http\Requests\RejectSchoolRequest;
-use App\Http\Requests\SchoolListRequest;
-use App\Http\Requests\UpdateSchoolRequest;
+use App\Http\Requests\School\ApproveSchoolRequest;
+use App\Http\Requests\School\CreateSchoolRequest;
+use App\Http\Requests\School\RejectSchoolRequest;
+use App\Http\Requests\School\SchoolListRequest;
+use App\Http\Requests\School\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Countries;
+use App\Services\Schools\SchoolsListService;
 use Illuminate\Database\Eloquent\Builder;
 
 class SchoolController extends Controller
@@ -79,7 +80,7 @@ class SchoolController extends Controller
         }
     }
 
-    public function list(SchoolListRequest $request)
+    public function oldList(SchoolListRequest $request)
     {
         try {
             if ($request->limits == "0") {
@@ -190,6 +191,13 @@ class SchoolController extends Controller
                 "message" => "Retrieve school unsuccessful" . $e
             ]);
         }
+    }
+
+    public function list(SchoolListRequest $request)
+    {
+        return encompass(
+            fn () => (new SchoolsListService($request))->getWhatUserWants()
+        );
     }
 
     public function reject (RejectSchoolRequest $request) {

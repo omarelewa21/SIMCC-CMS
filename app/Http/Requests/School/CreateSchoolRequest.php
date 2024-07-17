@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\School;
 
 use App\Rules\CheckSchoolUnique;
 use App\Rules\NoSpecialCharacters;

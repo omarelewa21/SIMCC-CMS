@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\School;
 
 use App\Models\CompetitionParticipantsResults;
 use App\Models\Roles;
