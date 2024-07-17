@@ -581,6 +581,7 @@ class ParticipantsController extends Controller
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+
             if (!$participantResult) {
                 $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
                 $participantResult = CompetitionParticipantsResults::create([
@@ -590,6 +591,13 @@ class ParticipantsController extends Controller
             }
 
             $award = $request->filled('award') ? $request->award : $participantResult->award;
+            
+            if ($request->filled('points')) {
+                $competitionHasCollection = $participant->competition->rounds()->join('competition_levels as cl', 'cl.round_id', 'competition_rounds.id')
+                    ->join('collection', 'collection.id', 'cl.collection_id')
+                    ->select('collection.id as id')->exists();
+                $participantResult->points = $competitionHasCollection ? $request->points : $participantResult->points;
+            }
 
             foreach ($request->all() as $key => $value) {
                 switch ($key) {
