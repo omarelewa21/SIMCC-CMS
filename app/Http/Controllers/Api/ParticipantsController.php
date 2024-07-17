@@ -499,13 +499,12 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
 
-            foreach($participantIndexes as $i => $participantIndex) {
+            foreach ($participantIndexes as $i => $participantIndex) {
                 IntegrityCase::updateOrCreate(
                     ['participant_index' => $participantIndex, 'mode' => $request->mode],
                     ['reason' => $request->participants[$i]['reason'] ?? null],
                 );
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -538,19 +537,18 @@ class ParticipantsController extends Controller
         DB::beginTransaction();
         try {
             $participantIndexes = $request->participants;
-            foreach($participantIndexes as $participantIndex) {
+            foreach ($participantIndexes as $participantIndex) {
                 IntegrityCase::where([
                     'participant_index' => $participantIndex,
                     'mode' => $request->mode
                 ])->delete();
 
-                if(IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
+                if (IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
 
                 Participants::where('index_no', $participantIndex)->update([
                     'status' => Participants::STATUS_ACTIVE
                 ]);
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -583,7 +581,7 @@ class ParticipantsController extends Controller
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
-            if(!$participantResult) {
+            if (!$participantResult) {
                 $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
                 $participantResult = CompetitionParticipantsResults::create([
                     'participant_index' => $participant->index_no,
@@ -593,8 +591,8 @@ class ParticipantsController extends Controller
 
             $award = $request->filled('award') ? $request->award : $participantResult->award;
 
-            foreach($request->all() as $key => $value) {
-                switch($key) {
+            foreach ($request->all() as $key => $value) {
+                switch ($key) {
                     case 'award':
                         $participantResult->award = $award;
                         break;
@@ -615,12 +613,44 @@ class ParticipantsController extends Controller
                 "status"    => 200,
                 "message"   => "Participants result update is successful"
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
                 "message"   => "Participants result update is unsuccessfull {$e->getMessage()}",
                 "error"     => strval($e)
+            ], 500);
+        }
+    }
+
+    public function markAbsent(Participants $participant)
+    {
+        try {
+            $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
+
+            if ($participantResult) {
+                $participantResult->delete();
+                if ($participant->answers) {
+                    $participant->answers()->delete();
+                }
+
+                $participant->status = Participants::STATUS_ABSENT;
+                $participant->save();
+
+                return response()->json([
+                    "status"  => 200,
+                    "message" => "Participant marked absent successfully"
+                ]);
+            } else {
+                return response()->json([
+                    "status"  => 500,
+                    "message" => "Participant is already marked absent"
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                "status"  => 500,
+                "message" => "Participants result update was unsuccessful: {$e->getMessage()}",
+                "error"   => strval($e)
             ], 500);
         }
     }
