@@ -141,8 +141,8 @@ class SchoolController extends Controller
             $schoolCollection = collect($returnFiltered)->map(function ($item) use ($countries) { // match country id and add country name into the collection
 
                 $item['country_name'] = $countries[$item['country_id']]['display_name'];
-                $item['created_by_username'] = $item['created_by']['name'];
-                $item['modified_by_username'] = !empty($item['modified_by']) ? $item['modified_by']['username'] : null;
+                // $item['created_by_username'] = $item['created_by']['name'];
+                // $item['modified_by_username'] = !empty($item['modified_by']) ? $item['modified_by']['username'] : null;
                 $item['approved_by_username'] = !empty($item['approved_by']) ? $item['approved_by']['username'] : null;
                 $item['rejected_by_username'] = !empty($item['rejected_by']) ? $item['rejected_by']['username'] : null;
 
