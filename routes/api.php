@@ -85,7 +85,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "school"], function () {
         Route::post("", [SchoolController::class, "create"])->name('school.create');
-        Route::get("", [SchoolController::class, "list"])->name('school.list');
+        Route::get("", [SchoolController::class, "oldList"])->name('school.oldList');
+        Route::get("list", [SchoolController::class, "list"])->name('school.list');
         Route::patch("", [SchoolController::class, "update"])->name('school.update');
         Route::delete("", [SchoolController::class, "delete"])->name('school.delete');
         Route::patch("/approve", [SchoolController::class, "approve"])->name('school.approve');

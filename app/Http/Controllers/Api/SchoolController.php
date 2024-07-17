@@ -20,6 +20,7 @@ use App\Http\Requests\School\UpdateSchoolRequest;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Countries;
+use App\Services\Schools\SchoolsListService;
 use Illuminate\Database\Eloquent\Builder;
 
 class SchoolController extends Controller
@@ -79,7 +80,7 @@ class SchoolController extends Controller
         }
     }
 
-    public function list(SchoolListRequest $request)
+    public function oldList(SchoolListRequest $request)
     {
         try {
             if ($request->limits == "0") {
@@ -190,6 +191,13 @@ class SchoolController extends Controller
                 "message" => "Retrieve school unsuccessful" . $e
             ]);
         }
+    }
+
+    public function list(SchoolListRequest $request)
+    {
+        return encompass(
+            fn () => (new SchoolsListService($request))->getWhatUserWants()
+        );
     }
 
     public function reject (RejectSchoolRequest $request) {
