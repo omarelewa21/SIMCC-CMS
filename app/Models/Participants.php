@@ -23,6 +23,7 @@ class Participants extends Base
 
     const STATUS_CHEATING = 'iac';
     const STATUS_ACTIVE = 'active';
+    const STATUS_ABSENT = 'absent';
     const STATUS_RESULT_COMPUTED = 'result computed';
 
     protected $searchable = ['index_no', 'name', 'school.name', 'tuition_centre.name'];

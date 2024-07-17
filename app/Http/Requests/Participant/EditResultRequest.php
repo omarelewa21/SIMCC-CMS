@@ -63,7 +63,7 @@ class EditResultRequest extends FormRequest
             if($result && $result->award) return;
             if($this->filled('award')) return;
 
-            $validator->errors()->add('award', 'The award field is required.');
+            // $validator->errors()->add('award', 'The award field is required.');
         });
     }
 }
