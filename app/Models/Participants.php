@@ -29,8 +29,8 @@ class Participants extends Base
     protected $searchable = ['index_no', 'name', 'school.name', 'tuition_centre.name'];
     public $filterable = [
         'id'                => 'id',
-        'country'           => 'country',
-        'school'            => 'school',
+        'country'           => 'country_id',
+        'school'            => 'school_id',
         'grade'             => 'grade',
         'status'            => 'status',
         'competition'       => 'competition_organization.competition_id',
