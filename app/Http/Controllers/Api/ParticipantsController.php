@@ -35,7 +35,6 @@ class ParticipantsController extends Controller
 {
     public function create(Request $request)
     {
-
         $request['role_id'] = auth()->user()->role_id;
 
         Countries::all()->map(function ($row) use (&$ccode) {
@@ -56,7 +55,7 @@ class ParticipantsController extends Controller
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID()],
 
             // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
@@ -130,7 +129,6 @@ class ParticipantsController extends Controller
             })->toArray();
 
             DB::commit();
-
             return response()->json([
                 "status" => 201,
                 "message" => "create Participants successful",
@@ -499,13 +497,12 @@ class ParticipantsController extends Controller
                     'report'            => null,
                 ]);
 
-            foreach($participantIndexes as $i => $participantIndex) {
+            foreach ($participantIndexes as $i => $participantIndex) {
                 IntegrityCase::updateOrCreate(
                     ['participant_index' => $participantIndex, 'mode' => $request->mode],
                     ['reason' => $request->participants[$i]['reason'] ?? null],
                 );
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -538,19 +535,18 @@ class ParticipantsController extends Controller
         DB::beginTransaction();
         try {
             $participantIndexes = $request->participants;
-            foreach($participantIndexes as $participantIndex) {
+            foreach ($participantIndexes as $participantIndex) {
                 IntegrityCase::where([
                     'participant_index' => $participantIndex,
                     'mode' => $request->mode
                 ])->delete();
 
-                if(IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
+                if (IntegrityCase::where('participant_index', $participantIndex)->exists()) continue;
 
                 Participants::where('index_no', $participantIndex)->update([
                     'status' => Participants::STATUS_ACTIVE
                 ]);
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -583,7 +579,7 @@ class ParticipantsController extends Controller
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
-            if(!$participantResult) {
+            if (!$participantResult) {
                 $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
                 $participantResult = CompetitionParticipantsResults::create([
                     'participant_index' => $participant->index_no,
@@ -593,8 +589,8 @@ class ParticipantsController extends Controller
 
             $award = $request->filled('award') ? $request->award : $participantResult->award;
 
-            foreach($request->all() as $key => $value) {
-                switch($key) {
+            foreach ($request->all() as $key => $value) {
+                switch ($key) {
                     case 'award':
                         $participantResult->award = $award;
                         break;
@@ -615,7 +611,6 @@ class ParticipantsController extends Controller
                 "status"    => 200,
                 "message"   => "Participants result update is successful"
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status"    => 500,
