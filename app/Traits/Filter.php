@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 
 trait Filter
 {
-    public function scopeFilter($query, Request $request)
+    public function scopeDoFilter($query, Request $request)
     {
         if(! property_exists($this, 'filterable')) return $query;
 

@@ -6,6 +6,7 @@ use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use App\Traits\Filter;
 use App\Traits\Search;
 use Carbon\Carbon;
+use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,19 +17,20 @@ use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
 {
-    use HasFactory, Filter, SoftDeletes, Prunable, Search;
+    use HasFactory, Filter, SoftDeletes, Prunable, Search, Filterable;
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
     const STATUS_CHEATING = 'iac';
     const STATUS_ACTIVE = 'active';
+    const STATUS_ABSENT = 'absent';
     const STATUS_RESULT_COMPUTED = 'result computed';
 
     protected $searchable = ['index_no', 'name', 'school.name', 'tuition_centre.name'];
     public $filterable = [
         'id'                => 'id',
-        'country'           => 'country',
-        'school'            => 'school',
+        'country'           => 'country_id',
+        'school'            => 'school_id',
         'grade'             => 'grade',
         'status'            => 'status',
         'competition'       => 'competition_organization.competition_id',

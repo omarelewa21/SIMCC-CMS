@@ -59,7 +59,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
     Route::group(["prefix" => "tag"], function () {
         Route::post("", [DomainsTagsController::class, 'create'])->name('tag.create');
         Route::patch("", [DomainsTagsController::class, 'update'])->name('tag.update');
-        Route::get("", [DomainsTagsController::class, 'list'])->name('tag.list');
+        Route::get("", [DomainsTagsController::class, 'oldList'])->name('tag.oldList');
+        Route::get("list", [DomainsTagsController::class, 'list'])->name('tag.list');
         Route::patch("/approve", [DomainsTagsController::class, "approve"])->name('tag.approve');
         Route::delete("", [DomainsTagsController::class, 'delete'])->name('tag.delete');
     });
@@ -84,7 +85,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "school"], function () {
         Route::post("", [SchoolController::class, "create"])->name('school.create');
-        Route::get("", [SchoolController::class, "list"])->name('school.list');
+        Route::get("", [SchoolController::class, "oldList"])->name('school.oldList');
+        Route::get("list", [SchoolController::class, "list"])->name('school.list');
         Route::patch("", [SchoolController::class, "update"])->name('school.update');
         Route::delete("", [SchoolController::class, "delete"])->name('school.delete');
         Route::patch("/approve", [SchoolController::class, "approve"])->name('school.approve');
@@ -94,7 +96,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "participant"], function () {
         Route::post("", [ParticipantsController::class, "create"])->name('participant.create');
-        Route::get("", [ParticipantsController::class, "list"])->name('participant.list');
+        Route::get("", [ParticipantsController::class, "oldList"])->name('participant.oldList');
+        Route::get("list", [ParticipantsController::class, "list"])->name('participant.list');
         Route::patch("", [ParticipantsController::class, "update"])->name('participant.update');
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
         Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
@@ -102,6 +105,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("/eliminate/{competition}", [ParticipantsController::class, "eliminateParticipantsFromCompute"])->name('participant.eliminate');
         Route::delete("/eliminate/{competition}", [ParticipantsController::class, "deleteEliminatedParticipantsFromCompute"])->name('participant.eliminate.delete');
         Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
+        Route::post("mark-absent/{participant}", [ParticipantsController::class, "markAbsent"])->name('participant.mark.absent');
     });
 
     Route::group(["prefix" => "competition"], function () {
@@ -171,7 +175,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "tasks"], function () {
         Route::post("", [TasksController::class, "create"])->name('task.create');
-        Route::get("", [TasksController::class, "list"])->name('task.list');
+        Route::get("", [TasksController::class, "oldList"])->name('task.oldList');
+        Route::get("list", [TasksController::class, "list"])->name('task.list');
         Route::patch("settings", [TasksController::class, "update_settings"])->name('task.update.settings');
         Route::patch("recommendation", [TasksController::class, "update_recommendation"])->name('task.update.recommendation');
         Route::patch("content", [TasksController::class, "update_content"])->name('task.edit.content');
@@ -182,7 +187,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
     });
 
     Route::group(["prefix" => "collection"], function () {
-        Route::get("", [CollectionController::class, "list"])->name('collection.list');
+        Route::get("", [CollectionController::class, "oldList"])->name('collection.oldList');
+        Route::get("list", [CollectionController::class, "list"])->name('collection.list');
         Route::post("", [CollectionController::class, "create"])->name('collection.create');
         Route::delete("", [CollectionController::class, "delete"])->name('collection.delete');
         Route::patch("/settings", [CollectionController::class, "update_settings"])->name('collection.settings.update');

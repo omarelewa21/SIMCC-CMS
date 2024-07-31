@@ -11,9 +11,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Models\DomainsTags;
 use App\Helpers\General\CollectionHelper;
-use App\Http\Requests\CreateDomainTagRequest;
+use App\Http\Requests\Tags\CreateDomainTagRequest;
+use App\Http\Requests\Tags\TagsListRequest;
 use App\Http\Requests\UpdateTagStatusRequest;
-use App\Services\DomainTagsService;
+use App\Services\Tags\CreateTagService;
+use App\Services\Tags\TagsListService;
 
 class DomainsTagsController extends Controller
 {
@@ -30,13 +32,13 @@ class DomainsTagsController extends Controller
         try {
             collect($request->all())->each(function ($row) {
                 if(isset($row['is_tag']) && $row['is_tag'] == 1){
-                    DomainTagsService::createTag($row);
+                    CreateTagService::createTag($row);
                 }
                 elseif(isset($row['domain_id']) && $row['domain_id'] != null) {
-                    DomainTagsService::createTopics($row);
+                    CreateTagService::createTopics($row);
                 }
                 else {
-                    DomainTagsService::createDomain($row);
+                    CreateTagService::createDomain($row);
                 }
             });
 
@@ -55,7 +57,7 @@ class DomainsTagsController extends Controller
         ], 201);
     }
 
-    public function list (Request $request) {
+    public function oldList (Request $request) {
 
         try {
             $vaildate = $request->validate([
@@ -140,6 +142,13 @@ class DomainsTagsController extends Controller
                 "error" => strval($e)
             ]);
         }
+    }
+
+    public function List (TagsListRequest $request)
+    {
+        return encompass(
+            fn () => (new TagsListService($request))->getWhatUserWants()
+        );
     }
 
     public function update (Request $request) {

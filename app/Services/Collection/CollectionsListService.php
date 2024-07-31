@@ -33,9 +33,4 @@ class CollectionsListService extends GetList
             'sections',
         ];
     }
-
-    protected function getRespectiveUserModelQuery(): Builder
-    {
-        return Collections::query();
-    }
 }
