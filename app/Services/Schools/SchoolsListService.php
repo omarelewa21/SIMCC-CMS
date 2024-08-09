@@ -7,6 +7,7 @@ use App\Models\School;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 
 class SchoolsListService extends GetList
@@ -16,7 +17,7 @@ class SchoolsListService extends GetList
         return School::class;
     }
 
-    protected function returnTableData(): LengthAwarePaginator
+    protected function returnTableData(): LengthAwarePaginator|EloquentCollection
     {
         return $this->getRespectiveUserModelQuery()
             ->with($this->getWithRelations())
@@ -30,7 +31,7 @@ class SchoolsListService extends GetList
             )
             ->when(
                 $this->request->mode === 'csv',
-                fn($query) => $this->getCSVQuery($query),
+                fn($query) => $this->getCSVQuery($query)->get(),
                 fn($query) => $query->paginate($this->request->limits ?? defaultLimit())
             );
     }
