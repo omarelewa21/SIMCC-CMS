@@ -225,13 +225,13 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ],500);
+            ], 500);
         } catch (ModelNotFoundException $e) {
             // do task when error
             return response()->json([
                 "status" => 500,
                 "message" => "competition list retrieve unsuccessful"
-            ],500);
+            ], 500);
         }
     }
 
@@ -413,9 +413,9 @@ class CompetitionController extends Controller
                     $level = CompetitionLevels::findOrFail($row['id']);
                     $level->name = $row['name'];
 
-                    if(count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
-                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn($query) => $query->where('level_id', $level->id))
-                            ->whereHas('integrityCases', fn($query) => $query->where('mode', 'system'))->exists();
+                    if (count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
+                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn ($query) => $query->where('level_id', $level->id))
+                            ->whereHas('integrityCases', fn ($query) => $query->where('mode', 'system'))->exists();
                         throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are Integrity IAC, you must remove them first before changing assigned grades or collection to this level");
                     }
 
@@ -542,7 +542,7 @@ class CompetitionController extends Controller
             return response()->json([
                 "status" => 500,
                 "message" => "add awards unsuccessful"
-            ],500);
+            ], 500);
         }
     }
 
@@ -1071,9 +1071,9 @@ class CompetitionController extends Controller
             );
 
             $participants = Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-            ->select('grade', 'index_no', 'status', 'country_id')
-            ->with(['integrityCases' => fn ($query) => $query->where('mode', 'system')])
-            ->get();
+                ->select('grade', 'index_no', 'status', 'country_id')
+                ->with(['integrityCases' => fn ($query) => $query->where('mode', 'system')])
+                ->get();
 
             $countryIds = $participants->pluck('country_id')->unique();
             $confirmedCountries = IntegrityCheckCompetitionCountries::whereIn('country_id', $countryIds)
@@ -1095,9 +1095,11 @@ class CompetitionController extends Controller
             $competitionGroupCountryIds = $competition->groups->pluck('country_id')->unique();
             $nonGroupCountries = $countryIds->diff($competitionGroupCountryIds);
 
-            $nonGroupCountryNames = [];
             if ($nonGroupCountries->isNotEmpty()) {
-                $nonGroupCountryNames = Countries::whereIn('id', $nonGroupCountries)->pluck('display_name')->toArray();
+                $nonGroupCountryNames = Countries::whereIn('id', $nonGroupCountries)->pluck('display_name')->implode(', ');
+                throw ValidationException::withMessages([
+                    sprintf("The following countries are not part of the competition group: %s. Please create the country group for these countries before proceeding.", $nonGroupCountryNames)
+                ]);
             }
 
             foreach ($request->participants as $participantData) {
@@ -1133,15 +1135,9 @@ class CompetitionController extends Controller
             ProcessAnswerUpload::dispatch($competition, $request->all());
 
             DB::commit();
-
-            $message = 'Students answers uploaded successfully.';
-            if (!empty($nonGroupCountryNames)) {
-                $message .= sprintf(" However, the following countries are not part of the competition group: %s. Please create the country group for these countries.", implode(', ', $nonGroupCountryNames));
-            }
-return $message;
             return response()->json([
                 "status" => 201,
-                "message" => $message
+                "message" => 'Students answers uploaded successfully.'
             ]);
         } catch (ValidationException $e) {
             DB::rollBack();
@@ -1158,6 +1154,7 @@ return $message;
             ], 500);
         }
     }
+
 
 
     public function report(Competition $competition, Request $request)
