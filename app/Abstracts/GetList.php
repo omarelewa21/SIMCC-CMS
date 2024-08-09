@@ -58,7 +58,7 @@ abstract class GetList
             ->map(fn($value, $key) => fn() => $this->{Str::camel("get_$key")}());
     }
 
-    protected function returnTableData(): LengthAwarePaginator
+    protected function returnTableData(): LengthAwarePaginator|Collection
     {
         return $this->getRespectiveUserModelQuery()
             ->with($this->getWithRelations())

@@ -25,7 +25,6 @@ class SchoolListRequest extends FormRequest
     {
         return [
             'id'            => "integer",
-            'status'        => 'alpha',
             'country_id'    => 'integer',
             'private'       => 'boolean',
             'limits'        => 'integer',
