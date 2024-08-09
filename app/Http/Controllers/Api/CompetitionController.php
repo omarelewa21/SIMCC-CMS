@@ -37,6 +37,7 @@ use App\Http\Requests\UpdateCompetitionRequest;
 use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ProcessAnswerUpload;
 use App\Models\Collections;
+use App\Models\Countries;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
@@ -1069,50 +1070,62 @@ class CompetitionController extends Controller
                 true
             );
 
-            $participants =  Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
-                ->select('grade', 'index_no', 'status', 'country_id')
-                ->with(['integrityCases' => fn($query) => $query->where('mode', 'system')])
-                ->get();
+            $participants = Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
+            ->select('grade', 'index_no', 'status', 'country_id')
+            ->with(['integrityCases' => fn ($query) => $query->where('mode', 'system')])
+            ->get();
 
             $countryIds = $participants->pluck('country_id')->unique();
             $confirmedCountries = IntegrityCheckCompetitionCountries::whereIn('country_id', $countryIds)
                 ->where('competition_id', $competition->id)->where('is_confirmed', 1)->with('country:id,display_name as name')->get();
-            if($confirmedCountries->isNotEmpty()) {
+
+            if ($confirmedCountries->isNotEmpty()) {
                 throw ValidationException::withMessages([sprintf("The following countries have confirmed integrity checks: %s, you must revoke them first before uploading answers", $confirmedCountries->pluck('country.name')->implode(', '))]);
             }
 
-            $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
-            if($systemIACParticipants->isNotEmpty()) {
+            $systemIACParticipants = $participants->filter(fn ($participant) => $participant->integrityCases->isNotEmpty());
+            if ($systemIACParticipants->isNotEmpty()) {
                 throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are Integrity IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
             }
 
             $createdBy = auth()->id();
             $createdAt = now();
 
+            // Check if all countries are in the competition groups
+            $competitionGroupCountryIds = $competition->groups->pluck('country_id')->unique();
+            $nonGroupCountries = $countryIds->diff($competitionGroupCountryIds);
+
+            $nonGroupCountryNames = [];
+            if ($nonGroupCountries->isNotEmpty()) {
+                $nonGroupCountryNames = Countries::whereIn('id', $nonGroupCountries)->pluck('display_name')->toArray();
+            }
+
             foreach ($request->participants as $participantData) {
-                if($levels[$participantData['grade']]['grade'] != $participants->first(fn($participant) => $participant->index_no === $participantData['index_number'])?->grade) {
+                $participant = $participants->first(fn ($p) => $p->index_no === $participantData['index_number']);
+
+                if ($levels[$participantData['grade']]['grade'] != $participant?->grade) {
                     throw ValidationException::withMessages(["The imported grade for student with index {$participantData['index_number']} does not match the registered grade in the system"]);
                 }
 
                 $level = $levels[$participantData['grade']]['level'];
-                if($level->collection->status !== Collections::STATUS_VERIFIED) {
+                if ($level->collection->status !== Collections::STATUS_VERIFIED) {
                     throw ValidationException::withMessages([sprintf('Collection "%s" attached to %s is not verified, you must verify the collection first', $level->collection->name, $participantData['grade'])]);
                 }
 
                 $levelTaskCount = $level->tasks->count();
                 if ($levelTaskCount !== count($participantData['answers'])) {
-                    throw ValidationException::withMessages(["The number of answers import with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
+                    throw ValidationException::withMessages(["The number of answers imported with index {$participantData['index_number']} does not correspond to the required number of tasks for their grade level."]);
                 }
 
                 DB::table('participant_answers')->where('participant_index', $participantData['index_number'])->delete();
-                for($i = 0; $i < $levelTaskCount; $i++) {
+                for ($i = 0; $i < $levelTaskCount; $i++) {
                     ParticipantsAnswer::create([
-                        'level_id'  => $level->id,
-                        'task_id'   => $level->tasks[$i],
+                        'level_id' => $level->id,
+                        'task_id' => $level->tasks[$i],
                         'participant_index' => $participantData['index_number'],
-                        'answer'    => $participantData['answers'][$i],
+                        'answer' => $participantData['answers'][$i],
                         'created_by_userid' => $createdBy,
-                        'created_at'    => $createdAt
+                        'created_at' => $createdAt
                     ]);
                 }
             }
@@ -1120,25 +1133,32 @@ class CompetitionController extends Controller
             ProcessAnswerUpload::dispatch($competition, $request->all());
 
             DB::commit();
+
+            $message = 'Students answers uploaded successfully.';
+            if (!empty($nonGroupCountryNames)) {
+                $message .= sprintf(" However, the following countries are not part of the competition group: %s. Please create the country group for these countries.", implode(', ', $nonGroupCountryNames));
+            }
+return $message;
             return response()->json([
-                "status"    =>  201,
-                "message"   => 'students answers uploaded successful'
+                "status" => 201,
+                "message" => $message
             ]);
         } catch (ValidationException $e) {
             DB::rollBack();
             return response()->json([
-                "status" =>  $e->status,
+                "status" => $e->status,
                 "message" => $e->getMessage()
             ], 400);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                "status"    =>  500,
-                "message"   => 'students answers uploaded unsuccessful ' . $e->getMessage(),
-                "error"     => strval($e)
+                "status" => 500,
+                "message" => 'Students answers upload unsuccessful: ' . $e->getMessage(),
+                "error" => strval($e)
             ], 500);
         }
     }
+
 
     public function report(Competition $competition, Request $request)
     {
