@@ -2,12 +2,21 @@
 
 namespace App\Rules;
 
-use App\Models\CompetitionParticipantsResults;
 use App\Models\Participants;
+use App\Models\User;
 use Illuminate\Contracts\Validation\InvokableRule;
 
 class ParticipantIDOnUpdateRule implements InvokableRule
 {
+    private Participants $participant;
+    private User $user;
+
+    public function __construct(Participants $participant)
+    {
+        $this->participant = $participant->load('competition_organization', 'result');
+        $this->user = auth()->user();
+    }
+
     /**
      * Run the validation rule.
      *
@@ -18,48 +27,49 @@ class ParticipantIDOnUpdateRule implements InvokableRule
      */
     public function __invoke($attribute, $value, $fail)
     {
-        if(auth()->user()->hasRole('country partner', 'country partner assistant')) 
-            return $this->validateForCountryPartner($value, $fail);
+        if($this->user->hasRole(['admin', 'super admin'])) return;
 
-        if(auth()->user()->hasRole('teacher', 'school manager'))
-            return $this->validateForTeacherOrSchoolManager($value, $fail);
+        if($this->user->hasRole(['country partner', 'country partner assistant'])) {
+            $this->validateForCountryPartner($fail);
+        } elseif ($this->user->hasRole(['teacher', 'school manager'])) {
+            $this->validateForTeacherOrSchoolManager($fail);
+        }
+
+        // if($this->participantIsComputedAndNotEditable()) {
+        //     $fail("The selected participant already have results and cannot be edited.");
+        // }
     }
 
-    private function validateForCountryPartner($value, $fail)
+    private function validateForCountryPartner($fail)
     {
-        if ($this->participantIsNotRelatedToCP($value)) {
+        if (!$this->participantBelongsToCP()) {
             $fail("The selected participant is not in the same country or organization as current user.");
         }
-        if($this->participantIsComputedAndNotEditable($value)) {
-            $fail("The selected participant already have results and cannot be edited.");
+        if($this->competitionOrganizationIsNotActive()) {
+            $fail("You have to enter registration start date first before making changes to participants.");
         }
     }
 
-    private function validateForTeacherOrSchoolManager($value, $fail)
+    private function participantBelongsToCP(): bool
     {
-        $schoolId = auth()->user()->school_id;
-        if (Participants::whereId($value)->where("school_id", $schoolId)->doesntExist()) {
+        return $this->participant->country_id === $this->user->country_id
+            && $this->participant->competition_organization->organization_id === $this->user->organization_id;
+    }
+
+    private function competitionOrganizationIsNotActive(): bool
+    {
+        return $this->participant->competition_organization->status !== 'active';
+    }
+
+    private function validateForTeacherOrSchoolManager($fail)
+    {
+        if ($this->participant->school_id !== $this->user->school_id) {
             $fail("The selected participant is not in the same school as current user.");
         }
     }
 
-    private function participantIsNotRelatedToCP($participantId): bool
+    private function participantIsComputedAndNotEditable(): bool
     {
-        $user = auth()->user();
-        return Participants::join('competition_organization', 'participants.competition_organization_id', '=', 'competition_organization.id')
-            ->where([
-                'participants.id' => $participantId,
-                'participants.country_id' => $user->country_id,
-                'competition_organization.organization_id' => $user->organization_id,
-                'competition_organization.status' => 'active'
-            ])
-            ->doesntExist();
-    }
-
-    private function participantIsComputedAndNotEditable($participantId): bool
-    {
-        return CompetitionParticipantsResults::whereRelation('participant', 'id', $participantId)
-            ->whereNotNull('global_rank')
-            ->exists();
+        return !is_null($this->participant->result?->global_rank);
     }
 }
