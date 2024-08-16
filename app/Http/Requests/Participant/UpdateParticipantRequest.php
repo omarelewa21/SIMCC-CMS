@@ -45,7 +45,7 @@ class UpdateParticipantRequest extends FormRequest
     public function rules()
     {
         return [
-            'id'                => ['required', 'integer', 'exists:participants,id', new ParticipantIDOnUpdateRule],
+            'id'                => ['required', 'integer', 'exists:participants,id', new ParticipantIDOnUpdateRule($this->participant)],
             'for_partner'       => 'required_if:school_type,1|exclude_if:school_type,0|boolean',
             'name'              => 'required|string|min:3|max:255',
             'class'             => "max:20",
