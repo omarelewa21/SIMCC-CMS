@@ -46,7 +46,7 @@ class ParticipantIDOnUpdateRule implements InvokableRule
             $fail("The selected participant is not in the same country or organization as current user.");
         }
         if($this->competitionOrganizationIsNotActive()) {
-            $fail("You have to enter registration start date first before making changes to participants.");
+            $fail("Please enter the registration start date before making any changes to the participants.");
         }
     }
 
