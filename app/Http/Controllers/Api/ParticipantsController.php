@@ -35,7 +35,6 @@ class ParticipantsController extends Controller
 {
     public function create(Request $request)
     {
-
         $request['role_id'] = auth()->user()->role_id;
 
         Countries::all()->map(function ($row) use (&$ccode) {
@@ -56,7 +55,7 @@ class ParticipantsController extends Controller
             "participant.*.tuition_centre_id" => ['exclude_if:*.for_partner,1', 'required_if:*.school_id,null', 'integer', 'nullable', new CheckSchoolStatus(1)],
             "participant.*.school_id" => ['exclude_if:role_id,3,5', 'required_if:*.tuition_centre_id,null', 'nullable', 'integer', new CheckSchoolStatus],
             "participant.*.email"     => ['sometimes', 'email', 'nullable'],
-            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID(null)],
+            "participant.*.identifier" => [new CheckUniqueIdentifierWithCompetitionID()],
 
             // "participant.*.email"     => ['sometimes', 'email', new ParticipantEmailRule]
         );
@@ -130,7 +129,6 @@ class ParticipantsController extends Controller
             })->toArray();
 
             DB::commit();
-
             return response()->json([
                 "status" => 201,
                 "message" => "create Participants successful",
@@ -548,7 +546,6 @@ class ParticipantsController extends Controller
     {
         try {
             $participantResult = CompetitionParticipantsResults::where('participant_index', $participant->index_no)->first();
-
             if (!$participantResult) {
                 $participantLevelId = $participant->competition->levels()->whereJsonContains('competition_levels.grades', $participant->grade)->value('competition_levels.id');
                 $participantResult = CompetitionParticipantsResults::create([
