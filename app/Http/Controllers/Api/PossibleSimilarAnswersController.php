@@ -270,71 +270,243 @@ class PossibleSimilarAnswersController extends Controller
         ], 200);
     }
 
+    // public function updateParticipantAnswer(Request $request)
+    // {
+    //     $request->validate([
+    //         'answer_id' => 'required|array|min:1',
+    //         'answer_id.*' => 'exists:participant_answers,id',
+    //         'new_answer' => 'present',
+    //     ]);
+
+    //     $newAnswer = $request->new_answer;
+    //     $reason = $request->reason;
+    //     $updateResults = [];
+    //     $allUpdated = true;
+
+    //     foreach ($request->answer_id as $participantAnswerId) {
+    //         $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
+
+    //         if (!$participantAnswer) {
+    //             continue;
+    //         }
+
+    //         $participant = $participantAnswer->participant;
+
+    //         if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
+    //             $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' Integrity case exists ';
+    //             $allUpdated = false;
+    //             continue;
+    //         }
+
+    //         $oldAnswer = $participantAnswer->answer;
+    //         if ($oldAnswer === $newAnswer) {
+    //             $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' No update needed as the answer has not changed ';
+    //             $allUpdated = false;
+    //             continue;
+    //         }
+
+    //         $updateRecord = new UpdatedAnswer([
+    //             'level_id' => $participantAnswer->level_id,
+    //             'task_id' => $participantAnswer->task_id,
+    //             'answer_id' => $participantAnswerId,
+    //             'participant_index' => $participantAnswer->participant_index,
+    //             'old_answer' => $oldAnswer,
+    //             'new_answer' => $newAnswer,
+    //             'reason' => $reason,
+    //             'updated_by' => auth()->id()
+    //         ]);
+
+    //         $updateRecord->save();
+
+    //         $participantAnswer->answer = $newAnswer;
+    //         $participantAnswer->save();
+    //         $updateResults[$participantAnswerId] = 'Participant answer updated successfully for participant index ' . $participantAnswer->participant_index . '.';
+    //     }
+
+    //     $statusCode = $allUpdated ? 200 : 500;
+
+    //     $message = $allUpdated ? 'All participants updated successfully.' : 'Some participants could not be updated. Results: ' . implode('; ', $updateResults);
+    //     // $message = $allUpdated ? $message . implode('; ', $updateResults) : $message;
+
+    //     return response()->json([
+    //         'status' => $statusCode,
+    //         'message' => $message
+    //     ], $statusCode);
+    // }
+
+    public function storePossibleAnswersForCompetition(Competition $competition)
+    {
+        try {
+            $levels = $competition->levels;
+            $allTasks = collect(); // Initialize an empty collection to store tasks
+
+            foreach ($levels as $level) {
+                $tasks = $level->collection->sections->flatMap(function ($section) {
+                    return $section->section_task;
+                });
+
+                foreach ($tasks as $task) {
+                    // Fetch possible similar answers for each task
+                    $answersData = $this->fetchSimilarAnswersForTask($task->id);
+                    $taskId = $answersData['task_id'];
+                    $answerKey = trim($answersData['answer_key']);
+                    $possibleKeys = $answersData['possible_keys'];
+
+                    // Store possible answers in the database
+                    foreach ($possibleKeys as $possibleKey => $participantsAnswers) {
+                        PossibleSimilarAnswer::updateOrCreate([
+                            'task_id' => $taskId,
+                            'level_id' => $level->id,
+                            'possible_key' => is_null($possibleKey) ? '' : strval($possibleKey),
+                        ], [
+                            'answer_key' => $answerKey,
+                            'participants_answers_indices' => $participantsAnswers,
+                        ]);
+                    }
+
+                    // Remove old records that are no longer valid
+                    PossibleSimilarAnswer::where('level_id', $level->id)
+                        ->where('task_id', $taskId)
+                        ->whereNotIn('possible_key', array_map('strval', array_keys($possibleKeys)))
+                        ->delete();
+
+                    // Add the task to the list of tasks
+                    $allTasks->push($task);
+                }
+            }
+
+            return $allTasks; // Return the collection of tasks
+
+        } catch (\Exception $e) {
+            // Handle the error case as needed
+            return response()->json([
+                "status"    => 500,
+                "message"   => $e->getMessage(),
+                "error"     => strval($e)
+            ], 500);
+        }
+    }
+
+
     public function updateParticipantAnswer(Request $request)
     {
+        set_time_limit(0);
+
         $request->validate([
             'answer_id' => 'required|array|min:1',
             'answer_id.*' => 'exists:participant_answers,id',
             'new_answer' => 'present',
+            'update_all' => 'boolean',
+            'competition_id' => [
+                'required_if:update_all,true',
+                'exists:competition,id',
+            ],
         ]);
 
         $newAnswer = $request->new_answer;
         $reason = $request->reason;
+        $updateAll = $request->update_all;
+        $competitionId = $request->competition_id;
         $updateResults = [];
         $allUpdated = true;
 
-        foreach ($request->answer_id as $participantAnswerId) {
-            $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
+        if ($updateAll) {
+            // Fetch the competition to ensure it exists
+            $competition = Competition::findOrFail($competitionId);
 
-            if (!$participantAnswer) {
-                continue;
+            // Store possible answers and get the list of tasks
+            $tasks = $this->storePossibleAnswersForCompetition($competition);
+
+            // Get the possible key based on the first provided answer_id
+            $firstAnswerId = $request->answer_id[0];
+            $possibleSimilarAnswer = PossibleSimilarAnswer::where('participants_answers_indices', 'LIKE', '%' . $firstAnswerId . '%')
+                ->firstOrFail(); // Get the possible key directly
+
+            $possibleKey = $possibleSimilarAnswer->possible_key;
+
+            // Update all tasks in the competition that have this possible key
+            foreach ($tasks as $task) {
+                $relatedParticipantAnswers = ParticipantsAnswer::where('task_id', $task->id)
+                    ->where('answer', $possibleKey)
+                    ->get();
+
+                foreach ($relatedParticipantAnswers as $relatedAnswer) {
+                    $oldAnswer = $relatedAnswer->answer;
+                    if ($oldAnswer === $newAnswer) {
+                        $updateResults[$relatedAnswer->id] = $relatedAnswer->participant_index . ' No update needed as the answer has not changed ';
+                        $allUpdated = false;
+                        continue;
+                    }
+
+                    $updateRecord = new UpdatedAnswer([
+                        'level_id' => $relatedAnswer->level_id,
+                        'task_id' => $relatedAnswer->task_id,
+                        'answer_id' => $relatedAnswer->id,
+                        'participant_index' => $relatedAnswer->participant_index,
+                        'old_answer' => $oldAnswer,
+                        'new_answer' => $newAnswer,
+                        'reason' => $reason,
+                        'updated_by' => auth()->id()
+                    ]);
+
+                    $updateRecord->save();
+
+                    $relatedAnswer->answer = $newAnswer;
+                    $relatedAnswer->save();
+                    $updateResults[$relatedAnswer->id] = 'Participant answer updated successfully for participant index ' . $relatedAnswer->participant_index . '.';
+                }
             }
+        } else {
+            // Handle the case where only specific answer_ids are updated
+            foreach ($request->answer_id as $participantAnswerId) {
+                $participantAnswer = ParticipantsAnswer::withoutGlobalScopes()->find($participantAnswerId);
 
-            $participant = $participantAnswer->participant;
+                if (!$participantAnswer) {
+                    continue;
+                }
 
-            if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
-                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' Integrity case exists ';
-                $allUpdated = false;
-                continue;
+                $participant = $participantAnswer->participant;
+
+                if ($participant && $participant->integrityCases()->where('mode', 'system')->exists()) {
+                    $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' Integrity case exists ';
+                    $allUpdated = false;
+                    continue;
+                }
+
+                $oldAnswer = $participantAnswer->answer;
+                if ($oldAnswer === $newAnswer) {
+                    $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' No update needed as the answer has not changed ';
+                    $allUpdated = false;
+                    continue;
+                }
+
+                $updateRecord = new UpdatedAnswer([
+                    'level_id' => $participantAnswer->level_id,
+                    'task_id' => $participantAnswer->task_id,
+                    'answer_id' => $participantAnswer->id,
+                    'participant_index' => $participantAnswer->participant_index,
+                    'old_answer' => $oldAnswer,
+                    'new_answer' => $newAnswer,
+                    'reason' => $reason,
+                    'updated_by' => auth()->id()
+                ]);
+
+                $updateRecord->save();
+
+                $participantAnswer->answer = $newAnswer;
+                $participantAnswer->save();
+                $updateResults[$participantAnswerId] = 'Participant answer updated successfully for participant index ' . $participantAnswer->participant_index . '.';
             }
-
-            $oldAnswer = $participantAnswer->answer;
-            if ($oldAnswer === $newAnswer) {
-                $updateResults[$participantAnswerId] = $participantAnswer->participant_index . ' No update needed as the answer has not changed ';
-                $allUpdated = false;
-                continue;
-            }
-
-            $updateRecord = new UpdatedAnswer([
-                'level_id' => $participantAnswer->level_id,
-                'task_id' => $participantAnswer->task_id,
-                'answer_id' => $participantAnswerId,
-                'participant_index' => $participantAnswer->participant_index,
-                'old_answer' => $oldAnswer,
-                'new_answer' => $newAnswer,
-                'reason' => $reason,
-                'updated_by' => auth()->id()
-            ]);
-
-            $updateRecord->save();
-
-            $participantAnswer->answer = $newAnswer;
-            $participantAnswer->save();
-            $updateResults[$participantAnswerId] = 'Participant answer updated successfully for participant index ' . $participantAnswer->participant_index . '.';
         }
 
         $statusCode = $allUpdated ? 200 : 500;
-
         $message = $allUpdated ? 'All participants updated successfully.' : 'Some participants could not be updated. Results: ' . implode('; ', $updateResults);
-        // $message = $allUpdated ? $message . implode('; ', $updateResults) : $message;
 
         return response()->json([
             'status' => $statusCode,
             'message' => $message
         ], $statusCode);
     }
-
-
 
 
 
