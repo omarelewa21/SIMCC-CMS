@@ -77,6 +77,7 @@ return new class extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('grades');
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
             $table->string('display_name');
