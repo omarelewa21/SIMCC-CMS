@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ParticipantResource;
 use App\Models\Competition;
 use App\Models\Countries;
+use App\Models\Grade;
 use App\Models\Languages;
 use App\Models\Participants;
 use App\Models\Roles;
@@ -298,7 +299,15 @@ class HelperController extends Controller
                 'error'     => strval($e)
             ]);
         }
+    }
 
+    public function getGradeList()
+    {
+        $grades = Grade::all(['id','display_name as name']);
 
+        return response()->json([
+            "status" => 200,
+            "data" => $grades
+        ]);
     }
 }

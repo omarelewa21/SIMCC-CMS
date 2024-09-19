@@ -49,6 +49,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get('setIndexCounterCountryTable', [HelperController::class, 'setIndexCounterCountryTable'])->name('info.convert.setIndexCounterCountryTable'); //store latest student index in country table
         Route::get('GenerateCertNum', [HelperController::class, 'GenerateCertNum'])->name('info.convert.GenerateCertNum'); //generate cert no.\
         Route::get('participant/{participant}', [HelperController::class, 'getParticipantInfo'])->name('info.participant.info');
+        Route::get('grade-list', [HelperController::class, 'getGradeList'])->name('info.grade.list');
     });
 
     Route::group(["prefix" => "notification"], function () {
