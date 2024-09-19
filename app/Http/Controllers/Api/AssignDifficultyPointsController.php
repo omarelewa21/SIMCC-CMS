@@ -108,7 +108,7 @@ class AssignDifficultyPointsController extends Controller
             return response()->json([
                 "status"    => 500,
                 "message"   => "Retrieve competition retrieve unsuccessful " . $e->getMessage(),
-                'error'     => strval($e) 
+                'error'     => strval($e)
             ], 500);
         }
     }
