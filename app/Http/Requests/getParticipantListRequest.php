@@ -36,7 +36,7 @@ class getParticipantListRequest extends FormRequest
             'limits'                        => 'integer',
             'page'                          => 'integer',
             'search'                        => 'max:255',
-            'grade'                         => 'integer|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            'grade'                         => 'integer|in:'.implode(',', GradeService::getAllowedGradeNumbers()),
         ];
     }
 }
