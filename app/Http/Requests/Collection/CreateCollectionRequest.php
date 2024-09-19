@@ -35,7 +35,7 @@ class CreateCollectionRequest extends FormRequest
             '*.settings.tags.*'         => ['integer',Rule::exists('domains_tags','id')->where('is_tag',1)],
             '*.settings.description'    => 'string|max:65535',
             '*.recommendations'         => 'array',
-            '*.recommendations.*.grade' => 'integer|nullable|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            '*.recommendations.*.grade' => 'integer|nullable|in:'.implode(',', GradeService::getAllowedGradeNumbers()),
             '*.recommendations.*.difficulty' => "string|nullable|max:255|in:".implode(',', DifficultyService::ALLOWED_DIFFICULTIES),
             '*.sections'                => 'required|array',
             '*.sections.*.groups'       => 'required|array',

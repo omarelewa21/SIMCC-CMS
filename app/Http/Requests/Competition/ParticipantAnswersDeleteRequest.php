@@ -27,7 +27,7 @@ class ParticipantAnswersDeleteRequest extends FormRequest
         return [
             'indexes'       => 'array|min:1',
             'indexes.*'     => 'string|exists:participants,index_no',
-            'grade'         => 'integer|in:' . implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            'grade'         => 'integer|in:' . implode(',', GradeService::getAllowedGradeNumbers()),
             'country_id'    => 'integer|exists:all_countries,id',
             'status'        => 'string|in:active,result computed,absent',
             'school_id'     => 'integer|exists:schools,id',

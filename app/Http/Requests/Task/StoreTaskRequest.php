@@ -44,7 +44,7 @@ class StoreTaskRequest extends CreateBaseRequest
             $key.'.solutions'           => 'max:255',
             $key.'.image'               => 'exclude_if:*.image,null|max:1000000',
             $key.'.recommended_grade'   => 'array',
-            $key.'.recommended_grade.*' => 'integer|nullable|in:'.implode(',', GradeService::ALLOWED_GRADE_NUMBERS),
+            $key.'.recommended_grade.*' => 'integer|nullable|in:'.implode(',', GradeService::getAllowedGradeNumbers()),
             $key.'.recommended_difficulty'      => 'array',
             $key.'.recommended_difficulty.*'    => "string|nullable|max:255|in:".implode(',', DifficultyService::ALLOWED_DIFFICULTIES),
             $key.'.content'             => 'string|max:65535',
