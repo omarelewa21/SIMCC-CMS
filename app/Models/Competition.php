@@ -239,5 +239,8 @@ class Competition extends Base
         return false;
     }
 
-
+    public function flagNotifications()
+    {
+        return $this->hasMany(FlagNotification::class, 'competition_id', 'id');
+    }
 }

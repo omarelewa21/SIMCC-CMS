@@ -98,4 +98,10 @@ class CompetitionLevels extends Model
     {
         return $this->hasMany(CompetitionParticipantsResults::class, 'level_id');
     }
+
+    public function flagNotifications()
+    {
+        return $this->hasMany(FlagNotification::class, 'level_id', 'id');
+    }
+
 }
