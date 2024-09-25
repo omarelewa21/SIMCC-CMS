@@ -171,19 +171,24 @@ class CompetitionController extends Controller
             if ($request->has('id') && Competition::whereId($request->id)->exists()) {
                 return $this->show(Competition::find($request->id));
             }
+
             $limits = $request->limits ? $request->limits : 10;
             $searchKey = isset($request->search) ? $request->search : null;
 
-            $competitionModel = Competition::AcceptRequest(['id', 'status', 'format', 'name']);
-
-            //            return ($competitionModel)->get();
+            $competitionModel = Competition::AcceptRequest(['id', 'status', 'format', 'name'])
+            ->withCount(['flagNotifications as notification_count']);
 
             switch (auth()->user()->role_id) {
                 case 0:
                 case 1:
-                    $competitionModel->with(['competitionOrganization', 'overallAwardsGroups.overallAwards', 'rounds.roundsAwards', 'rounds.levels' => function ($query) {
-                        $query->orderBy('id');
-                    }]);
+                    $competitionModel->with([
+                        'competitionOrganization',
+                        'overallAwardsGroups.overallAwards',
+                        'rounds.roundsAwards',
+                        'rounds.levels' => function ($query) {
+                            $query->orderBy('id');
+                        }
+                    ]);
                     break;
                 case 2:
                 case 4:
@@ -201,7 +206,7 @@ class CompetitionController extends Controller
             });
 
             /**
-             * Lists of availabe filters
+             * Lists of available filters
              */
             $availUserStatus = $competitionCollection->map(function ($item) {
                 return $item['status'];
@@ -211,7 +216,7 @@ class CompetitionController extends Controller
             })->unique()->values();
 
             /**
-             * EOL Lists of availabe filters
+             * EOL Lists of available filters
              */
 
             $availForSearch = array("name");
@@ -225,16 +230,16 @@ class CompetitionController extends Controller
         } catch (QueryException $e) {
             return response()->json([
                 "status" => 500,
-                "message" => "competition list retrieve unsuccessful"
+                "message" => "Competition list retrieve unsuccessful"
             ], 500);
         } catch (ModelNotFoundException $e) {
-            // do task when error
             return response()->json([
                 "status" => 500,
-                "message" => "competition list retrieve unsuccessful"
+                "message" => "Competition list retrieve unsuccessful"
             ], 500);
         }
     }
+
 
     public function show(Competition $competition)
     {
