@@ -33,6 +33,7 @@ class CompetitionService
                     ->push($round->default_award_name);
 
         return Participants::with('integrityCases')
+                ->leftJoin('grades', 'participants.grade', 'grades.id')
                 ->leftJoin('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
                 ->leftJoin('competition_levels', 'competition_levels.id', 'competition_participants_results.level_id')
                 ->leftJoin('schools', 'participants.school_id', 'schools.id')
@@ -63,7 +64,7 @@ class CompetitionService
             CONCAT('\"',all_countries.display_name,'\"') as country,
             CONCAT('\"',competition_levels.name,'\"') as level,
             competition_levels.id as level_id,
-            participants.grade,
+            grades.display_name as grade,
             participants.country_id,
             participants.school_id,
             participants.status,
@@ -89,7 +90,7 @@ class CompetitionService
             all_countries.display_name as country,
             competition_levels.name as level,
             competition_levels.id as level_id,
-            participants.grade,
+            grades.display_name as grade,
             participants.country_id,
             participants.school_id,
             participants.status,
@@ -119,7 +120,7 @@ class CompetitionService
     {
         if (count($request->all()) === 0) return $query;
 
-        if ($request->filled('grade')) $query->where('participants.grade', $request->grade);
+        if ($request->filled('grade')) $query->where('grades.display_name', $request->grade);
         if ($request->filled('country')) $query->where('participants.country_id', $request->country);
         if ($request->filled('award')) $query->where('competition_participants_results.award', $request->award);
         if ($request->filled('status')) $query->where('participants.status', $request->status);

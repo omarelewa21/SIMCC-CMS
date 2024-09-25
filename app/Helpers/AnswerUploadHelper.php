@@ -4,7 +4,9 @@ namespace App\Helpers;
 
 use App\Models\Competition;
 use App\Models\CompetitionLevels;
+use App\Models\Grade;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AnswerUploadHelper
 {
@@ -30,12 +32,18 @@ class AnswerUploadHelper
         "K2" => "15",
     ];
 
+    const GRADES_TO_TRANSLATE = [
+        'ITE'   => '16',
+        'POLYTECHNIC' => '17',
+        'UNIVERSITY' => '18',
+    ];
+
     /**
      * Get the level for a participant based on their grade
-     * 
+     *
      * @param Competition $competition
      * @param $grade
-     * 
+     *
      * @return CompetitionLevels|null
      */
     public static function getParticipantLevelByGrade(Competition $competition, string $grade): CompetitionLevels|null
@@ -47,19 +55,18 @@ class AnswerUploadHelper
 
     /**
      * Get the levels for a participant based on their grade
-     * 
+     *
      * @param Competition $competition
      * @param array $grades
      * @param bool $withTasks
-     * 
+     *
      * @return array
      */
     public static function getLevelsForGradeSet(Competition $competition, array $grades, bool $withTasks = false): array
     {
         $levels = [];
         foreach($grades as $grade){
-            $systemGrade = self::translateCSVGradeToSystemGrade($grade);
-            $level = self::getParticipantLevelByGrade($competition, $systemGrade);
+            $level = self::getParticipantLevelByGrade($competition, $grade);
             if($level){
                 if($withTasks){
                     $level->tasks = $level->collection->sections()->pluck('tasks')
@@ -68,23 +75,24 @@ class AnswerUploadHelper
                         })->flatten()->sort();
                 }
                 $levels[$grade]['level'] = $level;
-                $levels[$grade]['grade'] = $systemGrade;
+                $levels[$grade]['grade'] = $grade;
             } else {
-                throw ValidationException::withMessages(["No level found for grade '$grade', please include this grade in competition levels first."]);
+                $gradeName = Grade::whereId($grade)->value('display_name');
+                throw ValidationException::withMessages(["No level found for grade $gradeName, please include this grade in competition levels first."]);
             }
         }
         return $levels;
     }
 
-    private static function translateCSVGradeToSystemGrade(string $grade)
+    public static function translateCSVGradeToSystemGrade(string $grade): int
     {
-        if(is_string($grade) && array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) {
-            $grade = self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
-        }
-        elseif(is_string($grade) && str_contains($grade, 'Grade')) {
-            $grade = str_replace('Grade', '', $grade);
-        }
-        return $grade;
+        if(is_numeric($grade)) return $grade;
+
+        if(str_contains($grade, 'Grade')) return trim(str_replace('Grade', '', $grade));
+
+        if(array_key_exists(Str::upper($grade), self::GRADES_TO_TRANSLATE)) return self::GRADES_TO_TRANSLATE[Str::upper($grade)];
+
+        if(array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) return self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
     }
 
     public static function getTrimmedAnswer($answer)

@@ -180,7 +180,6 @@ class MarkingController extends Controller
             DB::transaction(function () use($group){
                 $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
                     ->select('participants.grade')->distinct()->pluck('participants.grade');
-
                 $levelIds = $group->competition->rounds()
                     ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
                     ->pluck('competition_levels.grades', 'competition_levels.id')
@@ -425,7 +424,10 @@ class MarkingController extends Controller
             else{
                 $data = $level->participantResults()
                     ->where('competition_participants_results.group_id', $group->id)
-                    ->with('participant.school:id,name', 'participant.country:id,display_name as name')
+                    ->with(['participant' => fn ($query) => $query->join('grades', 'participants.grade', 'grades.id')
+                        ->select('participants.*', 'grades.display_name as grade')
+                        ->with(['school:id,name', 'country:id,display_name as name'])
+                    ])
                     ->orderBy('competition_participants_results.points', 'DESC')
                     ->orderBy('competition_participants_results.percentile', 'DESC')
                     ->get();
