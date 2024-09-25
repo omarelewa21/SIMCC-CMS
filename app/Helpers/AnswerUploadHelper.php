@@ -93,6 +93,8 @@ class AnswerUploadHelper
         if(array_key_exists(Str::upper($grade), self::GRADES_TO_TRANSLATE)) return self::GRADES_TO_TRANSLATE[Str::upper($grade)];
 
         if(array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) return self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
+
+        throw ValidationException::withMessages(["Grade $grade not found in system."]);
     }
 
     public static function getTrimmedAnswer($answer)
