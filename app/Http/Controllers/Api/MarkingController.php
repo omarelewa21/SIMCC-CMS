@@ -399,12 +399,13 @@ class MarkingController extends Controller
                     ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
                     ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
                     ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
+                    ->leftJoin('grades', 'participants.grade', 'grades.id')
                     ->select(
                         DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
                         DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
                         DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
                         DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
-                        'participants.grade',
+                        'grades.display_name as name',
                         DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
                         'participants.index_no as index',
                         DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
