@@ -67,6 +67,7 @@ class MarkingService
             $markedAnswers = $this->getLevelMarkedAnswers($level);
             $absentees = $this->getLevelAbsentees($level);
             $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
+            $flagNotifications = $level->flagNotifications->where('type', FlagNotification::TYPE_RECOMPUTE)->groupBy('group_id');
 
             $levels = [];
             foreach ($countryGroups as $group_id => $countryGroup) {
@@ -79,7 +80,7 @@ class MarkingService
                 $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
                 $logs = $level->markingLogs->filter(fn($log) => $log->group_id == $group_id);
                 $firstLogs = $logs->first();
-                $recompute_required = $level->flagNotifications($group_id, FlagNotification::TYPE_RECOMPUTE)->count() > 0;
+                $recompute_required = $flagNotifications->has($group_id);
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
