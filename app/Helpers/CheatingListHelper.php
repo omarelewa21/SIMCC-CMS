@@ -10,10 +10,10 @@ use App\Jobs\ComputeCheatingParticipants;
 use App\Models\CheatingStatus;
 use App\Models\Competition;
 use App\Models\Countries;
+use App\Models\Grade;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\IntegritySummary;
 use App\Models\Participants;
-use App\Services\GradeService;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
@@ -146,9 +146,7 @@ class CheatingListHelper
                     'name' => $participant['country']
                 ];
             })->unique('id')->values(),
-            'grade' => GradeService::getAvailableCorrespondingGradesFromList(
-                $cheaters->pluck('grade')->unique()->sort()->values()->toArray()
-            ),
+            'grade' => $cheaters->pluck('grade')->unique()->sort()->values()->toArray(),
         ];
     }
 
@@ -229,14 +227,15 @@ class CheatingListHelper
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 0)
             ->when($request->filled('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
-            ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
+            ->when($request->has('grade'), fn($query) => $query->where('grades.display_name', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
                     ->orWhere('participants.name', 'like', "%{$request->search}%");
             })
+            ->join('grades', 'participants.grade', 'grades.id')
             ->selectRaw("
                 participants.index_no, participants.name, participants.school_id, participants.country_id,
-                participants.grade, cheating_participants.group_id, cheating_participants.number_of_questions,
+                grades.display_name as grade, cheating_participants.group_id, cheating_participants.number_of_questions,
                 cheating_participants.number_of_cheating_questions, cheating_participants.cheating_percentage,
                 cheating_participants.number_of_same_correct_answers, cheating_participants.number_of_same_incorrect_answers,
                 cheating_participants.different_question_ids, cheating_participants.criteria_cheating_percentage,
@@ -463,10 +462,11 @@ class CheatingListHelper
                     $join->on('participants.index_no', 'cheating_participants.participant_index')
                         ->orOn('participants.index_no', 'cheating_participants.cheating_with_participant_index');
             })
+            ->join('grades', 'participants.grade', 'grades.id')
             ->where('cheating_participants.competition_id', $competition->id)
             ->where('cheating_participants.is_same_participant', 1)
             ->when($request->filled('country') && $request->missing('get_data'), fn($query) => $query->whereIn('participants.country_id', $request->country))
-            ->when($request->has('grade'), fn($query) => $query->where('participants.grade', $request->grade))
+            ->when($request->has('grade'), fn($query) => $query->where('grades.display_name', $request->grade))
             ->when($request->has('search'), function($query) use($request){
                 $query->where('participants.index_no', 'like', "%{$request->search}%")
                     ->orWhere('participants.name', 'like', "%{$request->search}%");
@@ -476,7 +476,7 @@ class CheatingListHelper
                 'participants.name',
                 'participants.school_id',
                 'participants.country_id',
-                'participants.grade',
+                'grades.display_name as grade',
                 'cheating_participants.group_id'
             )
             ->with(['school', 'country', 'answers' => fn($query) => $query->orderBy('task_id')->with('level.collection.sections'),
@@ -724,12 +724,13 @@ class CheatingListHelper
     public function getIntegrityCasesByCountry(Competition $competition, Countries $country)
     {
         return $competition->participants()
+            ->join('grades', 'participants.grade', 'grades.id')
             ->has('integrityCases')
             ->where('participants.country_id', $country->id)
             ->with('school:id,name', 'country:id,display_name as name', 'integrityCases')
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
-                'participants.country_id', 'participants.grade'
+                'participants.country_id', 'grades.display_name as grade'
             )->get()
             ->map(function($participant){
                 $data = $participant->toArray();
@@ -833,13 +834,14 @@ class CheatingListHelper
     public static function getCustomLabeledIntegrityCasesData(Competition $competition)
     {
         return $competition->participants()
+            ->join('grades', 'participants.grade', 'grades.id')
             ->whereRelation('integrityCases', 'mode', 'custom')
             ->where('participants.status', Participants::STATUS_CHEATING)
             ->when(request('country'), fn($query) => $query->whereIn('participants.country_id', json_decode(request('country'), true)))
             ->with(['answers', 'school:id,name', 'country:id,display_name as name', 'integrityCases' => fn($query) => $query->where('mode', 'custom')])
             ->select(
                 'participants.index_no', 'participants.name', 'participants.school_id',
-                'participants.country_id', 'participants.grade'
+                'participants.country_id', 'grades.display_name as grade'
             )
             ->get()
             ->map(function($participant){
