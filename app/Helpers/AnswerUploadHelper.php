@@ -84,17 +84,17 @@ class AnswerUploadHelper
         return $levels;
     }
 
-    public static function translateCSVGradeToSystemGrade(string $grade): int
+    public static function translateCSVGradeToSystemGrade(string $grade): int|string
     {
         if(is_numeric($grade)) return $grade;
 
-        if(str_contains($grade, 'Grade')) return trim(str_replace('Grade', '', $grade));
+        if(preg_match('/^Grade\s\d+$/', $grade)) return trim(str_replace('Grade', '', $grade));
 
         if(array_key_exists(Str::upper($grade), self::GRADES_TO_TRANSLATE)) return self::GRADES_TO_TRANSLATE[Str::upper($grade)];
 
         if(array_key_exists($grade, self::CSV_GRADES_TO_SYSTEM_GRADES)) return self::CSV_GRADES_TO_SYSTEM_GRADES[$grade];
 
-        throw ValidationException::withMessages(["Grade $grade not found in system."]);
+        throw ValidationException::withMessages(["Grade '$grade' is not recognized as a valid grade."]);
     }
 
     public static function getTrimmedAnswer($answer)
