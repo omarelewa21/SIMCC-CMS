@@ -1091,8 +1091,10 @@ class CompetitionController extends Controller
             $createdBy = auth()->id();
             $createdAt = now();
 
-            // Check if all countries are in the competition groups
-            $competitionGroupCountryIds = $competition->groups->pluck('country_id')->unique();
+            $competitionGroupCountryIds = $competition->groups->flatMap(function ($group) {
+                return $group->countries->pluck('id');
+            })->unique();
+
             $nonGroupCountries = $countryIds->diff($competitionGroupCountryIds);
 
             if ($nonGroupCountries->isNotEmpty()) {
