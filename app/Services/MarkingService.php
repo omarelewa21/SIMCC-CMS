@@ -7,6 +7,7 @@ use App\Models\CompetitionLevels;
 use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionRounds;
 use App\Models\Countries;
+use App\Models\FlagNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -27,12 +28,13 @@ class MarkingService
         );
         $countryGroups = $this->getListCompetitionGroupsWithCountries($competition);
         $rounds = $competition->rounds
-            ->mapWithKeys(function ($round) use($countryGroups) {
+            ->mapWithKeys(function ($round) use ($countryGroups) {
                 return [$round['name'] => $this->getLevelList($round, $countryGroups)];
             });
 
         return [
             "competition_name" => $competition['name'],
+            "notification_count" => $competition->flagNotifications()->count(),
             "rounds"           => $rounds
         ];
     }
@@ -59,15 +61,16 @@ class MarkingService
      */
     private function getLevelList(CompetitionRounds $round, Collection $countryGroups): Collection
     {
-        return $round->levels->mapWithKeys(function ($level) use($countryGroups) {
+        return $round->levels->mapWithKeys(function ($level) use ($countryGroups) {
             $totalParticipants = $this->getLevelTotalParticipants($level);
             $answersUploaded = $this->getLevelAnswersUploaded($level);
             $markedAnswers = $this->getLevelMarkedAnswers($level);
             $absentees = $this->getLevelAbsentees($level);
             $isLevelReadyToCompute = $this->isLevelReadyToCompute($level);
+            $flagNotifications = $level->flagNotifications->where('type', FlagNotification::TYPE_RECOMPUTE)->groupBy('group_id');
 
             $levels = [];
-            foreach($countryGroups as $group_id=>$countryGroup){
+            foreach ($countryGroups as $group_id => $countryGroup) {
                 $countryGroupIds = $countryGroup->keys()->toArray();
 
                 $totalParticipantsCount = $totalParticipants->whereIn('country_id', $countryGroupIds)->sum('total_participants');
@@ -75,9 +78,9 @@ class MarkingService
                 $absentees = $absentees->whereIn('country_id', $countryGroupIds);
                 $answersUploadedCount = $answersUploaded->whereIn('country_id', $countryGroupIds)->sum('answers_uploaded');
                 $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
-                $logs = $level->markingLogs->filter(fn($log)=> $log->group_id == $group_id);
+                $logs = $level->markingLogs->filter(fn($log) => $log->group_id == $group_id);
                 $firstLogs = $logs->first();
-
+                $recompute_required = $flagNotifications->has($group_id);
                 $levels[$level->id][] = [
                     'level_id'                      => $level->id,
                     'name'                          => $level->name,
@@ -96,6 +99,7 @@ class MarkingService
                     'computed_at'                   => $firstLogs?->computed_at->format('Y-m-d'),
                     'computed_by'                   => $firstLogs?->computed_by,
                     'logs'                          => $logs->values(),
+                    'recompute_required' => $recompute_required,
                 ];
             }
             return $levels;
@@ -176,10 +180,11 @@ class MarkingService
      *
      * @return bool
      */
-    public function isCompetitionReadyForCompute(Competition $competition) {
-        foreach($competition->rounds as $round){
-            foreach($round->levels as $level){
-                if(!$this->isLevelReadyToCompute($level)){
+    public function isCompetitionReadyForCompute(Competition $competition)
+    {
+        foreach ($competition->rounds as $round) {
+            foreach ($round->levels as $level) {
+                if (!$this->isLevelReadyToCompute($level)) {
                     return false;
                 }
             }
@@ -193,8 +198,9 @@ class MarkingService
      * @param \App\Models\CompetitionLevels $level
      * @return bool
      */
-    public static function isLevelReadyToCompute(CompetitionLevels $level){
-        if($level->rounds->roundsAwards()->doesntExist()) return false;
+    public static function isLevelReadyToCompute(CompetitionLevels $level)
+    {
+        if ($level->rounds->roundsAwards()->doesntExist()) return false;
 
         $levelTaskIds = $level->collection->sections
             ->pluck('section_task')->flatten()->pluck("id");
@@ -204,8 +210,8 @@ class MarkingService
         $numberOfCorrectAnswersWithMarks = $level->taskMarks()->join('task_answers', function ($join) {
             $join->on('competition_tasks_mark.task_answers_id', 'task_answers.id')->whereNotNull('task_answers.answer');
         })
-        ->whereIn('task_answers.task_id', $levelTaskIds)
-        ->select('task_answers.task_id')->distinct()->count();
+            ->whereIn('task_answers.task_id', $levelTaskIds)
+            ->select('task_answers.task_id')->distinct()->count();
 
         return $numberOfCorrectAnswersWithMarks >= $numberOfTasksIds;
 
@@ -240,8 +246,8 @@ class MarkingService
     {
         $participantAwards = $participantResults->pluck('award')->unique();
         $data = [];
-        foreach($participantAwards as $award){
-            $filteredParticipants = $participantResults->filter(fn($participantResult)=> $participantResult->award == $award);
+        foreach ($participantAwards as $award) {
+            $filteredParticipants = $participantResults->filter(fn($participantResult) => $participantResult->award == $award);
             $data[$award]['max'] = $filteredParticipants->first()->points;
             $data[$award]['min'] = $filteredParticipants->last()->points;
         }
@@ -260,7 +266,7 @@ class MarkingService
     {
         $countries = Countries::whereIn('id', $request->countries)->select('id', 'display_name')
             ->get()
-            ->mapWithKeys(fn($country)=>[
+            ->mapWithKeys(fn($country) => [
                 $country->id => [
                     'name' => $country->display_name,
                     'id'   => $country->id
@@ -294,7 +300,7 @@ class MarkingService
      */
     public static function setTotalParticipantsByCountryByGrade(&$data, $countries, $totalParticipants)
     {
-        foreach($totalParticipants as $participants){
+        foreach ($totalParticipants as $participants) {
             $country = $countries[$participants->country_id]['name'];
 
             static::inititializeCountryGrade($data, $participants->grade, $country);
@@ -309,7 +315,7 @@ class MarkingService
             // Add total participants for all grades per country
             $data['total'][$country]['total_participants'] += $participants->total_participants;
 
-             // Add total participants for all countries per grade
+            // Add total participants for all countries per grade
             $data[$participants->grade]['total']['total_participants'] += $participants->total_participants;
         }
     }
@@ -325,7 +331,7 @@ class MarkingService
      */
     public static function setTotalParticipantsWithAnswersAndAbsentees(&$data, $countries, $totalParticipantsWithAnswer)
     {
-        foreach($totalParticipantsWithAnswer as $participants){
+        foreach ($totalParticipantsWithAnswer as $participants) {
             $country = $countries[$participants->country_id]['name'];
             // Add total participants with answers for each country and grade
             $data[$participants->grade][$country]['total_participants_with_answers']
@@ -346,7 +352,7 @@ class MarkingService
 
     private static function inititializeCountryGrade(&$data, $grade, $country)
     {
-        if(!isset($data[$grade]['total']['total_participants'])) {
+        if (!isset($data[$grade]['total']['total_participants'])) {
             // Initialize total participants for all countries per grade
             $data[$grade]['total'] = [
                 'total_participants' => 0,
@@ -356,7 +362,7 @@ class MarkingService
             ];
         }
 
-        if(!isset($data['total'][$country])) {
+        if (!isset($data['total'][$country])) {
             $data['total'][$country] = [
                 'total_participants' => 0,
                 'total_participants_with_answers' => 0,
@@ -371,7 +377,7 @@ class MarkingService
         $dataCountries = array_keys($data['total']);
         $requestCountries = $countries->pluck('name')->toArray();
         $missingCountries = array_diff($requestCountries, $dataCountries);
-        foreach($missingCountries as $country){
+        foreach ($missingCountries as $country) {
             $data['total'][$country] = [
                 'total_participants' => 0,
                 'total_participants_with_answers' => 0,

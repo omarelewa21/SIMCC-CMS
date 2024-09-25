@@ -36,7 +36,9 @@ use App\Http\Requests\UploadAnswersRequest;
 use App\Jobs\ProcessAnswerUpload;
 use App\Models\Collections;
 use App\Models\Countries;
+use App\Models\FlagNotification;
 use App\Models\IntegrityCheckCompetitionCountries;
+use App\Models\LevelGroupCompute;
 use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
@@ -412,8 +414,8 @@ class CompetitionController extends Controller
                     $level->name = $row['name'];
 
                     if (count(array_intersect($row['grades'], $level->grades)) !== count($level->grades)  || $level->collection_id !== $row['collection_id']) {
-                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn ($query) => $query->where('level_id', $level->id))
-                            ->whereHas('integrityCases', fn ($query) => $query->where('mode', 'system'))->exists();
+                        $checkIfLevelHasSystemIAC = Participants::whereHas('answers', fn($query) => $query->where('level_id', $level->id))
+                            ->whereHas('integrityCases', fn($query) => $query->where('mode', 'system'))->exists();
                         throw_if($checkIfLevelHasSystemIAC, \Exception::class, "Some students in level {$level->name} are Integrity IAC, you must remove them first before changing assigned grades or collection to this level");
                     }
 
@@ -797,7 +799,7 @@ class CompetitionController extends Controller
         try {
             $request->validate([
                 "organizations"                         => 'required|array',
-                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization', "id")->where(fn ($query) => $query->where('status', 'active')), new AddOrganizationDistinctIDRule],
+                "organizations.*.organization_id"       => ["required", "integer", Rule::exists('organization', "id")->where(fn($query) => $query->where('status', 'active')), new AddOrganizationDistinctIDRule],
                 "organizations.*.country_id"            => ['required', 'integer', new CheckOrganizationCountryPartnerExist],
                 "organizations.*.translate"             => "json",
                 "organizations.*.edit_sessions.*"       => 'boolean',
@@ -1061,6 +1063,12 @@ class CompetitionController extends Controller
         DB::beginTransaction();
         try {
             $competition = Competition::find($request->competition_id);
+            $competitionCountryGroups = $competition->groups
+                ->pluck('countries', 'id')
+                ->mapWithKeys(function ($countryGroup, $group_id) {
+                    return [$group_id => $countryGroup->pluck('display_name', 'id')];
+                });
+
 
             $levels = AnswerUploadHelper::getLevelsForGradeSet(
                 $competition,
@@ -1070,18 +1078,17 @@ class CompetitionController extends Controller
 
             $participants = Participants::whereIn('index_no', Arr::pluck($request->participants, 'index_number'))
                 ->select('grade', 'index_no', 'status', 'country_id')
-                ->with(['integrityCases' => fn ($query) => $query->where('mode', 'system')])
+                ->with(['integrityCases' => fn($query) => $query->where('mode', 'system')])
                 ->get();
 
             $countryIds = $participants->pluck('country_id')->unique();
             $confirmedCountries = IntegrityCheckCompetitionCountries::whereIn('country_id', $countryIds)
                 ->where('competition_id', $competition->id)->where('is_confirmed', 1)->with('country:id,display_name as name')->get();
-
             if ($confirmedCountries->isNotEmpty()) {
                 throw ValidationException::withMessages([sprintf("The following countries have confirmed integrity checks: %s, you must revoke them first before uploading answers", $confirmedCountries->pluck('country.name')->implode(', '))]);
             }
 
-            $systemIACParticipants = $participants->filter(fn ($participant) => $participant->integrityCases->isNotEmpty());
+            $systemIACParticipants = $participants->filter(fn($participant) => $participant->integrityCases->isNotEmpty());
             if ($systemIACParticipants->isNotEmpty()) {
                 throw ValidationException::withMessages([sprintf("Students with indexes => [%s] are Integrity IAC, you must remove them first before uploading answers to them", $systemIACParticipants->pluck('index_no')->implode(', '))]);
             }
@@ -1101,7 +1108,7 @@ class CompetitionController extends Controller
             }
 
             foreach ($request->participants as $participantData) {
-                $participant = $participants->first(fn ($p) => $p->index_no === $participantData['index_number']);
+                $participant = $participants->first(fn($p) => $p->index_no === $participantData['index_number']);
 
                 if ($levels[$participantData['grade']]['grade'] != $participant?->grade) {
                     throw ValidationException::withMessages(["The imported grade for student with index {$participantData['index_number']} does not match the registered grade in the system"]);
@@ -1127,6 +1134,25 @@ class CompetitionController extends Controller
                         'created_by_userid' => $createdBy,
                         'created_at' => $createdAt
                     ]);
+                }
+
+                foreach ($competitionCountryGroups as $group_id => $countryGroup) {
+                    $levelGroupCompute = $level->levelGroupComputes->where('group_id', $group_id)->first();
+                    $computingStatus = $levelGroupCompute?->computing_status;
+                    if (LevelGroupCompute::STATUS_FINISHED == $computingStatus) {
+                        FlagNotification::updateOrCreate(
+                            [
+                                'competition_id' => $competition->id,
+                                'level_id'       => $level->id,
+                                'group_id'       => $group_id
+                            ],
+                            [
+                                'status' => true,
+                                'type'   => FlagNotification::TYPE_RECOMPUTE,
+                                'note'   => 'Answer set changed for the student in this grade'
+                            ]
+                        );
+                    }
                 }
             }
 
@@ -1159,8 +1185,22 @@ class CompetitionController extends Controller
     {
         try {
             $header = [
-                'participant', 'index', 'certificate number', 'status', 'competition', 'organization', 'country',
-                'level', 'grade', 'school', 'tuition', 'points', 'award', 'school_rank', 'country_rank', 'global rank'
+                'participant',
+                'index',
+                'certificate number',
+                'status',
+                'competition',
+                'organization',
+                'country',
+                'level',
+                'grade',
+                'school',
+                'tuition',
+                'points',
+                'award',
+                'school_rank',
+                'country_rank',
+                'global rank'
             ];
             $competitionService = new CompetitionService($competition);
             $data = $competitionService->applyFilterToReport(
