@@ -1146,6 +1146,7 @@ class CompetitionController extends Controller
             }
 
             ProcessAnswerUpload::dispatch($competition, $request->all());
+            \ResponseCache::clear();
 
             DB::commit();
             return response()->json([
