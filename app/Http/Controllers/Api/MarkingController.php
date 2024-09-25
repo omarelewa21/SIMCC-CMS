@@ -180,7 +180,6 @@ class MarkingController extends Controller
             DB::transaction(function () use($group){
                 $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
                     ->select('participants.grade')->distinct()->pluck('participants.grade');
-
                 $levelIds = $group->competition->rounds()
                     ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
                     ->pluck('competition_levels.grades', 'competition_levels.id')
