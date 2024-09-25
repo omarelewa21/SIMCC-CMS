@@ -16,48 +16,55 @@ class CompetitionLevels extends Model
     const STATUS_BUG_DETECTED = "Bug Detected";
 
     protected $table = "competition_levels";
-    protected $guarded =[];
+    protected $guarded = [];
 
     protected $casts = [
         'grades' => 'array',
     ];
 
-    public function rounds () {
-        return $this->belongsTo(CompetitionRounds::class,'round_id','id');
+    public function rounds()
+    {
+        return $this->belongsTo(CompetitionRounds::class, 'round_id', 'id');
     }
 
-    public function collection () {
-        return $this->hasOne(Collections::class,'id','collection_id');
+    public function collection()
+    {
+        return $this->hasOne(Collections::class, 'id', 'collection_id');
     }
 
-    public function taskMarks () {
-        return $this->hasMany(CompetitionTasksMark::class,'level_id','id');
+    public function taskMarks()
+    {
+        return $this->hasMany(CompetitionTasksMark::class, 'level_id', 'id');
     }
 
-    public function taskDifficultyGroup () {
-        return $this->hasMany(CompetitionTaskDifficulty::class,'level_id','id');
+    public function taskDifficultyGroup()
+    {
+        return $this->hasMany(CompetitionTaskDifficulty::class, 'level_id', 'id');
     }
 
-    public function participantsAnswersUploaded () {
-        return $this->hasMany(ParticipantsAnswer::class,'level_id','id');
+    public function participantsAnswersUploaded()
+    {
+        return $this->hasMany(ParticipantsAnswer::class, 'level_id', 'id');
     }
 
-    public function levelGroupComputes ()
+    public function levelGroupComputes()
     {
         return $this->hasMany(LevelGroupCompute::class, 'level_id');
     }
 
-    public function markingLogs ()
+    public function markingLogs()
     {
         return $this->hasMany(MarkingLogs::class, 'level_id')->orderBy('id', 'desc');
     }
 
-    public function setGradesAttribute ($value) {
+    public function setGradesAttribute($value)
+    {
         $value = array_unique($value);
         return $this->attributes['grades'] = json_encode($value);
     }
 
-    public function getGradesAttribute ($value) {
+    public function getGradesAttribute($value)
+    {
         return json_decode($value);
     }
 
@@ -66,7 +73,7 @@ class CompetitionLevels extends Model
         return $this->rounds->competition->participants()->whereIn('participants.grade', $this->grades);
     }
 
-    public function updateStatus($status, $error_message=null)
+    public function updateStatus($status, $error_message = null)
     {
         switch ($status) {
             case self::STATUS_In_PROGRESS:
@@ -99,9 +106,19 @@ class CompetitionLevels extends Model
         return $this->hasMany(CompetitionParticipantsResults::class, 'level_id');
     }
 
-    public function flagNotifications()
-    {
-        return $this->hasMany(FlagNotification::class, 'level_id', 'id');
-    }
 
+    public function flagNotifications($group_id = null, $type = null)
+    {
+        $query = $this->hasMany(FlagNotification::class, 'level_id', 'id');
+
+        if (!is_null($group_id)) {
+            $query->where('group_id', $group_id);
+        }
+
+        if (!is_null($type)) {
+            $query->where('type', $type);
+        }
+
+        return $query;
+    }
 }
