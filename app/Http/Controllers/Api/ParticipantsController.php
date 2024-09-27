@@ -159,10 +159,8 @@ class ParticipantsController extends Controller
             ->leftJoin('participant_answers', function ($join) {
                 $join->on('participant_answers.participant_index', '=', 'participants.index_no');
             })
-            ->leftJoin('grades', 'grades.id', '=', 'participants.grade')
             ->select(
                 'participants.*',
-                'grades.display_name as grade',
                 'all_countries.display_name as country_name',
                 DB::raw("CASE WHEN participants.tuition_centre_id IS NULL THEN 0 ELSE 1 END AS private"),
                 'schools.id as school_id',
