@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Helpers\AnswerUploadHelper;
 use App\Models\Competition;
-use App\Models\Participants;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,6 +21,21 @@ class UploadAnswersRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        $participants = [];
+        foreach($this->participants as $participant){
+            $participant['grade'] = AnswerUploadHelper::translateCSVGradeToSystemGrade($participant['grade']);
+            $participants[] = $participant;
+        }
+        $this->getInputSource()->set("participants", $participants);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -30,7 +45,7 @@ class UploadAnswersRequest extends FormRequest
         $competition = Competition::findOrFail($this->competition_id);
         return [
             'participants'          => 'required|array',
-            'participants.*.grade'  => 'required|string',
+            'participants.*.grade'  => 'required|integer',
             'participants.*.index_number' => Rule::exists('participants', 'index_no')
                 ->where(function ($query) use ($competition) {
                     $query->whereExists(function ($query) use ($competition) {

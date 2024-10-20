@@ -52,7 +52,6 @@ class CompetitionCheatingListRequest extends FormRequest
     {
         return [
             'school'            => 'integer|exists:schools,id',
-            'grade'             => 'integer|exists:participants,grade',
             'search'            => 'string',
             'percentage'        => 'numeric',
             'question_number'   => 'integer',

@@ -119,18 +119,18 @@ class ParticipantAnswersListService
     public function getAnswerReportData()
     {
         return $this->competition->participants()
+            ->join('grades', 'grades.id', '=', 'participants.grade')
             ->whereIn('participants.country_id', $this->request->countries)
             ->where('participants.grade', $this->request->grade)
             ->with(['answers', 'country:id,display_name as name'])
             ->select(
-                'participants.index_no', 'participants.name', 'participants.grade',
+                'participants.index_no', 'participants.name', 'grades.display_name as grade',
                 'participants.country_id'
             )
             ->get()
             ->map(function($participant) {
                 $data['index'] = $participant->index_no;
                 $data['name'] = $participant->name;
-                $data['grade'] = Grade::find($participant->grade)->display_name;
                 $data['country'] = $participant->country->name;
                 foreach($participant->answers as $index=>$answer) {
                     $data["Q" . ($index + 1)] = sprintf("%s (%s -> %s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect', $answer->score);
