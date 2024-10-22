@@ -88,8 +88,9 @@ header h2 {
     width: 30%;
     background-color: rgb(20, 74, 148);
     border-radius: 25px;
-    margin-bottom: 10px;
     padding-bottom: 20px;
+    page-break-inside: avoid;
+    margin-top: 20px;
 }
 .performance-by-topics .data .card * {
     color: rgb(255, 255, 255);
