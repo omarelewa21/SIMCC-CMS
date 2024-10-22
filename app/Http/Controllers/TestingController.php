@@ -15,6 +15,7 @@ use App\Models\ParticipantsAnswer;
 use App\Models\School;
 use App\Services\ComputeLevelGroupService;
 use App\Services\GradeService;
+use App\Services\ParticipantReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -27,7 +28,7 @@ class TestingController extends Controller
     }
 
     /**
-     * 
+     *
      */
     public function storeRemainingGroupCountriesForCompetitionId(int $competitionId)
     {
@@ -83,7 +84,7 @@ class TestingController extends Controller
                 'trace' => $e->getTraceAsString()
             ], 500);
         }
-        
+
     }
 
     public function generateCheatersCSV(Competition $competition)
@@ -144,17 +145,17 @@ class TestingController extends Controller
     {
         $grades = $competition->levels()->pluck('grades')
             ->flatten()->unique()->sort()->values()->toArray();
-        
+
         $grades = GradeService::getAvailableCorrespondingGradesFromList($grades);
 
         $countryIds = $competition->participants()->has('answers')
             ->select('participants.country_id')
             ->distinct()->pluck('participants.country_id')->toArray();
-        
+
         $countries = Countries::whereIn('id', $countryIds)
             ->select('id', 'display_name as name')->get();
 
-        return view('testing.answer-report', compact('competition', 'grades', 'countries'));   
+        return view('testing.answer-report', compact('competition', 'grades', 'countries'));
     }
 
     public function answerReportPost(Competition $competition, AnswerReportRequest $request)
@@ -176,7 +177,7 @@ class TestingController extends Controller
                 if($index === 0){
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
                 } elseif ($participantResult->points === $results[$index-1]->points){
-                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank); 
+                    $globalRankNumber = preg_replace('/[^0-9]/', '', $results[$index-1]->global_rank);
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $globalRankNumber));
                 } else {
                     $participantResult->setAttribute('global_rank', sprintf("%s %s", $award, $index+1));
@@ -191,5 +192,30 @@ class TestingController extends Controller
     public function testAwardAndPercentile($level, $group)
     {
         (new ComputeLevelGroupService($level, $group))->setParticipantsAwards();
+    }
+
+    public function report(Participants $participant)
+    {
+        $participantResult = $participant->result->makeVisible('report');
+        if (is_null($participantResult->report)) {
+            // Generate the report data
+            $__report = new ParticipantReportService($participantResult->participant, $participantResult->competitionLevel);
+            $report = $__report->getJsonReport();
+            $participantResult->report = $report;
+            $participantResult->save();
+        } else {
+            $report = $participantResult->report;
+        }
+        $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
+            $pdf = \PDF::loadView('performance-report', [
+                'general_data'                  => $report['general_data'],
+                'performance_by_questions'      => $report['performance_by_questions'],
+                'performance_by_topics'         => $report['performance_by_topics'],
+                'grade_performance_analysis'    => $report['grade_performance_analysis'],
+                'analysis_by_questions'         => $report['analysis_by_questions']
+            ]);
+            $filename = $participantResult->participant->name . '-report.pdf';
+            $pdfContent = $pdf->output();
+            return view('performance-report-pdf')->with('pdfContent', $pdfContent)->with('filename', $filename);
     }
 }
