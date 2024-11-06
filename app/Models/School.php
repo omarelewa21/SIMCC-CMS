@@ -2,15 +2,25 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\StatusScope;
+use App\Traits\Filter;
+use App\Traits\Search;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class School extends Model
+#[ScopedBy([new StatusScope('deleted')])]
+class School extends Base
 {
-    use HasFactory;
-    use Filterable;
+    use HasFactory, Filterable, Filter, Search;
+
+    protected $searchable = ['name', 'address', 'postal', 'phone', 'email', 'province'];
+    public $filterable = [
+        'id'        => 'id',
+        'country'   => 'country.id',
+        'status'    => 'status'
+    ];
 
     private static $whiteListFilter = [
         'name',
@@ -22,7 +32,7 @@ class School extends Model
 
     protected $table = 'schools';
     protected $guarded = [];
-    protected $appends = ['user_can_approve_and_reject'];
+    protected $appends = ['user_can_approve_and_reject', 'created_by', 'last_modified_by'];
 
     public static function booted()
     {
@@ -50,7 +60,7 @@ class School extends Model
             if(!array_key_exists('status', $attributes)) return false;
             if($attributes['status'] !== 'pending') return false;
             if(auth()->user()->hasRole(['Country Partner', 'Country Partner Assistant'])) {
-                return auth()->id() !== $attributes['created_by_userid'] 
+                return auth()->id() !== $attributes['created_by_userid']
                     && auth()->user()->organization_id === User::whereId($attributes['created_by_userid'])->value('organization_id');
             }
             return true;
