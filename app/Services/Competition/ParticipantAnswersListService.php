@@ -4,6 +4,7 @@ namespace App\Services\Competition;
 
 use App\Models\Competition;
 use App\Models\CompetitionTasksMark;
+use App\Models\Grade;
 use App\Models\ParticipantsAnswer;
 use App\Services\GradeService;
 use Illuminate\Http\Request;
@@ -18,11 +19,10 @@ class ParticipantAnswersListService
     public function getFilterOptions()
     {
         $availableStatusses = $this->getAvailableStatusses();
-        $availableGrades = GradeService::getAvailableCorrespondingGradesFromList($this->getAvailableGrades());
         $availableCountries = $this->getAvailableCountries();
         return [
             'status' => $availableStatusses,
-            'grade' => $availableGrades,
+            'grade' => $this->getAvailableGrades(),
             'country' => $availableCountries
         ];
     }
@@ -49,11 +49,12 @@ class ParticipantAnswersListService
     private function getAvailableGrades(): array
     {
         return (clone $this->getParticipantsQuery())
-            ->select('participants.grade')
-            ->orderBy('participants.grade')
+            ->join('grades', 'grades.id', '=', 'participants.grade')
+            ->select('grades.display_name as name')
+            ->orderBy('grades.id')
             ->distinct()
             ->get()
-            ->pluck('grade')
+            ->pluck('name')
             ->toArray();
     }
 
@@ -118,18 +119,18 @@ class ParticipantAnswersListService
     public function getAnswerReportData()
     {
         return $this->competition->participants()
+            ->join('grades', 'grades.id', '=', 'participants.grade')
             ->whereIn('participants.country_id', $this->request->countries)
             ->where('participants.grade', $this->request->grade)
             ->with(['answers', 'country:id,display_name as name'])
             ->select(
-                'participants.index_no', 'participants.name', 'participants.grade',
+                'participants.index_no', 'participants.name', 'grades.display_name as grade',
                 'participants.country_id'
             )
             ->get()
             ->map(function($participant) {
                 $data['index'] = $participant->index_no;
                 $data['name'] = $participant->name;
-                $data['grade'] = GradeService::AvailableGrades[$participant->grade];
                 $data['country'] = $participant->country->name;
                 foreach($participant->answers as $index=>$answer) {
                     $data["Q" . ($index + 1)] = sprintf("%s (%s -> %s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect', $answer->score);
@@ -162,8 +163,8 @@ class ParticipantAnswersListService
                     'level_id' => $level->id, 'task_answers_id' => $answer->id]
                 )->value('marks');
                 return ['key' => $answer->answer, 'marks' => $answerMarks];
-            });        
-        
+            });
+
         foreach($answerKeys as $index=>$answerKey) {
             $headers[] = sprintf("Q%s (%s -> %s)", $index+1, $answerKey['key'], $answerKey['marks']);
         }

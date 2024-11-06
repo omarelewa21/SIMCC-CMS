@@ -180,7 +180,6 @@ class MarkingController extends Controller
             DB::transaction(function () use($group){
                 $grades = $group->countries()->join('participants', 'participants.country_id', 'all_countries.id')
                     ->select('participants.grade')->distinct()->pluck('participants.grade');
-
                 $levelIds = $group->competition->rounds()
                     ->join('competition_levels', 'competition_levels.round_id', 'competition_rounds.id')
                     ->pluck('competition_levels.grades', 'competition_levels.id')
@@ -399,12 +398,13 @@ class MarkingController extends Controller
                     ->leftJoin('all_countries', 'all_countries.id', 'participants.country_id')
                     ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
                     ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
+                    ->leftJoin('grades', 'participants.grade', 'grades.id')
                     ->select(
                         DB::raw("CONCAT('\"', competition.name, '\"') AS competition"),
                         DB::raw("CONCAT('\"', organization.name, '\"') AS organization"),
                         DB::raw("CONCAT('\"', all_countries.display_name, '\"') AS country"),
                         DB::raw("CONCAT('\"', competition_levels.name, '\"') AS level"),
-                        'participants.grade',
+                        'grades.display_name as name',
                         DB::raw("CONCAT('\"', schools.name, '\"') AS school"),
                         'participants.index_no as index',
                         DB::raw("CONCAT('\"', participants.name, '\"') AS participant"),
@@ -424,7 +424,10 @@ class MarkingController extends Controller
             else{
                 $data = $level->participantResults()
                     ->where('competition_participants_results.group_id', $group->id)
-                    ->with('participant.school:id,name', 'participant.country:id,display_name as name')
+                    ->with(['participant' => fn ($query) => $query->join('grades', 'participants.grade', 'grades.id')
+                        ->select('participants.*', 'grades.display_name as grade')
+                        ->with(['school:id,name', 'country:id,display_name as name'])
+                    ])
                     ->orderBy('competition_participants_results.points', 'DESC')
                     ->orderBy('competition_participants_results.percentile', 'DESC')
                     ->get();
