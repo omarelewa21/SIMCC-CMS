@@ -45,9 +45,10 @@ abstract class GetList
         }
 
         $filterKey = $this->request->get('get_filter');
+        $filterables = $this->filterables();
 
-        return $this->filterables()->has($filterKey)
-            ? $this->filterables()->get($this->request->get('get_filter'))()
+        return $filterables->has($filterKey)
+            ? $filterables->get($filterKey)()
             : $this->getModel()::whereRaw('1 = 0');
     }
 
