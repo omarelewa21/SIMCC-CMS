@@ -5,39 +5,31 @@ namespace App\Exports;
 use App\Models\Competition;
 use App\Services\Competition\ParticipantAnswersListService;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class AnswersReportExport implements FromCollection, WithHeadings, WithColumnFormatting, ShouldAutoSize
+class AnswersReportExport implements WithMultipleSheets
 {
     private ParticipantAnswersListService $participantAnswersService;
+    private Request $request;
 
     public function __construct(Competition $competition, Request $request)
     {
         $this->participantAnswersService = new ParticipantAnswersListService($competition, $request);
+        $this->request = $request;
     }
 
-    /**
-    * @return \Illuminate\Support\Collection
-    */
-    public function collection()
+    public function sheets(): array
     {
-        return $this->participantAnswersService->getAnswerReportData();
-    }
+        $sheets = [];
+        if($this->request->filled('grade')) {
+            $sheets[] = new AnswerReportPerGrade($this->participantAnswersService, $this->request->grade);
+            return $sheets;
+        }
 
-    public function headings(): array
-    {
-        return $this->participantAnswersService->getAnswerReportHeaders();
-    }
-
-    public function columnFormats(): array
-    {
-        return [
-            // A is string
-            'A' => NumberFormat::FORMAT_TEXT,
-        ];
+        $grades = $this->participantAnswersService->getCompetitionsGrades();
+        foreach($grades as $grade) {
+            $sheets[] = new AnswerReportPerGrade($this->participantAnswersService, $grade);
+        }
+        return $sheets;
     }
 }

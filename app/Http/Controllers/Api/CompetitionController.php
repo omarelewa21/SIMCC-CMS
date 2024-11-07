@@ -41,6 +41,7 @@ use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
+use App\Services\Competition\ReportListService;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -1196,6 +1197,15 @@ return $message;
                 'error'     => strval($e)
             ], 500);
         }
+    }
+
+    public function reportList(Competition $competition, Request $request)
+    {
+        return encompass(
+            $request->mode === 'csv'
+            ? fn() => (new ReportListService($competition, $request))->getReportCSVData()
+            : fn() => (new ReportListService($competition, $request))->getReportListOrFilter()
+        );
     }
 
     private function addDifficultyGroup($collection_id, $competition_level)

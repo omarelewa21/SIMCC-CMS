@@ -4,16 +4,14 @@ namespace App\Services\Competition;
 
 use App\Models\Competition;
 use App\Models\CompetitionTasksMark;
-use App\Models\Grade;
 use App\Models\ParticipantsAnswer;
-use App\Services\GradeService;
 use Illuminate\Http\Request;
 
 class ParticipantAnswersListService
 {
     public function __construct(
-        private Competition $competition,
-        private Request $request
+        public Competition $competition,
+        public Request $request
     ){}
 
     public function getFilterOptions()
@@ -116,12 +114,12 @@ class ParticipantAnswersListService
         return "answers_report_{$competition->name}.xlsx";
     }
 
-    public function getAnswerReportData()
+    public function getAnswerReportData($grade)
     {
         return $this->competition->participants()
             ->join('grades', 'grades.id', '=', 'participants.grade')
-            ->whereIn('participants.country_id', $this->request->countries)
-            ->where('participants.grade', $this->request->grade)
+            ->when($this->request->countries, fn($query) => $query->whereIn('participants.country_id', $this->request->countries))
+            ->where('participants.grade', $grade)
             ->with(['answers', 'country:id,display_name as name'])
             ->select(
                 'participants.index_no', 'participants.name', 'grades.display_name as grade',
@@ -131,16 +129,17 @@ class ParticipantAnswersListService
             ->map(function($participant) {
                 $data['index'] = $participant->index_no;
                 $data['name'] = $participant->name;
+                $data['grade'] = $participant->grade;
                 $data['country'] = $participant->country->name;
                 foreach($participant->answers as $index=>$answer) {
-                    $data["Q" . ($index + 1)] = sprintf("%s (%s -> %s)", $answer->answer, $answer->is_correct ? 'Correct' : 'Incorrect', $answer->score);
+                    $data["Q" . ($index + 1)] = sprintf("%s (%s -> %s)", $answer->is_correct ? 'Correct' : 'Incorrect', $answer->answer, $answer->score);
                 }
                 $data['total_score'] = $participant->answers->sum('score');
                 return $data;
             });
     }
 
-    public function getAnswerReportHeaders()
+    public function getAnswerReportHeaders($grade)
     {
         $headers = [
             'Index No',
@@ -150,7 +149,7 @@ class ParticipantAnswersListService
         ];
 
         $level = $this->competition->levels()
-            ->whereJsonContains('grades', intval($this->request->grade))
+            ->whereJsonContains('grades', intval($grade))
             ->with('collection.sections')
             ->first();
 
@@ -172,5 +171,16 @@ class ParticipantAnswersListService
         $headers[] = sprintf("Total Score (%s)", $level->maxPoints());
 
         return $headers;
+    }
+
+    public function getCompetitionsGrades()
+    {
+        return $this->competition->participants()
+            ->select('participants.grade')
+            ->distinct()
+            ->orderBy('participants.grade')
+            ->get()
+            ->pluck('grade')
+            ->toArray();
     }
 }

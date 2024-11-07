@@ -25,9 +25,9 @@ class AnswerReportRequest extends FormRequest
     public function rules()
     {
         return [
-            'countries'     => 'required|array|min:1',
-            'countries.*'   => 'required|integer|exists:all_countries,id',
-            'grade'         => 'required|integer|in:' .implode(',', GradeService::getAllowedGradeNumbers()),
+            'countries'     => 'array|min:1',
+            'countries.*'   => 'integer|exists:all_countries,id',
+            'grade'         => 'integer|in:' .implode(',', GradeService::getAllowedGradeNumbers()),
         ];
     }
 }
