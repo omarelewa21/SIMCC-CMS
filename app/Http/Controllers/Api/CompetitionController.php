@@ -40,6 +40,7 @@ use App\Models\Participants;
 use App\Rules\AddOrganizationDistinctIDRule;
 use App\Rules\CheckLocalRegistrationDateAvail;
 use App\Rules\CheckOrganizationCountryPartnerExist;
+use App\Services\Competition\CompetitionListService;
 use App\Services\Competition\ReportListService;
 use App\Services\CompetitionService;
 use Illuminate\Support\Facades\Validator;
@@ -162,7 +163,7 @@ class CompetitionController extends Controller
         }
     }
 
-    public function list(CompetitionListRequest $request)
+    public function oldList(CompetitionListRequest $request)
     {
         try {
             if ($request->has('id') && Competition::whereId($request->id)->exists()) {
@@ -231,6 +232,15 @@ class CompetitionController extends Controller
                 "message" => "competition list retrieve unsuccessful"
             ],500);
         }
+    }
+
+    public function list(CompetitionListRequest $request)
+    {
+        return encompass(
+            $request->has('id')
+                ? fn() => $this->show(Competition::findOrFail($request->id))
+                : fn() => (new CompetitionListService($request))->getWhatUserWants()
+        );
     }
 
     public function show(Competition $competition)
