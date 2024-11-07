@@ -111,7 +111,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "competition"], function () {
         Route::post("", [CompetitionController::class, "create"])->name('competition.create');
-        Route::get("", [CompetitionController::class, "list"])->name('competition.list');
+        Route::get("", [CompetitionController::class, "oldList"])->name('competition.list');
+        Route::get("list", [CompetitionController::class, "list"])->name('competition.list');
         Route::get("/{competition}", [CompetitionController::class, "show"])->name('competition.show');
         Route::patch("/edit-settings/{competition}", [CompetitionController::class, "update"])->name('competition.update');
         Route::delete("", [CompetitionController::class, "delete"])->name('competition.delete');
