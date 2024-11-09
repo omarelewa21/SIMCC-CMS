@@ -3,8 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\CheckCompetitionEnded;
-use App\Rules\CheckDeleteParticipant;
-use App\Rules\CheckParticipantDeleteExpire;
+use App\Rules\ValidateParticipantId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeleteParticipantRequest extends FormRequest
@@ -28,12 +27,7 @@ class DeleteParticipantRequest extends FormRequest
     {
         return [
             "id"    => "array",
-            "id.*"  => [
-                "required", "integer", 'bail',
-                new CheckDeleteParticipant(auth()->user()->role_id),
-                new CheckCompetitionEnded('delete'),
-                new CheckParticipantDeleteExpire(7)
-            ],
+            "id.*"  => ["required", "integer", 'bail', new ValidateParticipantId(mode: 'delete'), new CheckCompetitionEnded('delete')],
         ];
     }
 }
