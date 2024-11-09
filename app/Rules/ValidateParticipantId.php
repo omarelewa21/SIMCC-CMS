@@ -31,7 +31,7 @@ class ValidateParticipantId implements ValidationRule
         }
 
         if($this->user->hasRole(['country partner', 'country partner assistant'])) {
-            $this->validateForCountryPartner($fail);
+            // $this->validateForCountryPartner($fail);
         } elseif ($this->user->hasRole(['teacher', 'school manager'])) {
             $this->validateForTeacherOrSchoolManager($fail);
         }
@@ -73,11 +73,19 @@ class ValidateParticipantId implements ValidationRule
     {
         return $this->mode == 'delete'
             && $this->participant->competition->format === Competition::LOCAL
-            && is_null($this->participant->result);
+            && $this->participantCompetitionIsNotMarked();
     }
 
     private function isRejectedDeleteAction(): bool
     {
         return !$this->isAcceptedDeleteAction();
+    }
+
+    private function participantCompetitionIsNotMarked(): bool
+    {
+        return $this->participant->competition
+            ->levels()
+            ->join('competition_participants_results', 'competition_levels.id', '=', 'competition_participants_results.level_id')
+            ->doesntExist();
     }
 }
