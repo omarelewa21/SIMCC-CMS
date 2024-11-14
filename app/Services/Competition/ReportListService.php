@@ -151,46 +151,51 @@ class ReportListService
         return [];
     }
 
+    protected function returnFilterOptions($query)
+    {
+        return $this->applyFilterToReport($query)->get()->map(fn($item) => $item->setAppends([]));
+    }
+
     public function getAwardFilterOptions()
     {
-        return Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
+        return $this->returnFilterOptions(
+            Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
             ->join('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
             ->whereNotNull('competition_participants_results.award')
             ->select('competition_participants_results.award as filter_name', 'competition_participants_results.award as filter_id')
             ->distinct('competition_participants_results.award')
             ->orderByRaw("FIELD(competition_participants_results.award, {$this->getAwardRanks()})")
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));;
+        );
     }
 
     public function getGradeFilterOptions()
     {
-        return Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
+        return $this->returnFilterOptions(
+            Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
             ->join('grades', 'participants.grade', 'grades.id')
             ->select('grades.display_name as filter_name', 'participants.grade as filter_id')
             ->distinct('grades.display_name')
             ->orderBy('participants.grade')
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));;
+        );
     }
 
     public function getCountryFilterOptions()
     {
-        return Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
+        return $this->returnFilterOptions(
+            Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
             ->join('all_countries', 'participants.country_id', 'all_countries.id')
             ->select('all_countries.display_name as filter_name', 'participants.country_id as filter_id')
             ->distinct('all_countries.display_name')
             ->orderBy('all_countries.display_name')
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));;
+        );
     }
 
     public function getStatusFilterOptions()
     {
-        return Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
+        return $this->returnFilterOptions(
+            Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
             ->select('participants.status as filter_name', 'participants.status as filter_id')
             ->distinct('participants.status')
-            ->get()
-            ->map(fn($item) => $item->setAppends([]));;
+        );
     }
 }
