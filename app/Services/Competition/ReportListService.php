@@ -155,12 +155,12 @@ class ReportListService
     {
         return $this->applyFilterToReport(
             $query
-            ->join('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
-            ->join('grades', 'participants.grade', 'grades.id')
-            ->join('all_countries', 'participants.country_id', 'all_countries.id')
-            ->join('schools', 'participants.school_id', 'schools.id')
-            ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
-            ->join('organization', 'organization.id', 'competition_organization.organization_id')
+            ->leftJoin('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
+            ->leftJoin('grades', 'participants.grade', 'grades.id')
+            ->leftJoin('all_countries', 'participants.country_id', 'all_countries.id')
+            ->leftJoin('schools', 'participants.school_id', 'schools.id')
+            ->leftJoin('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+            ->leftJoin('organization', 'organization.id', 'competition_organization.organization_id')
         )->get()
         ->map(fn($item) => $item->setAppends([]));
     }
