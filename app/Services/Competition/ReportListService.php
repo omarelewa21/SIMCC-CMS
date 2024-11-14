@@ -86,7 +86,7 @@ class ReportListService
     {
         if (count($this->request->all()) === 0) return $query;
 
-        if ($this->request->filled('grade')) $query->where('grades.display_name', $this->request->grade);
+        if ($this->request->filled('grade')) $query->where('participants.grade', $this->request->grade);
         if ($this->request->filled('country')) $query->where('participants.country_id', $this->request->country);
         if ($this->request->filled('award')) $query->where('competition_participants_results.award', $this->request->award);
         if ($this->request->filled('status')) $query->where('participants.status', $this->request->status);
@@ -153,14 +153,22 @@ class ReportListService
 
     protected function returnFilterOptions($query)
     {
-        return $this->applyFilterToReport($query)->get()->map(fn($item) => $item->setAppends([]));
+        return $this->applyFilterToReport(
+            $query
+            ->join('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
+            ->join('grades', 'participants.grade', 'grades.id')
+            ->join('all_countries', 'participants.country_id', 'all_countries.id')
+            ->join('schools', 'participants.school_id', 'schools.id')
+            ->join('competition_organization', 'participants.competition_organization_id', 'competition_organization.id')
+            ->join('organization', 'organization.id', 'competition_organization.organization_id')
+        )->get()
+        ->map(fn($item) => $item->setAppends([]));
     }
 
     public function getAwardFilterOptions()
     {
         return $this->returnFilterOptions(
             Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
-            ->join('competition_participants_results', 'participants.index_no', 'competition_participants_results.participant_index')
             ->whereNotNull('competition_participants_results.award')
             ->select('competition_participants_results.award as filter_name', 'competition_participants_results.award as filter_id')
             ->distinct('competition_participants_results.award')
@@ -172,7 +180,6 @@ class ReportListService
     {
         return $this->returnFilterOptions(
             Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
-            ->join('grades', 'participants.grade', 'grades.id')
             ->select('grades.display_name as filter_name', 'participants.grade as filter_id')
             ->distinct('grades.display_name')
             ->orderBy('participants.grade')
@@ -183,7 +190,6 @@ class ReportListService
     {
         return $this->returnFilterOptions(
             Participants::whereRelation('competition_organization', 'competition_id', $this->competition->id)
-            ->join('all_countries', 'participants.country_id', 'all_countries.id')
             ->select('all_countries.display_name as filter_name', 'participants.country_id as filter_id')
             ->distinct('all_countries.display_name')
             ->orderBy('all_countries.display_name')
