@@ -5,6 +5,7 @@ namespace App\Services\Competition;
 use App\Abstracts\GetList;
 use App\Models\Competition;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class CompetitionListService extends GetList
 {
@@ -53,6 +54,14 @@ class CompetitionListService extends GetList
 
     protected function getFormat(): Builder
     {
-        return (clone $this->baseQueryForFilters)->select('format as filter_id', 'format as filter_name');
+        return (clone $this->baseQueryForFilters)
+            ->select(
+                DB::raw("
+                    Case
+                        When format = 0 THEN 'Local'
+                        When format = 1 THEN 'Global'
+                    END as filter_name"),
+                'format as filter_id'
+            );
     }
 }
