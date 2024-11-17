@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\Filter;
+use App\Traits\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -9,7 +11,15 @@ use Illuminate\Support\Facades\DB;
 
 class Competition extends Base
 {
-    use HasFactory, Filterable;
+    use HasFactory, Filterable, Filter, Search;
+
+    protected $searchable = ['name', 'alias'];
+    public $filterable = [
+        'id'        => 'id',
+        'format'    => 'format',
+        'status'    => 'status',
+        'tags'      => 'tags.id',
+    ];
 
     const GOLBAL = 1;       // format column
     const LOCAL = 0;        // format column

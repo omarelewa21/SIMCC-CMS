@@ -111,7 +111,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "competition"], function () {
         Route::post("", [CompetitionController::class, "create"])->name('competition.create');
-        Route::get("", [CompetitionController::class, "list"])->name('competition.list');
+        Route::get("", [CompetitionController::class, "oldList"])->name('competition.list');
+        Route::get("list", [CompetitionController::class, "list"])->name('competition.list');
         Route::get("/{competition}", [CompetitionController::class, "show"])->name('competition.show');
         Route::patch("/edit-settings/{competition}", [CompetitionController::class, "update"])->name('competition.update');
         Route::delete("", [CompetitionController::class, "delete"])->name('competition.delete');
@@ -144,6 +145,7 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::get("/cheaters/custom-labeled-integrity-cases/{competition}", [CheatingListHelper::class, "getCustomLabeledIntegrityCases"])->name('competition.cheaters.customLabeledIntegrityCases');
         Route::get("/cheaters/criteria-stats/{competition}", [CheatingListHelper::class, "getCheatingCriteriaStats"])->name('competition.cheaters.stats');
         Route::get("/cheaters/{competition}/{country}", [CheatingListHelper::class, "getIntegrityCasesByCountry"])->name('competition.cheaters.byCountry');
+        Route::get("/report/{competition}", [CompetitionController::class, "reportList"])->name('competition.report.list');
     });
 
     Route::group(["prefix" => "marking"], function () {
