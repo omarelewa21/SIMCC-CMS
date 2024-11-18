@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Competition;
 use App\Rules\CheckGlobalCompetitionEndDateAvail;
 use App\Rules\CheckGlobalCompetitionStartDateAvail;
-use App\Rules\CheckGlobalRegistrationDateAvail;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Validation\Rule;
@@ -46,7 +46,9 @@ class UpdateCompetitionRequest extends FormRequest
             "global_registration_end_date"  => ["sometimes","required","date", "after_or_equal:global_registration_date","before:competition_start_date"], //06/10/2011 19:00:02
             "allowed_grades"                => "required|array" ,
             "allowed_grades.*"              => "required|integer|min:1" ,
-            "difficulty_group_id"           => "required|integer|exists:difficulty_groups,id"
+            "difficulty_group_id"           => "required|integer|exists:difficulty_groups,id",
+            "tags"                          => "array",
+            "tags.*"                        => ["integer", Rule::exists('domains_tags','id')->where(fn(Builder $query) => $query->where('is_tag', 1))],
         ];
     }
 
