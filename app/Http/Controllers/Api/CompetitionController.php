@@ -65,6 +65,7 @@ class CompetitionController extends Controller
             $competition = Competition::create($request->all());
             $this->addOrganization($request->organizations, $competition->id);
             $this->addRounds($request->rounds, $competition);
+            $competition->tags()->attach($request->tags);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -151,6 +152,7 @@ class CompetitionController extends Controller
                         ->delete();
                 }
             }
+            $competition->tags()->sync($request->tags);
             return response()->json([
                 "status"    => 200,
                 "message"   => "Competition update successful",

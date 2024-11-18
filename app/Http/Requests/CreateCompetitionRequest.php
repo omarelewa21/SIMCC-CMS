@@ -62,7 +62,9 @@ class CreateCompetitionRequest extends FormRequest
             "rounds.*.levels.*.name"                => "required|regex:/^[\.\,\s\(\)\[\]\w-]*$/",
             "rounds.*.levels.*.collection_id"       => ["integer", "nullable", Rule::exists('collection','id')->where(fn(Builder $query) => $query->where('status','active'))],
             "rounds.*.levels.*.grades"              => "array|required",
-            "rounds.*.levels.*.grades.*"            => ["required", "integer", new CheckCompetitionAvailGrades, new CheckLevelUsedGrades]
+            "rounds.*.levels.*.grades.*"            => ["required", "integer", new CheckCompetitionAvailGrades, new CheckLevelUsedGrades],
+            "tags"                                  => "array",
+            "tags.*"                                => ["integer", Rule::exists('domains_tags','id')->where(fn(Builder $query) => $query->where('is_tag', 1))],
         ];
     }
 }
