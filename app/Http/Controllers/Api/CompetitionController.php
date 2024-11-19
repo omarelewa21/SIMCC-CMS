@@ -252,7 +252,7 @@ class CompetitionController extends Controller
                 $query->where(['organization_id' => auth()->user()->organization_id])
                     ->where('country_id', auth()->user()->country_id);
             }
-        }, 'taskDifficultyGroup', 'taskDifficulty']);
+        }, 'taskDifficultyGroup', 'taskDifficulty', 'tags']);
 
         return response()->json([
             "status"    => 200,

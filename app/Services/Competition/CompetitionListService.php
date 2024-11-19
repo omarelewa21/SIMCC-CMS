@@ -29,6 +29,7 @@ class CompetitionListService extends GetList
             'overallAwardsGroups.overallAwards',
             'rounds.roundsAwards',
             'rounds.levels' => fn ($query) => $query->orderBy('id'),
+            'tags',
         ];
     }
 
@@ -38,7 +39,8 @@ class CompetitionListService extends GetList
             'competitionOrganization' => function ($query) {
                 $query->where(['organization_id' => auth()->user()->organization_id])
                     ->where('country_id', auth()->user()->country_id);
-            }
+            },
+            'tags',
         ];
     }
 
