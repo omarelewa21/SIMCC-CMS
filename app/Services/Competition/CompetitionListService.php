@@ -5,6 +5,7 @@ namespace App\Services\Competition;
 use App\Abstracts\GetList;
 use App\Models\Competition;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class CompetitionListService extends GetList
 {
@@ -28,6 +29,7 @@ class CompetitionListService extends GetList
             'overallAwardsGroups.overallAwards',
             'rounds.roundsAwards',
             'rounds.levels' => fn ($query) => $query->orderBy('id'),
+            'tags',
         ];
     }
 
@@ -37,7 +39,8 @@ class CompetitionListService extends GetList
             'competitionOrganization' => function ($query) {
                 $query->where(['organization_id' => auth()->user()->organization_id])
                     ->where('country_id', auth()->user()->country_id);
-            }
+            },
+            'tags',
         ];
     }
 
@@ -53,6 +56,14 @@ class CompetitionListService extends GetList
 
     protected function getFormat(): Builder
     {
-        return (clone $this->baseQueryForFilters)->select('format as filter_id', 'format as filter_name');
+        return (clone $this->baseQueryForFilters)
+            ->select(
+                DB::raw("
+                    Case
+                        When format = 0 THEN 'Local'
+                        When format = 1 THEN 'Global'
+                    END as filter_name"),
+                'format as filter_id'
+            );
     }
 }
