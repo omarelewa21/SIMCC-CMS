@@ -23,4 +23,11 @@ class TagsListService extends GetList
         return $this->baseQueryForFilters->whereNull('domain_id')->where('is_tag', 0)
             ->select('id as filter_id', 'name as filter_name');
     }
+
+    protected function getTags(): Builder
+    {
+        return $this->baseQueryForFilters->whereNull('domain_id')->where('is_tag', 1)
+            ->select('id as filter_id', 'name as filter_name')
+            ->orderBy('id', 'DESC');
+    }
 }
