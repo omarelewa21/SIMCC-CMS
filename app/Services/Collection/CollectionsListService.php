@@ -33,4 +33,9 @@ class CollectionsListService extends GetList
             'sections',
         ];
     }
+
+    protected function getOnlyNameAndId()
+    {
+        return $this->baseQueryForFilters->select('id', 'name')->orderByDesc('updated_at');
+    }
 }
