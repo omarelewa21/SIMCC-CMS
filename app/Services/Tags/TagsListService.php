@@ -30,4 +30,11 @@ class TagsListService extends GetList
             ->select('id as filter_id', 'name as filter_name')
             ->orderBy('id', 'DESC');
     }
+
+    protected function getDomainsWithTopics(): Builder
+    {
+        return $this->baseQueryForFilters->whereNull('domain_id')->where('is_tag', 0)
+                ->with('topics:id,domain_id,name')
+                ->select('id', 'name');
+    }
 }
