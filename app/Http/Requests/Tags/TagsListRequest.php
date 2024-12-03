@@ -28,7 +28,7 @@ class TagsListRequest extends FormRequest
                 ->where("is_tag", 0)
             ],
             'status'    => 'alpha',
-            'limits'    => 'integer|min:10|max:500',
+            'limits'    => 'integer',
             'page'      => 'integer',
             'search'    => 'max:255'
         ];
