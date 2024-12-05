@@ -64,8 +64,8 @@ class CollectionController extends Controller
 
             $collections = $collectionModel
                 ->filter()
-                ->orderByRaw(sprintf("FIELD(status, '%s', '%s', '%s') ASC", Collections::STATUS_VERIFIED, Collections::STATUS_ACTIVE, Collections::STATUS_PENDING_MODERATION))
                 ->orderBy('created_at', 'DESC')
+                ->orderByRaw(sprintf("FIELD(status, '%s', '%s', '%s') ASC", Collections::STATUS_VERIFIED, Collections::STATUS_ACTIVE, Collections::STATUS_PENDING_MODERATION))
                 ->get()
                 ->map(fn($item) => collect($item)->except(['updated_at', 'created_at', 'reject_reason', 'last_modified_userid', 'created_by_userid']));
 
