@@ -24,6 +24,7 @@ class DomainsTags extends Base
         'domains'       => 'domain_id',
         'status'        => 'status',
         'tags'          => 'id',
+        'domainswithtopics' => 'id',
     ];
 
     private static $whiteListFilter = [

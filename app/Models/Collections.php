@@ -22,6 +22,7 @@ class Collections extends Base
         'competitions'  => 'levels.rounds.competition.id',
         'tags'          => 'tags.id',
         'status'        => 'status',
+        'onlynameandid' => 'id',
     ];
 
     private static $whiteListFilter = [
