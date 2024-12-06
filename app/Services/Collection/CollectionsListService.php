@@ -36,6 +36,8 @@ class CollectionsListService extends GetList
 
     protected function getOnlyNameAndId()
     {
-        return $this->baseQueryForFilters->select('id', 'name')->orderByDesc('updated_at');
+        return $this->baseQueryForFilters
+            ->whereStatus('active')
+            ->select('id', 'name')->orderByDesc('updated_at');
     }
 }
