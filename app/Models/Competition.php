@@ -70,7 +70,10 @@ class Competition extends Base
         parent::booted();
         static::deleting(function ($competition) {
             $competition->competitionOrganization()->delete();
-            $competition->groups()->delete();
+            foreach($competition->groups as $group) {
+                $group->delete();
+            }
+            $competition->tags()->detach();
         });
     }
 
