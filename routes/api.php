@@ -106,7 +106,9 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("edit-result/{participant}", [ParticipantsController::class, "editResult"])->name('participant.edit.result');
 
         Route::group(["prefix" => "reports"], function () {
-            Route::post("generate", [ParticipantReports::class, "generateReports"])->name('participant.reports.download');
+            Route::get("", [ParticipantReports::class, "listReports"])->name('participant.reports.list');
+            Route::post("generate", [ParticipantReports::class, "generateReports"])->name('participant.reports.generate');
+            Route::get("download/{id}", [ParticipantReports::class, "downloadReports"])->name('participant.reports.download');
         });
     });
 

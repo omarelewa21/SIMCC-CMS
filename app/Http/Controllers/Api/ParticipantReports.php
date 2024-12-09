@@ -7,9 +7,72 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Models\Participants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
 
 class ParticipantReports extends Controller
 {
+    public function listReports(Request $request)
+    {
+        try {
+            $query = DB::table('participant_reports')
+                ->leftJoin('competition', 'competition.id', '=', 'participant_reports.competition_id')
+                ->leftJoin('all_countries', 'all_countries.id', '=', 'participant_reports.country_id')
+                ->leftJoin('schools', 'schools.id', '=', 'participant_reports.school_id')
+                ->select(
+                    'participant_reports.id',
+                    'participant_reports.competition_id',
+                    'participant_reports.country_id',
+                    'participant_reports.progress',
+                    'participant_reports.status',
+                    'participant_reports.file',
+                    'participant_reports.reports',
+                    'participant_reports.downloads',
+                    'participant_reports.errors',
+                    'participant_reports.school_id',
+                    'participant_reports.grade',
+                    'participant_reports.created_at',
+                    'participant_reports.updated_at',
+                    'competition.name as competition_name',
+                    'all_countries.display_name as country_name',
+                    'schools.name as school_name'
+                );
+
+            if ($request->has('competition_id')) {
+                $query->where('participant_reports.competition_id', $request->input('competition_id'));
+            }
+
+            if ($request->has('country_id')) {
+                $query->where('participant_reports.country_id', $request->input('country_id'));
+            }
+
+            if ($request->has('school_id')) {
+                $query->where('participant_reports.school_id', $request->input('school_id'));
+            }
+
+            $reports = $query->get()->map(function ($report) {
+                if ($report->file) {
+                    $report->download_url = url("/api/participant/reports/download/{$report->id}");
+                } else {
+                    $report->download_url = null;
+                }
+                return $report;
+            });
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Reports fetched successfully',
+                'data' => $reports,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching the reports.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function generateReports(getParticipantListRequest $request)
     {
         $query = Participants::without('iac_status')->leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
@@ -92,5 +155,42 @@ class ParticipantReports extends Controller
             ->where('school_id', $schoolId)
             ->where('grade', $grade)
             ->exists();
+    }
+
+    public function downloadReports($report_id)
+    {
+        try {
+            $report = DB::table('participant_reports')
+                ->select('file', 'downloads')
+                ->where('id', $report_id)
+                ->first();
+
+            if (!$report) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'File does not exist.',
+                ], 404);
+            }
+
+            $filePath = 'performance_reports/' . $report->file;
+
+            if (!Storage::exists($filePath)) {
+                return response()->json([
+                    'message' => 'File not found',
+                ], 404);
+            }
+
+            DB::table('participant_reports')
+                ->where('id', $report_id)
+                ->increment('downloads', 1);
+
+            return Response::download(Storage::path($filePath))->deleteFileAfterSend(false);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while processing the request.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
