@@ -193,4 +193,45 @@ class ParticipantReports extends Controller
             ], 500);
         }
     }
+
+    public function deleteReports($report_id)
+    {
+        try {
+            $report = DB::table('participant_reports')
+            ->select('file')
+            ->where('id', $report_id)
+                ->first();
+
+            if (!$report) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Report not found.',
+                ], 404);
+            }
+
+            $filePath = 'performance_reports/' . $report->file;
+
+            if (!Storage::exists($filePath)) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'File does not exist.',
+                ], 404);
+            }
+
+            Storage::delete($filePath);
+
+            DB::table('participant_reports')->where('id', $report_id)->delete();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Report and associated file deleted successfully.',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while deleting the report.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
