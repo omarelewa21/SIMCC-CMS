@@ -7,6 +7,7 @@ use App\Http\Requests\getParticipantListRequest;
 use App\Models\Participants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 
@@ -55,6 +56,11 @@ class ParticipantReports extends Controller
                     $report->download_url = url("/api/participant/reports/download/{$report->id}");
                 } else {
                     $report->download_url = null;
+                }
+                if ($report->status == 'in_progress') {
+                    $report->cancel_url = url("/api/participant/reports/cancel/{$report->id}");
+                } else {
+                    $report->cancel_url = null;
                 }
                 return $report;
             });
@@ -198,8 +204,7 @@ class ParticipantReports extends Controller
     {
         try {
             $report = DB::table('participant_reports')
-            ->select('file')
-            ->where('id', $report_id)
+                ->where('id', $report_id)
                 ->first();
 
             if (!$report) {
@@ -230,6 +235,54 @@ class ParticipantReports extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'An error occurred while deleting the report.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function cancelReports($report_id)
+    {
+        try {
+            $report = DB::table('participant_reports')->where('id', $report_id)->first();
+
+            if (!$report) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Report not found.',
+                ], 404);
+            }
+
+            if ($report->status !== 'in_progress') {
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Report job is not in progress and cannot be canceled.',
+                ], 400);
+            }
+
+            $job_id = $report->job_id;
+
+            $job = DB::table('jobs')->where('id', $job_id)->first();
+
+            if ($job) {
+                DB::table('jobs')->where('id', $job_id)->delete();
+            }
+            if ($report->file) {
+                $filePath = 'performance_reports/' . $report->file;
+                if (Storage::exists($filePath)) {
+                    Storage::delete($filePath);
+                }
+            }
+
+            DB::table('participant_reports')->where('id', $report_id)->delete();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Report job canceled and file deleted successfully.',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while canceling the report job.',
                 'error' => $e->getMessage(),
             ], 500);
         }
