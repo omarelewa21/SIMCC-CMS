@@ -26,6 +26,8 @@ class GeneratePendingReports implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $timeout = 1000000;
+
     protected $report;
     protected $participants;
     protected $participantResults;

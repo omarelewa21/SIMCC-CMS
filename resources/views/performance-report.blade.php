@@ -2,7 +2,193 @@
 
 <html>
     <head>
-        <link rel="stylesheet" href={{ asset('css/app.css') }}>
+        <style>
+            .root{
+               margin: 1%;
+            }
+
+            header h1 {
+               font-size: 2em;
+               font-weight: 400;
+               color: #144A94;
+               text-align: center;
+               margin: 0;
+               padding: 0;
+               padding-top: 20px;
+               padding-bottom: 20px;
+            }
+
+            header h2 {
+               font-size: 1em;
+               color: #144A94;
+               text-align: center;
+               margin: 0;
+               padding: 0;
+            }
+
+            .grade-school {
+               margin-bottom: 7%;
+            }
+            .grade-school {
+               display: inline-block;
+               color: #999;
+               width: 100%;
+            }
+            .grade-school .horizontal {
+               position: absolute;
+               top: 230px;
+            }
+            .grade-school div .title {
+               display: block;
+               color: grey;
+            }
+            .grade-school div .data {
+               display: block;
+               color: black;
+            }
+
+            .general-info {
+               font-size: 1.5em;
+               color: #144A94;
+               margin: 0;
+               padding: 0;
+               padding-bottom: 20px;
+            }
+
+            .section{
+               margin-bottom: 5%;
+            }
+
+            .performance-by-questions .data {
+               display: grid;
+               grid-template-columns: auto auto auto;
+               box-sizing: border-box;
+               margin-top: 8px;
+               align-items: center;
+               width: 100%;
+               padding-top: 20px;
+            }
+            .performance-by-questions .data div {
+               box-sizing: border-box;
+               display: inline-block;
+               margin-bottom: 2px;
+               width: 120px;
+               -webkit-box-align: center;
+               align-items: center;
+               -webkit-box-pack: justify;
+               justify-content: space-between;
+               padding: 20px;
+               background-color: rgb(221, 221, 221);
+               border-radius: 35px
+            }
+
+            .performance-by-topics .data {
+               display: block;
+               width: 100%;
+               padding-top: 20px;
+               margin-top: 35px;
+            }
+            .performance-by-topics .data .card {
+               display: inline-block;
+               width: 30%;
+               background-color: rgb(20, 74, 148);
+               border-radius: 25px;
+               padding-bottom: 20px;
+               page-break-inside: avoid;
+               margin-top: 20px;
+            }
+            .performance-by-topics .data .card * {
+               color: rgb(255, 255, 255);
+            }
+            .performance-by-topics .data .card .topic {
+               text-align: center;
+               margin: 10px;
+               font-weight: 600;
+               padding-top: 10px;
+               height: 20px;
+               padding-bottom: 30px;
+               letter-spacing: 1px;
+            }
+            .performance-by-topics .data .card div {
+               display: block;
+               padding-bottom: 20px;
+            }
+            .performance-by-topics .data .card div *{
+               margin: 10px;
+               padding-right: 10px;
+               font-size: large;
+            }
+            .performance-by-topics .data .card div span{
+               position: relative;
+               top: 10px;
+               padding-left: 5px;
+            }
+
+            .datatable{
+               padding: 0;
+               width: 100%;
+               text-align: center;
+               border-collapse: collapse;
+               margin-top: 10px;
+            }
+            .datatable th{
+               padding: 0;
+               background-color: #144A94;
+               color: #fff;
+               border: 1px solid;
+               border-color: #999;
+            }
+            .datatable tr {
+               padding: 0px;
+               height: 50px;
+            }
+            .datatable td{
+               border: 1px solid;
+               border-color: #999;
+            }
+            .datatable tr:nth-of-type(2n+1){
+               background-color: #dddddd;
+            }
+            .App {
+               text-align: center;
+            }
+            .App-logo {
+               height: 40vmin;
+               pointer-events: none;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+               .App-logo {
+                  animation: App-logo-spin infinite 20s linear;
+               }
+            }
+            .App-header {
+               background-color: #282c34;
+               min-height: 100vh;
+               display: flex;
+               flex-direction: column;
+               align-items: center;
+               justify-content: center;
+               font-size: calc(10px + 2vmin);
+               color: white;
+            }
+            .App-link {
+               color: #61dafb;
+            }
+
+            .appendix {
+               margin-top: 20px;
+               margin-bottom: 5%;
+            }
+            .appendix div {
+               margin-bottom: 5px;
+            }
+            .appendix .appendix-span-title {
+               font-size: medium;
+               color: rgb(13, 49, 100);
+               font-weight: 600;
+               margin-right: 5px;
+            }
+        </style>
     </head>
 
     <body>
