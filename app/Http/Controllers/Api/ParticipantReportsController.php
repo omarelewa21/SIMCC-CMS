@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 
-class ParticipantReports extends Controller
+class ParticipantReportsController extends Controller
 {
     public function listReports(Request $request)
     {
@@ -20,6 +20,7 @@ class ParticipantReports extends Controller
                 ->leftJoin('competition', 'competition.id', '=', 'participant_reports.competition_id')
                 ->leftJoin('all_countries', 'all_countries.id', '=', 'participant_reports.country_id')
                 ->leftJoin('schools', 'schools.id', '=', 'participant_reports.school_id')
+                ->leftJoin('users', 'users.id', '=', 'participant_reports.created_by')
                 ->select(
                     'participant_reports.id',
                     'participant_reports.competition_id',
@@ -32,11 +33,13 @@ class ParticipantReports extends Controller
                     'participant_reports.errors',
                     'participant_reports.school_id',
                     'participant_reports.grade',
+                    'participant_reports.created_by',
                     'participant_reports.created_at',
                     'participant_reports.updated_at',
                     'competition.name as competition_name',
                     'all_countries.display_name as country_name',
-                    'schools.name as school_name'
+                    'schools.name as school_name',
+                    'users.name as created_by_name'
                 );
 
             if ($request->has('competition_id')) {
@@ -79,16 +82,34 @@ class ParticipantReports extends Controller
         }
     }
 
-    public function generateReports(getParticipantListRequest $request)
+    public function generateReports(Request $request)
     {
-        $query = Participants::without('iac_status')->leftJoin('users as created_user', 'created_user.id', '=', 'participants.created_by_userid')
-            ->leftJoin('users as modified_user', 'modified_user.id', '=', 'participants.last_modified_userid')
+        $user = auth()->user();
+        $userCountryId = $user->country_id;
+        $userOrganizationId = $user->organization_id;
+
+        $query = DB::table('participants')
             ->leftJoin('all_countries', 'all_countries.id', '=', 'participants.country_id')
             ->leftJoin('schools', 'schools.id', '=', 'participants.school_id')
             ->leftJoin('schools as tuition_centre', 'tuition_centre.id', '=', 'participants.tuition_centre_id')
             ->leftJoin('competition_organization', 'competition_organization.id', '=', 'participants.competition_organization_id')
             ->leftJoin('competition', 'competition.id', '=', 'competition_organization.competition_id')
-            ->filterList($request)
+            ->when($request->filled('country_id'), function ($query) use ($request) {
+                $query->where('participants.country_id', $request->country_id);
+            })
+            ->when($request->filled('school_id'), function ($query) use ($request) {
+                $query->where('participants.school_id', $request->school_id);
+            })
+            ->when($request->filled('competition_id'), function ($query) use ($request) {
+                $query->where('competition.id', $request->competition_id);
+            })
+            ->when($request->filled('grade'), function ($query) use ($request) {
+                $query->where('participants.grade', $request->grade);
+            })
+            ->when($user->role === 2, function ($query) use ($userCountryId, $userOrganizationId) {
+                $query->where('participants.country_id', $userCountryId)
+                    ->where('participants.organization_id', $userOrganizationId);
+            })
             ->select('participants.index_no', 'participants.name');
 
         $participantCount = $query->count();
@@ -132,10 +153,6 @@ class ParticipantReports extends Controller
         $countryId = $request->input('country_id');
         $schoolId = $request->input('school_id');
         $grade = $request->input('grade');
-        $participants = array_map(function ($participant) {
-            unset($participant['iac_status']);
-            return $participant;
-        }, $participants);
 
         DB::table('participant_reports')->insert([
             'competition_id' => $competitionId,
@@ -143,6 +160,7 @@ class ParticipantReports extends Controller
             'school_id' => $schoolId,
             'grade' => $grade,
             'participants' => json_encode($participants),
+            'created_by' => auth()->id(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -160,6 +178,7 @@ class ParticipantReports extends Controller
             ->where('country_id', $countryId)
             ->where('school_id', $schoolId)
             ->where('grade', $grade)
+            ->where('status', '!=', 'cancelled')
             ->exists();
     }
 
@@ -252,6 +271,13 @@ class ParticipantReports extends Controller
                 ], 404);
             }
 
+            if ($report->status === 'cancelled') {
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Report is already cancelled.',
+                ], 400);
+            }
+
             if ($report->status !== 'in_progress') {
                 return response()->json([
                     'status' => 400,
@@ -259,13 +285,14 @@ class ParticipantReports extends Controller
                 ], 400);
             }
 
+
             $job_id = $report->job_id;
 
             $job = DB::table('jobs')->where('id', $job_id)->first();
-
             if ($job) {
                 DB::table('jobs')->where('id', $job_id)->delete();
             }
+
             if ($report->file) {
                 $filePath = 'performance_reports/' . $report->file;
                 if (Storage::exists($filePath)) {
@@ -273,11 +300,18 @@ class ParticipantReports extends Controller
                 }
             }
 
-            DB::table('participant_reports')->where('id', $report_id)->delete();
+            DB::table('participant_reports')
+                ->where('id', $report_id)
+                ->update([
+                    'status' => 'cancelled',
+                    'file' => null,
+                    'updated_by' => auth()->id(),
+                    'updated_at' => now(),
+                ]);
 
             return response()->json([
                 'status' => 200,
-                'message' => 'Report job canceled and file deleted successfully.',
+                'message' => 'Report job canceled successfully.',
             ], 200);
         } catch (Exception $e) {
             return response()->json([

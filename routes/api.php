@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\AssignDifficultyPointsController;
 use App\Http\Controllers\Api\MarkingController;
 use App\Http\Controllers\Api\ParticipantAnswersController;
 use App\Http\Controllers\Api\ParticipantReports;
+use App\Http\Controllers\Api\ParticipantReportsController;
 use App\Http\Controllers\Api\PossibleSimilarAnswersController;
 
 /*
@@ -110,11 +111,11 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
         Route::post("mark-absent/{participant}", [ParticipantsController::class, "markAbsent"])->name('participant.mark.absent');
 
         Route::group(["prefix" => "reports"], function () {
-            Route::get("", [ParticipantReports::class, "listReports"])->name('participant.reports.list');
-            Route::post("generate", [ParticipantReports::class, "generateReports"])->name('participant.reports.generate');
-            Route::get("download/{id}", [ParticipantReports::class, "downloadReports"])->name('participant.reports.download');
-            Route::delete('delete/{id}', [ParticipantReports::class, 'deleteReports']);
-            Route::get('cancel/{id}', [ParticipantReports::class, 'cancelReports']);
+            Route::get("", [ParticipantReportsController::class, "listReports"])->name('participant.reports.list');
+            Route::post("generate", [ParticipantReportsController::class, "generateReports"])->name('participant.reports.generate');
+            Route::get("download/{id}", [ParticipantReportsController::class, "downloadReports"])->name('participant.reports.download');
+            Route::delete('delete/{id}', [ParticipantReportsController::class, 'deleteReports'])->name('participant.reports.delete');
+            Route::get('cancel/{id}', [ParticipantReportsController::class, 'cancelReports'])->name('participant.reports.cancel');
         });
     });
 
