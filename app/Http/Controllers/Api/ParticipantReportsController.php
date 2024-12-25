@@ -106,12 +106,11 @@ class ParticipantReportsController extends Controller
             ->when($request->filled('grade'), function ($query) use ($request) {
                 $query->where('participants.grade', $request->grade);
             })
-            ->when($user->role === 2, function ($query) use ($userCountryId, $userOrganizationId) {
+            ->when($user->role_id === 2, function ($query) use ($userCountryId, $userOrganizationId) {
                 $query->where('participants.country_id', $userCountryId)
-                    ->where('participants.organization_id', $userOrganizationId);
+                    ->where('competition_organization.organization_id', $userOrganizationId);
             })
             ->select('participants.index_no', 'participants.name');
-
         $participantCount = $query->count();
 
         if ($participantCount > 1000) {
