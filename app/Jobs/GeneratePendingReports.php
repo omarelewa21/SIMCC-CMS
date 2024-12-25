@@ -66,16 +66,20 @@ class GeneratePendingReports implements ShouldQueue
                     } else {
                         $report = $participantResult->report;
                     }
-                    $report['general_data']['is_private'] = $participantResult->participant->tuition_centre_id ? true : false;
+
+                    $report['general_data']['is_private'] = !empty($participantResult->participant->tuition_centre_id);
+
                     $cleanedName = preg_replace('/\s+/', '_', $participantResult->participant['name']);
+
                     $pdf = PDF::loadView('performance-report', [
-                        'general_data'                  => $report['general_data'],
-                        'performance_by_questions'      => $report['performance_by_questions'],
-                        'performance_by_topics'         => $report['performance_by_topics'],
-                        'grade_performance_analysis'    => $report['grade_performance_analysis'],
-                        'analysis_by_questions'         => $report['analysis_by_questions']
+                        'general_data'               => $report['general_data'],
+                        'performance_by_questions'   => $report['performance_by_questions'],
+                        'performance_by_topics'      => $report['performance_by_topics'],
+                        'grade_performance_analysis' => $report['grade_performance_analysis'],
+                        'analysis_by_questions'      => $report['analysis_by_questions']
                     ]);
                 } catch (Exception $e) {
+                    Log::error('Error processing participant report: ' . $e->getMessage());
                     $this->progress++;
                     continue;
                 }
@@ -124,19 +128,27 @@ class GeneratePendingReports implements ShouldQueue
     public function updateJobProgress($processedCount, $totalCount, $status = 'in_progress', $file = null, $errors = null)
     {
         try {
-            $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
-            DB::table('participant_reports')
-                ->updateOrInsert(
-                    ['id' => $this->report->id],
-                    [
-                        'job_id' => $this->jobId,
-                        'progress' => $progress,
-                        'status' => $status,
-                        'errors' => $errors,
-                        'file' => $file,
-                        'reports' => $processedCount !== null ? $processedCount : DB::raw('count')
-                    ]
-                );
+            $reportQ = DB::table('participant_reports')->where('id', $this->report->id)->first();
+            if (!$reportQ) {
+                throw new Exception('Report not found.');
+            }
+            $reportStatus = $reportQ->status;
+
+            if ($reportStatus != 'cancelled') {
+                $progress = ($totalCount > 0) ? round(($processedCount / $totalCount) * 100) : 0;
+                DB::table('participant_reports')
+                    ->updateOrInsert(
+                        ['id' => $this->report->id],
+                        [
+                            'job_id' => $this->jobId,
+                            'progress' => $progress,
+                            'status' => $status,
+                            'errors' => $errors,
+                            'file' => $file,
+                            'reports' => $processedCount !== null ? $processedCount : DB::raw('count')
+                        ]
+                    );
+            }
         } catch (Exception $e) {
         }
     }
