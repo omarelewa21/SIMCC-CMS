@@ -109,8 +109,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
             Route::get("", [ParticipantReports::class, "listReports"])->name('participant.reports.list');
             Route::post("generate", [ParticipantReports::class, "generateReports"])->name('participant.reports.generate');
             Route::get("download/{id}", [ParticipantReports::class, "downloadReports"])->name('participant.reports.download');
-            Route::delete('delete/{id}', [ParticipantReports::class, 'deleteReports']);
-            Route::get('cancel/{id}', [ParticipantReports::class, 'cancelReports']);
+            Route::delete('delete/{id}', [ParticipantReports::class, 'deleteReports'])->name('participant.reports.delete');
+            Route::get('cancel/{id}', [ParticipantReports::class, 'cancelReports'])->name('participant.reports.cancel');
         });
     });
 
