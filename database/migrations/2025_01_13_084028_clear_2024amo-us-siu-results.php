@@ -1,10 +1,12 @@
 <?php
 
 use App\Models\CheatingParticipants;
+use App\Models\CompetitionMarkingGroup;
 use App\Models\CompetitionParticipantsResults;
 use App\Models\IntegrityCase;
 use App\Models\IntegrityCheckCompetitionCountries;
 use App\Models\IntegritySummary;
+use App\Models\LevelGroupCompute;
 use App\Models\Participants;
 use App\Models\ParticipantsAnswer;
 use Illuminate\Database\Migrations\Migration;
@@ -26,6 +28,7 @@ return new class extends Migration
         $this->clearResults();
         $this->clearIntegrityCases();
         $this->clearAnswers();
+        $this->resetComputeStatus();
     }
 
     private function clearResults()
@@ -82,6 +85,20 @@ return new class extends Migration
             ->where('competition_organization.organization_id', $this->organizationId)
             ->where('participants.country_id', $this->countryId)
             ->delete();
+    }
+
+    private function resetComputeStatus()
+    {
+        $markingGroupId = CompetitionMarkingGroup::where('competition_id', $this->competitionId)
+            ->whereRelation('countries', 'id', $this->countryId)
+            ->value('id');
+
+        LevelGroupCompute::where('group_id', $markingGroupId)
+            ->update([
+                'computing_status' => LevelGroupCompute::STATUS_NOT_STARTED,
+                'compute_progress_percentage' => 0,
+                'awards_moderated' => 0
+            ]);
     }
 
     /**
