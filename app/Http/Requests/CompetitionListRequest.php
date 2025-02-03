@@ -28,7 +28,7 @@ class CompetitionListRequest extends FormRequest
             'name'      => "/^[\.\,\s\(\)\[\]\w-]*$/",
             'format'    => 'boolean',
             'status'    => 'alpha_dash',
-            'limits'    => 'integer|min:10|max:50',
+            'limits'    => 'integer',
             'page'      => 'integer',
             'search'    => 'max:255'
         ];
