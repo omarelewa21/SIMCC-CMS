@@ -285,7 +285,7 @@ class ParticipantsController extends Controller
             case 4:
                 $organizationId = auth()->user()->organization_id;
                 $countryId = auth()->user()->country_id;
-                $activeCompetitionOrganizationIds = CompetitionOrganization::where(['organization_id' => $organizationId, 'status' => 'active'])->pluck('id')->toArray();
+                $activeCompetitionOrganizationIds = CompetitionOrganization::where('organization_id', $organizationId)->pluck('id')->toArray();
                 $validate['id'] = ["required", "integer", Rule::exists('participants', 'id')->where("country_id", $countryId)->whereIn("competition_organization_id", $activeCompetitionOrganizationIds)];
                 break;
             case 3:
