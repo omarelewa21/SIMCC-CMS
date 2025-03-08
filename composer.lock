@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "301e8266d728793698b24dfe9c467722",
+    "content-hash": "e77cf82394b7daffd41281b2f50ce9be",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -3174,30 +3174,30 @@
         },
         {
             "name": "mehdi-fathi/eloquent-filter",
-            "version": "4.4.9",
+            "version": "4.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mehdi-fathi/eloquent-filter.git",
-                "reference": "5d79f2d575accab592fe45b4571339702e94682b"
+                "reference": "ffa3247401f50106bca2488ba7bcf000aa0c52ce"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mehdi-fathi/eloquent-filter/zipball/5d79f2d575accab592fe45b4571339702e94682b",
-                "reference": "5d79f2d575accab592fe45b4571339702e94682b",
+                "url": "https://api.github.com/repos/mehdi-fathi/eloquent-filter/zipball/ffa3247401f50106bca2488ba7bcf000aa0c52ce",
+                "reference": "ffa3247401f50106bca2488ba7bcf000aa0c52ce",
                 "shasum": ""
             },
             "require": {
-                "illuminate/container": "~8.0|~9.0|~10.0|~11.0",
-                "illuminate/database": "~8.0|~9.0|~10.0|~11.0",
-                "illuminate/pagination": "~8.0|~9.0|~10.0|~11.0",
-                "illuminate/support": "~8.0|~9.0|~10.0|~11.0",
-                "php": "^8.0|^8.1|^8.2|^8.3"
+                "illuminate/container": "~8.0|~9.0|~10.0|~11.0|~12.0",
+                "illuminate/database": "~8.0|~9.0|~10.0|~11.0|~12.0",
+                "illuminate/pagination": "~8.0|~9.0|~10.0|~11.0|~12.0",
+                "illuminate/support": "~8.0|~9.0|~10.0|~11.0|~12.0",
+                "php": "^8.0|^8.1|^8.2|^8.3|^8.4"
             },
             "require-dev": {
                 "mockery/mockery": "1.4.x-dev|1.4.2|1.5.1|^1.6",
-                "orchestra/testbench": "5.*|^6.0|^6.6.0|^7.0.0|^8.0.0|v9.0.0",
+                "orchestra/testbench": "5.*|^6.0|^6.6.0|^7.0.0|^8.0.0|v9.0.0|v10.0.0",
                 "phpstan/phpstan": "^1.8",
-                "phpunit/phpunit": "8.3|8.5|9.3|^9.5|10.5.5"
+                "phpunit/phpunit": "8.3|8.5|9.3|^9.5|10.5.5|^11.5.3"
             },
             "type": "lib",
             "extra": {
@@ -3244,9 +3244,9 @@
             ],
             "support": {
                 "issues": "https://github.com/mehdi-fathi/eloquent-filter/issues",
-                "source": "https://github.com/mehdi-fathi/eloquent-filter/tree/4.4.9"
+                "source": "https://github.com/mehdi-fathi/eloquent-filter/tree/4.5.0"
             },
-            "time": "2025-01-05T20:07:56+00:00"
+            "time": "2025-03-09T15:52:09+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -9978,12 +9978,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2"
+        "php": "^8.2.0"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
