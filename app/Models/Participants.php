@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Scopes\scopeExcludeCheatingParticipants;
 use Carbon\Carbon;
+use App\Traits\Filter;
+use App\Traits\Search;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,13 +17,24 @@ use Illuminate\Support\Facades\Schema;
 
 class Participants extends Base
 {
-    use HasFactory, Filterable, SoftDeletes, Prunable;
+    use HasFactory, Filter, SoftDeletes, Prunable, Search, Filterable;
 
     const ALLOWED_GRADES = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
     const STATUS_CHEATING = 'iac';
     const STATUS_ACTIVE = 'active';
     const STATUS_RESULT_COMPUTED = 'result computed';
+
+    protected $searchable = ['index_no', 'name', 'school.name', 'tuition_centre.name'];
+    public $filterable = [
+        'id'                => 'id',
+        'country'           => 'country_id',
+        'school'            => 'school_id',
+        'grade'             => 'grade',
+        'status'            => 'status',
+        'competition'       => 'competition_organization.competition_id',
+        'organization'      => 'competition_organization.organization_id',
+    ];
 
     private static $whiteListFilter = [
         'status',
@@ -41,7 +54,7 @@ class Participants extends Base
         "last_modified_userid"
     ];
 
-    protected $appends = ['iac_status'];
+    protected $appends = ['iac_status', 'created_by', 'last_modified_by'];
 
      /**
      * Get the prunable model query.
@@ -129,7 +142,7 @@ class Participants extends Base
                 case 'limits':
                     break;
                 default:
-                    Schema::hasColumn(self::getTable(), $key) && $query->where($key, $value);
+                Schema::hasColumn(self::getTable(), $key) && $query->where(self::getTable(). ".$key", $value);
             }
         }
     }
@@ -182,6 +195,11 @@ class Participants extends Base
     public function result()
     {
         return $this->hasOne(CompetitionParticipantsResults::class, 'participant_index', 'index_no');
+    }
+
+    public function participantGrade()
+    {
+        return $this->belongsTo(Grade::class, 'grade', 'id');
     }
 
     public static function generateIndexNo(Countries $country, $isPrivate=false)

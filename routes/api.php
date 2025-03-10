@@ -95,7 +95,8 @@ Route::group(["middleware" => ["cors", "auth:sanctum", "rolePermissions"]], func
 
     Route::group(["prefix" => "participant"], function () {
         Route::post("", [ParticipantsController::class, "create"])->name('participant.create');
-        Route::get("", [ParticipantsController::class, "list"])->name('participant.list');
+        Route::get("", [ParticipantsController::class, "oldList"])->name('participant.list');
+        Route::get("list", [ParticipantsController::class, "list"])->name('participant.list');
         Route::patch("", [ParticipantsController::class, "update"])->name('participant.update');
         Route::delete("", [ParticipantsController::class, "delete"])->name('participant.delete');
         Route::delete("/delete-by-index", [ParticipantsController::class, "deleteByIndex"])->name('participant.deleteByIndex');
